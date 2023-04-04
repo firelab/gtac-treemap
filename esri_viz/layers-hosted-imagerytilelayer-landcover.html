@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="initial-scale=1,maximum-scale=1,user-scalable=no"
+    />
+    <title>
+      Hosted Land Cover ImageryTileLayer | Sample | ArcGIS Maps SDK for
+      JavaScript 4.26
+    </title>
+    <script
+      type="module"
+      src="https://js.arcgis.com/calcite-components/1.0.7/calcite.esm.js"
+    ></script>
+    <link
+      rel="stylesheet"
+      type="text/css"
+      href="https://js.arcgis.com/calcite-components/1.0.7/calcite.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://js.arcgis.com/4.26/esri/themes/light/main.css"
+    />
+    <script src="https://js.arcgis.com/4.26/"></script>
+
+    <style>
+      html,
+      body,
+      #viewDiv {
+        padding: 0;
+        margin: 0;
+        height: 100%;
+        width: 100%;
+      }
+
+      #infoDiv {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        padding: 10px;
+        width: 200px;
+        height: 320px;
+      }
+    </style>
+    <script>
+      require([
+        "esri/Map",
+        "esri/views/MapView",
+        "esri/layers/ImageryTileLayer",
+        "esri/layers/FeatureLayer",
+        "esri/layers/GroupLayer",
+        "esri/renderers/UniqueValueRenderer",
+        "esri/renderers/support/UniqueValueInfo",
+        "esri/geometry/SpatialReference"
+      ], (
+        Map,
+        MapView,
+        ImageryTileLayer,
+        FeatureLayer,
+        GroupLayer,
+        UniqueValueRenderer,
+        UniqueValueInfo,
+        SpatialReference
+      ) =>
+        (async () => {
+          // Reproject the data to the projection selected by the user
+          const wkidSelect = document.getElementById("projectWKID");
+          wkidSelect.addEventListener("change", () => {
+            console.log('WK changed');console.log(wkidSelect.value);
+            view.spatialReference = {
+              wkid: wkidSelect.value
+            };
+          });
+
+          const viewSpatialReference = new SpatialReference({
+            wkid: wkidSelect.value
+          });
+
+          // this states layer will be used as the basemap
+          const statesLayer = new FeatureLayer({
+            url: "https://sampleserver6.arcgisonline.com/arcgis/rest/services/USA/MapServer/2",
+            renderer: {
+              type: "simple",
+              symbol: {
+                type: "simple-fill",
+                color: "#505050",
+                outline: {
+                  color: "#DCDCDC",
+                  width: "0.5px"
+                }
+              }
+            },
+            spatialReference: viewSpatialReference,
+            effect: "drop-shadow(-10px, 10px, 6px gray)"
+          });
+
+          // land cover types to set when user changes the land cover type
+          const landTypes = {
+            forests: {
+              categories: [
+                "Deciduous Forest",
+                "Evergreen Forest",
+                "Mixed Forest"
+              ],
+              color: ["#006622", "#006622", "#006622", "#006622"]
+            },
+            developed: {
+              categories: [
+                "Developed, Open Space",
+                "Developed, Low Intensity",
+                "Developed, Medium Intensity",
+                "Developed, High Intensity"
+              ],
+              color: ["#E5D0DD", "#E08B88", "#FF0000", "#A70000"]
+            },
+            crops: {
+              categories: ["Cultivated Crops"],
+              color: ["#A56400"]
+            },
+            hay: {
+              categories: ["Hay/Pasture"],
+              color: ["#D3F40E"]
+            },
+            wetlands: {
+              categories: ["Woody Wetlands", "Emergent Herbaceuous Wetlands"],
+              color: ["#0073e6", "#0073e6"]
+            }
+          };
+
+          // initialize the imagery layer with lerc format
+          const layer = new ImageryTileLayer({
+            url: "https://tiledimageservices.arcgis.com/V6ZHFr6zdgNZuVG0/arcgis/rest/services/NLCD_2016_Land_Cover_L48_20190424/ImageServer",
+            renderer: changeLandCoverType(landTypes.forests),
+            blendMode: "color-dodge",
+            effect: "bloom(0.5, 0.5px, 20%) drop-shadow(1px, 1px, 1px, grey)"
+          });
+
+          const groupLayer = new GroupLayer({
+            layers: [layer],
+            title: "Forested areas 2016"
+          });
+
+          const map = new Map({
+            basemap: {
+              baseLayers: [statesLayer]
+            },
+            layers: [groupLayer]
+          });
+
+          const view = new MapView({
+            container: "viewDiv",
+            map: map,
+            spatialReference: viewSpatialReference,
+            center: {
+              type: "point",
+              x: 0,
+              y: 0,
+              spatialReference: viewSpatialReference
+            },
+            scale: 19975114,
+            background: {
+              color: "#F5F5F5"
+            }
+          });
+
+          // drop down for changing the land cover types
+          const landCoverTypeSelect = document.getElementById(
+            "landCoverTypeSelect"
+          );
+          landCoverTypeSelect.addEventListener(
+            "calciteRadioButtonGroupChange",
+            (event) => {
+              if (!layer.loaded) {
+                return;
+              }
+              let renderer = layer.renderer.clone();
+              const value = landCoverTypeSelect.selectedItem.value;
+              renderer = changeLandCoverType(landTypes[value]);
+              layer.renderer = renderer;
+            }
+          );
+
+          // this function creates a new instance of group and imagery layer whenever
+          // the app is loaded or the view projection changes
+          document.getElementById("forests").checked = true;
+
+          // this function is called whenever user changes the land cover type
+          // from the drop down. It creates a unique value renderer for the
+          // land cover type the user selected.
+          function changeLandCoverType(landType) {
+            const uvr = new UniqueValueRenderer({
+              field: "NLCD_Land",
+              uniqueValueInfos: []
+            });
+            landType.categories.forEach((value, i) => {
+              const uniqueValue = new UniqueValueInfo({
+                value,
+                symbol: {
+                  type: "simple-fill",
+                  color: landType.color[i]
+                }
+              });
+              uvr.uniqueValueInfos.push(uniqueValue);
+            });
+            return uvr;
+          }
+        })());
+    </script>
+  </head>
+  <body>
+    <div id="viewDiv"></div>
+    <div id="infoDiv" class="esri-widget">
+      <h4 id="titleText" class="esri-widget__heading esri-editor__title">
+        Land cover types - 2016
+      </h4>
+      <br />
+      <div class="esri-widget">
+        <calcite-label
+          ><b>Select land type:</b>
+          <calcite-radio-button-group
+            name="Select land type"
+            layout="vertical"
+            id="landCoverTypeSelect"
+            scale="s"
+          >
+            <calcite-label layout="inline"
+              ><calcite-radio-button
+                id="forests"
+                value="forests"
+                checked
+              ></calcite-radio-button
+              >Forested Areas</calcite-label
+            >
+            <calcite-label layout="inline"
+              ><calcite-radio-button value="developed"></calcite-radio-button
+              >Developed Areas</calcite-label
+            >
+            <calcite-label layout="inline"
+              ><calcite-radio-button value="crops"></calcite-radio-button
+              >Cultivated Areas</calcite-label
+            >
+            <calcite-label layout="inline"
+              ><calcite-radio-button value="hay"></calcite-radio-button
+              >Hay/Pasture Areas</calcite-label
+            >
+            <calcite-label layout="inline"
+              ><calcite-radio-button value="wetlands"></calcite-radio-button
+              >Wetlands</calcite-label
+            >
+          </calcite-radio-button-group>
+        </calcite-label>
+      </div>
+      <div id="projectionDiv" class="esri-widget">
+        <p><b>Change view's projection:</b></p>
+        <select id="projectWKID" class="esri-input esri-select">
+          <option value="102003" selected>Albers Equal Area</option>
+          <option value="102100">Web Mercator</option>
+          <option value="4326">WGS 84</option>
+          <option value="32615">UTM Zone 15 N</option>
+          <option value="32616">UTM Zone 16 N</option>
+        </select>
+      </div>
+    </div>
+  </body>
+</html>

@@ -14,35 +14,61 @@
    limitations under the License.
 """
 
-#TCC tile moving window visualization
+# Script to take raw TreeMap RDS and create all GEE assets for both raw and individual images for each attribute
 ####################################################################################################
-import os,sys,random,numpy,json
+import os,sys,random,numpy,json,subprocess,datetime
 sys.path.append(os.getcwd())
 import pandas as pd
 from simpledbf import Dbf5
 #Module imports
 import geeViz.getImagesLib as getImagesLib
 import geeViz.taskManagerLib as tml
+import geeViz.assetManagerLib as aml
 ee = getImagesLib.ee
 Map = getImagesLib.Map
 Map.clearMap()
 ####################################################################################################
+# Specify local RDS TreeMap tif and attribute table
 treeMapTif = r"X:\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif"
 treeMapDbf = r"X:\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif.vat.dbf"
-treeMapJson = os.path.splitext(treeMapDbf)[0]+'.json'
-tmCN  = ee.Image('projects/lcms-292214/assets/CONUS-Ancillary-Data/TreeMap2016')
-treeMapAttributeCollection = 'projects/lcms-292214/assets/CONUS-Ancillary-Data/treeMap2016Attributes'
-sa = tmCN.geometry()
-proj = tmCN.projection().getInfo()
-crs = proj['wkt']
-transform = proj['transform']
-# tmCN = tmCN.updateMask(tmCN.neq(2147483647));
-# Map.addLayer(tmCN.randomVisualizer(),{},'TreeMap Raw CN',False);
-####################################################################################################
 
+# Specify json version of dbf that will be created for a less proprietary lookup table format
+treeMapJson = os.path.splitext(treeMapDbf)[0]+'.json'
+
+# Specify no data value in RDS dataset
+rawTreeMapNoDataValue = 2147483647
+
+# Specify year of TreeMap product
+treeMapYear = 2016
+
+# GCS bucket raw RDS dataset will first be uploaded to (must already exist and have write permissions)
+gcs_bucket = 'gs://treemap-test'
+assetFolder = 'projects/lcms-292214/assets/CONUS-Ancillary-Data'
+rawTreeMapAssetPath = assetFolder+'/'+'TreeMap_RDS_2016'
+
+# Collection all individual attribute images will be exported to
+# Will automatically be created if it does not exist
+treeMapAttributeCollection = 'projects/lcms-292214/assets/CONUS-Ancillary-Data/treeMap2016Attributes2'
+
+# Column names to create individual attribute images of
+cols = ['FORTYPCD', 'FLDTYPCD',\
+        'STDSZCD', 'FLDSZCD', 'BALIVE', 'CANOPYPCT', 'STANDHT',\
+       'ALSTK', 'GSSTK', 'QMD_RMRS', 'SDIPCT_RMR', 'TPA_LIVE', 'TPA_DEAD',\
+       'VOLCFNET_L', 'VOLCFNET_D', 'VOLBFNET_L', 'DRYBIO_L', 'DRYBIO_D',\
+       'CARBON_L', 'CARBON_D', 'CARBON_DWN']
+
+####################################################################################################
+# Create image collection for attributes if it doesn't already exist
+aml.create_image_collection(treeMapAttributeCollection)
+
+# First convert the dbf lookup table to json
 dbf = Dbf5(treeMapDbf)
 df = dbf.to_dataframe()#.head()
 allCNs = list(df.Value)
+#####################################################
+#####################################################
+# Functions
+# Function to convert a dbf to json
 def dfToJSON(df,outJsonFilename):
    columns = df.columns
    rows = df.transpose().to_numpy()
@@ -53,40 +79,82 @@ def dfToJSON(df,outJsonFilename):
    o = open(outJsonFilename,'w')
    o.write(json.dumps(outJson))
    o.close()
-
-
+#####################################################
+# Function to find the bit depth of integer attributes
+# This only handles byte, uint16, and int16 at the moment
+def getBitDepth(min,max):
+   bitRanges = {'byte':[0,255],'uInt16':[0,(2**16)-1],'Int16':[(2**16)/2*-1,(2**16)/2]}
+   for k in bitRanges.keys():
+      values = bitRanges[k]
+      if min >= values[0] and max <= values[1]:
+         return k
+##################################################### 
+# Find the number of uinque values for a given column    
 def getNUnique(columnName):
    codeLookup = dict(zip(df.Value,df[columnName]))
    n = len(set(codeLookup.values()))
    print(columnName,n)
    return [columnName,n]
-# counts = [getNUnique(f) for f in df.columns]
+##################################################### 
+# Function to get a random color
 def getRandomColor():
    return ''.join([random.choice('0123456789ABCDEF') for j in range(6)])
-
-
-def castType(img,tp):
+##################################################### 
+# Function to cast a gee image object to a data type based on the type of the field values and the range of values
+# All float fields remain float. Int fields try to find the min bit depth
+# Also defaults the pyramiding to mode for int and mean for float - this could be changed depending on intended uses
+def castType(img,tp,min,max):
    if str(tp).find('int')>-1:
-      print(tp,'Casting to int')
-      return 'mode',img.int16()
+      bitDepth = getBitDepth(min,max)
+      print(tp,'Casting to int',bitDepth)
+      if bitDepth == 'uInt16':
+         print('setting to uint16')
+         img = img.uint16()
+      elif bitDepth == 'Int16':
+         print('setting to int16')
+         img = img.int16()
+      elif bitDepth == 'byte':
+         print('setting to byte')
+         img = img.byte()
+      return 'mode',img
    else:
       print(tp,'Casting to float')
       return 'mean',img.float()
-def simpleGetAttributeImage(columnNameNumbers):
+#####################################################
+# Function to get individual attribute image
+def simpleGetAttributeImage(columnNameNumbers,sa,crs,transform):
+   # Get the values for the given column
    imgValues = list(df[columnNameNumbers])
+
+   # Try to find the type of numbers for the attribute
    tp = type(numpy.min(imgValues))
-   # print(len(imgValues))
+   
+   # Get some stats for the values to help better find what data type is best
    imgValuesForStats = numpy.array(imgValues)
+
+   # Remobve -99 from values (notably for RMRS attributes)
    imgValuesForStats = list(imgValuesForStats[imgValuesForStats!=-99.])
    pctls = numpy.quantile(imgValuesForStats,[0,0.05,0.95,1])
-   print(columnNameNumbers,pctls,tp)
+   print(columnNameNumbers,pctls,tp,len(list(set(imgValuesForStats))))
+
+   # Remap from raw values to values for given attribute
    tmAttribute = tmCN.remap(allCNs,list(imgValues))
+
+   # Mask out -99 values
    tmAttribute = tmAttribute.updateMask(tmAttribute.neq(-99))
-   pyramidingMethod,tmAttribute = castType(tmAttribute,tp)
+
+   # Cast the image type and find the pyramiding method
+   pyramidingMethod,tmAttribute = castType(tmAttribute,tp,pctls[0],pctls[-1])
+
+   # Set up image for export
    tmAttribute = tmAttribute.rename([columnNameNumbers]).set({'attribute':columnNameNumbers,'version':2016,'system:time_start':ee.Date.fromYMD(2016,6,1).millis()})
+
+   # Set up name and export image
    nm = 'TreeMap2016-{}'.format(columnNameNumbers)
    getImagesLib.exportToAssetWrapper(tmAttribute,nm,treeMapAttributeCollection+'/'+nm,pyramidingPolicyObject = pyramidingMethod,roi= sa,scale= None,crs = crs,transform = transform)
-
+#####################################################
+# Original image service setup method
+# This has now been re-written in javaScript in the TreeMap Viewer
 def getAttributeImage(columnNameNumbers,columnNameNames=None,randomColors=True,colors=None,min=None,max=None,pctlStretch=None):
    imgValues = list(df[columnNameNumbers])
    nameColumnProvided = columnNameNames != None
@@ -145,15 +213,51 @@ def getAttributeImage(columnNameNumbers,columnNameNames=None,randomColors=True,c
    # namesLookup = 
    Map.addLayer(tmAttribute,viz,'Tree Map {}'.format(columnNameNames),False)
    # print(uniqueValues)
+####################################################################################################
+# Function calls
 
-cols = ['FORTYPCD', 'FLDTYPCD',\
-        'STDSZCD', 'FLDSZCD', 'BALIVE', 'CANOPYPCT', 'STANDHT',\
-       'ALSTK', 'GSSTK', 'QMD_RMRS', 'SDIPCT_RMR', 'TPA_LIVE', 'TPA_DEAD',\
-       'VOLCFNET_L', 'VOLCFNET_D', 'VOLBFNET_L', 'DRYBIO_L', 'DRYBIO_D',\
-       'CARBON_L', 'CARBON_D', 'CARBON_DWN']
-# for col in cols:
-   # simpleGetAttributeImage(col)
+# Create json version of dbf
+# This is used inside the TreeMap viewer
+# dfToJSON(df,treeMapJson)
+
+# First upload RDS to EE asset
+aml.uploadToGEEImageAsset(treeMapTif,gcs_bucket,rawTreeMapAssetPath,overwrite = False,bandNames = ['Value'],properties = {'year':treeMapYear,'version':treeMapYear,'system:time_start':ee.Date.fromYMD(treeMapYear,6,1)},pyramidingPolicy='MODE',noDataValues=rawTreeMapNoDataValue)
 tml.trackTasks2()
+
+# Get some info about RDS dataset
+tmCN  = ee.Image(rawTreeMapAssetPath)
+sa = tmCN.geometry()
+proj = tmCN.projection().getInfo()
+crs = proj['wkt']
+transform = proj['transform']
+
+# View RDS dataset
+Map.addLayer(tmCN.randomVisualizer(),{},'TreeMap Raw CN',False)
+Map.view()
+
+# Export each attribute
+for col in cols:
+   simpleGetAttributeImage(col,sa,crs,transform)
+tml.trackTasks2()
+
+
+
+
+####################################################################################################
+# Scratch space
+# tif = r"C:\Users\ihousman\Downloads\*Wind_Max_04_Aug_2022_15_41*.tif"
+# tif = r'C:\Users\ihousman\Downloads\NBR_LANDTRENDR_Loss_Stack_first_largest_change_02_Apr_2023_10_45_43.tif'
+# assetPath = assetFolder+'/'+'LT_Test2'
+
+# getImagesLib.uploadToGEE(tif,gcs_bucket,assetPath,overwrite = True,bandNames = ['wind_max'],properties = {'test':1,'system:time_start':ee.Date.fromYMD(2018,7,15),'system:time_end':aml.getDate(2018,9,15)},pyramidingPolicy=['mean'],noDataValues=[-32768])
+
+# aml.uploadToGEEImageAsset(tif,gcs_bucket,assetPath,overwrite = True,bandNames = ['loss_yr','loss_dur','loss_mag','loss_slope'],properties = {'test':1,'system:time_start':ee.Date.fromYMD(2018,7,15),'system:time_end':aml.getDate(2018,9,15)},pyramidingPolicy=['MODE','MODE','MEAN','MEAN'],noDataValues=-32768)
+# tml.trackTasks2()
+# ee.data.setAssetProperties(assetPath, {'start_time':ee.Date.fromYMD(2000,8,15).millis().getInfo()})
+#ee.Date.fromYMD(2000,8,15).format('YYYY-MM-dd').getInfo()+'Z'
+
+
+# setDate(assetPath,3111,1,13)
 # getAttributeImage('FORTYPCD','ForTypName') 
 # getAttributeImage('FLDTYPCD','FldTypName') 
 # getAttributeImage('CANOPYPCT',colors=['808','DDD','080'],pctlStretch=[0.05,0.95])#min=0,max=80)
@@ -162,7 +266,7 @@ tml.trackTasks2()
 # getAttributeImage('DRYBIO_L',colors=['D0D','DF0'],pctlStretch=[0.05,0.95])
 # getAttributeImage('DRYBIO_D',colors=['D0D','DD0'],pctlStretch=[0.05,0.95])
 # getAttributeImage('STANDHT',colors=['808','DDD','080'],pctlStretch=[0.05,0.95])
-# dfToJSON(df,treeMapJson)
+
 ####################################
 Map.turnOnInspector()
 # Map.view()
