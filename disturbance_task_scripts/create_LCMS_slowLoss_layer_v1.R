@@ -11,21 +11,15 @@ ptm <- proc.time()
 # USER INPUTS
 ############################
 
-# set desired end crs 
-crs <- crs("epsg:4269") # tree map output data is in 4269
-
-# give zone name for export
+# select single landfire zone 
 zone_name <- "LF_z16_UT_High_Plateaus" 
 
 #select year range (LCMS available for 1985-2021)
-start_year <- 2016
+start_year <- 2010
 end_year <- 2021
 
-#####################
-# SETUP
-######################
-
-#set temp dir 
+# set tmp directory
+tmp_dir <- "E:/tmp"
 
 # set home dir
 home_dir <- ("//166.2.126.25/TreeMap/")
@@ -33,9 +27,29 @@ home_dir <- ("//166.2.126.25/TreeMap/")
 # get path to change rasters - LCMS
 lcms_dir <- ("//166.2.126.227/lcms/Projects/11_LCMS_NationalProduct/06_DataDelivery/Conterminous_United_States/v2021-7/Change/Annual/")
 
+# path to 2016 treemap data
+treemap_path <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif"
+
+#####################
+# SETUP
+######################
+
+# set desired end crs 
+crs <- crs("epsg:5070") # tree map output data is in  NAD83 Albers
+
+# set temp directory - helps save space with R terra
+write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
+#empty temp dir
+do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
+#remove unused memory
+gc()
+
+#####################
+# LOAD DATA
+######################
+
 #load any lcms change raster - to get spatial specs; doesn't load values into memory yet
 lcms <- terra::rast(paste0(lcms_dir, "LCMS_CONUS_v2021-7_Change_2020.tif"))
-
 
 #####################
 ###### PREP AOI
@@ -50,11 +64,11 @@ LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/r
 # select single LF zone
 zone <- subset(LF_zones, LF_zones$ZONE_NUM == 16) #z16 = Utah High Plateaus
 
-# # load aoi subset - utah uintas only 
-# aoi <- vect(paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"))
-# 
-# # reassign 
-# zone <- aoi
+# load aoi subset - utah uintas only
+aoi <- vect(paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"))
+
+# reassign
+zone <- aoi
 
 # project
 zone <- project(zone, crs)
@@ -65,7 +79,7 @@ zone <- project(zone, crs)
 #####################
 
 # load tree mask - pre-existing tree map data
-tree_mask <- rast("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
+tree_mask <- terra::rast(treemap_path)
 
 # get crop zone into same projection
 zone <- project(zone, crs(tree_mask)) 
@@ -73,18 +87,19 @@ zone <- project(zone, crs(tree_mask))
 #crop tree mask
 tree_mask <- crop(tree_mask, zone)
 
-# get tree mask into desired projection
-tree_mask <- project(tree_mask, crs)
-
 #reclassify tree map input to binary tree mask
 #reclassify so that areas with a CN go to 1
 m <- c(0, 140393888010690, 1)
 m <- matrix(m, ncol = 3, byrow= TRUE)
 tree_mask <- terra::classify(tree_mask, m)
 
+# get tree mask into desired projection
+tree_mask <- project(tree_mask, crs, method = "near")
+
 #inspect
-#summary(tree_mask)
-#freq(tree_mask)
+plot(tree_mask)
+summary(tree_mask)
+freq(tree_mask)
 
 
 #####################
@@ -170,15 +185,18 @@ for(i in 1:length(year_list)){
 
  }
 
-#inspect
-freq(r)
+
 
 #update 0s to NA
 r <- subst(r, 0, NA)
 
+#inspect
+freq(r)
+plot(r)
+
 # export
 #exportname <- paste0()
-writeRaster(r, paste0(home_dir, "04_Outputs/01_LCMS_Slow_Loss/", start_year, "_", end_year, "_", zone_name ,"_LCMS_SlowLoss",   ".tif"),
+writeRaster(r, paste0(home_dir, "03_Outputs/01_LCMS_Slow_Loss/01_Rasters/", start_year, "_", end_year, "_", zone_name ,"_LCMS_SlowLoss",   ".tif"),
             overwrite = TRUE)
 
 # Stop the clock
