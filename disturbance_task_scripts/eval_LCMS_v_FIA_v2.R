@@ -42,6 +42,7 @@ fia_path <- paste0(home_dir, "01_Data/04_FIA/SlowFast_StatVars_ActualLL.csv")
 #select file to evaluate - can adjust later / inspect vs diff years
 slowloss_filename <- paste0(start_year, "_", end_year, "_UT_Uintas_subset_LCMS_SlowLoss.tif")
 
+#get path to all LCMS data for desired time period
 eval_filename <- paste0(start_year, "_", end_year, "_UT_Uintas_subset_LCMS_SlowFastStableEval.tif")
 
 # aoi path - if different from landfire zone
@@ -69,6 +70,9 @@ library(magrittr)
 library(terra)
 library(caret)
 
+#create year list
+year_list <- seq(start_year, end_year, 1)
+
 #####################
 # LOAD DATA
 ######################
@@ -82,8 +86,8 @@ crs <- crs(lcms)
 # load slow loss layer
 slowloss <- terra::rast(paste0(slowloss_dir, "01_SlowLoss/", slowloss_filename))
 
-# load slow loss eval layer
-slowloss_eval <- terra::rast(paste0(slowloss_dir, "02_Eval/", eval_filename))
+# load eval layers - slow, fast, and stable for start year - end year
+lcms_eval <- terra::rast(paste0(slowloss_dir, "02_Eval/", eval_filename))
 
 # load FIA data
 fia <- read.csv(fia_path)
@@ -117,10 +121,11 @@ if (!is.na(aoi_path)) {
 # project
 zone <- project(zone, crs)
 
-zone
-plot(zone)
+# #inspect
+# zone
+# plot(zone)
 ##########################
-# EDA
+# EDA - FIA data
 ##########################
 
 str(fia)
@@ -136,6 +141,7 @@ plot(fia$LON_ACTUAL_NAD83, fia$LAT_ACTUAL_NAD83)
 
 fia %>%
   filter(!is.na(ShannonClass)) %>%
+  filter(!is.na(ShannonH)) %>%
   ggplot()+
   geom_boxplot(aes(x = ShannonClass, y = ShannonH))
 
@@ -165,6 +171,46 @@ fia %>%
   geom_point(aes(x = MortPct, y = ShannonH, color = ShannonClass), alpha = 0.5)
 
 
+######################################
+################ PREP FIA
+#####################################
+
+# filter to appropriate year range - filters on measurement year, not mortality year
+# fia %<>%
+#   filter(MEASYEAR >= start_year & MEASYEAR <= end_year )
+
+# filter spatially - crop 
+
+#convert fia data to spatvector
+fia_sp<- fia %>%
+  select(CN, LAT_ACTUAL_NAD83, LON_ACTUAL_NAD83) %>%
+  rename(y = LAT_ACTUAL_NAD83, 
+         x = LON_ACTUAL_NAD83) %>%
+  terra::vect(geom = c("x", "y"), crs = "epsg:4629")
+
+#inspect
+#plot(fia_sp)
+
+#project
+fia_sp <- terra::project(fia_sp, crs)
+
+#inspect
+#plot(fia_sp)
+
+# crop to AOI
+fia_sp_aoi <- terra::crop(fia_sp, zone)
+
+#inspect
+plot(fia_sp_aoi)
+
+# convert to data frame
+# and join with full fia data set
+fia_aoi <- data.frame(fia_sp_aoi) %>%
+  left_join(fia, by = "CN")
+
+#inspect
+str(fia_aoi)
+
 ##########################
 # PROCESS
 ##########################
@@ -176,6 +222,7 @@ fia %>%
 slowloss
 
 # convert slow loss layer to binary 0/1
+# where 1 indicates slow loss over any year from start year to end year
 m <- c(0, 2025, 1)
 m <- matrix(m, ncol = 3, byrow= TRUE)
 slowloss_bin <- terra::classify(slowloss, m)
@@ -190,22 +237,26 @@ slowloss_bin_focal <- terra::focal(slowloss_bin,
                                    fun = "modal") ### function here 
 #inspect
 slowloss_bin_focal
-plot(slowloss_bin_focal, col = "red")
+plot(slowloss_bin_focal, col = c("white", "red"))
 
 ################## PREP LCMS EVAL
 #################################
 
+# Take 1:
+# make binary 3x3 for slow, fast, stable each over time period
+###################################################################
+
 #inspect
-slowloss_eval
+lcms_eval
 
 #create year range
 year_list <- seq(start_year, end_year, 1)
 
-# make 3x3 for slow, fast, stable each over time period
-nlyr(slowloss_eval)
+
+nlyr(lcms_eval)
 
 # make empty raster for each
-slow_r <- terra::rast(crs = crs, ext(slowloss_eval), res = res(slowloss_eval))
+slow_r <- terra::rast(crs = crs, ext(lcms_eval), res = res(lcms_eval))
 slow_r <- setValues(slow_r, 0)
 fast_r <- slow_r
 stable_r <- slow_r
@@ -213,7 +264,7 @@ stable_r <- slow_r
 #set values to reclassify 
 # classes are ordered from 1-n in order: Stable, Slow Loss, Fast Loss, Gain, NP Area Mask
 
-for (i in 1:nlyr(slowloss_eval)){
+for (i in 1:nlyr(lcms_eval)){
   
   # for testing
   #i = 2
@@ -225,7 +276,7 @@ for (i in 1:nlyr(slowloss_eval)){
   print(paste0("working on ", year))
   
   #isolate layer
-  lyr <- slowloss_eval[[i]]
+  lyr <- lcms_eval[[i]]
   
   # get stable values
   st <- terra::classify(lyr, cbind(c(2,3,4,5,NA), NA))
@@ -241,7 +292,7 @@ for (i in 1:nlyr(slowloss_eval)){
   sl <- subst(sl, NA, 0)
   #update values of interest to 1
   sl <- subst(sl,2, 1)
-  #append
+  #append by adding
   slow_r <- slow_r + sl
   slow_r <- subst(slow_r, 1, year)
   
@@ -293,42 +344,242 @@ fast_r_bin_focal <- terra::focal(
 
 
 
-################ PREP FIA
-#####################################
+# mask with tree mask - same as slowloss_bin_focal
+stable_r_bin_focal <- terra::mask(stable_r_bin_focal, slowloss_bin_focal)
+fast_r_bin_focal <- terra::mask(fast_r_bin_focal, slowloss_bin_focal)
 
-# filter to appropriate year range 
-fia %<>%
-  filter(MEASYEAR >= start_year & MEASYEAR <= end_year )
 
-# filter spatially - crop 
+# Take 2:
+# Extract for each plot, in each year, in seq min-max years
+###########################################
 
-#convert fia data to spatvector
-fia_sp<- fia %>%
-  select(CN, LAT_ACTUAL_NAD83, LON_ACTUAL_NAD83) %>%
-  rename(y = LAT_ACTUAL_NAD83, 
-         x = LON_ACTUAL_NAD83) %>%
-  terra::vect(geom = c("x", "y"), crs = "epsg:4629")
+# Prep LCMS layers
+# load as a stack for year list
+############################################
+
+
+#create empty raster
+r <- rast(crs = crs, ext(slowloss), res = res(slowloss))
+r <- setValues(r, 0)
+r <- mask(r, slowloss)
+
+lcms_yrs <- r
+
+for(i in 1:length(year_list)){
+  
+  #for testing
+  #i = 1
+  
+  # iterate through change rasters by year
+  year <- year_list[i]
+  
+  print(paste0("working on ", year))
+  
+  #load annual lcms change raster
+  lcms_yr <- terra::rast(paste0(lcms_dir, "LCMS_CONUS_v2021-7_Change_", year, ".tif"))
+  
+  #crop lcms change raster
+  lcms_yr <- crop(lcms, zone)
+  
+  # stack
+  lcms_yrs <- c(lcms_yrs, lcms_yr)
+  
+  #rename layer
+  names(lcms_yrs)[i+1] <- year
+  
+  
+  
+}
+
+lcms_yrs
+
+# remove empty first raster, retain all others
+lcms_yrs <- lcms_yrs[[1:length(year_list)+1]]
+
+#remove single year raster to save space
+rm(lcms_yr)
 
 #inspect
-plot(fia_sp)
+lcms_yrs
+names(lcms_yrs)
 
-#project
-fia_sp <- terra::project(fia_sp, crs)
+# apply 3x3 moving window - focal mode
+lcms_yrs_focal <- terra::focal(
+  lcms_yrs,
+  w = 3,
+  fun = "modal")
 
-#inspect
-plot(fia_sp)
+#reassign 
+lcms_yrs <- lcms_yrs_focal
 
-# crop to AOI
-fia_sp_aoi <- terra::crop(fia_sp, zone)
+#remove unused memory
+rm(lcms_yrs_focal)
+gc()
 
-#inspect
-plot(fia_sp_aoi)
+##############################################
+## Extract
+#########################################
 
-#inspect
-plot(fia_sp_aoi)
+#for each plot, each year in seq min-max years:
+# is there fast loss? buffer- same year or year after, 
+# is there slow loss? buffer- min and max fia plot years  
 
 
-################ EXTRACT
+# whatever you end up doing, give the example of a single plot 
+# getting it out of raster sooner, dealing with tables to crosswalk 
+
+
+# smash into a max reducer if ANY OF These have change / meet criteria
+# reducer - any time there's agreement
+
+#set up basic cols
+fia_aoi$fastloss <- NA
+fia_aoi$slowloss <- NA
+fia_aoi$stable <- NA
+
+# set up annual cols
+for (j in 1:length(year_list)) {
+  
+  year <- year_list[j]
+
+  #rename column to year
+  fia_aoi[, paste("fastloss", year, sep = "_")] <- fia_aoi$fastloss
+  
+  #rename column to year
+  fia_aoi[, paste("slowloss", year, sep = "_")] <- fia_aoi$slowloss
+  
+  #rename column to year
+  fia_aoi[, paste("stable", year, sep = "_")] <- fia_aoi$stable
+}
+
+#########
+# get fast loss, slow loss, and stable for each point for each year
+
+#for (i in 1:nrow(fia_aoi)){
+for (i in 1:25){
+  
+  # for testing
+  #i = 20
+  
+  #status update
+  print(paste0("working on plot ", i, " of ", nrow(fia_aoi)))
+  
+  #get point
+  pt <- fia_sp_aoi[i]
+  
+  # get minimum mortality year
+  minMortYear <- as.numeric(fia_aoi$MinOfMORTYR[i])
+  
+  # get maximum mortality year
+  maxMortYear <- as.numeric(fia_aoi$MaxOfMORTYR[i])
+
+  # get seq mort years that overlap with our years of interest
+  if (is.na(minMortYear)) {
+    mortYear_list <- NA
+  } else {
+    mortYear_list <- seq(minMortYear, maxMortYear, 1)
+    mortYear_list <- intersect(mortYear_list, year_list)
+  }
+  
+  
+  for (j in 1:length(year_list)){
+    
+    # for testing
+    #j = 1
+    
+    # get year
+    year = year_list[j]
+    
+    ########
+    ###### Is there fast loss? 
+    #Logic: Return 1 if there is fast loss in fast loss year = year or fast loss year = year + 1
+    ########
+    
+    # classes are ordered from 1-n in order: Stable, Slow Loss, Fast Loss, Gain, NP Area Mask
+    # 1 Stable, 2 Slow loss, 3 Fast loss, 4 Gain, 5 NP Area mask,
+    
+    FL1 <- as.numeric(ifelse(
+      terra::extract(lcms_yrs[[j]], pt)[2] == 3, 1, 0))
+    if (year != end_year){
+      FL2 <- as.numeric(ifelse(
+        terra::extract(lcms_yrs[[j+1]], pt)[2]==3, 1, 0))
+    } else {
+      FL2 <- 0
+    }
+    
+    FL_final <- max(FL1, FL2)
+    
+    fia_aoi[, paste("fastloss", year, sep = "_")][i] <- FL_final
+    
+    #####################
+    ##### Is there slow loss?
+    # Logic: slow loss in a given year if:
+    #    a) given year is in min-max of mort years that overlap with years of layer
+    # +  b) there is slow loss in any year from in mort year - max mort year
+    ###################
+
+    if (!is.na(minMortYear) & year >= minMortYear & year <= maxMortYear){
+
+      SL2 <- 0
+
+      for (k in length(mortYear_list)) {
+        
+        # for testing
+        #k = 5
+        
+        #
+        y <- mortYear_list[k]
+
+        SL1 <- as.numeric(ifelse(
+          terra::extract(lcms_yrs[[j]], pt)[2] == 2, 1, 0))
+
+        SL2 <- max(SL1, SL2)
+        }
+      } else {
+        SL1 <- 0
+        SL2 <- 0
+    }
+
+    SL_final <- max(SL1, SL2)
+
+    #append to data frame
+    #fia_aoi$slowloss[i] <- SL_final
+
+    fia_aoi[, paste("slowloss", year, sep = "_")][i] <- SL_final
+
+    ###### Is it stable? 
+    # Logic: it is stable if:
+    #   a) there is stable in that year
+    # + b) we voted no for slow loss for that year
+    
+    ST1 <- as.numeric(ifelse(
+      terra::extract(lcms_yrs[[k]], pt)[2] == 1, 1, 0)) 
+    ST2 <- ifelse(SL_final == 1, 0, 1)
+    
+    ST_final <- min(ST1, ST2)
+    
+    #append to data frame
+    fia_aoi[, paste("stable", year, sep = "_")][i] <- ST_final
+    
+    #save memory
+    gc()
+    
+  }
+}
+  
+
+#bin final class
+#### Logic 
+  
+  
+
+
+
+
+
+####################################
+################ EXTRACT to FIA PTS
+######################################
 
 # extract 3x3 moving window slow loss data to fia points
 fia_sp_aoi$slowloss <- terra::extract(slowloss_bin_focal, fia_sp_aoi )[2]
@@ -336,8 +587,13 @@ fia_sp_aoi$slowloss <- terra::extract(slowloss_bin_focal, fia_sp_aoi )[2]
 fia_sp_aoi$stable <- terra::extract(stable_r_bin_focal, fia_sp_aoi)[2]
 fia_sp_aoi$fastloss <- terra::extract(stable_r_bin_focal, fia_sp_aoi)[2]
 
+fia_sp_aoi$slowloss_yr <- terra::extract(slowloss, fia_sp_aoi)[2]
+fia_sp_aoi$stable_yr <- terra::extract(stable_r, fia_sp_aoi)[2]
+fia_sp_aoi$fastloss_yr <- terra::extract(fast_r, fia_sp_aoi)[2]
+
 #inspect
 fia_sp_aoi
+head(data.frame(fia_sp_aoi))
 
 #join with full FIA data set
 fia_extract <- data.frame(fia_sp_aoi) %>%
@@ -345,10 +601,22 @@ fia_extract <- data.frame(fia_sp_aoi) %>%
 str(fia_extract)
 
 
+
 ##### inspect to see overlap between slow / stable/focal from LCMS
 fia_extract %>%
-  ggplot(aes(x = slowloss, y = fastloss, color = stable))+
-  geom_point()
+  ggplot()+
+  geom_density(aes(slowloss, color = factor(fastloss_yr)), adjust = 1, linewidth = 1) + 
+  theme_bw() + facet_wrap(~factor(stable))
+
+fia_extract %>%
+  ggplot()+
+  geom_density(aes(slowloss, color = factor(stable_yr)), adjust = 1, linewidth = 1) + 
+  theme_bw() + facet_wrap(~factor(fastloss))
+
+addmargins(table(fia_extract$slowloss, fia_extract$fastloss))
+
+addmargins(table(fia_extract$slowloss_yr, fia_extract$fastloss))
+
 
 # convert to observed / predicted format
 # slowloss = 1 -> slowloss
