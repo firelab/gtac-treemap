@@ -220,28 +220,28 @@ def getAttributeImage(columnNameNumbers,columnNameNames=None,randomColors=True,c
 # This is used inside the TreeMap viewer
 # dfToJSON(df,treeMapJson)
 
-# First upload RDS to EE asset
-aml.uploadToGEEImageAsset(treeMapTif,gcs_bucket,rawTreeMapAssetPath,overwrite = False,bandNames = ['Value'],properties = {'year':treeMapYear,'version':treeMapYear,'system:time_start':ee.Date.fromYMD(treeMapYear,6,1)},pyramidingPolicy='MODE',noDataValues=rawTreeMapNoDataValue)
-tml.trackTasks2()
+# # First upload RDS to EE asset
+# aml.uploadToGEEImageAsset(treeMapTif,gcs_bucket,rawTreeMapAssetPath,overwrite = False,bandNames = ['Value'],properties = {'year':treeMapYear,'version':treeMapYear,'system:time_start':ee.Date.fromYMD(treeMapYear,6,1)},pyramidingPolicy='MODE',noDataValues=rawTreeMapNoDataValue)
+# tml.trackTasks2()
 
-# Get some info about RDS dataset
-tmCN  = ee.Image(rawTreeMapAssetPath)
-sa = tmCN.geometry()
-proj = tmCN.projection().getInfo()
-crs = proj['wkt']
-transform = proj['transform']
+# # Get some info about RDS dataset
+# tmCN  = ee.Image(rawTreeMapAssetPath)
+# sa = tmCN.geometry()
+# proj = tmCN.projection().getInfo()
+# crs = proj['wkt']
+# transform = proj['transform']
 
-# View RDS dataset
-Map.addLayer(tmCN.randomVisualizer(),{},'TreeMap Raw CN',False)
-Map.view()
+# # View RDS dataset
+# Map.addLayer(tmCN.randomVisualizer(),{},'TreeMap Raw CN',False)
+# Map.view()
 
-# Export each attribute
-for col in cols:
-   simpleGetAttributeImage(col,sa,crs,transform)
-tml.trackTasks2()
+# # Export each attribute
+# for col in cols:
+#    simpleGetAttributeImage(col,sa,crs,transform)
+# tml.trackTasks2()
 
 
-
+aml.batchDelete('projects/lcms-292214/assets/CCDC_Investigation/LT_Outputs', type = 'imageCollection')
 
 ####################################################################################################
 # Scratch space
