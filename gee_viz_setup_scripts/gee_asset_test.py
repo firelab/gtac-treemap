@@ -43,12 +43,12 @@ treeMapYear = 2016
 
 # GCS bucket raw RDS dataset will first be uploaded to (must already exist and have write permissions)
 gcs_bucket = 'gs://treemap-test'
-assetFolder = 'projects/lcms-292214/assets/CONUS-Ancillary-Data'
+assetFolder = 'projects/treemap-386222/assets/Final_Outputs/TreeMap_2016'
 rawTreeMapAssetPath = assetFolder+'/'+'TreeMap_RDS_2016'
 
 # Collection all individual attribute images will be exported to
 # Will automatically be created if it does not exist
-treeMapAttributeCollection = 'projects/lcms-292214/assets/CONUS-Ancillary-Data/treeMap2016Attributes2'
+treeMapAttributeCollection = assetFolder
 
 # Column names to create individual attribute images of
 cols = ['FORTYPCD', 'FLDTYPCD',\
@@ -147,10 +147,10 @@ def simpleGetAttributeImage(columnNameNumbers,sa,crs,transform):
    pyramidingMethod,tmAttribute = castType(tmAttribute,tp,pctls[0],pctls[-1])
 
    # Set up image for export
-   tmAttribute = tmAttribute.rename([columnNameNumbers]).set({'attribute':columnNameNumbers,'version':2016,'system:time_start':ee.Date.fromYMD(2016,6,1).millis()})
+   tmAttribute = tmAttribute.rename([columnNameNumbers]).set({'attribute':columnNameNumbers,'version':treeMapYear,'system:time_start':ee.Date.fromYMD(treeMapYear,6,1).millis()})
 
    # Set up name and export image
-   nm = 'TreeMap2016-{}'.format(columnNameNumbers)
+   nm = 'TreeMap{}-{}'.format(treeMapYear,columnNameNumbers)
    getImagesLib.exportToAssetWrapper(tmAttribute,nm,treeMapAttributeCollection+'/'+nm,pyramidingPolicyObject = pyramidingMethod,roi= sa,scale= None,crs = crs,transform = transform)
 #####################################################
 # Original image service setup method
@@ -221,52 +221,26 @@ def getAttributeImage(columnNameNumbers,columnNameNames=None,randomColors=True,c
 # dfToJSON(df,treeMapJson)
 
 # # First upload RDS to EE asset
-# aml.uploadToGEEImageAsset(treeMapTif,gcs_bucket,rawTreeMapAssetPath,overwrite = False,bandNames = ['Value'],properties = {'year':treeMapYear,'version':treeMapYear,'system:time_start':ee.Date.fromYMD(treeMapYear,6,1)},pyramidingPolicy='MODE',noDataValues=rawTreeMapNoDataValue)
-# tml.trackTasks2()
+aml.uploadToGEEImageAsset(treeMapTif,gcs_bucket,rawTreeMapAssetPath,overwrite = False,bandNames = ['Value'],properties = {'attribute':'Value','year':treeMapYear,'version':treeMapYear,'system:time_start':ee.Date.fromYMD(treeMapYear,6,1)},pyramidingPolicy='MODE',noDataValues=rawTreeMapNoDataValue)
+tml.trackTasks2()
 
-# # Get some info about RDS dataset
-# tmCN  = ee.Image(rawTreeMapAssetPath)
-# sa = tmCN.geometry()
-# proj = tmCN.projection().getInfo()
-# crs = proj['wkt']
-# transform = proj['transform']
+# Get some info about RDS dataset
+tmCN  = ee.Image(rawTreeMapAssetPath)
+sa = tmCN.geometry()
+proj = tmCN.projection().getInfo()
+crs = proj['wkt']
+transform = proj['transform']
 
-# # View RDS dataset
-# Map.addLayer(tmCN.randomVisualizer(),{},'TreeMap Raw CN',False)
-# Map.view()
+# View RDS dataset
+Map.addLayer(tmCN.randomVisualizer(),{},'TreeMap Raw CN',False)
+Map.view()
 
-# # Export each attribute
-# for col in cols:
-#    simpleGetAttributeImage(col,sa,crs,transform)
-# tml.trackTasks2()
+# Export each attribute
+for col in cols:
+   simpleGetAttributeImage(col,sa,crs,transform)
+tml.trackTasks2()
 
-
-aml.batchDelete('projects/lcms-292214/assets/CCDC_Investigation/LT_Outputs', type = 'imageCollection')
 
 ####################################################################################################
-# Scratch space
-# tif = r"C:\Users\ihousman\Downloads\*Wind_Max_04_Aug_2022_15_41*.tif"
-# tif = r'C:\Users\ihousman\Downloads\NBR_LANDTRENDR_Loss_Stack_first_largest_change_02_Apr_2023_10_45_43.tif'
-# assetPath = assetFolder+'/'+'LT_Test2'
-
-# getImagesLib.uploadToGEE(tif,gcs_bucket,assetPath,overwrite = True,bandNames = ['wind_max'],properties = {'test':1,'system:time_start':ee.Date.fromYMD(2018,7,15),'system:time_end':aml.getDate(2018,9,15)},pyramidingPolicy=['mean'],noDataValues=[-32768])
-
-# aml.uploadToGEEImageAsset(tif,gcs_bucket,assetPath,overwrite = True,bandNames = ['loss_yr','loss_dur','loss_mag','loss_slope'],properties = {'test':1,'system:time_start':ee.Date.fromYMD(2018,7,15),'system:time_end':aml.getDate(2018,9,15)},pyramidingPolicy=['MODE','MODE','MEAN','MEAN'],noDataValues=-32768)
-# tml.trackTasks2()
-# ee.data.setAssetProperties(assetPath, {'start_time':ee.Date.fromYMD(2000,8,15).millis().getInfo()})
-#ee.Date.fromYMD(2000,8,15).format('YYYY-MM-dd').getInfo()+'Z'
-
-
-# setDate(assetPath,3111,1,13)
-# getAttributeImage('FORTYPCD','ForTypName') 
-# getAttributeImage('FLDTYPCD','FldTypName') 
-# getAttributeImage('CANOPYPCT',colors=['808','DDD','080'],pctlStretch=[0.05,0.95])#min=0,max=80)
-# getAttributeImage('CARBON_L',colors=['D0D','0D0'],pctlStretch=[0.05,0.95])#min = 5,max=25)
-# getAttributeImage('CARBON_D',colors=['D0D','DD0'],pctlStretch=[0.05,0.95])#min = 5,max=25)
-# getAttributeImage('DRYBIO_L',colors=['D0D','DF0'],pctlStretch=[0.05,0.95])
-# getAttributeImage('DRYBIO_D',colors=['D0D','DD0'],pctlStretch=[0.05,0.95])
-# getAttributeImage('STANDHT',colors=['808','DDD','080'],pctlStretch=[0.05,0.95])
-
-####################################
 Map.turnOnInspector()
 # Map.view()
