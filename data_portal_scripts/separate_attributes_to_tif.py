@@ -37,7 +37,7 @@ treeMapDbf = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_D
 treeMapXml = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Supplements\_metadata_RDS-2021-0074.xml"
 
 # Specify output folder
-outputFolder = r"C:\Users\NicholasStorey\OneDrive - USDA\Documents\TestFolder"
+outputFolder = r"\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters"
 
 # Specify no data value in RDS dataset
 rawTreeMapNoDataValue = 2147483647
@@ -109,7 +109,7 @@ def attributeToImage(columnName, gdal_dtype):
     value_map = pd.Series(attValues, index=ctrlValues)
 
     # Set creation options for LZW compression, tiling, and sparse file format
-    creation_options = ["COMPRESS=LZW", "TILED=YES", "SPARSE_OK=TRUE"]
+    creation_options = ["COMPRESS=DEFLATE", "TILED=YES", "SPARSE_OK=TRUE"]
 
     # Convert gdal dtype to numpy dtype
     np_dtype = gdal_to_numpy_dtype(gdal_dtype)
@@ -165,8 +165,7 @@ def attributeToImage(columnName, gdal_dtype):
             # Write the processed data (new_band_data) into the output image at the same position as the original chunk
             newImageBand.WriteArray(new_band_data, j, i)
 
-            # Flush the data to disk. This is necessary because GDAL uses a cache to improve performance by writing data in chunks
-            # If you do not call FlushCache, not all data may be written to disk if the cache is not full
+            # Flush the data to disk. 
             newImageBand.FlushCache()
 
     # Compute statistics
@@ -217,7 +216,7 @@ def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_descripti
     # Specify that this is the publisher for the source data
     publisher.text += ' (source data)'
 
-    # Remove non-relevant text from the abstract and append information regarding the specific attribute
+    # Remove irrelevant text from the abstract and append information regarding the specific attribute
     abstract.text = abstract.text.replace(' (the GeoTIFF included in this data publication)', '')
     abst_additional_text = f'\n \n This GeoTIFF is a subset of the main TreeMap{year}.tif, in which a single attribute, {col_name}, has been written to the raster band.'.format(year=year,col_name=col_name)
     abstract.text += abst_additional_text
@@ -254,10 +253,6 @@ def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_descripti
 # Main Function Call
 ######################################################################
 
-attributeToImage('QMD_RMRS', gdal.GDT_Float32)
-quit()
-
 for col_name, gdal_dtype in cols:
     attributeToImage(col_name, gdal_dtype)
-    quit()
     
