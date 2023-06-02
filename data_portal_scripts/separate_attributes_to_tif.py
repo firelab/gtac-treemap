@@ -11,6 +11,7 @@ print('USE CONSIDERATIONS: ')
 print('* This script makes use of gdal, numpy, simpledbf, and pandas python libraries. Please insure these are installed in the environment before running.')
 print('* File paths for TreeMap2016.tif, the associated .dbf, and the output folder are assigned within the script. If these need to be changed, it must done in the script.')
 print('* Columns/attributes to be separated and their data types are defined within the script. If these need to change, it must be done in the script.')
+print('* Existing files will NOT be overwritten')
 print('* Chunk size can be adjusted in the script for higher or lower RAM availability.')
 print('**************************************************************\n**************************************************************')
 
@@ -26,10 +27,7 @@ import xml.etree.ElementTree as ET
 from datetime import datetime
 
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
-chunk_size = 29060
-
-# Specify year of original image
-year = '2016'
+chunk_size = 29060 * 2
 
 # Specify file path to .tif (image), .dbf (attribute table), and xml (metadata)
 treeMapTif = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif"
@@ -97,6 +95,12 @@ driver = gdal.GetDriverByName('GTiff')
 
 # Takes a column name and datatype and creates a new gtiff
 def attributeToImage(columnName, gdal_dtype):
+    
+    # Check if image already exists and skip if so
+    if os.path.isfile(outputFolder + f'\TreeMap{year}_{columnName}.tif'):
+        print(f'\n File for {columnName} already exists. Skipping...')
+        return
+    
     # Print the column being processed
     print('\n******************************************')
     print('CREATING IMAGE FOR ' + columnName)
@@ -108,17 +112,20 @@ def attributeToImage(columnName, gdal_dtype):
     # Create a dictionary that maps original values to new values
     value_map = pd.Series(attValues, index=ctrlValues)
 
-    # Set creation options for LZW compression, tiling, and sparse file format
-    creation_options = ["COMPRESS=DEFLATE", "TILED=YES", "SPARSE_OK=TRUE"]
-
     # Convert gdal dtype to numpy dtype
     np_dtype = gdal_to_numpy_dtype(gdal_dtype)
 
     # Get maximum value for datatype (used as NoDataValue)
     newNoDataValue = np.iinfo(np_dtype).max if np.issubdtype(np_dtype, np.integer) else np.finfo(np_dtype).max
 
+    # Create a temporary file
+    tmp_file = '/vsimem/tmp.tif'
+    
+    # Set creation options for compression, tiling, and sparse file format
+    creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
+
     # Create the new image
-    newImage = driver.Create(outputFolder + f'\TreeMap{year}_{columnName}.tif', treeMapImage.RasterXSize, treeMapImage.RasterYSize, 1, gdal_dtype, options = creation_options)
+    newImage = driver.Create(tmp_file, treeMapImage.RasterXSize, treeMapImage.RasterYSize, 1, gdal_dtype, options = creation_options)
     newImage.SetGeoTransform(treeMapImage.GetGeoTransform())
     newImage.SetProjection(treeMapImage.GetProjection())
 
@@ -176,12 +183,21 @@ def attributeToImage(columnName, gdal_dtype):
     print('Building pyramids...')
     newImage.BuildOverviews("NEAREST", [2, 4, 8, 16, 32, 64])
 
+    # Close the image (forces it to write to disk)
+    newImage = None
+    
+    # Translate the temporary GeoTIFF to COG format
+    print('Translating to COG format...')
+    output_file = outputFolder + f'\TreeMap{year}_{columnName}.tif'
+    gdal.Translate(output_file, '/vsimem/tmp.tif', format = 'COG', creationOptions = creation_options)
+
+    # Remove temporary file
+    gdal.Unlink('/vsimem/tmp.tif')
+
     # Create xml metadata
     print('Building xml metadata...')
     create_xml_metadata(treeMapXml, f'{outputFolder}/TreeMap{year}_{columnName}.xml', columnName, col_descriptions[columnName])
 
-    # Close the image (forces it to write to disk)
-    newImage = None
 
 # Takes a gdal datatype and returns the corresponding numpy datatype
 def gdal_to_numpy_dtype(gdal_dtype):
@@ -201,7 +217,30 @@ def gdal_to_numpy_dtype(gdal_dtype):
         return np.float64
     else:
         raise ValueError(f"Unsupported GDAL data type: {gdal_dtype}")
+        
+# Determines the year of the TreeMap.tif by its filename
+def determine_year(tif_filepath):
+    # Get name of file
+    filename = os.path.basename(tif_filepath)
     
+    # Split string to exclude 'TreeMap'
+    split_filename = filename.split('TreeMap')[1]
+    
+    # Return the next 4 characters in the string (which should be the year)
+    return split_filename[:4]
+
+# Informs user of designated input and output filepaths
+def inform_input_output():
+    print('\n****************************************')
+    print('Input tif: ' + treeMapTif)
+    print('Input dbf: ' + treeMapDbf)
+    print('Input xml: ' + treeMapXml)
+    print('Output folder: ' + outputFolder)
+    print('****************************************')
+    
+    # Check with user if filepaths are correct
+    if(input("If these are correct press 'enter', otherwise press 'q' to quit and please update filepaths in the script: ") == 'q'):
+        quit()
 
 def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_description):
     # Parse the original XML file
@@ -250,9 +289,16 @@ def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_descripti
     tree.write(new_xml_file)
 
 ######################################################################
-# Main Function Call
+# Main Function Calls
 ######################################################################
 
+# Determine the year from the filepath
+year = determine_year(treeMapTif)
+
+# Inform user of assigned inputs + outputs
+inform_input_output()
+
+# Main Function
 for col_name, gdal_dtype in cols:
     attributeToImage(col_name, gdal_dtype)
     
