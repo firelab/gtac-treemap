@@ -1,6 +1,6 @@
 """
-This script separates columns/attributes from the raster attribute table of TreeMap2016.tif
-into separate images, builds pyramids for those images, and creates an xml metadata file based on the full dataset's xml.
+This script separates columns/attributes from the raster attribute table of TreeMap tifs
+into separate images, builds pyramids for those images, calculates statistics, and creates an xml + html metadata file based on the full dataset's xml + html.
 Please update use considerations and this description with any changes.
 
 """
@@ -8,8 +8,8 @@ Please update use considerations and this description with any changes.
 # Print use considerations
 print('\n**************************************************************\n**************************************************************')
 print('USE CONSIDERATIONS: ')
-print('* This script makes use of gdal, numpy, simpledbf, and pandas python libraries. Please insure these are installed in the environment before running.')
-print('* File paths for TreeMap2016.tif, the associated .dbf, and the output folder are assigned within the script. If these need to be changed, it must done in the script.')
+print('* This script makes use of gdal, numpy, simpledbf, bs4, and pandas python libraries. Please insure these are installed in the environment before running.')
+print('* File paths for the main TreeMap tif, the associated .dbf, and the output folder are assigned within the script. If these need to be changed, it must done in the script.')
 print('* Columns/attributes to be separated and their data types are defined within the script. If these need to change, it must be done in the script.')
 print('* Existing files will NOT be overwritten')
 print('* Chunk size can be adjusted in the script for higher or lower RAM availability.')
@@ -24,15 +24,17 @@ from osgeo import gdal
 from simpledbf import Dbf5
 import pandas as pd
 import xml.etree.ElementTree as ET
+from bs4 import BeautifulSoup, NavigableString
 from datetime import datetime
 
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
 chunk_size = 29060 * 2
 
-# Specify file path to .tif (image), .dbf (attribute table), and xml (metadata)
+# Specify file path to .tif (image), .dbf (attribute table), and xml + html (metadata)
 treeMapTif = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif"
 treeMapDbf = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif.vat.dbf"
 treeMapXml = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Supplements\_metadata_RDS-2021-0074.xml"
+treeMapHtml = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Supplements\_metadata_RDS-2021-0074.html"
 
 # Specify output folder
 outputFolder = r"\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters"
@@ -93,7 +95,7 @@ driver = gdal.GetDriverByName('GTiff')
 # Functions
 ######################################################################
 
-# Takes a column name and datatype and creates a new gtiff
+# Takes a column name and datatype and creates a new gtiff with corresponding metadata
 def attributeToImage(columnName, gdal_dtype):
     
     # Check if image already exists and skip if so
@@ -186,7 +188,7 @@ def attributeToImage(columnName, gdal_dtype):
     # Close the image (forces it to write to disk)
     newImage = None
     
-    # Translate the temporary GeoTIFF to COG format
+    # Translate the temporary GeoTIFF to COG format and save to output folder
     print('Translating to COG format...')
     output_file = outputFolder + f'\TreeMap{year}_{columnName}.tif'
     gdal.Translate(output_file, '/vsimem/tmp.tif', format = 'COG', creationOptions = creation_options)
@@ -194,9 +196,10 @@ def attributeToImage(columnName, gdal_dtype):
     # Remove temporary file
     gdal.Unlink('/vsimem/tmp.tif')
 
-    # Create xml metadata
-    print('Building xml metadata...')
+    # Create xml and html metadata
+    print('Building xml + html metadata...')
     create_xml_metadata(treeMapXml, f'{outputFolder}/TreeMap{year}_{columnName}.xml', columnName, col_descriptions[columnName])
+    create_html_metadata(treeMapHtml, f'{outputFolder}/TreeMap{year}_{columnName}.html', columnName, col_descriptions[columnName])
 
 
 # Takes a gdal datatype and returns the corresponding numpy datatype
@@ -231,17 +234,18 @@ def determine_year(tif_filepath):
 
 # Informs user of designated input and output filepaths
 def inform_input_output():
-    print('\n****************************************')
+    print('\n\n****************************************')
     print('Input tif: ' + treeMapTif)
     print('Input dbf: ' + treeMapDbf)
     print('Input xml: ' + treeMapXml)
     print('Output folder: ' + outputFolder)
-    print('****************************************')
+    print('****************************************\n')
     
     # Check with user if filepaths are correct
-    if(input("If these are correct press 'enter', otherwise press 'q' to quit and please update filepaths in the script: ") == 'q'):
+    if(input("If these are correct press 'enter', otherwise type 'q' and then press 'enter' to quit and please update filepaths in the script: ") == 'q'):
         quit()
 
+# Creates xml metadata based on an original xml file (scripted to work on TreeMap2016, should work on other versions if metadata format is the same)
 def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_description):
     # Parse the original XML file
     tree = ET.parse(original_xml_file)
@@ -266,7 +270,7 @@ def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_descripti
 
     IMPORTANT INFORMATION \n\n
 
-    TreeMap{year}_{col_name}.tif is a subset of the full TreeMap{year}.tif. Band values for TreeMap{year}_{col_name}.tif are those found in the attribute table for the full TreeMap{year}.tif.
+    TreeMap{year}_{col_name}.tif is a subset of the full TreeMap{year}.tif. Band values for TreeMap{year}_{col_name}.tif are those found in the attribute table of the full TreeMap{year} dataset.
     \n\n
 
     DATA FILE DESCRIPTIONS (1)\n\n
@@ -287,6 +291,110 @@ def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_descripti
 
     # Save the modified XML to a new file
     tree.write(new_xml_file)
+    
+# This function recursively traverses a BeautifulSoup node (HTML element or text), and removes the specified text from any text node it encounters.
+def remove_text(node, text_to_remove):
+    # If the node is a text node (NavigableString), check if the specified text is in it
+    if isinstance(node, NavigableString):
+        # If the specified text is found, replace it with an empty string
+        if text_to_remove in node:
+            node.replace_with(node.replace(text_to_remove, ''))
+    else:
+        # If the node is not a text node, it must be an HTML element node
+        # In this case, recursively call remove_text on each of its child nodes (content)
+        for child_node in node.contents:
+            remove_text(child_node, text_to_remove)
+
+# Creates html metadata based on an original html file (scripted to work on TreeMap2016, should work on other versions if metadata format is the same)
+def create_html_metadata(original_html_file, new_html_file, col_name, col_description):
+    
+    # Helper function to find specific text in a given tag
+    def has_specific_text(tag, tag_name, text):
+        return tag.name == tag_name and text in tag.get_text()
+
+    # Open the original HTML file and parse it with BeautifulSoup
+    with open(original_html_file, 'r', encoding='utf-8') as f:
+        soup = BeautifulSoup(f, 'html.parser')
+    
+    # Find the publisher information in the parsed HTML
+    publisher = soup.find(lambda tag: has_specific_text(tag, 'dt', 'Forest Service Research Data Archive'))
+    
+    # If the publisher information is found, modify it
+    if publisher:
+        # Extract the tag that contains the publisher information
+        i_tag = publisher.find('i')
+    
+        # Create a new tag with the modified publisher text
+        new_publisher_text = 'Forest Service Research Data Archive (source data)'
+        new_publisher_tag = soup.new_string(' ' + new_publisher_text)
+    
+        # Remove the original publisher information
+        publisher.clear()
+    
+        # Add the modified publisher information to the parsed HTML
+        publisher.append(i_tag)
+        publisher.append(new_publisher_tag)
+    
+    # Find the abstract text in the parsed HTML
+    abstract_text = soup.find(lambda tag: has_specific_text(tag, 'dd', '(the GeoTIFF included in this data publication)'))
+    
+    # If the abstract text is found, remove a specified portion of it
+    if abstract_text:
+        remove_text(abstract_text, '(the GeoTIFF included in this data publication)')
+        
+    # Find the Entity and Attribute Overview text in the parsed HTML
+    eaoverview_text = soup.find(lambda tag: has_specific_text(tag, 'dd', 'Below is a description of the files'))
+
+    # If the Entity and Attribute Overview text is found, modify it
+    if eaoverview_text:
+        # Go two levels deeper to the second 'dd' tag
+        inner_dd = eaoverview_text.find('dd').find('dd')
+        
+        # If the second 'dd' tag is found, clear its contents
+        if inner_dd:
+            inner_dd.clear()
+            eaoverview_newtext = f'''<dd>Below is a description of the file included in this publication and its relationship to the FIA DataMart.<br />
+    <br />
+    IMPORTANT INFORMATION<br />
+    <br />
+    TreeMap{year}_{col_name}.tif is a subset of the full TreeMap{year}.tif. Band values for TreeMap{year}_{col_name}.tif are those found in the attribute table of the full TreeMap{year} dataset.<br />
+    <br />
+    	  	  <br />
+    DATA FILE DESCRIPTIONS (1)<br />
+    <br />
+    (1) TreeMap{year}_{col_name}.tif: <br />
+        Raster dataset (GeoTIFF file) representing a single attribute, {col_name}, of the full model output generated by random forests imputation of forest inventory plot data measured by Forest Inventory and Analysis (FIA) to unsampled (and sampled) spatial locations on the landscape for circa 2016 conditions. {col_name} is a measure of {col_description}. Predictor variables in the random forests imputation were chosen to optimize the prediction of aboveground forest carbon.
+        These include topographic variables (slope, aspect, and elevation from the FIA PLOT and COND tables), true plot location, vegetation (forest cover, height, and vegetation group assigned to each plot via Forest Vegetation Simulator [FVS, https://www.fs.fed.us/fvs/, Dixon 2002] and LANDFIRE methods), disturbance (years since disturbance and disturbance type as derived from LANDFIRE disturbance rasters), and biophysical variables (maximum and minimum temperature, relative humidity, precipitation, photosynthetically active radiation, and vapor pressure deficit derived by overlay of the plot coordinates with LANDFIRE biophysical rasters). Variables and methods for the full model output are defined in more completeness in Riley et al. (2016) and Riley et al. (2021), the accompanying Data Dictionary file (“TreeMap2016_Data_Dictionary.pdf”), and the FIA documentation (Burrill et al. 2018).<br />
+    <br />'''
+            # Add modified content to the parsed HTML
+            new_content_soup = BeautifulSoup(eaoverview_newtext, 'html.parser')
+            for element in new_content_soup.contents:
+                inner_dd.append(element)     
+
+    # Find the Metadata Date tag in the parsed HTML
+    metadata_date_tag = soup.find(lambda tag: has_specific_text(tag, 'dt', 'Metadata_Date:'))
+
+    # If the Metadata Date tag is found, modify it
+    if metadata_date_tag:
+        # Extract the tag that contains the metadata date
+        i_tag = metadata_date_tag.find('i')
+    
+        # Create a new tag with the current date
+        new_date = datetime.now()
+        new_date_tag = soup.new_string(' ' + new_date.strftime('%Y%m%d'))
+    
+        # Remove the original metadata date
+        metadata_date_tag.clear()
+    
+        # Add the modified metadata date to the parsed HTML
+        metadata_date_tag.append(i_tag)
+        metadata_date_tag.append(new_date_tag)
+        
+    # Save the modified HTML to a new file
+    with open(new_html_file, 'w', encoding='utf-8') as f:
+        f.write(str(soup))    
+    
+
 
 ######################################################################
 # Main Function Calls
