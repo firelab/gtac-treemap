@@ -16,7 +16,7 @@ tif_dir <- paste0(home_dir, "01_Data/05_LCMS/01_Threshold_Testing/01_Raw/")
 out_dir <- paste0(home_dir, "01_Data/05_LCMS/01_Threshold_Testing/03_Mosaics/")
 
 # list years
-years_list <- seq(1999, 2022, 1)
+years_list <- seq(1999, 2016, 1)
 
 # list thresholds
 # 14 is the default threshold
