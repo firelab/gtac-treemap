@@ -22,15 +22,16 @@ library(doParallel)
 
 #list landfire zones of interest
 zone_list <- c(#15,
-               #16,
+               16#,
                #19,
                #21,
                #28
-                17,
-                18)
+                #17,
+                #18
+               )
 
 #select year range (LCMS available for 1985-2021, Landfire available for 1999-2020)
-start_year <- 2010
+start_year <- 1999
 end_year <- 2016
 
 # set tmp directory
