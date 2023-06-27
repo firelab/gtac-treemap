@@ -4,6 +4,9 @@ library(terra)
 library(tidyverse)
 library(randomcoloR)
 
+#make %notin% function
+`%notin%` <- Negate('%in%')
+
 treemap <- rast("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
 
 treemap
@@ -47,7 +50,6 @@ all_typ_table <- unique(all_typ_table)
 all_typ_table %>% dplyr::arrange(code)
 
   
-  
 # get colors
 
 n <- nrow(all_typ_table)
@@ -55,4 +57,24 @@ n <- nrow(all_typ_table)
 palette <- distinctColorPalette(n)
 
 # write out palette
+all_typ_table$palette <- palette
 
+# write out FULL palette with all numbers (necessary for js)
+nums <- seq(1, max(all_typ_table$code), 1)
+nums_null <- nums[nums %notin% all_typ_table$code]
+
+nums_df <- data.frame(code = nums_null, palette = rep("#000000", length(nums_null)))
+
+palette_out <- bind_rows(all_typ_table, nums_df) %>%
+  arrange(code)
+
+#write out in format for js
+
+head(palette_out$palette)
+
+write.table(
+  paste0("[", palette_out$palette,
+         "]",),
+            "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gee_viz_setup_scripts/forest_type_palette.txt", 
+            append = FALSE, sep = " ", dec = ".", 
+            row.names = FALSE, col.names = FALSE)
