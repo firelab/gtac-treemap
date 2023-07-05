@@ -22,15 +22,16 @@ library(doParallel)
 
 #list landfire zones of interest
 zone_list <- c(#15,
-               #16,
+               16#,
                #19,
                #21,
                #28
-                17,
-                18)
+                #17,
+                #18
+               )
 
 #select year range (LCMS available for 1985-2021, Landfire available for 1999-2020)
-start_year <- 2010
+start_year <- 1999
 end_year <- 2016
 
 # set tmp directory
@@ -104,7 +105,7 @@ LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/r
 for (z in 1:length(zone_list)) {
   
   #for testing
-  #z <- 1
+  z <- 1
   
   zone_num <- zone_list[z]
   
@@ -204,7 +205,7 @@ for (z in 1:length(zone_list)) {
   for(i in 1:length(year_list)){
   
     #for testing
-    #i = 1
+    i = 1
     
     # iterate through change rasters by year
     year <- year_list[i]
@@ -247,13 +248,15 @@ for (z in 1:length(zone_list)) {
     lf <- terra::crop(lf, zone, mask = TRUE, datatype = "INT2U")
     #lf_mask <- terra::mask(lf, zone, datatype = "INT2U")
     
+    
+    
     print("projecting")
     #get lf layer and crop zone into the same projection
     lf <- project(lf, crs, method = "near", threads = TRUE)
     zone <- project(zone, crs)
     
     #inspect
-    #freq(lcms)
+    #freq(lf)
     
     #####set values to reclassify 
     # for lcms: classes are ordered from 1-n in order: Stable, Slow Loss, Fast Loss, Gain, NP Area Mask
@@ -268,7 +271,7 @@ for (z in 1:length(zone_list)) {
     #3: chemical; fire; harvest
     #4: thinning (441-443; 741-743); insects (541-543; 841-843; 1041-1043)
     #5: mastication; disease (551-553; 851-853; 1051-1053)
-    #6: 
+    #6: (561-563; 1061-1063; )
     #7: herbicide; wildfire
     #8: biological (581-583; 881-883; 1081-1083)
     #9: prescribed fire
@@ -278,7 +281,9 @@ for (z in 1:length(zone_list)) {
     #list of changes to keep:
     keep <- sort(c(541,542,543, 841,842,843,1041,1042,1043, #insects
               551,552,553,851,852,853,1051,1052,1053, # disease
-              581,582,583,881,882,883,1081,1082,1083)) # "biological"
+              #581,582,583,881,882,883,1081,1082,1083, # "biological" - not included in karin's script 
+              561,562,563,1061,1062,1063 #unknown? but classified as insect / disease in karin's script
+    ))
     
     nums <- c(-9999, seq(0, 1133, 1))
     no.class.val.slowloss <- nums[nums %notin% keep]
