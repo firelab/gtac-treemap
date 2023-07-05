@@ -1,6 +1,7 @@
 """
 This script separates columns/attributes from the raster attribute table of TreeMap tifs
-into separate images, builds pyramids for those images, calculates statistics, and creates an xml + html metadata file based on the full dataset's xml + html.
+into separate images, builds pyramids for those images, calculates statistics, creates an xml + html metadata file based on the full dataset's xml + html,
+creates arc compatable metadata (tif.xml), creates arc compatable statistics (aux.xml), and zips all the files together.
 Please update use considerations and this description with any changes.
 
 """
@@ -9,11 +10,11 @@ Please update use considerations and this description with any changes.
 print('\n**************************************************************\n**************************************************************')
 print('USE CONSIDERATIONS: ')
 print('* This script makes use of gdal, numpy, simpledbf, bs4, and pandas python libraries. Please insure these are installed in the environment before running.')
-print('* File paths for the main TreeMap tif, the associated .dbf, and the output folder are assigned within the script. If these need to be changed, it must done in the script.')
+print('* Filepaths for the main TreeMap tif, dbf, xml, html, and the output folder are assigned within the script. If these need to be changed, it must done in the script.')
 print('* Columns/attributes to be separated and their data types are defined within the script. If these need to change, it must be done in the script.')
-print('* Existing files will NOT be overwritten')
+print('* Existing columns/attributes will NOT be reprocessed. Please delete their tif files if you wish to reprocess.')
 print('* Chunk size can be adjusted in the script for higher or lower RAM availability.')
-print('**************************************************************\n**************************************************************')
+print('**************************************************************\n**************************************************************\n')
 
 ######################################################################
 # Setup
@@ -26,9 +27,11 @@ import pandas as pd
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup, NavigableString
 from datetime import datetime
+from zipfile import ZipFile
+import msvcrt
 
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
-chunk_size = 29060 * 2
+chunk_size = 29060
 
 # Specify file path to .tif (image), .dbf (attribute table), and xml + html (metadata)
 treeMapTif = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif"
@@ -78,6 +81,9 @@ col_descriptions = {
     'CARBON_DWN': 'down dead carbon > 3 inches diameter (tons per ac.); estimated by FIA based on forest type, geographic area, and live tree carbon density.'
     }
 
+# Which attributes are discrete?
+discrete_attributes = ['FORTYPCD', 'FLDTYPCD', 'STDSZCD', 'FLDSZCD', 'TPA_LIVE', 'TPA_DEAD']
+
 # Import dbf, convert to pandas DataFrame, isolate values
 dbf = Dbf5(treeMapDbf)
 df = dbf.to_dataframe()
@@ -95,8 +101,17 @@ driver = gdal.GetDriverByName('GTiff')
 # Functions
 ######################################################################
 
-# Takes a column name and datatype and creates a new gtiff with corresponding metadata
 def attributeToImage(columnName, gdal_dtype):
+    '''
+    Creates a new COG formatted geotiff from the main TreeMap tif with pyramids, statistics, and metadata.
+    
+    Args: 
+        columnName (str): Name of column or attribute to be processed (e.g. CARBON_D).
+        gdal_dtype (gdal datatype): Desired datatype of the new geotiff. 
+        
+    Returns:
+        None
+    '''
     
     # Check if image already exists and skip if so
     if os.path.isfile(outputFolder + f'\TreeMap{year}_{columnName}.tif'):
@@ -183,7 +198,7 @@ def attributeToImage(columnName, gdal_dtype):
 
     # Build pyramids
     print('Building pyramids...')
-    newImage.BuildOverviews("NEAREST", [2, 4, 8, 16, 32, 64])
+    newImage.BuildOverviews(determine_resample(columnName), [2, 4, 8, 16, 32, 64])
 
     # Close the image (forces it to write to disk)
     newImage = None
@@ -197,58 +212,35 @@ def attributeToImage(columnName, gdal_dtype):
     gdal.Unlink('/vsimem/tmp.tif')
 
     # Create xml and html metadata
-    print('Building xml + html metadata...')
-    create_xml_metadata(treeMapXml, f'{outputFolder}/TreeMap{year}_{columnName}.xml', columnName, col_descriptions[columnName])
-    create_html_metadata(treeMapHtml, f'{outputFolder}/TreeMap{year}_{columnName}.html', columnName, col_descriptions[columnName])
+    print('Building metadata...')
+    create_xml_metadata(f'{outputFolder}/TreeMap{year}_{columnName}.xml', columnName)
+    create_html_metadata(f'{outputFolder}/TreeMap{year}_{columnName}.html', columnName)
+    create_arc_metadata(f'{outputFolder}/TreeMap{year}_{columnName}.xml', f'{outputFolder}/TreeMap{year}_{columnName}.tif.xml')
+    
+    # Zip files together
+    print('Zipping files...')
+    tif_file = f'{outputFolder}/TreeMap{year}_{columnName}.tif'
+    xml_file = f'{outputFolder}/TreeMap{year}_{columnName}.xml'
+    html_file = f'{outputFolder}/TreeMap{year}_{columnName}.html'
+    arcxml_file = f'{outputFolder}/TreeMap{year}_{columnName}.tif.xml'
+    arcstats_file = f'{outputFolder}/TreeMap{year}_{columnName}.aux.xml'
+    zip_files([tif_file, xml_file, html_file, arcxml_file, arcstats_file], f'{outputFolder}/00_Zipped_Files/TreeMap{year}_{columnName}.zip')
 
 
-# Takes a gdal datatype and returns the corresponding numpy datatype
-def gdal_to_numpy_dtype(gdal_dtype):
-    if gdal_dtype == gdal.GDT_Byte:
-        return np.uint8
-    elif gdal_dtype == gdal.GDT_UInt16:
-        return np.uint16
-    elif gdal_dtype == gdal.GDT_Int16:
-        return np.int16
-    elif gdal_dtype == gdal.GDT_UInt32:
-        return np.uint32
-    elif gdal_dtype == gdal.GDT_Int32:
-        return np.int32
-    elif gdal_dtype == gdal.GDT_Float32:
-        return np.float32
-    elif gdal_dtype == gdal.GDT_Float64:
-        return np.float64
-    else:
-        raise ValueError(f"Unsupported GDAL data type: {gdal_dtype}")
+def create_xml_metadata(new_xml_file, col_name):
+    '''
+    Creates xml metadata file based on an original xml file (scripted to work on TreeMap2016, should work mostly on other versions if metadata format is the same). Small tweaks may be necessary.
+    
+    Args: 
+        new_xml_file (str): File path, including new file name, for the output xml
+        col_name (str): Name of column or attribute being processed (e.g. CARBON_D)
         
-# Determines the year of the TreeMap.tif by its filename
-def determine_year(tif_filepath):
-    # Get name of file
-    filename = os.path.basename(tif_filepath)
+    Returns:
+        None
+    '''
     
-    # Split string to exclude 'TreeMap'
-    split_filename = filename.split('TreeMap')[1]
-    
-    # Return the next 4 characters in the string (which should be the year)
-    return split_filename[:4]
-
-# Informs user of designated input and output filepaths
-def inform_input_output():
-    print('\n\n****************************************')
-    print('Input tif: ' + treeMapTif)
-    print('Input dbf: ' + treeMapDbf)
-    print('Input xml: ' + treeMapXml)
-    print('Output folder: ' + outputFolder)
-    print('****************************************\n')
-    
-    # Check with user if filepaths are correct
-    if(input("If these are correct press 'enter', otherwise type 'q' and then press 'enter' to quit and please update filepaths in the script: ") == 'q'):
-        quit()
-
-# Creates xml metadata based on an original xml file (scripted to work on TreeMap2016, should work on other versions if metadata format is the same)
-def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_description):
     # Parse the original XML file
-    tree = ET.parse(original_xml_file)
+    tree = ET.parse(treeMapXml)
     root = tree.getroot()
 
     # Find the elements to change
@@ -277,9 +269,9 @@ def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_descripti
 
     (1) TreeMap{year}_{col_name}.tif: 
     Raster dataset (GeoTIFF file) representing a single attribute, {col_name}, of the full model output generated by random forests imputation of forest inventory plot data measured by Forest Inventory and Analysis (FIA) to unsampled (and sampled) spatial locations on the landscape for circa 2016 conditions. {col_name} is a measure of {col_description}. Predictor variables in the random forests imputation were chosen to optimize the prediction of aboveground forest carbon.
-    These include topographic variables (slope, aspect, and elevation from the FIA PLOT and COND tables), true plot location, vegetation (forest cover, height, and vegetation group assigned to each plot via Forest Vegetation Simulator [FVS, https://www.fs.fed.us/fvs/, Dixon 2002] and LANDFIRE methods), disturbance (years since disturbance and disturbance type as derived from LANDFIRE disturbance rasters), and biophysical variables (maximum and minimum temperature, relative humidity, precipitation, photosynthetically active radiation, and vapor pressure deficit derived by overlay of the plot coordinates with LANDFIRE biophysical rasters). Variables and methods for the full model output are defined in more completeness in Riley et al. (2016) and Riley et al. (2021), the accompanying Data Dictionary file (“TreeMap2016_Data_Dictionary.pdf”), and the FIA documentation (Burrill et al. 2018).
+    These include topographic variables (slope, aspect, and elevation from the FIA PLOT and COND tables), true plot location, vegetation (forest cover, height, and vegetation group assigned to each plot via Forest Vegetation Simulator [FVS, https://www.fs.fed.us/fvs/, Dixon 2002] and LANDFIRE methods), disturbance (years since disturbance and disturbance type as derived from LANDFIRE disturbance rasters), and biophysical variables (maximum and minimum temperature, relative humidity, precipitation, photosynthetically active radiation, and vapor pressure deficit derived by overlay of the plot coordinates with LANDFIRE biophysical rasters). Variables and methods for the full model output are defined in more completeness in Riley et al. (2016) and Riley et al. (2021), the accompanying Data Dictionary file (“TreeMap{year}_Data_Dictionary.pdf”), and the FIA documentation (Burrill et al. 2018).
 
-    """.format(year=year, col_name=col_name, col_description=col_description)
+    """.format(year=year, col_name=col_name, col_description=col_descriptions[col_name])
 
     # Replace the contents of the <eaover> tag
     eaover.text = eaover_replacement_text
@@ -292,28 +284,25 @@ def create_xml_metadata(original_xml_file, new_xml_file, col_name, col_descripti
     # Save the modified XML to a new file
     tree.write(new_xml_file)
     
-# This function recursively traverses a BeautifulSoup node (HTML element or text), and removes the specified text from any text node it encounters.
-def remove_text(node, text_to_remove):
-    # If the node is a text node (NavigableString), check if the specified text is in it
-    if isinstance(node, NavigableString):
-        # If the specified text is found, replace it with an empty string
-        if text_to_remove in node:
-            node.replace_with(node.replace(text_to_remove, ''))
-    else:
-        # If the node is not a text node, it must be an HTML element node
-        # In this case, recursively call remove_text on each of its child nodes (content)
-        for child_node in node.contents:
-            remove_text(child_node, text_to_remove)
 
-# Creates html metadata based on an original html file (scripted to work on TreeMap2016, should work on other versions if metadata format is the same)
-def create_html_metadata(original_html_file, new_html_file, col_name, col_description):
+def create_html_metadata(new_html_file, col_name):
+    '''
+    Creates html metadata file based on an original html file (scripted to work on TreeMap2016, likely will need some reworking for projects passed TreeMap2016 (e.g. tweaks to specific strings).
+    
+    Args: 
+        new_html_file (str): File path, including new file name, for the output html
+        col_name (str): Name of column or attribute being processed (e.g. CARBON_D)
+        
+    Returns:
+        None
+    ''' 
     
     # Helper function to find specific text in a given tag
     def has_specific_text(tag, tag_name, text):
         return tag.name == tag_name and text in tag.get_text()
 
     # Open the original HTML file and parse it with BeautifulSoup
-    with open(original_html_file, 'r', encoding='utf-8') as f:
+    with open(treeMapHtml, 'r', encoding='utf-8') as f:
         soup = BeautifulSoup(f, 'html.parser')
     
     # Find the publisher information in the parsed HTML
@@ -353,7 +342,7 @@ def create_html_metadata(original_html_file, new_html_file, col_name, col_descri
         # If the second 'dd' tag is found, clear its contents
         if inner_dd:
             inner_dd.clear()
-            eaoverview_newtext = f'''<dd>Below is a description of the file included in this publication and its relationship to the FIA DataMart.<br />
+            eaoverview_newtext = '''<dd><br />
     <br />
     IMPORTANT INFORMATION<br />
     <br />
@@ -364,12 +353,107 @@ def create_html_metadata(original_html_file, new_html_file, col_name, col_descri
     <br />
     (1) TreeMap{year}_{col_name}.tif: <br />
         Raster dataset (GeoTIFF file) representing a single attribute, {col_name}, of the full model output generated by random forests imputation of forest inventory plot data measured by Forest Inventory and Analysis (FIA) to unsampled (and sampled) spatial locations on the landscape for circa 2016 conditions. {col_name} is a measure of {col_description}. Predictor variables in the random forests imputation were chosen to optimize the prediction of aboveground forest carbon.
-        These include topographic variables (slope, aspect, and elevation from the FIA PLOT and COND tables), true plot location, vegetation (forest cover, height, and vegetation group assigned to each plot via Forest Vegetation Simulator [FVS, https://www.fs.fed.us/fvs/, Dixon 2002] and LANDFIRE methods), disturbance (years since disturbance and disturbance type as derived from LANDFIRE disturbance rasters), and biophysical variables (maximum and minimum temperature, relative humidity, precipitation, photosynthetically active radiation, and vapor pressure deficit derived by overlay of the plot coordinates with LANDFIRE biophysical rasters). Variables and methods for the full model output are defined in more completeness in Riley et al. (2016) and Riley et al. (2021), the accompanying Data Dictionary file (“TreeMap2016_Data_Dictionary.pdf”), and the FIA documentation (Burrill et al. 2018).<br />
-    <br />'''
+        These include topographic variables (slope, aspect, and elevation from the FIA PLOT and COND tables), true plot location, vegetation (forest cover, height, and vegetation group assigned to each plot via Forest Vegetation Simulator [FVS, https://www.fs.fed.us/fvs/, Dixon 2002] and LANDFIRE methods), disturbance (years since disturbance and disturbance type as derived from LANDFIRE disturbance rasters), and biophysical variables (maximum and minimum temperature, relative humidity, precipitation, photosynthetically active radiation, and vapor pressure deficit derived by overlay of the plot coordinates with LANDFIRE biophysical rasters). Variables and methods for the full model output are defined in more completeness in Riley et al. (2016) and Riley et al. (2021), the accompanying Data Dictionary file (“TreeMap{year}_Data_Dictionary.pdf”), and the FIA documentation (Burrill et al. 2018).<br />
+    <br />'''.format(year=year, col_name=col_name, col_description=col_descriptions[col_name])
             # Add modified content to the parsed HTML
             new_content_soup = BeautifulSoup(eaoverview_newtext, 'html.parser')
             for element in new_content_soup.contents:
-                inner_dd.append(element)     
+                inner_dd.append(element)   
+                
+    # Find the 'br' tag that directly precedes the target paragraph
+    br_before_target = soup.find(lambda tag: tag.name == 'br' and 'For complete details see Riley et al. (2016)' in tag.find_next_sibling(string=True))
+    
+    if br_before_target:
+        # Create a new string with the new paragraph
+        new_paragraph = soup.new_string(f'{col_name} was then separated into its own raster by writing values in the raster attribute table to the corresponding pixels in the raster band.')
+    
+        # Create two new 'br' tags to put after the new paragraph
+        new_br_tag1 = soup.new_tag('br')
+        new_br_tag2 = soup.new_tag('br')
+    
+        # Insert the new paragraph and the new 'br' tags after the 'br' tag before the target paragraph
+        br_before_target.insert_after(new_paragraph, new_br_tag1, new_br_tag2)
+        
+    # Find the 'dt' tag containing the 'Digital_Form:'
+    dt_tag = soup.find(lambda tag: has_specific_text(tag, 'dt', 'Digital_Form:'))
+    
+    # If the 'dt' tag is found, get its parent 'dd' tag and modify it
+    if dt_tag:
+        # Get the parent 'dd' tag
+        order_process_text = dt_tag.find_parent('dd')
+    
+        # If the 'dd' tag is found, clear its contents and insert new text
+        if order_process_text:
+            # Clear existing content
+            order_process_text.clear()
+        
+        order_process_newtext = '''<dl><dt>
+        <i>Digital_Form:</i>
+       </dt>
+       <dd>
+        <dl>
+         <dt>
+          <i>Digital_Transfer_Information:</i>
+         </dt>
+         <dd>
+          <dl>
+           <dt>
+            <i>Format_Name: </i>TIF</dt>
+           <dt>
+            <i>Format_Version_Number: </i>see Format Specification</dt>
+           <dt>
+            <i>Format_Specification:</i>
+           </dt>
+           <dd>GeoTIFF file</dd>
+           <dt>
+            <i>File_Decompression_Technique: </i>Files zipped with zipfile python library</dt>
+          </dl>
+         </dd>
+         <dt>
+          <i>Digital_Transfer_Option:</i>
+         </dt>
+         <dd>
+          <dl>
+           <dt>
+            <i>Online_Option:</i>
+           </dt>
+           <dd>
+            <dl>
+             <dt>
+              <i>Computer_Contact_Information:</i>
+             </dt>
+             <dd>
+              <dl>
+               <dt>
+                <i>Network_Address:</i>
+               </dt>
+               <dd>
+                <dl>
+                 <dt>
+                  <i>Network_Resource_Name:</i>
+                  <a
+                   TARGET="viewer"
+                   href="https://doi.org/10.2737/RDS-2021-0074">https://doi.org/10.2737/RDS-2021-0074</a>
+                 </dt>
+                </dl>
+               </dd>
+              </dl>
+             </dd>
+            </dl>
+           </dd>
+          </dl>
+         </dd>
+        </dl>
+       </dd>
+       <dt>
+        <i>Fees: </i>none</dt>
+      </dl>'''
+    
+        # Add modified content to the parsed HTML
+        new_content_soup = BeautifulSoup(order_process_newtext, 'html.parser')
+        for element in new_content_soup.contents:
+            order_process_text.append(element)
+
 
     # Find the Metadata Date tag in the parsed HTML
     metadata_date_tag = soup.find(lambda tag: has_specific_text(tag, 'dt', 'Metadata_Date:'))
@@ -392,9 +476,513 @@ def create_html_metadata(original_html_file, new_html_file, col_name, col_descri
         
     # Save the modified HTML to a new file
     with open(new_html_file, 'w', encoding='utf-8') as f:
-        f.write(str(soup))    
+        f.write(str(soup))
     
 
+def create_arc_metadata(att_xml_metadata, col_name):
+    '''
+    Creates *.tif.xml, and *.aux.xml metadata files that are compatible with ArcGIS Pro. Uses the treemap arcmeta + arcstats templates stored in the templates folder in the repo, as well as the existing .xml file for the attribute
+
+    Args:
+        att_xml_metadata (str): xml metadata file for the attribute or column (the one generated by the create_xml_metadata() function)
+        col_name (str): Name of column or attribute being processed (e.g. CARBON_D)
+
+    Returns:
+        None
+    '''
+    
+    # Construct filepath for new xml based on the provided attribute xml 
+    new_meta_file = insert_before_ext(att_xml_metadata, '.tif')
+    
+    # Open existing attribute xml
+    source_tree = ET.parse(att_xml_metadata)
+    source_root = source_tree.getroot()
+    
+    # Open template xml
+    template_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'TreeMap_ArcMeta_template.xml')
+    template_tree = ET.parse(template_file)
+    template_root = template_tree.getroot()
+    
+    # Open raster (for using image metadata)
+    raster = gdal.Open(f'{outputFolder}\TreeMap{year}_{col_name}.tif')
+    band = raster.GetRasterBand(1)
+    stats = band.GetStatistics(0, 1)
+    
+    # Mapping dictionary TEMPLATE_TAG: SOURCE_TAG.
+        # Note: only for tags in template that have a corresponding source tag
+        # Note: measDesc (template tag) does not work well with function and so has been defined elsewhere
+    tag_mapping = {
+        'CreaDate': 'citation//pubdate',
+        'nativeExtBox//westBL': 'westbc',
+        'nativeExtBox//eastBL': 'eastbc',
+        'nativeExtBox//southBL': 'southbc',
+        'nativeExtBox//northBL': 'northbc',
+        'SyncDate': 'citeinfo//pubdate',
+        'ModDate': 'citeinfo//pubdate',
+        'mdContact//rpIndName': 'metc//cntper',
+        'mdContact//rpOrgName': 'metc//cntorg',
+        'mdContact//rpPosName': 'metc//cntpos',
+        'mdContact//voiceNum': 'metc//cntvoice',
+        'mdContact//delPoint': 'metc//address',
+        'mdContact//city': 'metc//city',
+        'mdContact//adminArea': 'metc//state',
+        'mdContact//country': 'metc//country',
+        'mdContact//eMailAdd': 'metc//cntemail',
+        'mdContact//postCode': 'metc//postal',
+        'mdDateSt': 'metainfo//metd',
+        'distInfo//rpOrgName': 'distrib//cntorg',
+        'distInfo//rpPosName': 'distrib//cntpos',
+        'distInfo//delPoint': 'distrib//address',
+        'distInfo//city': 'distrib//city',
+        'distInfo//adminArea': 'distrib//state',
+        'distInfo//country': 'distrib//country',
+        'distInfo//postCode': 'distrib//postal',
+        'idCitation//resTitle': 'citation//title',
+        'idCitation//pubDate': 'citation//pubdate',
+        'citRespParty//rpIndName': 'metc//cntper',
+        'citRespParty//rpOrgName': 'metc//cntorg',
+        'citRespParty//rpPosName': 'metc//cntpos',
+        'citRespParty//voiceNum': 'metc//cntvoice',
+        'citRespParty//delPoint': 'metc//address',
+        'citRespParty//city': 'metc//city',
+        'citRespParty//adminArea': 'metc//state',
+        'citRespParty//country': 'metc//country',
+        'citRespParty//eMailAdd': 'metc//cntemail',
+        'citRespParty//postCode': 'metc//postal',
+        'citRespParty//displayName': 'metc//cntper',
+        'idAbs': 'abstract',
+        'idPurp': 'purpose',
+        'idPoC//rpIndName': 'metc//cntper',
+        'idPoC//rpOrgName': 'metc//cntorg',
+        'idPoC//rpPosName': 'metc//cntpos',
+        'idPoC//voiceNum': 'metc//cntvoice',
+        'idPoC//delPoint': 'metc//address',
+        'idPoC//city': 'metc//city',
+        'idPoC//adminArea': 'metc//state',
+        'idPoC//country': 'metc//country',
+        'idPoC//eMailAdd': 'metc//cntemail',
+        'idPoC//postCode': 'metc//postal',
+        'placeKeys': 'place',
+        'themeKeys': 'theme',
+        'searchKeys': 'theme',
+        'Consts//useLimit': 'useconst',
+        'envirDesc': 'native',
+        'dataExt//exDesc': 'spdom//descgeog',
+        'dataExt//westBL': 'westbc',
+        'dataExt//eastBL': 'eastbc',
+        'dataExt//southBL': 'southbc',
+        'dataExt//northBL': 'northbc',
+        'TempExtent//tmBegin': 'timeperd//caldate',
+        'TempExtent//tmEnd': 'timeperd//caldate',
+        'dataLineage': 'procdesc',
+        'dqInfo//evalMethDesc': 'attraccr',
+        'eainfo//enttypd': 'eaover'
+    }
+    
+    # Iterate through each template->source mapping and transfer information appropriately
+    for template_tag, src_tag in tag_mapping.items():
+        # Get all elements from template and source xml that match the tags  
+        template_elements = template_root.findall('.//' + template_tag)
+        src_elements = source_root.findall('.//' + src_tag)
+        
+        # If there's only 1 element from source and no children tags, simply change the template element's text to the source element's text
+        if len(src_elements) == 1 and len(src_elements[0]) == 0:
+            template_elements[0].text = src_elements[0].text
+            
+        # Else if there's multiple source elements and each has children tags (as is the case for theme tags, which hold theme keys), iterate through each one and transfer information appropriately
+        elif len(src_elements) > 1 and len(src_elements[0]) > 0:
+            # If we are adding searchKeys, add all the keys
+            if template_elements[0].tag == 'searchKeys':
+                for element in src_elements:
+                    for child in element:
+                        if child.tag == 'themekey':
+                            new_tag = ET.Element('keyword')
+                            new_tag.text = child.text
+                            template_elements[0].append(new_tag)
+            # Else we are likely dealing with themeKeys
+            else:
+                for template_element, src_element in zip(template_elements, src_elements):
+                    # For each child in the source element, if it is the title of the theme, copy the source text to the template element. 
+                    # Else if the child is a themekey, create a new tag in the template called <keyword> and transfer the source text
+                    for src_child in src_element:
+                        if src_child.tag == 'themekt' and template_tag == 'themeKeys':
+                            template_element.find('.//resTitle').text = src_child.text
+                        elif src_child.tag == 'themekey':
+                            new_tag = ET.Element('keyword')
+                            new_tag.text = src_child.text
+                            template_element.append(new_tag)
+        
+        # Else it must be a singular element with children tags (as is the case for the place tag, which holds placekeys)                
+        else:
+            for src_child in src_elements[0]:
+                if src_child.tag == 'placekey':
+                    new_tag = ET.Element('keyword')
+                    new_tag.text = src_child.text
+                    template_elements[0].append(new_tag)
+                    
+    # Set values for tags that don't play well in the loop above
+        # Data completeness and accuracy reports
+    for element in template_root.findall('.//dqInfo//report'):
+        if element.get('type') == "DQCompOm":
+            element.find('measDesc').text = source_root.find('.//complete').text
+        elif element.get('type') == "DQQuanAttAcc":
+            element.find('evalMethDesc').text = source_root.find('.//attraccr').text
+            # Raster dimensions + resolution
+    for element in template_root.findall('.//axisDimension'):
+        if element.get('type') == "001":
+            element.find('.//dimSize').text = str(raster.RasterXSize)
+            element.find('dimResol//value').text = str(raster.GetGeoTransform()[1])
+        else:
+            element.find('.//dimSize').text = str(raster.RasterYSize)
+            element.find('.//dimResol//value').text = str(raster.GetGeoTransform()[5] * -1) # multiply by -1 because y resolution stored as negative
+    
+                    
+    # Set values not found in the source xml
+        # General items
+    template_root.find('.//DataProperties//itemName').text = f'TreeMap{year}_{col_name}.tif'
+    template_root.find('.//DataProperties//itemLocation//linkage').text = str(check_file_in_folder(att_xml_metadata, f'TreeMap{year}_{col_name}.tif'))
+    template_root.find('.//SyncDate').text = datetime.now().strftime('%Y%m%d')
+    template_root.find('.//SyncTime').text = datetime.now().strftime('%M%S%H')
+    template_root.find('.//ModDate').text = datetime.now().strftime('%Y%m%d')
+    template_root.find('.//ModTime').text = datetime.now().strftime('%M%S%H')
+
+        # Set raster metadata
+    template_root.find('.//coordRef').text = raster.GetProjection()
+    template_root.find('.//AttributeDescription').text = col_name + ': ' + col_descriptions[col_name]
+    template_root.find('.//BandMinValue').text = str(band.GetStatistics(True, False)[0])
+    template_root.find('.//BandMaxValue').text = str(band.GetStatistics(False, True)[1])
+    template_root.find('.//BandUnits').text = col_descriptions[col_name]
+    template_root.find('.//BandBitsPerValue').text = str(gdal.GetDataTypeSize(band.DataType))
+    template_root.find('.//HasColormap').text = 'PLACEHOLDER'
+    template_root.find('.//CompressionType').text = str(raster.GetMetadata("IMAGE_STRUCTURE").get("COMPRESSION", "NONE"))
+    template_root.find('.//NumBands').text = str(raster.RasterCount)
+    template_root.find('.//Format').text = raster.GetDriver().LongName        
+    template_root.find('.//PixelType').text = gdal_to_pixel_type(band.DataType)
+    template_root.find('.//NoDataValue').text = str(band.GetNoDataValue())
+    template_root.find('.//Band//minVal').text = str(band.GetStatistics(True, False)[0])
+    template_root.find('.//Band//maxVal').text = str(band.GetStatistics(False, True)[1])
+    template_root.find('.//Band//bitsPerVal').text = str(gdal.GetDataTypeSize(band.DataType))
+        # Check if attribute is discrete or continuous
+    if col_name in discrete_attributes:
+        template_root.find('.//SourceType').text = 'DISCRETE'
+    else:
+        template_root.find('.//SourceType').text = 'CONTINUOUS'
+        
+        # Calculate corner + center coordinates and assign
+    ul_x, ul_y, lr_x, lr_y = get_corners(raster)
+    center_x, center_y = get_center_coordinate(ul_x, lr_x, lr_y, ul_y)
+    template_root.find('.//suppInfo').text = template_root.find('.//suppInfo').text.format(XMIN_ORIG = str(ul_x), YMAX_ORIG = str(ul_y), XMAX_ORIG = str(lr_x), YMIN_ORIG = str(lr_y))
+    for element in template_root.findall('.//cornerPts'):
+        element.find('pos').text = element.find('pos').text.format(XMIN_ORIG=str(ul_x), XMAX_ORIG=str(lr_x), YMIN_ORIG = str(lr_y), YMAX_ORIG = str(ul_y))
+    template_root.find('.//centerPt//pos').text = template_root.find('.//centerPt//pos').text.format(CENTER_X=center_x, CENTER_Y=center_y)
+    
+        # Set constants
+    template_root.find('.//scaleRange//minScale').text = '150000000'
+    template_root.find('.//scaleRange//maxScale').text = '5000'
+    template_root.find('.//idCitation//datasetSeries//seriesName').text = 'TreeMap'
+    template_root.find('.//idCitation//collTitle').text = 'TreeMap'
+    template_root.find('.//mdConst//othConsts').text = 'None'
+    template_root.find('.//eainfo//enttypl').text = col_name
+    template_root.find('.//eainfo//enttypds').text = col_descriptions[col_name]
+        
+    # Write the file
+    template_tree.write(new_meta_file)
+    
+    
+    # Create statistics metadata (*.tif.aux.xml)
+        # Open template file
+    stats_template_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'templates', 'TreeMap_ArcStats_template.xml')
+    stats_template_tree = ET.parse(stats_template_file)
+    stats_template_root = stats_template_tree.getroot()
+    
+    stats = band.GetStatistics(True, True)
+    num_buckets, include_out, approx = 256, 0, 0
+    bucket_counts = band.GetHistogram(min=stats[0], max=stats[1], buckets=num_buckets, include_out_of_range=include_out, approx_ok=approx)
+    
+    # Populate elements
+    stats_template_root.find('.//Histograms//HistMin').text = str(stats[0])
+    stats_template_root.find('.//Histograms//HistMax').text = str(stats[1])
+    stats_template_root.find('.//Histograms//BucketCount').text = str(num_buckets)
+    stats_template_root.find('.//Histograms//IncludeOutOfRange').text = str(include_out)
+    stats_template_root.find('.//Histograms//Approximate').text = str(approx)
+    stats_template_root.find(".//Histograms//HistCounts").text = "|".join(map(str, bucket_counts))
+    
+    # Find and update the statistics in Metadata
+    metadata = stats_template_root.find(".//Metadata")
+    band_data = band.ReadAsArray()
+    no_data_value = band.GetNoDataValue()
+    valid_data = band_data[band_data != no_data_value]
+    for mdi in metadata.findall("MDI"):
+    	key = mdi.attrib.get("key")
+    	if key == "STATISTICS_MAXIMUM":
+        	mdi.text = str(stats[1])
+    	elif key == "STATISTICS_MEAN":
+        	mdi.text = str(stats[2])
+    	elif key == "STATISTICS_MEDIAN":
+        	mdi.text = str(np.median(valid_data))
+    	elif key == "STATISTICS_MINIMUM":
+        	mdi.text = str(stats[0])
+    	elif key == "STATISTICS_STDDEV":
+        	mdi.text = str(stats[3])
+    	elif key == "STATISTICS_VALID_PERCENT":
+        	mdi.text = str((valid_data.size / band_data.size) * 100)
+    
+    stats_template_tree.write(insert_before_ext(att_xml_metadata, '.tif.aux'))
+    
+    
+def zip_files(file_names, zip_file_name):
+    '''
+    Zips files together and writes a new .zip
+    
+    Args: 
+        file_names: Filepaths, including new file name, to be zipped.
+        zip_file_name: Filepath of the output .zip
+        
+    Returns:
+        None
+    '''
+    
+    # Create a ZipFile object in write mode
+    with ZipFile(zip_file_name, 'w') as zipf:
+        # Loop through files and add them to the zip file
+        for file_name in file_names:
+            zipf.write(file_name)
+            
+            
+def determine_resample(col_name):
+    '''
+    Determines the resample method for pyramids.
+
+    Args:
+        col_name (str): Name of column or attribute being processed (e.g. CARBON_D)
+
+    Returns:
+        str: A string ('MODE' or 'NEAREST') of the resample method
+    '''
+    
+    if col_name in ('STDSZCD', 'FLDSZCD'):
+        return 'MODE'
+    else:
+        return 'NEAREST'
+
+
+
+def gdal_to_numpy_dtype(gdal_dtype):
+    '''
+    Takes a gdal datatype and returns the corresponding numpy datatype
+
+    Args:
+        gdal_dtype (gdal datatype): gdal data type to be converted
+
+    Returns:
+        numpy datatype: Corresponding numpy datatype 
+    '''
+    
+    if gdal_dtype == gdal.GDT_Byte:
+        return np.uint8
+    elif gdal_dtype == gdal.GDT_UInt16:
+        return np.uint16
+    elif gdal_dtype == gdal.GDT_Int16:
+        return np.int16
+    elif gdal_dtype == gdal.GDT_UInt32:
+        return np.uint32
+    elif gdal_dtype == gdal.GDT_Int32:
+        return np.int32
+    elif gdal_dtype == gdal.GDT_Float32:
+        return np.float32
+    elif gdal_dtype == gdal.GDT_Float64:
+        return np.float64
+    else:
+        raise ValueError(f"Unsupported GDAL data type: {gdal_dtype}")
+        
+        
+def determine_year():
+    '''
+    Determines the year of the TreeMap dataset based on its filename (the value of treeMapTif)
+
+    Args:
+        None.
+
+    Returns:
+        str: The year of the dataset
+    '''
+    
+    # Get name of file
+    filename = treeMapTif
+    
+    # Split string to exclude 'TreeMap'
+    split_filename = filename.split('TreeMap')[1]
+    
+    # Return the next 4 characters in the string (which should be the year)
+    return split_filename[:4]
+
+
+def inform_input_output():
+    '''
+    Prints the filepaths of the main dataset and output folder. Prompts the user to confirm they are correct.
+
+    Args:
+        None.
+
+    Returns:
+        None.
+    '''
+    
+    print('\n\n****************************************************************************************************')
+    print('Input tif: ' + treeMapTif)
+    print('Input dbf: ' + treeMapDbf)
+    print('Input xml: ' + treeMapXml)
+    print('Input html: ' + treeMapHtml)
+    print('Output folder: ' + outputFolder)
+    print('****************************************************************************************************\n')
+    
+    # Check with user if filepaths are correct
+    print("If filepaths are correct press 'enter', otherwise press 'q' to quit and please update filepaths in script:")
+    key = msvcrt.getch()
+    if key.lower() == b'q':
+        quit()
+    
+    
+def gdal_to_pixel_type(gdal_type):
+    '''
+    Converts a gdal datatype to an ESRI datatype.
+
+    Args:
+        gdal_type (gdal datatype): gdal datatype
+
+    Returns:
+        str: Pixel type (e.g. U8, U16, S16, F32, etc.)
+    '''
+    
+    if gdal_type == gdal.GDT_Byte:
+        return "U8"
+    elif gdal_type == gdal.GDT_UInt16:
+        return "U16"
+    elif gdal_type == gdal.GDT_UInt32:
+        return "U32"
+    elif gdal_type == gdal.GDT_Int16:
+        return "S16"
+    elif gdal_type == gdal.GDT_Int32:
+        return "S32"
+    elif gdal_type == gdal.GDT_Float32:
+        return "F32"
+    elif gdal_type == gdal.GDT_Float64:
+        return "F64"
+    else:
+        return None
+    
+
+def insert_before_ext(filepath, insert_text):
+    """
+    Takes a file path and a string to be inserted just before the file extension.
+
+    Args:
+        filepath (str): The original file path.
+        insert_text (str): The text to insert before the file extension.
+
+    Returns:
+        str: The new file path with the text inserted before the extension.
+    """
+    
+    base_name = os.path.basename(filepath)  # get the file name
+    directory_name = os.path.dirname(filepath)  # get the directory name
+
+    split_base_name = os.path.splitext(base_name)  # split the base name into name and extension
+    new_base_name = f"{split_base_name[0]}{insert_text}{split_base_name[1]}"  # create the new base name
+
+    new_filepath = os.path.join(directory_name, new_base_name)  # join the directory name and the new base name
+
+    return new_filepath
+
+
+def get_corners(dataset):
+    """
+    Gets the corner coordinates (center of pixel)
+
+    Args:
+        dataset (raster): The raster object of the image in question (output of gdal.Open())
+
+    Returns:
+        float: Coorindates of upper left x, upper left y, lower right x, lower right y
+    """
+    
+    width = dataset.RasterXSize
+    height = dataset.RasterYSize
+
+    gt = dataset.GetGeoTransform()
+
+    ul_x = gt[0] + 0.5 * gt[1]    # add half the resolution to get to the center of the pixel
+    ul_y = gt[3] + 0.5 * gt[5]
+
+    lr_x = gt[0] + (width * gt[1]) - 0.5 * gt[1]   # subtract half the resolution to get to the center of the pixel
+    lr_y = gt[3] + (height * gt[5]) - 0.5 * gt[5]
+
+    return ul_x, ul_y, lr_x, lr_y
+
+
+def get_center_coordinate(xmin, xmax, ymin, ymax):
+    """
+    Gets the center coordinates (center of pixel)
+
+    Args:
+        xmin (flaot): Minimum x-coordinate
+        xmax (float): Maximum x-coordinate
+        ymin (float): Minimum y-coordinate
+        ymax (float): Maximum y-coordinate
+
+    Returns:
+        float: x,y coordinates of center
+    """
+    
+    center_x = (xmin + xmax) / 2.0
+    center_y = (ymin + ymax) / 2.0
+    return center_x, center_y
+
+
+def check_file_in_folder(filepath, target_filename):
+    '''This function takes a filepath and checks if the target_filename is in the folder
+    
+    Args:
+        filepath (str): A file in the same folder to check.
+        target_filename (str): The file to search for in the folder.
+        
+    Returns:
+        str: The filepath of the found file, or None if not found.
+    '''
+    
+    # Get director of input filepath
+    directory = os.path.dirname(filepath)
+    
+    # Check each item
+    for filename in os.listdir(directory):
+        if filename == target_filename:
+            return os.path.join(directory, filename)
+    
+
+def remove_text(node, text_to_remove):
+    """
+    This function recursively traverses a BeautifulSoup node (HTML element or text), and removes the specified text from any text node it encounters.
+
+    Args:
+        node (bs4.element.Tag or bs4.element.NavigableString): The BeautifulSoup node (HTML element or text) to traverse.
+        text_to_remove (str): The text to be removed from any text nodes encountered during traversal.
+
+    Returns:
+        None
+    """
+    
+    # If the node is a text node (NavigableString), check if the specified text is in it
+    if isinstance(node, NavigableString):
+        # If the specified text is found, replace it with an empty string
+        if text_to_remove in node:
+            node.replace_with(node.replace(text_to_remove, ''))
+    else:
+        # If the node is not a text node, it must be an HTML element node
+        # In this case, recursively call remove_text on each of its child nodes (content)
+        for child_node in node.contents:
+            remove_text(child_node, text_to_remove)
+        
+        
 
 ######################################################################
 # Main Function Calls
