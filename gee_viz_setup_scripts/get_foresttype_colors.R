@@ -35,11 +35,23 @@ fldtypname <- levels(treemap)[[1]][,2]
 
 #get unique values for each
 fortyp_table <- data.frame(fortypcd, fortypname)
-fortyp_table <- unique(fortyp_table)
+fortyp_table <- unique(fortyp_table) %>%
+  arrange(fortypcd)
 
 # get unique values for each
 fldtyp_table <- data.frame(fldtypcd, fldtypname)
-fldtyp_table <- unique(fldtyp_table)
+fldtyp_table <- unique(fldtyp_table) %>%
+  arrange(fldtypcd)
+
+#look at correspondence
+unique_names_fortyp <- fortyp_table$fortypname[fortyp_table$fortypname %notin% fldtyp_table$fldtypname]
+unique_names_fortyp
+
+unique_names_fldtyp <- fldtyp_table$fldtypname[fldtyp_table$fldtypname %notin% fortyp_table$fortypname]
+unique_names_fldtyp
+
+fortyp_table %>%
+  filter(fortypname %in% unmatched_names)
 
 #get full table of all types in both
 all_typ_table <- data.frame(code = c(fortyp_table$fortypcd, fldtyp_table$fldtypcd),
@@ -50,8 +62,7 @@ all_typ_table <- unique(all_typ_table)
 all_typ_table %>% dplyr::arrange(code)
 
   
-# get colors
-
+# get colors - random colors
 n <- nrow(all_typ_table)
 
 palette <- distinctColorPalette(n)
@@ -66,15 +77,20 @@ nums_null <- nums[nums %notin% all_typ_table$code]
 nums_df <- data.frame(code = nums_null, palette = rep("#000000", length(nums_null)))
 
 palette_out <- bind_rows(all_typ_table, nums_df) %>%
-  arrange(code)
+  arrange(code) %>%
+  mutate(palette_which = ifelse(name %in% unique_names_fldtyp, "FLDTYP", 
+         ifelse(name %in% unique_names_fortyp, "FORTYP", "BOTH")))
 
 #write out in format for js
-
 head(palette_out$palette)
 
-write.table(
-  paste0("[", palette_out$palette,
-         "]",),
-            "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gee_viz_setup_scripts/forest_type_palette.txt", 
-            append = FALSE, sep = " ", dec = ".", 
+palette_out %>%
+  filter(palette_which == "BOTH" | palette_which == "FLDTYP") %>%
+  select(palette)
+
+write.table(palette_out$palette 
+            "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gee_viz_setup_scripts/forest_type_palette_full.txt", 
+            append = FALSE, sep = " ", dec = ".", eol = ",",
             row.names = FALSE, col.names = FALSE)
+
+
