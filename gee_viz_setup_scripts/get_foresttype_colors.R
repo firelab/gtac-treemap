@@ -50,8 +50,6 @@ unique_names_fortyp
 unique_names_fldtyp <- fldtyp_table$fldtypname[fldtyp_table$fldtypname %notin% fortyp_table$fortypname]
 unique_names_fldtyp
 
-fortyp_table %>%
-  filter(fortypname %in% unmatched_names)
 
 #get full table of all types in both
 all_typ_table <- data.frame(code = c(fortyp_table$fortypcd, fldtyp_table$fldtypcd),
@@ -79,7 +77,9 @@ nums_df <- data.frame(code = nums_null, palette = rep("#000000", length(nums_nul
 palette_out <- bind_rows(all_typ_table, nums_df) %>%
   arrange(code) %>%
   mutate(palette_which = ifelse(name %in% unique_names_fldtyp, "FLDTYP", 
-         ifelse(name %in% unique_names_fortyp, "FORTYP", "BOTH")))
+         ifelse(name %in% unique_names_fortyp, "FORTYP", "BOTH")),
+         palette_fldtyp = ifelse(name %in% unique_names_fldtyp, palette, "#000000"),
+         palette_fortyp = ifelse(name %in% unique_names_fortyp, palette, "#000000"))
 
 #write out in format for js
 head(palette_out$palette)
@@ -88,9 +88,18 @@ palette_out %>%
   filter(palette_which == "BOTH" | palette_which == "FLDTYP") %>%
   select(palette)
 
-write.table(palette_out$palette 
+write.table(palette_out$palette ,
             "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gee_viz_setup_scripts/forest_type_palette_full.txt", 
             append = FALSE, sep = " ", dec = ".", eol = ",",
             row.names = FALSE, col.names = FALSE)
 
+write.table(palette_out$palette_fldtyp ,
+            "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gee_viz_setup_scripts/forest_type_palette_fldtyp.txt", 
+            append = FALSE, sep = " ", dec = ".", eol = ",",
+            row.names = FALSE, col.names = FALSE)
+
+write.table(palette_out$palette_fortyp ,
+            "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gee_viz_setup_scripts/forest_type_palette_fortyp.txt", 
+            append = FALSE, sep = " ", dec = ".", eol = ",",
+            row.names = FALSE, col.names = FALSE)
 
