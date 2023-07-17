@@ -1089,12 +1089,7 @@ def replace_text_html(node, text_to_remove, replacement_text):
 year = determine_year()
 
 # Inform user of assigned inputs + outputs
-#inform_input_output()
-
-# Main Function
-for col_name, gdal_dtype in cols:
-    create_html_metadata(col_name)
-quit()
+inform_input_output()
 
 # Main Function
 for col_name, gdal_dtype in cols:
