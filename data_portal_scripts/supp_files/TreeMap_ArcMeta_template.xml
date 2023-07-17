@@ -123,7 +123,6 @@
          <distorTran>
             <onLineSrc>
                <orDesc>Downloadable data</orDesc>
-               ONLINE_LINKAGES
             </onLineSrc>
          </distorTran>
       </distributor>
@@ -137,7 +136,7 @@
          <date>
             <pubDate>PUBLICATION_DATE</pubDate>
          </date>
-         <resEd>VERSION</resEd>
+         <resEd></resEd>
          <presForm>
             <PresFormCd value="005" />
          </presForm>
@@ -313,11 +312,11 @@
          <measResult>
             <ConResult>
                <conSpec>
-                  <resTitle>ACCURACY_TITLE</resTitle>
+                  <resTitle></resTitle>
                   <date>
-                     <createDate>PUBLICATION_DATE</createDate>
-                     <pubDate>PUBLICATION_DATE</pubDate>
-                     <reviseDate>PUBLICATION_DATE</reviseDate>
+                     <createDate></createDate>
+                     <pubDate></pubDate>
+                     <reviseDate></reviseDate>
                   </date>
                </conSpec>
                <conExpl>ACCURACY_RESULTS</conExpl>
