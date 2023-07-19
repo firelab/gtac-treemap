@@ -6,6 +6,7 @@ Please update use considerations and this description with any changes.
 
 """
 
+
 # Print use considerations
 print('\n**************************************************************\n**************************************************************')
 print('USE CONSIDERATIONS: ')
@@ -878,10 +879,10 @@ def determine_resample(col_name):
         str: A string ('MODE' or 'NEAREST') of the resample method
     '''
     
-    if col_name in ('STDSZCD', 'FLDSZCD'):
+    if col_name in ('STDSZCD', 'FLDSZCD', 'FLDTYPCD', 'FORTYPCD'):
         return 'MODE'
     else:
-        return 'NEAREST'
+        return 'AVERAGE'
 
 
 def gdal_to_numpy_dtype(gdal_dtype):
