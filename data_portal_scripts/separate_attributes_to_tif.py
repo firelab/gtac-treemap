@@ -25,6 +25,7 @@ import os, numpy as np
 from osgeo import gdal
 from simpledbf import Dbf5
 import pandas as pd
+import json
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup, NavigableString
 from datetime import datetime
@@ -42,7 +43,7 @@ treeMapXml = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_S
 treeMapHtml = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Supplements\_metadata_RDS-2021-0074.html"
 
 # Specify output folder
-outputFolder = r"\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters"
+outputFolder = r"C:\Users\NicholasStorey\OneDrive - USDA\Desktop\Attribute_Table_Test"
 
 # Specify no data value in RDS dataset
 rawTreeMapNoDataValue = 2147483647
@@ -83,17 +84,14 @@ col_descriptions = {
     'CARBON_DWN': 'down dead carbon > 3 inches diameter (tons per ac.); estimated by FIA based on forest type, geographic area, and live tree carbon density.'
     }
 
-col_colors = {
-    #'FORTYPCD': ['', '', ''],
-    #'FLDTYPCD': ['', '', ''],
+# Descrite (thematic + ordinal) columns with their associated color information. FORTYPCD + FLDTYPCD do not get assigned colors from here, and are thus listed as NA
+discrete_cols= {
+    'FORTYPCD': ['NA', 'NA', 'NA'],
+    'FLDTYPCD': ['NA', 'NA', 'NA'],
     'STDSZCD': ['colorbrewer', 'Set1', '6'],
     'FLDSZCD': ['colorbrewer', 'Set1', '6'],
     'CANOPYPCT': ['crameri', 'bamako', '50'],
-    'STANDHT': ['crameri', 'bamako', '50'],
     }
-
-# Which attributes are discrete?
-discrete_attributes = ['FORTYPCD', 'FLDTYPCD', 'STDSZCD', 'FLDSZCD', 'TPA_LIVE', 'TPA_DEAD']
 
 # Import dbf, convert to pandas DataFrame, isolate values
 dbf = Dbf5(treeMapDbf)
@@ -209,7 +207,13 @@ def attributeToImage(columnName, gdal_dtype):
 
     # Build pyramids
     print('Building pyramids...')
-    newImage.BuildOverviews(determine_resample(columnName), [2, 4, 8, 16, 32, 64])
+    resample_type, overview_levels = determine_pyramids_options(columnName)
+    newImage.BuildOverviews(resample_type, overview_levels)
+    
+    # Build attribute table if appropriate
+    if columnName in discrete_cols.keys():
+        print('Building attribute table...')
+        create_attribute_table(columnName, '/vsimem/tmp.tif')
 
     # Close the image (forces it to write to disk)
     newImage = None
@@ -238,6 +242,187 @@ def attributeToImage(columnName, gdal_dtype):
     arcxml_file = os.path.join(outputFolder, f'TreeMap{year}_{columnName}.tif.xml')
     arcstats_file = os.path.join(outputFolder, f'TreeMap{year}_{columnName}.tif.aux.xml')
     zip_files([tif_file, xml_file, html_file, arcxml_file, arcstats_file], f'{outputFolder}/00_Zipped_Files/TreeMap{year}_{columnName}.zip')
+
+
+def hex_to_rgb(hex_code):
+    '''
+    Converts hex codes to rgb values.
+    
+    Args:
+        hex_code (str): Hex code to be converted.
+        
+    Returns:
+        List of the red, green, and blue values.
+    '''
+    if hex_code.startswith('#'):
+        hex_code = hex_code[1:]
+    
+    return [int(hex_code[i:i+2], 16) for i in range(0, 6, 2)]
+
+def create_ordinal_att_table(col_name, file_path):
+    '''
+    Creates a raster attribute table for the specified image.
+    
+    Args:
+        col_name (str): Name of the column being processed (e.g. 'FLDSZCD').
+        file_path (str): File path of the file.
+        
+    Returns:
+        None.
+    '''
+
+    # Path to the palettes JSON file
+    palettes_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'supp_files', 'palettes.json')
+    
+    # Extracting the label, theme and number for the color palette
+    label, theme, number = discrete_cols[col_name]
+        
+    # Open the color maps JSON file
+    with open(palettes_file) as json_file:
+    	color_maps = json.load(json_file)
+        
+    # Retrieve the specific color map in hex format
+    color_map_hex = color_maps[label][theme][number]
+       	 
+    # Convert each hex color code to its RGB equivalent
+    color_map_rgb = [hex_to_rgb(color) for color in color_map_hex]
+    
+    # Open the raster file for update
+    image = gdal.Open(file_path, gdal.GA_Update)
+    
+    # Get the first band from the raster
+    band = image.GetRasterBand(1)
+        
+    # Get the value assigned for NoData cells in the raster
+    nodata_value = band.GetNoDataValue()
+        
+    # Retrieve the unique values from the raster excluding NoData
+    unique_values = np.unique(band.ReadAsArray())
+    unique_values_nodata_excluded = unique_values[unique_values != nodata_value]
+        
+    # Create a new Raster Attribute Table (RAT)
+    rat = gdal.RasterAttributeTable()
+    
+    # Set the row count of the RAT to the number of unique values
+    rat.SetRowCount(len(unique_values_nodata_excluded))
+        
+    # Create columns for the pixel value and RGB values
+    rat.CreateColumn("Value", gdal.GFT_Integer, gdal.GFU_Generic)
+    rat.CreateColumn("Red", gdal.GFT_Integer, gdal.GFU_Red)
+    rat.CreateColumn("Green", gdal.GFT_Integer, gdal.GFU_Green)
+    rat.CreateColumn("Blue", gdal.GFT_Integer, gdal.GFU_Blue)
+        
+    # Fill the RAT with the unique values and corresponding RGB values
+    for i, value in enumerate(unique_values_nodata_excluded):
+    	# Set pixel value
+    	rat.SetValueAsInt(i, 0, int(value))
+    
+    	# Set RGB values
+    	rat.SetValueAsInt(i, 1, color_map_rgb[i][0])  # Red
+    	rat.SetValueAsInt(i, 2, color_map_rgb[i][1])  # Green
+    	rat.SetValueAsInt(i, 3, color_map_rgb[i][2])  # Blue
+       	 
+    # Attach the RAT to the raster band
+    band.SetDefaultRAT(rat)
+    
+    # Set the band and the raster to None to close them
+    band = None
+    image = None
+    
+
+def create_thematic_att_table(col_name, file_path):
+    '''
+    Creates a raster attribute table for the specified image.
+    
+    Args:
+        col_name (str): Name of the column being processed (e.g. 'FLDSZCD').
+        file_path (str): File path of the file.
+        
+    Returns:
+        None.
+    '''
+
+    # Path to the forest_type_palette_lookup JSON file.
+        # This json consists of a list of codes, a list of names, and a list hex colors. Corresponding values from the codes, names, and colors lists share the same indicies.
+    palettes_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'supp_files', 'forest_type_palette_lookup.json')
+        
+    # Open the color maps JSON file
+    with open(palettes_file) as json_file:
+        lut = json.load(json_file)
+        
+    codes = lut["code"]
+    names = lut["names"]
+    colors = lut["palette"]
+  
+    # Open the raster file for update
+    image = gdal.Open(file_path, gdal.GA_Update)
+    
+    # Get the first band from the raster
+    band = image.GetRasterBand(1)
+        
+    # Get the value assigned for NoData cells in the raster
+    nodata_value = band.GetNoDataValue()
+        
+    # Retrieve the unique values from the raster excluding NoData
+    unique_values = np.unique(band.ReadAsArray())
+    unique_values_nodata_excluded = unique_values[unique_values != nodata_value]
+        
+    # Create a new Raster Attribute Table (RAT)
+    rat = gdal.RasterAttributeTable()
+    
+    # Set the row count of the RAT to the number of unique values
+    rat.SetRowCount(len(unique_values_nodata_excluded))
+        
+    # Create columns for the pixel value and RGB values
+    rat.CreateColumn("Value", gdal.GFT_Integer, gdal.GFU_Generic)
+    rat.CreateColumn("Label", gdal.GFT_String, gdal.GFU_Name)
+    rat.CreateColumn("Red", gdal.GFT_Integer, gdal.GFU_Red)
+    rat.CreateColumn("Green", gdal.GFT_Integer, gdal.GFU_Green)
+    rat.CreateColumn("Blue", gdal.GFT_Integer, gdal.GFU_Blue)
+        
+    # Fill the RAT with the unique values and corresponding RGB values.
+    for i, value in enumerate(unique_values_nodata_excluded):
+    	# Set pixel value
+        rat.SetValueAsInt(i, 0, int(value))
+        
+        # Get index of the code
+        code_index = codes.index(value)
+        
+        # Set label value
+        rat.SetValueAsString(i, 1, names[code_index])
+    
+    	# Set RGB values
+        color_map_rgb = hex_to_rgb(colors[code_index])
+        rat.SetValueAsInt(i, 2, color_map_rgb[0])  # Red
+        rat.SetValueAsInt(i, 3, color_map_rgb[1])  # Green
+        rat.SetValueAsInt(i, 4, color_map_rgb[2])  # Blue
+       	 
+    # Attach the RAT to the raster band
+    band.SetDefaultRAT(rat)
+    
+    # Set the band and the raster to None to close them
+    band = None
+    image = None
+    
+
+def create_attribute_table(col_name, file_path):
+    '''
+    Creates a raster attribute table for the specified image.
+    
+    Args:
+        col_name (str): Name of the column being processed (e.g. 'FLDSZCD').
+        file_path (str): File path of the file.
+        
+    Returns:
+        None.
+    '''
+
+    if col_name == 'FLDTYPCD' or col_name == 'STDTYPCD':
+        create_thematic_att_table(col_name, file_path)
+    elif col_name == 'FLDSZCD' or col_name == 'STDSZCD':
+        create_ordinal_att_table(col_name, file_path)
+    else:
+        print('Attribute Table Not Applicable to ' + col_name)
 
 
 def create_xml_metadata(col_name):
@@ -396,7 +581,7 @@ def create_html_metadata(col_name):
     
     # Process Description
         # Find the 'br' tag that directly precedes the target paragraph
-    br_before_target = soup.find(lambda tag: tag.name == 'br' and 'For complete details see Riley et al. (2016)' in tag.find_next_sibling(string=True))
+    br_before_target = soup.find(lambda tag: tag.name == 'br' and tag.find_next_sibling(string=True) is not None and 'For complete details see Riley et al. (2016)' in tag.find_next_sibling(string=True))
     
     if br_before_target:
         # Create a new string with the new paragraph
@@ -702,7 +887,7 @@ def create_arc_metadata(col_name):
     template_root.find('.//Band//maxVal').text = str(band.GetStatistics(False, True)[1])
     template_root.find('.//Band//bitsPerVal').text = str(gdal.GetDataTypeSize(band.DataType))
         # Check if attribute is discrete or continuous
-    if col_name in discrete_attributes:
+    if col_name in discrete_cols:
         template_root.find('.//SourceType').text = 'DISCRETE'
     else:
         template_root.find('.//SourceType').text = 'CONTINUOUS'
@@ -746,13 +931,21 @@ def create_arc_stats(col_name):
     stats_template_tree = ET.parse(stats_template_file)
     stats_template_root = stats_template_tree.getroot()
     
+        # Open image
     raster = gdal.Open(f'{outputFolder}\TreeMap{year}_{col_name}.tif')
     band = raster.GetRasterBand(1)
     
+        # Get band data and remove nodata values
+    band_data = band.ReadAsArray()
+    no_data_value = band.GetNoDataValue()
+    valid_data = band_data[band_data != no_data_value]
+    
+    # Get min + max value and calculate histogram
     stats = band.GetStatistics(True, True)
     num_buckets, include_out, approx = 256, 0, 0
+    #bucket_counts, bin_edges = np.histogram(valid_data, bins=num_buckets, range=(stats[0], stats[1]))
     bucket_counts = band.GetHistogram(min=stats[0], max=stats[1], buckets=num_buckets, include_out_of_range=include_out, approx_ok=approx)
-    
+
     # Populate elements
     stats_template_root.find('.//Histograms//HistMin').text = str(stats[0])
     stats_template_root.find('.//Histograms//HistMax').text = str(stats[1])
@@ -763,9 +956,6 @@ def create_arc_stats(col_name):
     
     # Find and update the statistics in Metadata
     metadata = stats_template_root.find(".//Metadata")
-    band_data = band.ReadAsArray()
-    no_data_value = band.GetNoDataValue()
-    valid_data = band_data[band_data != no_data_value]
     for mdi in metadata.findall("MDI"):
     	key = mdi.attrib.get("key")
     	if key == "STATISTICS_MAXIMUM":
@@ -865,10 +1055,10 @@ def zip_files(file_names, zip_file_name):
     with ZipFile(zip_file_name, 'w') as zipf:
         # Loop through files and add them to the zip file
         for file_name in file_names:
-            zipf.write(file_name)
+            zipf.write(file_name, os.path.basename(file_name))
             
             
-def determine_resample(col_name):
+def determine_pyramids_options(col_name):
     '''
     Determines the resample method for pyramids.
 
@@ -1079,6 +1269,23 @@ def replace_text_html(node, text_to_remove, replacement_text):
         # In this case, recursively call remove_text on each of its child nodes (content)
         for child_node in node.contents:
             replace_text_html(child_node, text_to_remove, replacement_text)
+            
+            
+def build_overviews(file_path, resample_type, overview_levels):
+    '''
+    Builds overviews for specified image.
+    
+    Args:
+        file_path (str): The file path of the image.
+        resample_type (str): The resample type for the pyramids (e.g. 'NEAREST')
+        overview_levels (list of integers): The overview levels, or reduction factors, for the overviews (e.g. [2, 4, 8, 16, 32, 64])
+
+    Returns:
+        None.
+    '''
+    
+    image = gdal.Open(file_path, gdal.GA_Update)
+    image.BuildOverviews(resample_type, overview_levels)
         
         
 
@@ -1090,7 +1297,11 @@ def replace_text_html(node, text_to_remove, replacement_text):
 year = determine_year()
 
 # Inform user of assigned inputs + outputs
-inform_input_output()
+#inform_input_output()
+
+print('Creating attribute table...')
+create_attribute_table('FLDTYPCD', r'C:\Users\NicholasStorey\OneDrive - USDA\Desktop\Attribute_Table_Test\TreeMap2016_FLDTYPCD.tif')
+quit()
 
 # Main Function
 for col_name, gdal_dtype in cols:
@@ -1101,4 +1312,4 @@ for col_name, gdal_dtype in cols:
     end_time = time.perf_counter()
     elapsed = (end_time - start_time)/60
     print(f'\nTime to complete: {elapsed} minutes')
-    
+  
