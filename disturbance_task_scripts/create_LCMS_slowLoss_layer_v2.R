@@ -6,8 +6,6 @@
 library(terra)
 library(tidyverse)
 
-# Start the clock!
-ptm <- proc.time()
 
 ############################
 # USER INPUTS
@@ -19,16 +17,17 @@ ptm <- proc.time()
 
 #list landfire zones of interest
 zone_list <- c(#15,
-  #16,
+  16#,
   #19,
   #21,
   #28
-  17,
-  18)
+  #17,
+  #18
+  )
 
 #select year range (LCMS available for 1985-2021)
-start_year <- 2010
-end_year <- 2016
+start_year <- 1999
+end_year <- 2020
 
 # set tmp directory
 tmp_dir <- "D:/tmp/"
@@ -44,8 +43,9 @@ treemap_path <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074
 
 # aoi path - if different from landfire zone
 # supply path, or NA
-#aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
-aoi_path <- NA
+aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
+aoi_name <- "UT_Uintas_rect"
+#aoi_path <- NA
 
 # determine whether to produce eval dataset with other LCMS values
 # takes Y or N
@@ -82,10 +82,10 @@ gc()
 ######################
 
 #load any lcms change raster - to get spatial specs; doesn't load values into memory yet
-lcms <- terra::rast(paste0(lcms_dir, "LCMS_CONUS_v2021-7_Change_2020.tif"))
+lcms_raw <- terra::rast(paste0(lcms_dir, "LCMS_CONUS_v2021-7_Change_2020.tif"))
 
 # get desired crs from LCMS
-crs <- crs(lcms)
+crs <- crs(lcms_raw)
 
 # load LF zone data
 LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp"))
@@ -99,7 +99,7 @@ LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/r
 for (z in 1:length(zone_list)) {
   
   #for testing
-  #z <- 1
+  z <- 1
   
   zone_num <- zone_list[z]
   
@@ -128,56 +128,22 @@ for (z in 1:length(zone_list)) {
     
     # reassign
     zone <- aoi
+    zone_name <- aoi_name
   } else{}
   
-  
-  # project
-  zone <- project(zone, crs)
-  
-  #####################
-  ####### PREP TREE MASK
-  #####################
-  
-  print("processing tree mask")
-  
-  # load tree mask - pre-existing tree map data
-  tree_mask <- terra::rast(treemap_path)
-  
-  # get crop zone into same projection
-  zone <- project(zone, crs(tree_mask)) 
-  
-  #crop tree mask
-  tree_mask <- crop(tree_mask, zone)
-  
-  #reclassify tree map input to binary tree mask
-  #reclassify so that areas with a CN go to 1
-  m <- c(0, 140393888010690, 1)
-  m <- matrix(m, ncol = 3, byrow= TRUE)
-  tree_mask <- terra::classify(tree_mask, m)
-  
-  # get tree mask into desired projection
-  tree_mask <- project(tree_mask, crs, method = "near")
-  
-  # #inspect
-  # tree_mask
-  # crs(tree_mask, describe = TRUE)
-  # plot(tree_mask)
-  # summary(tree_mask)
-  # freq(tree_mask)
-  # crs(lcms, describe = TRUE)
-  
-  # clear memory
-  gc()
   
   #####################
   ####### PREP DESTINATION RASTER
   #####################
+
+  # project
+  zone <- project(zone, crs)
+  
+  lcms_raw_crop <- terra::crop(lcms_raw, zone, mask = TRUE)
   
   # create empty raster to append data into
-  r <- rast(crs = crs, ext(tree_mask), res = res(tree_mask))
+  r <- rast(crs = crs, ext(lcms_raw_crop), res = res(lcms_raw_crop))
   r <- setValues(r, 0)
-  r <- mask(r, tree_mask)
-  #names(r) <- c("slowLoss")
   
   # create new empty raster to use for eval
   r_eval <- r
@@ -214,7 +180,7 @@ for (z in 1:length(zone_list)) {
   
     #get lcms layer and crop zone into the same projection
     #lcms <- project(lcms, crs)
-    zone <- project(zone, crs)
+    #zone <- project(zone, crs)
     
     #inspect
     #freq(lcms)
@@ -247,6 +213,9 @@ for (z in 1:length(zone_list)) {
       # save computational space
       lcms.slowloss <- terra::classify(lcms.eval, cbind(no.class.val.slowloss,NA))
       
+      # remove files to save space
+      rm(lcms.eval, lcms.slowloss,
+         lcms.eval_mask)
       
     } else if (eval == "N") {
       
@@ -262,41 +231,27 @@ for (z in 1:length(zone_list)) {
     print("reclassifying to binary")
     lcms.slowloss <- terra::subst(lcms.slowloss, 2, 1)
      
-    # mask with tree mask
-    print("applying tree mask")
-    lcms.slowloss_mask <- mask(lcms.slowloss, tree_mask)
     
     #update nas to 0
     print("updating nas to 0")
-    lcms.slowloss_mask <- subst(lcms.slowloss_mask, NA, 0)
+    lcms.slowloss <- subst(lcms.slowloss, NA, 0)
     
-    # #inspect
-    # freq(lcms.slowloss_mask)
-    # 
-    # # #inspect - make sure mask worked
-    # freq(lcms)
-    # plot(tree_mask, col = "green")
-    # plot(subst(lcms.slowloss_mask, 0, NA), add = TRUE)
-    # inspect <- tree_mask + (subst(lcms.slowloss_mask, NA, 0)*10)
-    # freq(inspect)
     
     # where the value of slow loss = 1, change value to value of year 
     # each year: update all px so that most recent slow loss is recorded 
     print("adding to previous years")
-    r <- r + lcms.slowloss_mask
+    r <- r + lcms.slowloss
     r <- subst(r, 1, year)
     
     # remove files to save space
-    rm(lcms.eval, lcms.slowloss,
-       lcms.eval_mask, lcms.slowloss_mask)
+    rm(lcms.slowloss)
     gc()
   
    }
   
   #inspect
   r
-  r_eval
-  
+
   if (eval == "Y") {
     
     # remove empty first raster
@@ -327,19 +282,68 @@ for (z in 1:length(zone_list)) {
   }
   
   
+  #project
+  r <- project(r, crs)
+  
+  #####################
+  ####### PREP TREE MASK
+  #####################
+  
+  print("processing tree mask")
+  gc()
+  
+  # load tree mask - pre-existing tree map data
+  tree_mask <- terra::rast(treemap_path)
+  
+  # get crop zone into same projection
+  zone <- project(zone, crs(tree_mask)) 
+  
+  #crop tree mask
+  print("cropping tree mask")
+  activeCat(tree_mask) <- 1 # ensure active cat is CN
+  tree_mask <- terra::crop(tree_mask, zone)
+  
+  #reclassify tree map input to binary tree mask
+  #reclassify so that areas with a CN go to 1
+  m <- c(0, 140393888010690, 1)
+  m <- matrix(m, ncol = 3, byrow= TRUE)
+  tree_mask <- terra::classify(tree_mask, m)
+  
+  gc()
+  
+  # get tree mask into desired projection
+  print("projecting tree mask")
+  tree_mask <- terra::project(tree_mask, crs, method = "near")
+  
+  # #inspect
+  # tree_mask
+  # crs(tree_mask, describe = TRUE)
+  # plot(tree_mask)
+  # summary(tree_mask)
+  # freq(tree_mask)
+  # crs(lcms, describe = TRUE)
+  
+  # clear memory
+  gc()
+  
+  # apply tree mask
+  print("applying tree mask")
+  r <- terra::mask(r, tree_mask)
+  
+  
   # export
   #exportname <- paste0()
   writeRaster(r, paste0(home_dir, "03_Outputs/01_LCMS_Slow_Loss/01_Rasters/01_SlowLoss/", start_year, "_", end_year, "_", zone_name ,"_LCMS_SlowLoss",   ".tif"),
               overwrite = TRUE)
   
   
-  writeRaster(r_eval, paste0(home_dir, "03_Outputs/01_LCMS_Slow_Loss/01_Rasters/02_Eval/", start_year, "_", end_year, "_", zone_name ,"_LCMS_SlowFastStableEval",   ".tif"),
-              overwrite = TRUE)
+  # writeRaster(r_eval, paste0(home_dir, "03_Outputs/01_LCMS_Slow_Loss/01_Rasters/02_Eval/", start_year, "_", end_year, "_", zone_name ,"_LCMS_SlowFastStableEval",   ".tif"),
+  #             overwrite = TRUE)
   
   # Stop the clock
   print(proc.time() - ptm)
   
-  rm(r)
+  #rm(r)
   gc()
 
 }
