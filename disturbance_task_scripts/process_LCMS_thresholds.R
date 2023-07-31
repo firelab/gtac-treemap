@@ -2,6 +2,7 @@
 library(terra)
 library(tidyverse)
 library(stringr)
+library(tictoc)
 
 # set tmp directory
 tmp_dir <- "E:/tmp/"
@@ -75,14 +76,29 @@ terraOptions(progress = 1)
     tifs_in <- str_subset(str_subset(tifs_list, as.character(year)), paste0("t", thresh))
     
     #test on subset - get first 3 rasters in list
-    tifs_in <- tifs_in[c(1:3)]
+    tifs_in_3 <- tifs_in[c(1:3)]
     
     # read in all rasters in list and mosaic
     
     # test reading in one raster
     r <- terra::rast(tifs_in[1])
     
-    # update NA value
+    # test lapply do.call
+    
+    #write new merge function
+    merge_out <- function(r){
+      merge(r, filename = paste0(out_dir, "lapply_test.tif"))
+    }
+    
+    tic()
+    l <- lapply(tifs_in_3, rast)
+    do.call(merge, c(l, filename = paste0(out_dir, "lapply_test_3.tif"), overwrite = TRUE))
+    toc()
+    
+    tic()
+    l <- lapply(tifs_in, rast)
+    do.call(merge, c(l, filename = paste0(out_dir, "lapply_test.tif"), overwrite = TRUE))
+    toc()
     
     
     # reproject 0- josh said i would need to, but the crs is the same
@@ -110,11 +126,12 @@ terraOptions(progress = 1)
                                 filename = paste0(out_dir, "merge_test.tif"))
     
     
+    lapply(tifs_)
+    
     # test vrt
     v <- terra::vrt(tifs_in)
     m <- writeRaster(v, 
-                paste0(out_dir, "vrt_test.tif"),
-                overwrite = TRUE)
+                paste0(out_dir, "vrt_test2.tif"))
     
     rm(v)
     
