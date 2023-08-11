@@ -3,6 +3,8 @@
 library(terra)
 library(tidyverse)
 library(randomcoloR)
+library(rjson)
+library(magrittr)
 
 #make %notin% function
 `%notin%` <- Negate('%in%')
@@ -14,8 +16,8 @@ treemap
 #list all categories
 names(cats(treemap)[[1]])
 
-
 activeCat(treemap)
+
 
 #get FORTYPCD
 activeCat(treemap) <- 2 # FORTYPCD
@@ -53,20 +55,39 @@ unique_names_fldtyp
 
 #get full table of all types in both
 all_typ_table <- data.frame(code = c(fortyp_table$fortypcd, fldtyp_table$fldtypcd),
-                            name = c(fortyp_table$fortypname, fldtyp_table$fldtypname))
+                            names = c(fortyp_table$fortypname, fldtyp_table$fldtypname))
 all_typ_table <- unique(all_typ_table)
 
 # sort
-all_typ_table %>% dplyr::arrange(code)
+all_typ_table %<>% dplyr::arrange(code)
 
   
 # get colors - random colors
 n <- nrow(all_typ_table)
 
+# get random colors
+# REPLACE THIS WITH SOMETHING THAT YOU CAN SET A SEED
+set.seed(1)
 palette <- distinctColorPalette(n)
+palette
 
 # write out palette
 all_typ_table$palette <- palette
+
+###### 
+#export palette table as JSON -- to be a lookup tables
+
+all_typ_table_Json <- toJSON(all_typ_table)
+
+#export
+write(all_typ_table_Json, 
+      "C:/Users/lleatherman/OneDrive - USDA/Documents/GitHub/gtac-treemap/gee_viz_setup_scripts/forest_type_palette_lookup.json")
+write(all_typ_table_Json,
+      "C:/Users/lleatherman/Documents/GitHub/lcms-viewer/js/forest_type_palette_lookup.json")
+
+
+#######################################################################
+
 
 # write out FULL palette with all numbers (necessary for js)
 nums <- seq(1, max(all_typ_table$code), 1)
