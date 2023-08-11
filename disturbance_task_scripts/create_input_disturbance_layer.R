@@ -11,10 +11,12 @@
 # LCMS is available: 1985-2022
 # Landfire is available: 1999-2020
 
+# Necessary inputs: 
 
-# load necessary packages
-library(terra)
-library(tidyverse)
+# LCMS slow loss layers ( ADD URL / download path)
+# Landfire zones shapefiles
+# Landfire disturbance layers (ADD URL / download path)
+# previous treemap input - used only as tree mask 
 
 
 ############################
@@ -36,11 +38,11 @@ zone_list <- c(#15,
 )
 
 #select year range (LCMS available for 1985-2021)
-start_year <- 1999
-end_year <- 2020
+start_year <- 2015
+end_year <- 2016
 
-# set tmp directory
-tmp_dir <- "D:/tmp/"
+# set desired end crs  - if different from treemap / LF default
+#crs <- crs("epsg:5070") # tree map output data is in  NAD83 Albers
 
 # set home dir
 home_dir <- ("//166.2.126.25/TreeMap/")
@@ -48,25 +50,37 @@ home_dir <- ("//166.2.126.25/TreeMap/")
 # get path to change rasters - LCMS
 lcms_dir <- ("//166.2.126.227/lcms/Projects/11_LCMS_NationalProduct/06_DataDelivery/Conterminous_United_States/v2021-7/Change/Annual/")
 
+# get path to change rasters - Landfire
+#landfire_dir <- ("//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_200/Disturbance/") # 2016 version
+landfire_dir <- ("//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/") # 2020 version
+
 # path to 2016 treemap data
 treemap_path <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif"
 
 # aoi path - if different from landfire zone
 # supply path, or NA
-aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
-aoi_name <- "UT_Uintas_rect"
-#aoi_path <- NA
+#aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
+#aoi_name <- "UT_Uintas_rect"
+aoi_path <- NA
 
-# determine whether to produce eval dataset with other LCMS values
-# takes Y or N
-eval <- "N"
+# set tmp directory
+tmp_dir <- "D:/tmp/"
 
 #####################
 # SETUP
 ######################
 
-# set desired end crs 
-#crs <- crs("epsg:5070") # tree map output data is in  NAD83 Albers
+# check for required packages, install if needed and then load
+list.of.packages <- c("terra", "tidyverse")
+
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+
+if(length(new.packages) > 0) install.packages(new.packages)
+
+# load necessary packages
+library(terra)
+library(tidyverse)
+
 
 # check if tmp directory exists 
 if (file.exists(tmp_dir)){
@@ -92,10 +106,17 @@ gc()
 ######################
 
 #load any lcms change raster - to get spatial specs; doesn't load values into memory yet
-lcms_raw <- terra::rast(paste0(lcms_dir, "LCMS_CONUS_v2021-7_Change_2020.tif"))
+#lcms_raw <- terra::rast(paste0(lcms_dir, "LCMS_CONUS_v2021-7_Change_2020.tif"))
+
+# load any lf change raster - to get spatial specs
+year_raw <- 1999
+
+# get evt layer from landfire - for spatial spects and forest cover
+lf_evt <- terra::rast(paste0(landfire_dir, "EVT/LF2020_EVT_220_CONUS/LF2020_EVT_220_CONUS/Tif/LC20_EVT_220.tif"))
+activeCat(lf_evt) <- "EVT_GP"
 
 # get desired crs from LCMS
-crs <- crs(lcms_raw)
+crs <- crs(lf_evt)
 
 # load LF zone data
 LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp"))
@@ -106,7 +127,7 @@ LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/r
 #####################
 
 
-for (z in 1:length(zone_list)) {
+#for (z in 1:length(zone_list)) {
   
   #for testing
   z <- 1
@@ -139,7 +160,10 @@ for (z in 1:length(zone_list)) {
     # reassign
     zone <- aoi
     zone_name <- aoi_name
-  } else{}
+    print("using input shapefile as AOI")
+  } else{
+    print("using landfire zone as AOI")
+  }
   
   
   #####################
@@ -149,20 +173,67 @@ for (z in 1:length(zone_list)) {
   # project
   zone <- project(zone, crs)
   
-  lcms_raw_crop <- terra::crop(lcms_raw, zone, mask = TRUE)
+  lf_evt_crop <- terra::crop(lf_evt, zone, mask = TRUE)
+  #activeCat(lf_evt_crop) <- "EVT_GP"
+  #activeCat(lf_evt_crop) <- "EVT_GP_N"
   
   # create empty raster to append data into
-  r <- rast(crs = crs, ext(lcms_raw_crop), res = res(lcms_raw_crop))
+  r <- rast(crs = crs, ext(lf_evt_crop), res = res(lf_evt_crop))
   r <- setValues(r, 0)
-  
-  # create new empty raster to use for eval
-  r_eval <- r
   
   # #inspect
   # freq(r)
+  ncell(r)
   
   #create year range
   year_list <- seq(start_year, end_year, 1)
+  
+  #clear memory
+  gc()
+  
+  ###################
+  ###### PREPARE AND APPLY FOREST MASK
+  
+  # reclass evt layer to forest mask
+  
+  # set up reclass matrix
+  
+  lf_forest <- terra::rcl(lf_evt_crop)
+  
+  
+  # mask r - so we're only getting forested px
+  
+  # convert input raster to list of pts - to table
+  
+  ####################
+  ###### BRING IN LCMS DATA YEARS STACK AS VRT
+  
+  # crop 
+  
+  # project to lf crs
+  
+  # extract vrt values to points
+  
+  
+  ###### BRING IN LANDFIRE DATA YEARS STACK AS VRT
+  
+  # extract vrt values to points
+  
+  ###### data table manipulation - 
+  
+  # convert to long table w year, source, change type
+  
+  # filter out change types we aren't including
+  
+  # group by pt to get most recent 
+  
+  # output column with desired change value
+  
+  ###### convert table back to raster
+  
+  # export
+  
+  
   
   #####################
   ###### ITERATE OVER YEARS
@@ -200,40 +271,10 @@ for (z in 1:length(zone_list)) {
     no.class.val.slowloss <- c(1,3,4,5,NA) # keep only slow loss
     no.class.val.eval <- c(4,5,NA) # keep: stable, slow loss, fast loss
     
-    if (eval =="Y") {
+    # set no data values based on above inputs
+    print("classifying slow loss")
+    lcms.slowloss <- terra::classify(lcms, cbind(no.class.val.slowloss,NA))
       
-      ####### FIRST set up eval data set
-      # includes slow loss, fast loss, and stable -- one layer for each year 
-      lcms.eval <- terra::classify(lcms, cbind(no.class.val.eval,NA))
-      
-      # mask with tree mask
-      lcms.eval_mask <- mask(lcms.eval, tree_mask)
-      
-      # update NAs to 0
-      lcms.eval_mask <- subst(lcms.eval_mask, NA, 0)
-      
-      #update name of layer
-      names(lcms.eval_mask) <- year
-      
-      # for eval: add all layers, organize by year
-      r_eval <- c(r_eval, lcms.eval_mask)
-      
-      
-      ####### SECOND, use eval data set to derive slow loss layer
-      # save computational space
-      lcms.slowloss <- terra::classify(lcms.eval, cbind(no.class.val.slowloss,NA))
-      
-      # remove files to save space
-      rm(lcms.eval, lcms.slowloss,
-         lcms.eval_mask)
-      
-    } else if (eval == "N") {
-      
-      # set no data values based on above inputs
-      print("classifying slow loss")
-      lcms.slowloss <- terra::classify(lcms, cbind(no.class.val.slowloss,NA))
-      
-    }
     
     ## Slow loss layer processing
     
@@ -262,38 +303,26 @@ for (z in 1:length(zone_list)) {
   #inspect
   r
   
-  if (eval == "Y") {
-    
-    # remove empty first raster
-    r_eval <- r_eval[[2:length(year_list)]]
-    
-    # add layer names to raster 
-    #names(r_eval) <- year_list
-    
-    #update 0s to NA
-    r_eval <- subst(r_eval, 0, NA)
-    
-    # #inspect
-    # r_eval
-    # freq(r_eval)
-    # plot(r_eval)
-    
-  } else if (eval == "N") {
-    
-    names(r) <- c("slowloss")
-    
-    #update 0s to NA
-    r <- subst(r, 0, NA)
-    
-    # #inspect
-    # r
-    # freq(r)
-    # plot(r)
-  }
+ 
+  names(r) <- c("slowloss")
   
+  #update 0s to NA
+  r <- subst(r, 0, NA)
+  
+  # #inspect
+  # r
+  # freq(r)
+  # plot(r)
+
   
   #project
   r <- project(r, crs)
+  
+  #####################################################
+  ###### ADD FIRE FROM LANDFIRE - FIRE TAKES PRECEDENCE
+  #####################################################
+  
+  
   
   #####################
   ####### PREP TREE MASK
