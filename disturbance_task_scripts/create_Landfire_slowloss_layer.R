@@ -3,8 +3,8 @@
 # load necessary packages
 library(terra)
 library(tidyverse)
-library(foreach)
-library(doParallel)
+#library(foreach)
+#library(doParallel)
 
 
 
@@ -22,7 +22,7 @@ library(doParallel)
 
 #list landfire zones of interest
 zone_list <- c(#15,
-               16#,
+               16
                #19,
                #21,
                #28
@@ -32,7 +32,7 @@ zone_list <- c(#15,
 
 #select year range (LCMS available for 1985-2021, Landfire available for 1999-2020)
 start_year <- 1999
-end_year <- 2016
+end_year <- 2020
 
 # set tmp directory
 tmp_dir <- "E:/tmp/"
@@ -53,6 +53,7 @@ treemap_path <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074
 # supply path, or NA
 #aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
 aoi_path <- NA
+#aoi_name <- "UT_Uintas_rect"
 
 # determine whether to produce eval dataset with other LCMS values
 # takes Y or N
@@ -88,6 +89,10 @@ terraOptions(progress = 1)
 #load any lcms change raster - to get spatial specs; doesn't load values into memory yet
 lcms <- terra::rast(paste0(lcms_dir, "LCMS_CONUS_v2021-7_Change_2020.tif"))
 
+# load any lf change raster - to get spatial specs
+year_raw <- 1999
+lf_raw<- terra::rast(paste0(landfire_dir, "US_DIST", year_raw, "/Tif/us_dist", year_raw, ".tif"))
+
 # get desired crs from LCMS
 crs <- crs(lcms)
 
@@ -105,7 +110,7 @@ LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/r
 for (z in 1:length(zone_list)) {
   
   #for testing
-  z <- 1
+  #z <- 1
   
   zone_num <- zone_list[z]
   
@@ -131,6 +136,8 @@ for (z in 1:length(zone_list)) {
     
     # reassign
     zone <- aoi
+    
+    zone_name <- aoi_name
   } else{}
   
   
@@ -141,8 +148,14 @@ for (z in 1:length(zone_list)) {
   ####### PREP LCMS
   #####################
   
-  lcms_crop <- terra::crop(lcms, zone)
+  lcms_crop <- terra::crop(lcms, zone, mask = TRUE)
   
+  #####################
+  ####### PREP LF
+  #####################
+  zone <- project(zone, crs(lf_raw))
+  
+  lf_raw_crop <- terra::crop(lf_raw, zone, mask = TRUE)
   
   # #####################
   # ####### PREP TREE MASK
@@ -182,7 +195,8 @@ for (z in 1:length(zone_list)) {
   
   # create empty raster to append data into
   #r <- rast(crs = crs, ext(tree_mask), res = res(tree_mask))
-  r <- rast(crs = crs, ext(lcms_crop), res = res(lcms_crop))
+  #r <- rast(crs = crs, ext(lcms_crop), res = res(lcms_crop))
+  r <- rast(crs = crs(lf_raw_crop), ext = ext(lf_raw_crop), res = res(lf_raw_crop))
   r <- setValues(r, 0)
   #r <- mask(r, tree_mask)
   #names(r) <- c("slowLoss")
@@ -205,7 +219,7 @@ for (z in 1:length(zone_list)) {
   for(i in 1:length(year_list)){
   
     #for testing
-    i = 1
+    #i = 1
     
     # iterate through change rasters by year
     year <- year_list[i]
@@ -242,18 +256,18 @@ for (z in 1:length(zone_list)) {
       activeCat(lf) <- "VALUE"
     } else if  ("VALUE" %notin% names(cats(lf)[[1]]) & "VALUE1" %in% names(cats(lf)[[1]])){
       activeCat(lf) <- "VALUE1"
+    } else if  ("VALUE1" %notin% names(cats(lf)[[1]]) & "VALUE_1" %in% names(cats(lf)[[1]])){
+      activeCat(lf) <- "VALUE_1"
     }
       
       
     lf <- terra::crop(lf, zone, mask = TRUE, datatype = "INT2U")
     #lf_mask <- terra::mask(lf, zone, datatype = "INT2U")
     
-    
-    
-    print("projecting")
-    #get lf layer and crop zone into the same projection
-    lf <- project(lf, crs, method = "near", threads = TRUE)
-    zone <- project(zone, crs)
+    # print("projecting")
+    # #get lf layer and crop zone into the same projection
+    # lf <- project(lf, lcms_crop, method = "near", gdal = TRUE, threads = TRUE)
+    # zone <- project(zone, crs)
     
     #inspect
     #freq(lf)
@@ -263,6 +277,7 @@ for (z in 1:length(zone_list)) {
     # no.class.val.slowloss <- c(1,3,4,5,NA) # keep only slow loss
     # no.class.val.eval <- c(4,5,NA) # keep: stable, slow loss, fast loss
     
+    # field info in metadata: https://apps.fs.usda.gov/fsgisx01/rest/services/RDW_Landfire/US_Disturbance_v200/ImageServer/info/metadata
     # for landfire: classes of change are denoted by middle digit
     #first digit = source; third digit = severity (1-3 low to high)
     #0: wildland fire
@@ -271,7 +286,7 @@ for (z in 1:length(zone_list)) {
     #3: chemical; fire; harvest
     #4: thinning (441-443; 741-743); insects (541-543; 841-843; 1041-1043)
     #5: mastication; disease (551-553; 851-853; 1051-1053)
-    #6: (561-563; 1061-1063; )
+    #6: exotics: (561-563; 1061-1063; )
     #7: herbicide; wildfire
     #8: biological (581-583; 881-883; 1081-1083)
     #9: prescribed fire
@@ -329,7 +344,7 @@ for (z in 1:length(zone_list)) {
     lf.slowloss <- terra::classify(lf.slowloss, cbind(keep, 1))
      
     # mask with tree mask
-    print("applying tree mask")
+    #print("applying tree mask")
     #lf.slowloss_mask <- mask(lf.slowloss, tree_mask)
     
     #update nas to 0
@@ -353,15 +368,17 @@ for (z in 1:length(zone_list)) {
     r <- subst(r, 1, year)
     
     # remove files to save space
-    rm(lf.eval, lf.slowloss,
-       lf.eval_mask, lf.slowloss_mask)
+    rm(lf, 
+       #lf.eval,lf.eval_mask, lf.slowloss_mask,
+       lf.slowloss
+       )
     gc()
   
    }
   
   #inspect
   r
-  plot(r)
+  #plot(r)
   #r_eval
   
   if (eval == "Y") {
@@ -381,17 +398,28 @@ for (z in 1:length(zone_list)) {
     
     #update 0s to NA
     r <- subst(r, 0, NA)
+    
+    #make sure values are integers
   
   }
   
   #inspect
-  r
-  freq(r)
+  print(r)
+  print(freq(r))
   plot(r)
   
+  print("projecting")
+  #project to desired crs
+  r <- project(r, crs)
+  
+  #apply tree mask
+  
+  
+  print("exporting")
   # export
   #exportname <- paste0()
   writeRaster(r, paste0(home_dir, "03_Outputs/02_Landfire_Slow_Loss/01_Rasters/01_SlowLoss/", start_year, "_", end_year, "_", zone_name ,"_Landfire_SlowLoss",   ".tif"),
+              datatype = "INT2S",
               overwrite = TRUE)
   
   
