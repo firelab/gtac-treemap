@@ -17,4 +17,4 @@ Files included:
 
 	{additional_filedescriptions}
 
-	{additional_symbologyinstructions}
+	{continuous_symbologyinstructions}{thematic_symbologyinstructions}
