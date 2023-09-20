@@ -46,7 +46,7 @@ treeMapXml = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_S
 treeMapHtml = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Supplements\_metadata_RDS-2021-0074.html"
 
 # Specify output folder
-outputFolder = r"\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters"
+outputFolder = r"D:\NickStorey\TreeMap\Separated_Attribute_Tifs"
 
 # Specify no data values in main dataset (raw = .tif nodata value, treeMap = .dbf nodata value)
 rawTreeMapNoDataValue = 2147483647
@@ -182,6 +182,7 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
     # Get the new raster's band and set the no data value
     newImageBand = newImage.GetRasterBand(1)
     newImageBand.SetNoDataValue(float(newNoDataValue))
+    newImageBand.SetDefaultRAT(None)
 
     # Get the X + Y size of the original image's band for chunking purposes
     xsize = og_band.XSize
@@ -234,12 +235,14 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
     newImage.BuildOverviews('NEAREST', [2, 4, 8, 16, 32, 64])
 
      # Change the name of the raster band to the attribute's full name
-    change_band_name('/vsimem/tmp.tif', columnFullName)
+    change_band_name(tmp_file, columnFullName)
     
     # Build attribute table if appropriate
     if columnName in discrete_cols.keys():
         print('Building attribute table...')
-        create_attribute_table(columnName, '/vsimem/tmp.tif')
+        create_attribute_table(columnName, tmp_file)
+    else:
+        newImageBand.SetDefaultRat(None)
 
     # Close the image (forces it to write to disk)
     newImage = None
@@ -247,10 +250,10 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
     # Translate the temporary GeoTIFF to COG format and save to output folder
     print('Translating to COG format and saving tif...')
     output_file = outputFolder + f'\TreeMap{year}_{columnName}.tif'
-    gdal.Translate(output_file, '/vsimem/tmp.tif', format = 'COG', creationOptions = creation_options)
+    gdal.Translate(output_file, tmp_file, format = 'COG', creationOptions = creation_options)
 
     # Remove temporary file
-    gdal.Unlink('/vsimem/tmp.tif')
+    gdal.Unlink(tmp_file)
 
     # Create xml and html metadata
     print('Building metadata...')
@@ -1167,13 +1170,6 @@ def has_color_map(band):
         return True
     else:
         return False
-
-
-def get_min_max(filename):
-    dataset = gdal.Open(filename)
-    band = dataset.GetRasterBand(1)
-    min_val, max_val, _, _ = band.GetStatistics(True, True)
-    return min_val, max_val
     
 
 def zip_files(files, col_name):
