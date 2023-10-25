@@ -16,13 +16,13 @@ library(tidyverse)
 #zone_name <- "UT_Uintas_subset"
 
 #list landfire zones of interest
-zone_list <- c(#15,
-  16#,
-  #19,
-  #21,
-  #28
-  #17,
-  #18
+zone_list <- c(15,
+  #16#,
+  19,
+  21,
+  28,
+  17,
+  18
   )
 
 #select year range (LCMS available for 1985-2021)
@@ -43,9 +43,9 @@ treemap_path <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074
 
 # aoi path - if different from landfire zone
 # supply path, or NA
-aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
-aoi_name <- "UT_Uintas_rect"
-#aoi_path <- NA
+#aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
+#aoi_name <- "UT_Uintas_rect"
+aoi_path <- NA
 
 # determine whether to produce eval dataset with other LCMS values
 # takes Y or N
@@ -99,7 +99,7 @@ LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/r
 for (z in 1:length(zone_list)) {
   
   #for testing
-  z <- 1
+  #z <- 1
   
   zone_num <- zone_list[z]
   

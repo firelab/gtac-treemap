@@ -1,7 +1,7 @@
 """
-This script separates columns/attributes from the raster attribute table of TreeMap tifs into separate images, builds pyramids for those images, 
-calculates statistics, converts to COG format, applies color maps (for appropriate attributes), creates an xml + html metadata file based on the full dataset's,
-creates arc compatable metadata (tif.xml), creates arc compatable statistics (aux.xml), and zips all the files together.
+This script separates columns (attributes) from the raster attribute table of TreeMap tifs into separate images, builds pyramids for those images, 
+calculates statistics, converts to COG format, builds attribute tables (for discrete attributes), creates an xml + html metadata file based on the full dataset's,
+creates arc compatable metadata (tif.xml), creates arc compatable statistics (aux.xml), creates a readme, and zips all the files together (including manually made symbology files (lyrx + qml)).
 Please update use considerations and this description with any changes.
 
 """
@@ -23,6 +23,7 @@ print('**************************************************************\n*********
 
 import os, sys
 import numpy as np
+import tempfile
 from osgeo import gdal
 from simpledbf import Dbf5
 import pandas as pd
@@ -38,16 +39,16 @@ import time
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
 chunk_size = 29060 * 2
 
-# Specify file path to .tif (image), .dbf (attribute table), and xml + html (metadata)
+# Specify filepath to .tif (image), .dbf (attribute table), and xml + html (metadata)
 treeMapTif = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif"
 treeMapDbf = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif.vat.dbf"
 treeMapXml = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Supplements\_metadata_RDS-2021-0074.xml"
 treeMapHtml = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Supplements\_metadata_RDS-2021-0074.html"
 
 # Specify output folder
-outputFolder = r"\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters"
+outputFolder = r"D:\NickStorey\TreeMap\Separated_Attribute_Tifs"
 
-# Specify no data value in RDS dataset
+# Specify no data values in main dataset (raw = .tif nodata value, treeMap = .dbf nodata value)
 rawTreeMapNoDataValue = 2147483647
 treeMapDatasetNoDataValue = -99.00000000000
 
@@ -64,7 +65,8 @@ data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/'
 
 
 # Column names to create individual attribute images of, their full names, and their data type
-    # Columns whose full precision can only be contained within Float64: VOLCFNET_L, VOLCFNET_D, VOLBFNET_L, DRYBIO_L, DRYBIO_D, CARBON_L, CARBON_D 
+    # Columns whose full precision can only be contained within Float64: VOLCFNET_L, VOLCFNET_D, VOLBFNET_L, DRYBIO_L, DRYBIO_D, CARBON_L, CARBON_D
+        # It was decided that 32 bit precision was sufficient for these attributes
 cols = [('FORTYPCD', 'Algorithm Forest Type Name', gdal.GDT_UInt16), ('FLDTYPCD', 'Field Forest Type Name', gdal.GDT_UInt16),
         ('STDSZCD', 'Algorithm Stand Size Code', gdal.GDT_Byte), ('FLDSZCD', 'Field Stand Size Code', gdal.GDT_Byte), 
         ('BALIVE', 'Live Tree Basal Area (sq ft)', gdal.GDT_Float32), ('CANOPYPCT', 'Live Canopy Cover %', gdal.GDT_Byte),
@@ -102,12 +104,12 @@ col_descriptions = {
     'CARBON_DWN': 'down dead carbon > 3 inches diameter (tons per ac.); estimated by FIA based on forest type, geographic area, and live tree carbon density.'
     }
 
-# Discrete (thematic + ordinal) columns with their associated color information. FORTYPCD + FLDTYPCD do not get assigned colors from here, and are thus listed as NA
+# Discrete (thematic + ordinal) columns with their associated color information. FORTYPCD + FLDTYPCD do not get assigned colors from here and are thus listed as NA
 discrete_cols= {
     'FORTYPCD': ['NA', 'NA', 'NA'],
     'FLDTYPCD': ['NA', 'NA', 'NA'],
-    'STDSZCD': ['colorbrewer', 'Set1', '6'],
-    'FLDSZCD': ['colorbrewer', 'Set1', '6'],
+    'STDSZCD': ['custom', 'standsize', '4'],
+    'FLDSZCD': ['custom', 'fieldsize', '6'],
     }
 
 # Tell gdal to throw exceptions on errors
@@ -132,7 +134,8 @@ driver = gdal.GetDriverByName('GTiff')
 
 def attributeToImage(columnName, columnFullName, gdal_dtype):
     '''
-    Creates a new COG formatted geotiff from the main TreeMap tif with pyramids, statistics, and metadata.
+    Creates a new COG formatted geotiff from the main TreeMap tif with pyramids, statistics, metadata, and attribute tables (if applicable).
+    Zips them all together in the output folder (including symbology files in the data_portal_scripts\symbology_files)
     
     Args: 
         columnName (str): Name of attribute to be processed (e.g. CARBON_D).
@@ -143,7 +146,7 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
         None
     '''
     
-    # Check if image already exists in the output folder and skip if so
+    # Check if attribute image already exists in the output folder and skip if so
     if os.path.isfile(outputFolder + f'\TreeMap{year}_{columnName}.tif'):
         print(f'\n File for {columnName} already exists. Skipping...')
         return
@@ -165,7 +168,7 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
     # Get maximum value for datatype (used as NoDataValue)
     newNoDataValue = np.iinfo(np_dtype).max if np.issubdtype(np_dtype, np.integer) else np.finfo(np_dtype).max
 
-    # Create a temporary file
+    # Create a temporary file to store the attribute image while building it
     tmp_file = '/vsimem/tmp.tif'
     
     # Set creation options for compression, tiling, and sparse file format
@@ -179,6 +182,7 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
     # Get the new raster's band and set the no data value
     newImageBand = newImage.GetRasterBand(1)
     newImageBand.SetNoDataValue(float(newNoDataValue))
+    newImageBand.SetDefaultRAT(None)
 
     # Get the X + Y size of the original image's band for chunking purposes
     xsize = og_band.XSize
@@ -216,7 +220,7 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
             # Replace all -99 values with the newNoDataValue
             new_band_data[np.isclose(new_band_data, treeMapDatasetNoDataValue, atol=1e-8)] = newNoDataValue
 
-            # Write the processed data (new_band_data) into the output image at the same position as the original chunk
+            # Write the processed data (new_band_data) to the output image at the same position as the original chunk
             newImageBand.WriteArray(new_band_data, j, i)
 
             # Flush the data to disk. 
@@ -229,11 +233,16 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
     # Build pyramids
     print('Building pyramids...')
     newImage.BuildOverviews('NEAREST', [2, 4, 8, 16, 32, 64])
+
+     # Change the name of the raster band to the attribute's full name
+    change_band_name(tmp_file, columnFullName)
     
     # Build attribute table if appropriate
     if columnName in discrete_cols.keys():
         print('Building attribute table...')
-        create_attribute_table(columnName, '/vsimem/tmp.tif')
+        create_attribute_table(columnName, tmp_file)
+    else:
+        newImageBand.SetDefaultRat(None)
 
     # Close the image (forces it to write to disk)
     newImage = None
@@ -241,10 +250,10 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
     # Translate the temporary GeoTIFF to COG format and save to output folder
     print('Translating to COG format and saving tif...')
     output_file = outputFolder + f'\TreeMap{year}_{columnName}.tif'
-    gdal.Translate(output_file, '/vsimem/tmp.tif', format = 'COG', creationOptions = creation_options)
+    gdal.Translate(output_file, tmp_file, format = 'COG', creationOptions = creation_options)
 
     # Remove temporary file
-    gdal.Unlink('/vsimem/tmp.tif')
+    gdal.Unlink(tmp_file)
 
     # Create xml and html metadata
     print('Building metadata...')
@@ -253,10 +262,6 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
     print('Building ESRI compatable metadata and statistics...')
     create_arc_metadata(columnName)
     create_arc_stats(columnName)
-
-    # Create the readme file
-    print('Building readme...')
-    create_readme(columnName)
     
     # Define files to be zipped
     print('Zipping files...')
@@ -265,54 +270,64 @@ def attributeToImage(columnName, columnFullName, gdal_dtype):
     html_file = os.path.join(outputFolder, f'TreeMap{year}_{columnName}.html')
     arcxml_file = os.path.join(outputFolder, f'TreeMap{year}_{columnName}.tif.xml')
     arcstats_file = os.path.join(outputFolder, f'TreeMap{year}_{columnName}.tif.aux.xml')
-    readme_file = '/vsimem/readme.txt'
 
-    files_to_zip = [tif_file, xml_file, html_file, arcxml_file, arcstats_file, readme_file]
+    files_to_zip = [tif_file, xml_file, html_file, arcxml_file, arcstats_file]
     
         # If the attribute is not discrete, add arcgis + qgis symbology files and  to the list of files to be zipped
     if columnName not in discrete_cols.keys():
         arc_lyrx_file = os.path.join(get_script_directory(), f'symbology_files\TreeMap{year}\TreeMap{year}_{columnName}.tif.lyrx')
         qgis_qml_file = os.path.join(get_script_directory(), f'symbology_files\TreeMap{year}\TreeMap{year}_{columnName}.tif.qml')
-        files_to_zip.append(arc_lyrx_file, qgis_qml_file)
+        files_to_zip.append(arc_lyrx_file)
+        files_to_zip.append(qgis_qml_file)
         
     # Zip files
-    zip_files(files_to_zip, f'TreeMap{year}_{columnName}.zip')
+    zip_files(files_to_zip, columnName)
 
 
-def create_readme(col_name, zip_only=True):
+def get_readme_text(col_name, zip_only=True):
     '''
-    Creates the readme.txt file for the attribute using attribute_readme_template.txt in supp_files. The file is stored in temp
+    Get the readme text for the attribute using attribute_readme_template.txt in supp_files.
 
     Args:
         col_name (str): Name of the attribute being processed.
         zip_only (bool): Determines if the readme is only written to the zip file
     
     Returns:
-        None.
+        String of the readme contents.
     '''
 
     # Define additional text to be added to the readme if the attribute is continuous
     additional_toptext = f'Instructions for applying the official TreeMap{year} symbology in ArcGIS Pro and QGIS are also included.'
     additional_filedescriptions = f'''
-	symbology_files\TreeMap{year}_{col_name}.tif.lyrx - An ArcGIS layer file containing the official symbology for the attribute.
+	TreeMap{year}_{col_name}.tif.lyrx - An ArcGIS layer file containing the official symbology for the attribute.
 						    	    Please see "Applying Official Symbology" in this document.
 
-	symbology_files\TreeMap{year}_{col_name}.tif.qml - A QGIS layer file containing the official symbology for the attribute.
+	TreeMap{year}_{col_name}.tif.qml - A QGIS layer file containing the official symbology for the attribute.
 						   	   Please see "Applying Official Symbology" in this document.
     '''
-    additional_symbologyinstructions = f'''Applying Official Symbology:
+    continuous_symbologyinstructions = f'''\nApplying Official Symbology:
 
 	ArcGIS Pro:
 		1. Once the raster has been added to your project, in the "Raster Layer" ribbon at the top of the window select "Symbology"
 			Or navigate to the "Symbology" pane another way
 		2. In the top right corner of the "Symbology" pane, click on the 3 horizontal lines and select "Import from layer file"
 		3. Navigate to and select the layer file, TreeMap{year}_{col_name}.tif.lyrx
-
+    
 	QGIS:
 		1. Once the raster has been added to your project, in the right click on the layer and select "Properties..."
 		2. On the left hand side of the "Properties" window, select "Symbology"
 		3. Click on "Style" at the bottom of the window and select "Load Style..."
 		4. Navigate to and select the layer file, TreeMap{year}_{col_name}.tif.qml
+    '''
+    thematic_symbologyinstructions = f'''\nApplying Official Symbology:
+
+	ArcGIS Pro:
+		1. Once the raster has been added to your project, in the "Raster Layer" ribbon at the top of the window select "Symbology"
+			Or navigate to the "Symbology" pane another way
+		2. Change symbology type to 'Unique Values'
+    
+	QGIS:
+		1. Simply add the raster to your project
     '''
 
     # Get the filepath to the readme template file
@@ -322,23 +337,28 @@ def create_readme(col_name, zip_only=True):
     with open(template_filepath, 'r') as readme:
         readme_text = readme.read()
     
-    # Insert additional text if the attributes are not discrete, else remove the placeholders in the .txt
-    if col_name not in discrete_cols.keys:
-        readme_text = readme_text.format(additional_toptext=additional_toptext, additional_filedescriptions=additional_filedescriptions, additional_symbologyinstructions=additional_symbologyinstructions)
+    # Insert additional text if the attributes are continuous or if they are thematic, else remove the placeholders in the .txt
+    if col_name not in discrete_cols.keys():
+        readme_text = readme_text.format(year=year, col_name=col_name,
+                                        additional_toptext=additional_toptext, additional_filedescriptions=additional_filedescriptions, 
+                                        continuous_symbologyinstructions=continuous_symbologyinstructions,
+                                        thematic_symbologyinstructions='')
+    elif col_name == 'FLDTYPCD' or col_name == 'FORTYPCD':
+        readme_text = readme_text.format(year=year, col_name=col_name, additional_toptext=additional_toptext, 
+                                        additional_filedescriptions='', continuous_symbologyinstructions='',
+                                        thematic_symbologyinstructions=thematic_symbologyinstructions)
     else:
-        readme_text.replace('{additional_toptext}', '')
-        readme_text.replace('{additional_filedescriptions}', '')
-        readme_text.replace('{additional_symbologyinstructions}', '')
+        readme_text = readme_text.format(year=year, col_name=col_name, additional_toptext='', 
+                                        additional_filedescriptions='', continuous_symbologyinstructions='',
+                                        thematic_symbologyinstructions='')
 
     # If directed to write the file to the output folder, do so (if zip_only is False, write a file to the output folder and temp memory, if zip_only is True, only write to temp memory)
     if not zip_only:
         new_filepath = os.path.join(outputFolder, f'TreeMap{year}_{col_name}_readme.txt')
-        with open(new_filepath) as new_file:
+        with open(new_filepath, 'w') as new_file:
             new_file.write(readme_text)
 
-    # Write the file to temporary memory (can be grabbed from temp memory outside of the function)
-    with open('/vsimem/readme.txt', 'w') as tmp_file:
-        tmp_file.write(readme_text)
+    return readme_text
 
 
 def get_script_directory():
@@ -422,22 +442,18 @@ def create_ordinal_att_table(col_name, file_path):
     rat.CreateColumn("Green", gdal.GFT_Integer, gdal.GFU_Green)
     rat.CreateColumn("Blue", gdal.GFT_Integer, gdal.GFU_Blue)
 
-    # Fill the RAT with the unique values and corresponding RGB values
+    # Fill the RAT with unique values and corresponding RGB values
     for i, value in enumerate(unique_values_nodata_excluded):
         # Set pixel value
         rat.SetValueAsInt(i, 0, int(value))
 
         # Set RGB values
-        rat.SetValueAsInt(i, 1, color_map_rgb[value][0])
-        rat.SetValueAsInt(i, 2, color_map_rgb[value][1])
-        rat.SetValueAsInt(i, 3, color_map_rgb[value][2])
+        rat.SetValueAsInt(i, 1, color_map_rgb[i][0])
+        rat.SetValueAsInt(i, 2, color_map_rgb[i][1])
+        rat.SetValueAsInt(i, 3, color_map_rgb[i][2])
        	 
     # Attach the RAT to the raster band
     band.SetDefaultRAT(rat)
-    
-    # Set the band and the raster to None to close them
-    band = None
-    image = None
     
 
 def create_thematic_att_table(col_name, file_path):
@@ -452,9 +468,9 @@ def create_thematic_att_table(col_name, file_path):
         None.
     '''
 
-    # Path to the forest_type_palette_lookup JSON file.
+    # Path to the forest_type_palette_lookup JSON file in the repo
         # This json consists of a list of codes, a list of names, and a list hex colors. Corresponding values from the codes, names, and colors lists share the same indicies.
-    palettes_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'supp_files', 'forest_type_palette_lookup.json')
+    palettes_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'gee_viz_setup_scripts', 'forest_type_palette_lookup.json')
         
     # Open the color maps JSON file
     with open(palettes_file) as json_file:
@@ -509,10 +525,6 @@ def create_thematic_att_table(col_name, file_path):
        	 
     # Attach the RAT to the raster band
     band.SetDefaultRAT(rat)
-    
-    # Set the band and the raster to None to close them
-    band = None
-    image = None
     
 
 def create_attribute_table(col_name, file_path):
@@ -1071,7 +1083,6 @@ def create_arc_stats(col_name):
         # Get min + max value and calculate histogram
     stats = band.GetStatistics(True, True)
     num_buckets, include_out, approx = 256, 0, 0
-    #bucket_counts, bin_edges = np.histogram(valid_data, bins=num_buckets, range=(stats[0], stats[1]))
     bucket_counts = band.GetHistogram(min=stats[0], max=stats[1], buckets=num_buckets, include_out_of_range=include_out, approx_ok=approx)
 
         # Populate elements
@@ -1096,7 +1107,7 @@ def create_arc_stats(col_name):
         elif key == "STATISTICS_MINIMUM":
             mdi.text = str(stats[0])
         elif key == "STATISTICS_STDDEV":
-            mdi.text = stats[3]
+            mdi.text = str(stats[3])
         elif key == "STATISTICS_VALID_PERCENT":
             mdi.text = str((valid_data.size / band_data.size) * 100)
 
@@ -1159,18 +1170,11 @@ def has_color_map(band):
         return True
     else:
         return False
-
-
-def get_min_max(filename):
-    dataset = gdal.Open(filename)
-    band = dataset.GetRasterBand(1)
-    min_val, max_val, _, _ = band.GetStatistics(True, True)
-    return min_val, max_val
     
 
-def zip_files(files, zip_file_name):
+def zip_files(files, col_name):
     '''
-    Zips files together and writes a new .zip
+    Zips files together and writes a new zip. Creates a readme based on the attribute type (discrete or continuous)
     
     Args: 
         files: Filepaths of files to be zipped
@@ -1188,13 +1192,18 @@ def zip_files(files, zip_file_name):
         os.makedirs(zip_directory)
         
     # Append the name of the directory to the zip file name
-    full_zip_filepath = os.path.join(zip_directory, zip_file_name)
+    full_zip_filepath = os.path.join(zip_directory, f'TreeMap{year}_{col_name}.zip')
     
     # Create a ZipFile object in write mode
     with ZipFile(full_zip_filepath, 'w') as zipf:
-        # Loop through files and add them to the zip file
+        # Write the readme file to the zip file
+        zipf.writestr('readme.txt', get_readme_text(col_name))
+
+        # Loop through provided files and add them to the zip file
         for file in files:
             zipf.write(file, os.path.basename(file))
+
+    
             
 
 def gdal_to_numpy_dtype(gdal_dtype):
@@ -1393,35 +1402,30 @@ def replace_text_html(node, text_to_remove, replacement_text):
         # In this case, recursively call remove_text on each of its child nodes (content)
         for child_node in node.contents:
             replace_text_html(child_node, text_to_remove, replacement_text)
-            
-            
-def build_overviews(file_path, resample_type, overview_levels):
-    '''
-    Builds overviews for specified image.
-    
-    Args:
-        file_path (str): The file path of the image.
-        resample_type (str): The resample type for the pyramids (e.g. 'NEAREST')
-        overview_levels (list of integers): The overview levels, or reduction factors, for the overviews (e.g. [2, 4, 8, 16, 32, 64])
 
-    Returns:
-        None.
+    
+def change_band_name(file_path, col_fullname):
     '''
-    
+    Changes the band name of the specified tif.
+
+    Args:
+        file_path (str): Filepath of the target tif.
+        col_fullname (str): The attribute's full name. This gets set as the band name. 
+    '''
+
+    # Open the image and band
     image = gdal.Open(file_path, gdal.GA_Update)
-    image.BuildOverviews(resample_type, overview_levels)
-    
-def change_band_names(file_path, col_fullname):
-        image = gdal.Open(file_path, gdal.GA_Update)
-        band = image.GetRasterBand(1)
-        band.SetDescription(col_fullname)
+    band = image.GetRasterBand(1)
+
+    # Set the band name
+    band.SetDescription(col_fullname)
         
 
 ######################################################################
 # Main Function Calls
 ######################################################################
 
-# Determine the year from the filepath
+# Determine the year from the main dataset's filepath
 year = determine_year()
 
 # Inform user of assigned inputs + outputs
@@ -1430,8 +1434,8 @@ prompt_user()
 # Main Function
 for col_name, col_fullname, gdal_dtype in cols:
     start_time = time.perf_counter()
-        
-    attributeToImage(col_name, gdal_dtype)
+
+    attributeToImage(col_name, col_fullname, gdal_dtype)
         
     end_time = time.perf_counter()
     elapsed = (end_time - start_time)/60

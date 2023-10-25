@@ -22,8 +22,8 @@ library(tidyverse)
 
 #list landfire zones of interest
 zone_list <- c(#15,
-               16
-               #19,
+               #16
+               19#,
                #21,
                #28
                 #17,
@@ -77,7 +77,7 @@ gc()
 #increase memory fraction available
 terraOptions(memfrac = 0.8)
 
-terraOptions(progress = 1)
+#terraOptions(progress = 1)
 
 #make %notin% function
 `%notin%` <- Negate('%in%')
