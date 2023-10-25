@@ -29,6 +29,9 @@ outExtractByMask = ExtractByMask(inRaster, inMaskData)
 outExtractByMask.save("G:\\TreeMap2016\\working_KLR\\national_veg\\EVT_maskedEVCforest.tif")
 
 # need to omit and/or reclassify several of these EVGs
+# should just be remapping a few px - according to Karin
+# remapping a few pixels in some of the classes because there were only a few px for some of the EVGs ,
+# no plots that keyed to these EVGs
 inRaster = "G:\\TreeMap2016\\working_KLR\\national_veg\\EVT_maskedEVCforest.tif"
 ReclassRaster = Reclassify(inRaster, "EVT_GP", RemapValue([[13,"NODATA"],[14,"NODATA"],[15,"NODATA"],[26,"NODATA"],[60,"NODATA"],[602,602],[603,603],[605,605],[607,607],[610,610],[614,614],[615,615],[620,620],[621,621],[622,622],[624,624],[625,625],[626,626],[627,627],[628,628],[629,629],[630,630],[631,631],[632,632],[633,633],[634,634],[635,635],[638,638],[639,639],[640,640],[642,642],[643,643],[644,644],[645,645],[650,650],[651,651],[652,652],[655,655],[656,656],[657,657],[658,658],[659,659],[660,660],[661,661],[662,662],[664,664],[665,665],[666,666],[667,667],[668,668],[670,670],[672,672],[673,673],[675,675],[676,676],[677,677],[678,678],[679,679],[680,680],[681,681],[682,682],[683,683],[684,684],[685,685],[686,686],[687,687],[688,688],[689,689],[690,690],[691,691],[692,693],[693,693],[694,694],[695,695],[696,696],[701,701],[707,707],[708,708],[730,"NODATA"],[731,731],[740,740]]))
 ReclassRaster.save("G:\\TreeMap2016\\working_KLR\\national_veg\\EVT_maskedEVCforest_reclass.tif")
