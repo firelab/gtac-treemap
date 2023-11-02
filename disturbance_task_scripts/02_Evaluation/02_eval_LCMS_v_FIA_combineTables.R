@@ -1,16 +1,105 @@
 # Eval LCMS vs FIA data to determine thresholds
 # Part two - process exports to determine thresholds for all zones combined
 
+############################
+# USER INPUTS
+############################
+
+#select year range (LCMS available for 1985-2022)
+start_year <- 1999
+end_year <- 2016
+
+#list landfire zones of interest
+zone_list <- sort(c(
+  15,
+  16,
+  19,
+  21,
+  28,
+  17,
+  18,
+  23
+))
+
+# list slow loss thresholds to use
+slow_loss_thresh_list <- c(5, 10, 14, 20, 25)
+#slow_loss_thresh_list <- c(14)
+
+# Default thresholds: 
+fastLossThresh = 27
+slowLossThresh = 14
+##gainThresh = 30
+gainThresh = 10
+
+# set home dir
+home_dir <- ("//166.2.126.25/TreeMap/")
+
+# set tmp directory
+tmp_dir <- "E:/tmp"
+
+# path to 2016 treemap data
+treemap_path <- paste0(home_dir, "01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
+
+# set path to lcms raw prob rasters
+lcms_dir <- '//166.2.126.25/TreeMap/01_Data/05_LCMS/01_Threshold_Testing/'
+lcms_dir_rawprob <- paste0(lcms_dir, "01_Raw/02_Raw_Probabilities/")
+
+# path to FIA data
+fia_path <- paste0(home_dir, "01_Data/04_FIA/SlowFast_StatVars_ActualLL.csv")
+
+#set path to save evaluation data
+eval_dir <- paste0(home_dir, "01_Data/05_LCMS/01_Threshold_Testing/05_Evaluation/")
+
+# aoi path - if different from landfire zone
+# supply path, or NA
+#aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
+aoi_path <- NA
+#aoi_name <- "UT_Uintas_subset"
+
+#####################
+# SETUP
+######################
+
+# check if tmp directory exists 
+if (file.exists(tmp_dir)){
+  
+} else {
+  
+  # create a new sub directory inside
+  # the main path
+  dir.create(tmp_dir)
+  
+}
+
+# set temp directory - helps save space with R terra
+write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
+#empty temp dir
+do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
+#remove unused memory
+gc()
+
+# load libraries
+library(tidyverse)
+library(magrittr)
+library(terra)
+library(caret)
+library(modeest)
+
+#make %notin% function
+`%notin%` <- Negate('%in%')
+
 
 ##############################################
 ##### EVAL for all AOIs run 
 ##############################################
 
 # load in all csv extracts
-extract_files <- list.files(path = '//166.2.126.25/TreeMap/01_Data/05_LCMS/01_Threshold_Testing/05_Evaluation/01_csvs/03_extracts/', full.names = TRUE)
+extract_files <- list.files(path = paste0(eval_dir, '01_csvs/02_extracts/'), full.names = TRUE)
 
 extracts_all <- lapply(extract_files, read.csv)
 extracts_all <- do.call(rbind, extracts_all)
+
+do.call("rbind", sapply(filenames, read.csv, simplify = FALSE))
 
 #inspect
 str(extracts_all)
@@ -25,9 +114,20 @@ dt_fia %<>%
          ShannonClassNum = factor(ShannonClassNum, levels = levels(changeType)),
          MortStatClassNum = factor(MortStatClassNum, levels = levels(changeType))) 
 
+# join with change classes
+change_classes_df <- data.frame(changeType = as.factor(c(1,2,3,4,5,6)),
+                                changeClass = factor(c("Stable", "Slow Loss", "Fast Loss", "Gain", "NPArea", "NA"), 
+                                                        levels = c("Stable", "Slow Loss", "Fast Loss", "Gain", "NPArea", "NA")))
+
+dt_fia %<>%
+  left_join(change_classes_df)
 
 # update zone name
 zone_name <- paste0("z",paste(unlist(zone_list), collapse = "_"))
+
+#####################################################
+# Run eval / cm over all zones
+###################################################
 
 #create blank data frame to append into 
 eval_t <- data.frame()
@@ -189,6 +289,8 @@ write.csv(eval_t,
 
 # PLOTTING
 ####################################################
+# Plotting
+######################################################
 
 # inspect
 str(eval_t)
@@ -246,6 +348,21 @@ ggsave(filename = paste0(eval_dir, "02_imgs/", start_year, "_", end_year, "_", z
        height = 5,
        units = "in",
 )
+
+#############################################################
+# Look at change_min_F to get ideal threshold for slow loss in each zone
+##########################################################################
+
+
+dt_fia %>%
+  filter(changeMethod == "Change_min_F") %>%
+  filter(changeClass == "Slow Loss") %>%
+  str()
+
+
+
+
+
 
 # clear memory
 gc()
