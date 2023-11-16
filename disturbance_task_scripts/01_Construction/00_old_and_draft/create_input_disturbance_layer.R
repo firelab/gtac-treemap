@@ -7,6 +7,10 @@
 # Eg, "20161" = most recent year of disturbance and type is 2016, fire
 #     "20162" = most recent year of disturbance and type is 2016, slow loss
 
+# Output format: 
+# Year since disturbance
+# Type of disturbance
+
 # Runs for one Landfire zone at a time, for the year range specified
 # LCMS is available: 1985-2022
 # Landfire is available: 1999-2020
@@ -19,13 +23,10 @@
 # previous treemap input - used only as tree mask 
 
 
+
 ############################
 # USER INPUTS
 ############################
-
-# give name for outputs 
-#zone_name <- "LF_z15_Mogollon_Rim" 
-#zone_name <- "UT_Uintas_subset"
 
 #list landfire zones of interest
 zone_list <- c(#15,
@@ -50,6 +51,8 @@ home_dir <- ("//166.2.126.25/TreeMap/")
 # get path to change rasters - LCMS
 lcms_dir <- ("//166.2.126.227/lcms/Projects/11_LCMS_NationalProduct/06_DataDelivery/Conterminous_United_States/v2021-7/Change/Annual/")
 
+
+
 # get path to change rasters - Landfire
 #landfire_dir <- ("//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_200/Disturbance/") # 2016 version
 landfire_dir <- ("//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/") # 2020 version
@@ -59,9 +62,9 @@ treemap_path <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074
 
 # aoi path - if different from landfire zone
 # supply path, or NA
-#aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
-#aoi_name <- "UT_Uintas_rect"
-aoi_path <- NA
+aoi_path <- paste0(home_dir, "01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp")
+aoi_name <- "UT_Uintas_rect"
+#aoi_path <- NA
 
 # set tmp directory
 tmp_dir <- "D:/tmp/"
@@ -71,15 +74,15 @@ tmp_dir <- "D:/tmp/"
 ######################
 
 # check for required packages, install if needed and then load
-list.of.packages <- c("terra", "tidyverse")
+list.of.packages <- c("terra", "tidyverse", "purrr", "furrr", "tictoc")
 
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
 
 if(length(new.packages) > 0) install.packages(new.packages)
 
-# load necessary packages
-library(terra)
-library(tidyverse)
+# load all packages
+vapply(list.of.packages, library, logical(1L),
+       character.only = TRUE, logical.return = TRUE)
 
 
 # check if tmp directory exists 
@@ -108,15 +111,15 @@ gc()
 #load any lcms change raster - to get spatial specs; doesn't load values into memory yet
 #lcms_raw <- terra::rast(paste0(lcms_dir, "LCMS_CONUS_v2021-7_Change_2020.tif"))
 
-# load any lf change raster - to get spatial specs
-year_raw <- 1999
-
-# get evt layer from landfire - for spatial spects and forest cover
-lf_evt <- terra::rast(paste0(landfire_dir, "EVT/LF2020_EVT_220_CONUS/LF2020_EVT_220_CONUS/Tif/LC20_EVT_220.tif"))
-activeCat(lf_evt) <- "EVT_GP"
-
-# get desired crs from LCMS
-crs <- crs(lf_evt)
+# # load any lf change raster - to get spatial specs
+# year_raw <- 1999
+# 
+# # get evt layer from landfire - for spatial specs and forest cover
+# lf_evt <- terra::rast(paste0(landfire_dir, "EVT/LF2020_EVT_220_CONUS/LF2020_EVT_220_CONUS/Tif/LC20_EVT_220.tif"))
+# activeCat(lf_evt) <- "EVT_GP"
+# 
+# # get desired crs from LCMS
+# crs <- crs(lf_evt)
 
 # load LF zone data
 LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp"))
@@ -170,20 +173,20 @@ LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/r
   ####### PREP DESTINATION RASTER
   #####################
   
-  # project
-  zone <- project(zone, crs)
-  
-  lf_evt_crop <- terra::crop(lf_evt, zone, mask = TRUE)
-  #activeCat(lf_evt_crop) <- "EVT_GP"
-  #activeCat(lf_evt_crop) <- "EVT_GP_N"
-  
-  # create empty raster to append data into
-  r <- rast(crs = crs, ext(lf_evt_crop), res = res(lf_evt_crop))
-  r <- setValues(r, 0)
-  
-  # #inspect
-  # freq(r)
-  ncell(r)
+  # # project
+  # zone <- project(zone, crs)
+  # 
+  # lf_evt_crop <- terra::crop(lf_evt, zone, mask = TRUE)
+  # #activeCat(lf_evt_crop) <- "EVT_GP"
+  # #activeCat(lf_evt_crop) <- "EVT_GP_N"
+  # 
+  # # create empty raster to append data into
+  # r <- rast(crs = crs, ext(lf_evt_crop), res = res(lf_evt_crop))
+  # r <- setValues(r, 0)
+  # 
+  # # #inspect
+  # # freq(r)
+  # ncell(r)
   
   #create year range
   year_list <- seq(start_year, end_year, 1)
@@ -198,21 +201,40 @@ LF_zones <- vect(paste0(home_dir, "01_Data/02_Landfire/LF_zones/Landfire_zones/r
   
   # set up reclass matrix
   
-  lf_forest <- terra::rcl(lf_evt_crop)
+  #lf_forest <- terra::rcl(lf_evt_crop)
   
   
   # mask r - so we're only getting forested px
   
   # convert input raster to list of pts - to table
   
-  ####################
-  ###### BRING IN LCMS DATA YEARS STACK AS VRT
+  # LCMS - CONVERT RAW PROBABILITY TO SLOW LOSS
+  #############################################
+
+  # load LCMS raw probability rasters - as VRT
   
-  # crop 
+  # crop to zone 
   
-  # project to lf crs
+  # for each year: get most probable class
   
-  # extract vrt values to points
+  #template function from LCMS workflow 
+# def getMostProbableClass(raw_lcms_product_yr,product):
+#     # Pull the index of the most probable value
+#     # Since 0 is not used for LCMS outputs, add 1
+#     max_prob_class = raw_lcms_product_yr.arrayArgmax().arrayGet(0).add(1).byte().rename([product])
+#     max_prob_class = ee.Image(max_prob_class)
+# 
+#     null_code = lcms_viz_dict[f'{product}_class_values'][-1]
+#     max_prob_class = max_prob_class.unmask(null_code)
+#     return max_prob_class.copyProperties(raw_lcms_product_yr,['system:time_start'])
+
+  # return stack of change class, by years
+  
+  # from stack of years,   
+  # get most recent year slow loss
+  # where change class = 2, what is the maximum band index? 
+  
+  # have some kind of code to make sure we can convert this back to year
   
   
   ###### BRING IN LANDFIRE DATA YEARS STACK AS VRT
