@@ -94,7 +94,6 @@ maxConf
 
 # reclassify classes to match threshold
 # there's probably a better way to do this
-vrt_reclass <- vrt_crop_noNA
 vrt_reclass[[1]] <- terra::classify(vrt_reclass[[1]], cbind(seq(1, change_thresholds[1], 1), NA))
 vrt_reclass[[2]] <- terra::classify(vrt_reclass[[2]], cbind(seq(1, change_thresholds[2], 1), NA))
 vrt_reclass[[3]] <- terra::classify(vrt_reclass[[3]], cbind(seq(1, change_thresholds[3], 1), NA))

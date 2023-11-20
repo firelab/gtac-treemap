@@ -262,3 +262,5 @@ ggsave(filename = paste0(eval_dir, "02_imgs/", start_year, "_", end_year, "_allZ
        height = 7,
        units = "in",
 )
+
+# export table of threshs by zone 
