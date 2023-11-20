@@ -8,7 +8,10 @@
 
 # requires as input csv made by John Shaw classifying fia plots as slow loss
 
-#v3: vary thresholds used for determining change type in LCMS
+#v4: vary thresholds used for determining change type in LCMS
+# burn in fast loss
+# TO DO: report out optimal threshold for each zone
+# TO DO: report out accuracy for each zone
 
 ############################
 # USER INPUTS
@@ -190,7 +193,7 @@ for (z in 1:length(zone_list)) {
     terra::vect(geom = c("x", "y"), crs = "epsg:4629")
   
   # #inspect
-  plot(fia_sp)
+  #plot(fia_sp)
   
   #project
   fia_sp <- terra::project(fia_sp, crs)
@@ -299,16 +302,16 @@ for (z in 1:length(zone_list)) {
     # rename layers
     names(vrt) <- c("FastLoss_Raw_Prob", "SlowLoss_Raw_Prob", "Gain_Raw_Prob")
     
-    print("cropping")
+    #print("cropping")
     
     # crop to zone
-    zone <- terra::project(zone, crs(vrt))
-    vrt_crop <- terra::crop(vrt, zone)
+    #zone <- terra::project(zone, crs(vrt))
+    #vrt_crop <- terra::crop(vrt, zone)
     
     print("extracting")
     
     # extract to fia pts 
-    ext_test <- terra::extract(vrt_crop, fia_sp_aoi_buff, ID = TRUE)
+    ext_test <- terra::extract(vrt, fia_sp_aoi_buff, ID = TRUE)
     
     # add year
     ext_test$year <- year
