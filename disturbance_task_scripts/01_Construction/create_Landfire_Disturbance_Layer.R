@@ -1,6 +1,6 @@
-# Create input disturbance layer - GTAC LCMS 2016
+# Create input disturbance layer - "GTAC Landfire 2016"
 
-# Most recent year of slow loss from LCMS
+# Most recent year of insect and disease from Landfire
 # Most recent year of fire from Landfire 
 
 # Output rasters: 
@@ -17,7 +17,7 @@
 zone_list <- c(16)
 
 # set year range
-start_year <- 1999
+start_year <- 2010
 end_year <- 2016
 
 # set current modeling year (for years since disturbance)
@@ -43,9 +43,9 @@ lcms_proj <- "//166.2.126.25/TreeMap/01_Data/05_LCMS/00_Supporting/lcms_crs_albe
 landfire_proj <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/landfire_crs.prj"
 
 # supply path, or NA
-#aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-#aoi_name <- "UT_Uintas_rect"
-aoi_path <- NA
+aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+aoi_name <- "UT_Uintas_rect"
+#aoi_path <- NA
 
 # set tmp directory
 tmp_dir <- "D:/tmp"
@@ -58,7 +58,7 @@ remove_intermediate_files <- "Y"
 
 #option to calculate landfire fire files anew
 #may not be necessary if this has already been run for the year and zone of interest
-calculate_landfire_fire <- "Y"
+calculate_landfire_fire <- "N"
 
 #####################
 # SETUP
@@ -138,10 +138,10 @@ year_list <- seq(start_year, end_year, 1)
 ##################################################
 
 tic()
-for (z in 1:length(zone_list)) {
+#for (z in 1:length(zone_list)) {
   
   #for testing
-  #z <- 1
+  z <- 1
   
   zone_num <- zone_list[z]
   
@@ -199,8 +199,9 @@ for (z in 1:length(zone_list)) {
   
   # list codes that correspond to disturbance of interest
   # ranges taken from karin riley's reclass script "reclass_Landfire_disturbance_rasters_for_tree_list.py"
-  fire_codes <- c(seq(10,234, 1), seq(470,504,1), seq(770,804, 1), seq(970,1002,1)) 
-  ind_codes <- c(seq(540,564,1), seq(840,854,1), seq(1040,1062,1))
+  # watch out for code 16 - water 
+  fire_codes <- c(seq(10,15,1), seq(17,234,1), seq(470,504,1), seq(770,804, 1), seq(970,1002,1)) 
+  ind_codes <- c(seq(540,564,1), seq(840,854,1), seq(861, 863), seq(1040,1062,1))
   
   # list codes to reclassify
   nums <- c(-9999, seq(0, 1133, 1))
@@ -236,7 +237,7 @@ for (z in 1:length(zone_list)) {
   names(landfire_dist) <- year_list
   
   # #inspect
-  #landfire_dist
+  landfire_dist
   
   # create export directory
   output_dir_landfire <- glue('{output_dir}01_Input/02_Landfire_Fire')
@@ -255,14 +256,20 @@ for (z in 1:length(zone_list)) {
     # --------------------------------------------#
     
     # get year of most recent fire
-    #landfire_fire_years <- 
+    landfire_fire_years <- 
       landfire_dist %>%
-      terra::crop(zone) #%>% # crop to zone
+      terra::crop(zone) %>% # crop to zone
       terra::classify(cbind(no.class.val.fire, NA)) %>% # reclass to include only fire
       terra::classify(cbind(seq(1,1133,1), 1)) %>% # reclass fire to binary indicator for each year - fire dist code = 1
       which.max() %>% # get most recent year
       terra::classify(cbind(c(seq(1:length(year_list))), year_list)) # reclassify index values to years
     
+    #look for fire
+    landfire_fire_check <- 
+      landfire_dist %>%
+      terra::crop(zone) %>%
+      freq() %>%
+      arrange(value)
     
     # reclassify to binary indicator of fire over all years
     # fire code = 1
