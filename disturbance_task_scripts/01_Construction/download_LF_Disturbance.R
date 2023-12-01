@@ -6,7 +6,7 @@
 dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Disturbance/"
 
 # list years
-years <- seq(2018, 2020, 1)
+years <- 2018:2020
 
 
 # 1999-2014: US_DIST1999
