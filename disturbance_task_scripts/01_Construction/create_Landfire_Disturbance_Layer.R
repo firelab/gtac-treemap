@@ -17,7 +17,7 @@
 zone_list <- c(16)
 
 # set year range
-start_year <- 2010
+start_year <- 1999
 end_year <- 2016
 
 # set current modeling year (for years since disturbance)
@@ -43,9 +43,9 @@ lcms_proj <- "//166.2.126.25/TreeMap/01_Data/05_LCMS/00_Supporting/lcms_crs_albe
 landfire_proj <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/landfire_crs.prj"
 
 # supply path, or NA
-aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-aoi_name <- "UT_Uintas_rect"
-#aoi_path <- NA
+#aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+#aoi_name <- "UT_Uintas_rect"
+aoi_path <- NA
 
 # set tmp directory
 tmp_dir <- "D:/tmp"
@@ -58,7 +58,7 @@ remove_intermediate_files <- "Y"
 
 #option to calculate landfire fire files anew
 #may not be necessary if this has already been run for the year and zone of interest
-calculate_landfire_fire <- "N"
+calculate_landfire_fire <- "Y"
 
 #####################
 # SETUP
