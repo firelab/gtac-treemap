@@ -6,7 +6,7 @@
 # - GTAC LCMS 2016 Disturbance vs Karin Riley 2016 Disturbance
 # - GTAC Landfire Target Rasters vs. Karin Riley Target Rasters
 
-# - MAKE THIS INTO A FUNCTION ? 
+# - MAKE THIS INTO A FUNCTION THAT'S INCORPORATED IN A LIBRARY
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 # Redcastle Resources and USFS Geospatial Technology and Applications Center (GTAC)
@@ -25,8 +25,7 @@ proj_path <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/landfire_crs.prj"
 tmp_dir <- "D:/tmp/"
 
 # set path to "reference" raster
-ref_raster <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/01_Input/01_Disturbance/Spatial_data/disturbance_year/disturbance_year_1999_2016_nodata_reclass.tif"
-
+ref_raster <- '//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/01_Input/01_Disturbance/Spatial_data/disturbance_year/disturbance_year_1999_2016_nodata_reclass.tif'
 # set path to "predicted" raster
 pred_raster <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/01_Disturbance/02_Final/Landfire_Disturbance/1999_2016_LFz16_UtahHighPlateaus_DisturbanceYear.tif"
 
@@ -45,10 +44,10 @@ zone_num <- 16
 
 # set dir to save output evaluation
 # this directory will be created if it does not exists
-eval_out_dir <- "//166.2.126.25/TreeMap/03_Outputs/09_Evaluation/01_LCMS_Landfire_Disturbance_Layer/01_csvs/"
+eval_out_dir <- "//166.2.126.25/TreeMap/03_Outputs/09_Evaluation/01_LCMS_Landfire_Disturbance_Layer/"
 
 # set name for output evaluation
-eval_out_name <- "1999_2016_z16_RileyLandfire_vs_GTACLandfire_px_DistYear"
+eval_out_name <- "1999_2016_z16_RileyLandfire_vs_GTACLandfire_values_DistYear"
 
 # name format:
 # {startyear}_{endyear}_{zonenum}_{refraster}_vs_{predraster}_{pts or px}_{attribute}"
@@ -75,6 +74,12 @@ write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renvi
 do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
 #remove unused memory
 gc()
+
+# check if output dir exists; create it if it does not
+if (!file.exists(eval_out_dir)){
+  dir.create(eval_out_dir)
+  
+}
 
 # Packages and functions
 #---------------------------------#
@@ -190,6 +195,8 @@ pred %<>% terra::classify(cbind(-99, 99))
 #conditionally extract to points. 
 #otherwise, use all values of raster.
 
+# this could be made into a function
+
 if(!is.na(points)) {
   # extract values to points
   pt_extract <- cbind(
@@ -276,6 +283,7 @@ eval_cm_function <- function(t, noDataVal) {
 
 # Apply function 
 ##############################
+gc()
 
 results <- eval_cm_function(t, noDataVal = 99)
 
@@ -289,7 +297,13 @@ if(!exists(eval_out_dir)) {
   }
 
 # set export path
-export_path <- glue('{eval_out_dir}{eval_out_name}')
+export_csv <- glue('{eval_out_dir}/01_csvs/')
+export_path <- glue('{export_csv}{eval_out_name}')
+
+# create output dir
+if(!file.exists(export_csv)){
+  dir.create(export_csv)
+}
 
 # export confusion matrix results
 write.csv(results$raw, glue('{export_path}_raw.csv'))
@@ -304,15 +318,29 @@ write.csv(results$overall, glue('{export_path}_overall.csv'))
 eval_r <- ref - pred
 
 #inspect
-freq(eval_r)
+freq <- freq(eval_r)
+freq$count_norm <- freq$count/(sum(freq$count))
+
+hist(freq$count/sum(freq$count))
 
 #list unique values in eval raster that are not 0 ( 0 = same)
 eval_reclass <- unique(eval_r)[,1]
 
-
 # get mask for where rasters are different
 eval_r_mask <- eval_r %>%
   terra::classify(cbind(0, NA))
+
+# what are the coordinates of the pixels that are different? hard to visually tell
+cells_diff <- terra::cells(eval_r_mask)
+diff_coords <- xyFromCell(eval_r_mask, cells_diff)
+
+#convert to shp
+diff_coords_wgs <- diff_coords %>%
+  terra::vect() 
+crs(diff_coords_wgs) <- crs(eval_r_mask) # set rcs
+
+#reproject
+diff_coords_wgs <-  terra::project(diff_coords_wgs, "EPSG:4326")
 
 #inspect ref raster where different
 ref %>%
@@ -323,3 +351,22 @@ ref %>%
 pred %>%
   terra::mask(eval_r_mask) %>%
   freq()
+
+# set export path
+export_ras <- glue('{eval_out_dir}/02_rasters/')
+export_path <- glue('{export_ras}{eval_out_name}')
+
+# create output dir
+if(!file.exists(export_ras)){
+  dir.create(export_ras)
+}
+
+#export raster
+writeRaster(eval_r,
+            glue('{export_path}{eval_out_name}_diff.tif'),
+            overwrite = TRUE)
+
+# export .shp of different points
+writeVector(diff_coords_wgs, 
+            glue('{export_path}{eval_out_name}_diffPts.shp'),
+            overwrite = TRUE)
