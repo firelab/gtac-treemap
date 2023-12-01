@@ -1,6 +1,10 @@
-setwd("G:\\Workspace\\treemap\\treemap2014_rasters2016\\z05_test")
+# inputs
 
-allplot.2016 <- read.table("x_table_TreeMap2016_final.csv", header = TRUE, sep = ",")
+allplot.2016_path <- ""
+
+#setwd("G:\\Workspace\\treemap\\treemap2014_rasters2016\\z05_test")
+
+#allplot.2016 <- read.table("x_table_TreeMap2016_final.csv", header = TRUE, sep = ",")
 
 
 
