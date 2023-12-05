@@ -19,7 +19,7 @@ library(foreach)
 library(doParallel)
 
 # added by Lila
-#library(terra)
+library(terra)
 library(tidyverse)
 library(magrittr)
 library(randomForest)
@@ -80,28 +80,6 @@ names(raster.stack) <- gsub(".tif", "", flist.tif)
 #meters.db <- read.table("metersdb.txt")
 ###only needed to get plot coordinates in meters
 
-points <- "//166.2.126.25/TreeMap/01_Data/04_FIA/03_FullShp/FIA_US.shp"
-#fia_pts <- terra::vect(points)
-fia_pts <- shapefile(points)
-fia_pts <- spTransform(fia_pts, crs(raster.stack))
-
-# convert to data frame of points and vars
-#fia_pts_xy <- data.frame(terra::geom(fia_pts))
-fia_pts_xy <- data.frame(fia_pts@coords)
-names(fia_pts_xy) <- c("x", "y")
-
-fia_pts_xy %<>% cbind(data.frame(fia_pts)) %>%
-  dplyr::rename("CN_xy" = CN) %>%
-  dplyr::select(CN_xy, PREV_PLT_C, x, y, PLOT) %>%
-  dplyr::arrange(PLOT) %>%
-  dplyr::distinct(PLOT)
-
-# inspect
-# fia_pts_xy %>%
-#   filter(!is.na(EVT_GP_reclass)) %>%
-#   nrow()
-
-
 # Load X table
 # --------------------------------------#
 
@@ -124,23 +102,27 @@ allplot <- read.csv("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/01_Input/
 # NOTE: this is currently a stand-in. the allplot table has abbreviated records of the lat and long 
 # (to 2 decimal places)
 
-
 # convert allplot to spatial object
+allplot_vect <- terra::vect(cbind(allplot$ACTUAL_LON, allplot$ACTUAL_LAT))
 
-
-# set projection
+# set input projection
+crs(allplot_vect) <- "epsg:4326"
 
 # reproject to desired projection
+allplot_vect %<>% terra::project(crs(raster.stack))
 
 # extract lat/long in meters
+allplot_xy <- terra::geom(allplot_vect) %>%
+  data.frame() %>%
+  dplyr::rename("POINT_X" = x,
+                "POINT_Y" = y) %>%
+  dplyr::select(POINT_X, POINT_Y)
 
 # bind back with allplot table
+allplot <- cbind(allplot, allplot_xy)
 
 # EVG remap
 # ----------------------------------------#
-
-# Original script below:
-############################################
 
 # ###Fourth input file - evg remap
 
@@ -155,7 +137,10 @@ evt_gp_remap_table <- read.csv("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rast
 #Limit allplot to just the veg types in the remap table
 plot.df <- allplot[allplot$EVT_GP %in% evt_gp_remap_table$EVT_GP,]
 #plot.df <- allplot
+
+#inspect
 dim(plot.df)
+plot(terra::vect(cbind(plot.df$POINT_X,plot.df$POINT_Y)))
 
 ###Change this!
 #dir.create(paste("F:\\Tree_List_c2014\\outputs\\", cur.zone, "_disturb", sep=""))
@@ -167,55 +152,13 @@ dim(plot.df)
 # Bind with plot coordinates
 #merge.df <- merge(plot.df, meters.db, by = "CN")
 # # join coords with plot data
-merge.df <- left_join(plot.df, fia_pts_xy,  by = c("ID" = "PLOT") )
+#merge.df <- left_join(plot.df, fia_pts_xy,  by = c("ID" = "PLOT") )
 
 
 plot.df$CN <- factor(plot.df$CN)
 
 
-##########################################
-# 
-###########################################
-
-# Above is where they're filtering to the EVT_GPs that appear in the zone
-
-## So what I need to do is: 
-# - extract reclassed EVT_GP to points
-# - identify what EVT_GPs are present in the zone
-#   - intersect x-table plots with coordinates, with zone
-#   - spatial filter by zone 
-#   - list EVT_GPs
-#   - sort these EVT_GPs numerically
-#   - result SHOULD be the same as the # EVT Gps in the remap zone file
-#   - i can create an on-the-fly remap file within this script to translate ALL EVT_Gps to zone
-#   - THEN filter to EVT_GPs in zone 
-
-# # join coords with plot data
-# plot.df <- left_join(allplot, fia_pts_xy,  by = c("ID" = "PLOT") )
-# 
-# # create lookup table of original EVT_GP to reclassed EVT_GP
-# evgs_in_zone_remap <- 
-#   plot.df %>%
-#   filter(!is.na(EVT_GP_reclass)) %>%
-#   select(EVT_GP, EVT_GP_reclass) %>%
-#     distinct() %>%
-#     arrange(EVT_GP)
-# 
-# # use evgs_in_zone table to reclassify all evgs in input table
-# plot.df %<>%
-#   select(-EVT_GP_reclass) %>%
-#   left_join(evgs_in_zone_remap, by = "EVT_GP",  relationship = "many-to-many") %>%
-#   filter(!is.na(EVT_GP_reclass))  # filter to only plots with an EVG
-# 
-# #inspect
-# plot.df %>%
-#   head()
-
-# filter to plots with evt_gp_reclass field !is.na 
-# this will correspond to only the evt_gps that are in the zone of interest
-
-
-# Build x predictor matrix
+# Build X and Y predictor matrices / factors
 # ----------------------------------------------#
 
 ##Build X predictor matrix
@@ -235,17 +178,14 @@ plot.df$EVT_GP<- evg.fac
 ##Build Y response matrix
 # plot.df$POINT_X <- merge.df$POINT_X
 # plot.df$POINT_Y <- merge.df$POINT_Y
-plot.df$POINT_X <- merge.df$x
-plot.df$POINT_Y <- merge.df$y
+
+# Reclass EVGs in plot.df table
+# --------------------------------------------------#
 
 ####Reclass evgs
 #evg.reclass <- read.table(paste(cur.zone.zero, "_EVG_remap.txt", sep=""), sep=":")
 # evg.reclass <- remap
 n.evgs <- nrow(evt_gp_remap_table)
-
-
-# get max value of EVG raster
-#n.evgs <- minmax(raster_rast$EVT_GP)[2]
 
 #reassign object to evg.reclass
 evg.reclass <- evt_gp_remap_table %>%
@@ -267,9 +207,15 @@ plot.df$"EVT_GP" <- as.factor(evg.out)
 
 plot.df$disturb_code <- as.factor(plot.df$disturb_code)
 
+# Create X-Table and Y-Table
+# ---------------------------------------------#
 
 #Create X Table
-X.df <- plot.df[,5:18] # slope thru EVC, EVH, EVG
+#X.df <- plot.df[,5:20] 
+X.df <- plot.df %>%
+  dplyr::select(SLOPE, ASPECT, ELEV, PARI, PPTI, RELHUMI, TMAXI, TMINI, VPDI,
+                disturb_code, disturb_year, canopy_cover, canopy_height, EVT_GP,
+                POINT_X, POINT_Y)
 
 # Re-calculate aspect 
 
@@ -296,34 +242,29 @@ rm(aspect.temp, rad.temp, northing.temp, easting.temp)
 # inspect plot.df table
 # -----------------------------------------------------------------------#
 
-# Every PLOT ID has a unique CN in the allplot. 
-# The same is not true for the FIA_pts. 
-# FIA_pts can't join on CN, but WILL join on ID / PLOT
-# but is this join appropriate
-
-plot.df %>%
-  group_by(ID) %>%
-  count() %>% 
-  filter(n>1)
-
-plot.df %>%
-  group_by(CN) %>%
-  count() %>% 
-  filter(n>1)
-
-plot.df %>%
-  dplyr::select(ID, CN) %>%
-  distinct() %>%
-  nrow()
+# plot.df %>%
+#   group_by(ID) %>%
+#   count() %>% 
+#   filter(n>1)
+# 
+# plot.df %>%
+#   group_by(CN) %>%
+#   count() %>% 
+#   filter(n>1)
+# 
+# plot.df %>%
+#   dplyr::select(ID, CN) %>%
+#   distinct() %>%
+#   nrow()
 
 
-# build the random forests model (X=all predictors, Y=EVG, EVC, EVH)
+# Build the random forests model (X=all predictors, Y=EVG, EVC, EVH)
 # -----------------------------------------------------------------------#
 set.seed(56789)
 
 #yai.treelist <- yai(X.df, Y.df, method = "randomForest", ntree = 249)
 
-##Recode Disturbance as 0/1 in X table
+##Recode Disturbance as 0/1 in X table; add Disturbance to Y table
 
 dc.bin <- as.character(X.df$disturb_code)
 dc.bin[dc.bin !="0"] <- "1"
@@ -360,9 +301,25 @@ cm_EVT_GP <- yai.treelist.bin$ranForest$EVT_GP$confusion
 cm_DC <- yai.treelist.bin$ranForest$disturb_code$confusion
 
 # variable importance
-RF_sum$scaledImportance
+varImp <- data.frame(RF_sum$scaledImportance)
+
+# process variable importance table for plotting
+varImp$outVar <- rownames(varImp)
+rownames(varImp) <- NULL
+
+varImp %<>% 
+  tidyr::pivot_longer(1:ncol(varImp)-1, names_to = "var")
+
+#plot variable importance
+p <- varImp %>%
+  ggplot()+
+  geom_col(aes(x=var, y = value))+
+  coord_flip()+
+  facet_wrap(~outVar)+
+  theme_bw()
 
 # export to file
+ggsave(glue('{output_dir}/eval/varImp.png'), width = 7, height = 5)
 write.csv(cm_EVC, glue('{output_dir}/eval/CM_canopyCover.csv'))
 write.csv(cm_EVH, glue('{output_dir}/eval/CM_canopyHeight.csv'))
 write.csv(cm_EVT_GP, glue('{output_dir}/eval/CM_EVT_Group.csv'))
