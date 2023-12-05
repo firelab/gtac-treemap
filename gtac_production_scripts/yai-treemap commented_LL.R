@@ -72,7 +72,7 @@ names(raster.stack) <- gsub(".tif", "", flist.tif)
 #convert raster stack to terra object
 #raster_rast <- terra::rast(raster.stack)
 
-# Load plot coordinates and extract spatial data from rasters
+# Load plot coordinates in meters
 # ----------------------------------------------------------#
 
 ###Second input file
@@ -85,15 +85,11 @@ points <- "//166.2.126.25/TreeMap/01_Data/04_FIA/03_FullShp/FIA_US.shp"
 fia_pts <- shapefile(points)
 fia_pts <- spTransform(fia_pts, crs(raster.stack))
 
-# extract EVT_GP reclass, from available raster, to points
-# evt_gp_reclass <- terra::extract(raster_rast$EVT_GP, 
-#                                  terra::project(fia_pts, crs(raster_rast))) %>%
-#   rename("EVT_GP_reclass" = EVT_GP)
-
 # convert to data frame of points and vars
 #fia_pts_xy <- data.frame(terra::geom(fia_pts))
 fia_pts_xy <- data.frame(fia_pts@coords)
 names(fia_pts_xy) <- c("x", "y")
+
 fia_pts_xy %<>% cbind(data.frame(fia_pts)) %>%
   dplyr::rename("CN_xy" = CN) %>%
   dplyr::select(CN_xy, PREV_PLT_C, x, y, PLOT) %>%
@@ -105,8 +101,6 @@ fia_pts_xy %<>% cbind(data.frame(fia_pts)) %>%
 #   filter(!is.na(EVT_GP_reclass)) %>%
 #   nrow()
 
-# remove
-rm(fia_pts_xy)
 
 # Load X table
 # --------------------------------------#
@@ -125,9 +119,25 @@ allplot <- read.csv("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/01_Input/
 #allplot <- allplot.2014
 #allplot <- allplot.KRiley
 
+# Convert plot coordinates to meters
+#----------------------------------------------------------#
+# NOTE: this is currently a stand-in. the allplot table has abbreviated records of the lat and long 
+# (to 2 decimal places)
+
+
+# convert allplot to spatial object
+
+
+# set projection
+
+# reproject to desired projection
+
+# extract lat/long in meters
+
+# bind back with allplot table
+
 # EVG remap
 # ----------------------------------------#
-
 
 # Original script below:
 ############################################
@@ -158,7 +168,7 @@ dim(plot.df)
 #merge.df <- merge(plot.df, meters.db, by = "CN")
 # # join coords with plot data
 merge.df <- left_join(plot.df, fia_pts_xy,  by = c("ID" = "PLOT") )
-merge.df <- merge.df
+
 
 plot.df$CN <- factor(plot.df$CN)
 
@@ -259,7 +269,7 @@ plot.df$disturb_code <- as.factor(plot.df$disturb_code)
 
 
 #Create X Table
-X.df <- plot.df[,5:18]
+X.df <- plot.df[,5:18] # slope thru EVC, EVH, EVG
 
 # Re-calculate aspect 
 
@@ -272,10 +282,12 @@ X.df <- X.df[,-2]
 X.df$NORTHING <- northing.temp
 X.df$EASTING <- 	easting.temp
 
-rownames(X.df) <- plot.df$ID
+rownames(X.df) <- plot.df$ID # add plotid as row names
 id.table <-  plot.df$ID
-Y.df <- data.frame(plot.df[,16:18])
-rownames(Y.df) <- plot.df$ID
+
+# Create Y table
+Y.df <- data.frame(plot.df[,16:18]) # EVC, EVH, EVG
+rownames(Y.df) <- plot.df$ID # add plotid as row names
 #X.df <- X.df[,-c(9, 10)]
 
 # remove temp files
@@ -287,6 +299,7 @@ rm(aspect.temp, rad.temp, northing.temp, easting.temp)
 # Every PLOT ID has a unique CN in the allplot. 
 # The same is not true for the FIA_pts. 
 # FIA_pts can't join on CN, but WILL join on ID / PLOT
+# but is this join appropriate
 
 plot.df %>%
   group_by(ID) %>%
@@ -299,9 +312,10 @@ plot.df %>%
   filter(n>1)
 
 plot.df %>%
-  select(ID, CN) %>%
+  dplyr::select(ID, CN) %>%
   distinct() %>%
   nrow()
+
 
 # build the random forests model (X=all predictors, Y=EVG, EVC, EVH)
 # -----------------------------------------------------------------------#
@@ -309,7 +323,7 @@ set.seed(56789)
 
 #yai.treelist <- yai(X.df, Y.df, method = "randomForest", ntree = 249)
 
-##Recode Disturbance as 0/1, add to Y matrix
+##Recode Disturbance as 0/1 in X table
 
 dc.bin <- as.character(X.df$disturb_code)
 dc.bin[dc.bin !="0"] <- "1"
@@ -330,14 +344,23 @@ toc()
 # clear unused memory
 gc()
 
+# Export model
+write_rds(yai.treelist.bin, glue('{output_dir}/eval/{cur.zone.zero}yai_treelist_bin.RDS'))
+
 # Report model accuracy for Y variables (EVC, EVH, EVG)
 # ------------------------------------------------------------------------#
+
+#RF summary
+RF_sum <- yaiRFsummary(yai.treelist.bin)
 
 # Confusion matrices
 cm_EVC <- yai.treelist.bin$ranForest$canopy_cover$confusion
 cm_EVH <- yai.treelist.bin$ranForest$canopy_height$confusion
 cm_EVT_GP <- yai.treelist.bin$ranForest$EVT_GP$confusion
 cm_DC <- yai.treelist.bin$ranForest$disturb_code$confusion
+
+# variable importance
+RF_sum$scaledImportance
 
 # export to file
 write.csv(cm_EVC, glue('{output_dir}/eval/CM_canopyCover.csv'))
@@ -382,8 +405,8 @@ Sys.time()
 
 test_row <- 19000
 
-impute.row <- function(currow)  
-{ 
+impute.row <- function(currow)
+{
   #### Load libraries for function
   #library(yaImpute) 
   #library(raster) 
@@ -413,20 +436,26 @@ impute.row <- function(currow)
   #extract.ppt <- extract(ppt.good.raster, sp.currow)  
   extract.currow <- data.frame(rsmat)
   
-  #### make data frame with all values for current row - excluding NAs
+  #### make data frame with all values for current row - excluding NAs 
   #extract.currow$"PPTI" <- extract.ppt
-  colseq <- 1:length(extract.currow[,1])
-  valid.cols <- colseq[as.logical(1-is.na(extract.currow[,1]))]
+  
+  colseq <- 1:length(extract.currow[,1]) # list all columns in row
+  valid.cols <- colseq[as.logical(1-is.na(extract.currow[,1]))] # list all valid cols in row
+  
   # tempname <- paste(cur.zone,"slp_1_2", sep =   "")
   #colseq <- 1:length(currow.vals)
   #valid.cols <- colseq[as.logical(1-is.na(extract.currow[,1]))]
+  
   ncols.df <- dim(extract.currow)[2]
+  
   # invalid.cols <- colseq[as.logical(is.na(extract.currow[,1]))]
   #extract.currow[invalid.cols,] <- rep(1, ncols.df)
+  
   extract.currow <- data.frame(extract.currow)
   extract.currow$"POINT_X" <- xycoords $x
   extract.currow$"POINT_Y" <-xycoords $y
   extract.currow <- na.exclude(extract.currow)
+  
   #extract.currow <- extract.currow[ppt.notequal,]
   #valid.cols <- valid.cols[ppt.notequal]  
   
@@ -443,10 +472,11 @@ impute.row <- function(currow)
   X.df.temp <- X.df.temp[,-1]  
   X.df.temp$NORTHING <- northing.temp  
   X.df.temp$EASTING <- 	easting.temp  
-  temp.evg <- X.df.temp$'EVT_GP'
+  
   
   #### Account for EVGs that are in the reference data but don't appear in the target data
   #get nonappearing evgs   
+  temp.evg <- X.df.temp$'EVT_GP'
   evg.orig <- 1:n.evgs 
   #evg.orig <- as.numeric(levels(evg.in))
   evg.val <- evg.orig  
@@ -458,7 +488,7 @@ impute.row <- function(currow)
   n.dummy.rows <- length(nonappearing.evgs)  
   X.df.temp.old <- X.df.temp
   
-  #### create "dummy rows" in X table so all EVGs are represented
+  #### create "dummy rows" in X table that represent any non-appearing EVGs
   if(n.dummy.rows > 0)    
   {    
     dummy.rows <- X.df.temp[1:n.dummy.rows,]    
@@ -470,7 +500,7 @@ impute.row <- function(currow)
   
   #### Set factor levels for EVG
   n.rows.orig <- dim(extract.currow)[1]	  
-  temp.fac <- factor(X.df.temp$'EVT_GP', levels = levels(evg.in))  
+  temp.fac <- factor(X.df.temp$'EVT_GP', levels = levels(evg.in))  # levels taken from outside function
   
   #### Set factor levels for disturbance code
   dc.code.fac.temp <- factor( X.df.temp$disturb_code, levels=lev.dc)  
@@ -489,12 +519,13 @@ impute.row <- function(currow)
   
   impute.out <- rep(NA,nc.orig)  
   nrows.orig <- dim(extract.currow)[1]  
-  if(nrow.temp > 0)    
+  if(nrow.temp > 0)  # if there are any pixels in the row we're imputing  
   { 
     # Set up data frame to hold outputs
-    colseq.out <- 1:dim(X.df.temp)[1]    
+    colseq.out <- 1:dim(X.df.temp)[1] # number of inputs, including dummy rows  
     rownames.all <- colseq.out+maxrow    
-    rownames(X.df.temp) <- paste("T-", rownames.all)    
+    rownames(X.df.temp) <- paste("T-", rownames.all) # setting this up to match with imputation outputs?
+    
     #rownames(X.df.temp) <- rownames.all[valid.cols]    
     #names(X.df.temp) <- names(X.df)    
     #temp.yai <- impute(yai.treelist, ancilliaryData = X.df.valid)
@@ -541,9 +572,9 @@ impute.row <- function(currow)
 # Apply imputation function
 # --------------------------------- #
 
-mused <- pryr::mem_used()
-mused <- as.numeric(mused)
-mused.gb <- mused / 1e9
+# mused <- pryr::mem_used()
+# mused <- as.numeric(mused)
+# mused.gb <- mused / 1e9
 
 
 #mused.gb <- 3.17
