@@ -260,7 +260,7 @@ rm(aspect.temp, rad.temp, northing.temp, easting.temp)
 
 # Build the random forests model (X=all predictors, Y=EVG, EVC, EVH)
 # -----------------------------------------------------------------------#
-set.seed(56789)
+
 
 #yai.treelist <- yai(X.df, Y.df, method = "randomForest", ntree = 249)
 
@@ -276,17 +276,39 @@ Y.df.orig <- Y.df
 X.df$disturb_code <- dc.bin
 Y.df$disturb_code <- dc.bin
 
-tic() # start the clock
+# Export X and Y tables
+# ------------------------------------------------------#
 
-yai.treelist.bin <- yai(X.df, Y.df, method = "randomForest", ntree = 400)
+#create output directory
+if(!file.exists(glue('{output_dir}/xytables'))){
+  dir.create(glue('{output_dir}/xytables'))
+}
+
+
+write.csv(X.df, glue('{output_dir}/xytables/{cur.zone.zero}_Xdf_bin.csv'))
+write.csv(Y.df, glue('{output_dir}/xytables/{cur.zone.zero}_Ydf_bin.csv'))
+
+write.csv(X.df.orig, glue('{output_dir}/xytables/{cur.zone.zero}_Xdf_orig.csv'))
+write.csv(Y.df.orig, glue('{output_dir}/xytables/{cur.zone.zero}_Ydf_orig.csv'))
+
+# Create the imputation model
+# -------------------------------------------------------#
+tic() # start the clock
+set.seed(56789)
+#yai.treelist.bin <- yai(X.df, Y.df, method = "randomForest", ntree = 400)
 
 toc()
 
 # clear unused memory
 gc()
 
+# create model output directory if it does not exists
+if(!file.exists(glue('{output_dir}/model/'))){
+  dir.create(glue('{output_dir}/model/'))
+}
+
 # Export model
-write_rds(yai.treelist.bin, glue('{output_dir}/eval/{cur.zone.zero}yai_treelist_bin.RDS'))
+write_rds(yai.treelist.bin, glue('{output_dir}/model/{cur.zone.zero}_yai_treelist_bin.RDS'))
 
 # Report model accuracy for Y variables (EVC, EVH, EVG)
 # ------------------------------------------------------------------------#
@@ -316,7 +338,14 @@ p <- varImp %>%
   geom_col(aes(x=var, y = value))+
   coord_flip()+
   facet_wrap(~outVar)+
-  theme_bw()
+  theme_bw() + 
+  title(glue('RF Variable Importance for {cur.zone.zero}'))
+
+#create output directory
+if(!file.exists(glue('{output_dir}/eval'))){
+  dir.create(glue('{output_dir}/eval'))
+}
+
 
 # export to file
 ggsave(glue('{output_dir}/eval/varImp.png'), width = 7, height = 5)
@@ -325,13 +354,13 @@ write.csv(cm_EVH, glue('{output_dir}/eval/CM_canopyHeight.csv'))
 write.csv(cm_EVT_GP, glue('{output_dir}/eval/CM_EVT_Group.csv'))
 write.csv(cm_DC, glue('{output_dir}/eval/CM_DisturbanceCode.csv'))
 
-# build dataframes from the raster data
+# Build dataframes from the raster data
 #-------------------------------------------------------#
 #raster.coords <- coordinates(raster.stack)
-asp.raster <- raster.stack[[1]]
-dem.raster <- raster.stack[[2]]
+# asp.raster <- raster.stack[[1]]
+# dem.raster <- raster.stack[[2]]
 
-currow.vals <- cellFromRow(dem.raster, 1500)
+#currow.vals <- cellFromRow(dem.raster, 1500)
 #coords.currow <- raster.coords[currow.vals,]
 
 #extract.currow <- extract(raster.stack, coords.currow)
@@ -343,7 +372,7 @@ nrows.out <- dim(raster.stack)[1]
 ncols.out <- dim(raster.stack)[2]
 
 rs2 <- raster.stack
-# 
+ 
 # ###Fifth input file: fixed ppt raster
 # ###Get ppt img
 # 
@@ -359,8 +388,6 @@ Sys.time()
 
 # Set up imputation function
 # ------------------------------------------------ #
-
-test_row <- 19000
 
 impute.row <- function(currow)
 {
@@ -384,7 +411,7 @@ impute.row <- function(currow)
   #pptvals  <- cellFromRow(ppt.good.raster, currow)
   #ppt.good <- ppt.good.raster[pptvals]
   
-  xycoords <- xyFromCell(rs2, rsvals)
+  xycoords <- raster::xyFromCell(rs2, rsvals)
   xycoords <- data.frame(xycoords)
   
   # get data from each row of rasters (coordinates)
@@ -495,16 +522,11 @@ impute.row <- function(currow)
     temp.dc <- as.factor(temp.dc)
     X.df.temp$disturb_code <- temp.dc
     
-    library(tictoc)
-    tic()
     
     #### Perform imputation
     # take object from formed random forests model and use X.df.temp dataframe to make predictions    
     temp.newtargs <- newtargets(yai.treelist.bin, newdata = X.df.temp)    
-    print(glue('row {currow} completed'))
-    toc()
-    
-    
+  
     #### Format outputs 
     out.trgrows <- temp.newtargs$trgRows # row names for target observations
     temp.xall <- temp.newtargs$xall # x-variables (predictors) for all observations  
@@ -526,9 +548,132 @@ impute.row <- function(currow)
 }
 
 
-# Apply imputation function
-# --------------------------------- #
+# Load imputation model
+# ---------------------------------------------------------- #
 
+#if necessary
+
+yai.treelist.bin <- read_rds(file = glue('{output_dir}model/{cur.zone.zero}_yai_treelist_bin.RDS'))
+
+
+# Set up test 
+# ---------------------------------------------------------- #
+
+test_row <- 7500
+
+ntest_rows <- 50
+
+testrow1 <- test_row
+testrow2 <- test_row + ntest_rows
+
+# Apply imputation function - test without parallelizing
+# ---------------------------------------------------------- #
+
+# test_rows<- foreach(m = testrow1:testrow2, .packages = c("raster", "yaImpute", "glue", "tictoc"), .combine="rbind") %dopar%   impute.row(m)
+# 
+# # make rows with NAs to make full raster of test
+# d <- rep(NA, ncols.out)
+# blank_rows_top <- do.call("rbind", replicate(test_row-1, d, simplify = FALSE))
+# blank_rows_bottom <- do.call("rbind", replicate(maxrow-(testrow2 + 1), d, simplify = FALSE))
+# 
+# #bind test rows with NAs to make full raster
+# test_rows_ras <- terra::rast(rbind(blank_rows_top,
+#                                    test_rows,
+#                                    blank_rows_bottom))
+# 
+# # set geospatial attributes
+# ext(test_rows_ras) <- ext(raster.stack)
+# crs(test_rows_ras) <- crs(raster.stack)
+# 
+# # inspect
+# test_rows_ras
+# plot(test_rows_ras)
+# freq(test_rows_ras)
+# 
+# # export test raster
+# writeRaster(test_rows_ras,
+#             glue('{output_dir}testRows_{testrow1}_{testrow2}_noPar.tif'))
+# 
+# # clear unused memory
+# rm(test_rows_ras, blank_rows_bottom, blank_rows_)
+# gc()
+
+
+# Run imputation - with parallelizing
+# ----------------------------------------------------#
+
+# set proportion of available cores to use
+nCorefraction <- 0.25
+
+# Set number of cores
+ncores <- parallel::detectCores()
+ncores <- floor(ncores*nCorefraction)
+
+# Set up cluster for parallel computing
+cl <- makeCluster(ncores)
+registerDoParallel(cl)
+
+# RUN IMPUTATION ON ROWS
+tic()
+mout <- foreach(m = testrow1:testrow2, .packages = c("raster", "yaImpute"), .combine="rbind") %dopar% impute.row(m)
+toc()
+
+# finish parallel
+stopCluster(cl)
+closeAllConnections()
+gc()
+
+# Post-process test outputs
+#------------------------------------#
+
+# make rows with NAs to make full raster of test 
+d <- rep(NA, ncols.out)
+blank_rows_top <- do.call("rbind", replicate(testrow1-1, d, simplify = FALSE))
+blank_rows_bottom <- do.call("rbind", replicate(nrows.out-(testrow2 + 1), d, simplify = FALSE))
+
+#bind test rows with NAs to make full raster
+mout_ras <- raster::raster(rbind(blank_rows_top,
+                              mout,
+                              blank_rows_bottom))
+
+rm(blank_rows_top, blank_rows_bottom)
+gc()
+
+# Post-process raster outputs
+#------------------------------------#
+
+#mout_ras <- terra::rast(mout)
+
+# set geospatial attributes
+raster::extent(mout_ras) <- raster::extent(raster.stack[[1]])
+crs(mout_ras) <- crs(raster.stack[[1]])
+
+
+# mout_ras@extent <- raster.stack[[1]]@extent
+# raster::crs(mout_ras) <- p4s.albers
+
+
+# inspect
+mout_ras
+# plot(mout_ras)
+# freq(mout_ras)
+
+# create output directory
+if(!file.exists(glue('{output_dir}raster/'))){
+  dir.create(glue('{output_dir}raster/'))
+}
+
+# export test raster
+terra::writeRaster(mout_ras, 
+            glue('{output_dir}raster/testRows_{testrow1}_{testrow2}.tif'),
+            overwrite = TRUE)
+
+# clear unused memory
+rm(mout, mout_ras)
+gc()
+
+# Run imputation - original
+# ---------------------------------------------------#
 # mused <- pryr::mem_used()
 # mused <- as.numeric(mused)
 # mused.gb <- mused / 1e9
@@ -549,36 +694,7 @@ ncores <- floor(ncores*.1)
 # Sys.time()
 #mout.2014.rasters.2016 <- foreach(m = 1:nrows.out, .packages = c("raster", "yaImpute"), .combine="rbind") %dopar%   impute.row(m)
 
-test <- impute.row(test_row)
 
-test_row <- 1500
-testrow1 <- test_row
-testrow2 <- test_row + 50
-
-test_rows<- foreach(m = testrow1:testrow2, .packages = c("raster", "yaImpute"), .combine="rbind") %dopar%   impute.row(m)
-
-# make rows with NAs to make full raster of test 
-d <- rep(NA, ncols.out)
-blank_rows_top <- do.call("rbind", replicate(test_row-1, d, simplify = FALSE))
-blank_rows_bottom <- do.call("rbind", replicate(maxrow-(testrow2 + 1), d, simplify = FALSE))
-
-#bind test rows with NAs to make full raster
-test_rows_ras <- terra::rast(rbind(blank_rows_top,
-                              test_rows,
-                              blank_rows_bottom))
-
-# set geospatial attributes
-ext(test_rows_ras) <- ext(dem.raster)
-crs(test_rows_ras) <- crs(raster.stack)
-
-# inspect
-test_rows_ras
-plot(test_rows_ras)
-freq(test_rows_ras)
-
-# export test raster
-writeRaster(test_rows_ras, 
-            glue('{output_dir}test_rows_{testrow1}{testrow2}.tif'))
 
 # # finish 
 # stopCluster(cl)
