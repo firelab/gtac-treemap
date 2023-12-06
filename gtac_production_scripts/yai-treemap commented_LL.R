@@ -501,7 +501,7 @@ impute.row <- function(currow)
     #### Perform imputation
     # take object from formed random forests model and use X.df.temp dataframe to make predictions    
     temp.newtargs <- newtargets(yai.treelist.bin, newdata = X.df.temp)    
-    print(paste("row", currow, "completed", sep = ""))
+    print(glue('row {currow} completed'))
     toc()
     
     
@@ -543,24 +543,47 @@ impute.row <- function(currow)
 ncores <- parallel::detectCores()
 ncores <- floor(ncores*.1)
 
-Sys.time()
-cl <- makeCluster(ncores)
-registerDoParallel(cl)
-Sys.time()
+# Sys.time()
+# cl <- makeCluster(ncores)
+# registerDoParallel(cl)
+# Sys.time()
 #mout.2014.rasters.2016 <- foreach(m = 1:nrows.out, .packages = c("raster", "yaImpute"), .combine="rbind") %dopar%   impute.row(m)
 
 test <- impute.row(test_row)
 
-test_rows<- foreach(m = 19000:19010, .packages = c("raster", "yaImpute"), .combine="rbind") %dopar%   impute.row(m)
+test_row <- 1500
+testrow1 <- test_row
+testrow2 <- test_row + 50
 
-test_rows_ras <- raster(test_rows)
+test_rows<- foreach(m = testrow1:testrow2, .packages = c("raster", "yaImpute"), .combine="rbind") %dopar%   impute.row(m)
 
-#
+# make rows with NAs to make full raster of test 
+d <- rep(NA, ncols.out)
+blank_rows_top <- do.call("rbind", replicate(test_row-1, d, simplify = FALSE))
+blank_rows_bottom <- do.call("rbind", replicate(maxrow-(testrow2 + 1), d, simplify = FALSE))
 
-# finish 
-stopCluster(cl)
-closeAllConnections()
-Sys.time()
+#bind test rows with NAs to make full raster
+test_rows_ras <- terra::rast(rbind(blank_rows_top,
+                              test_rows,
+                              blank_rows_bottom))
+
+# set geospatial attributes
+ext(test_rows_ras) <- ext(dem.raster)
+crs(test_rows_ras) <- crs(raster.stack)
+
+# inspect
+test_rows_ras
+plot(test_rows_ras)
+freq(test_rows_ras)
+
+# export test raster
+writeRaster(test_rows_ras, 
+            glue('{output_dir}test_rows_{testrow1}{testrow2}.tif'))
+
+# # finish 
+# stopCluster(cl)
+# closeAllConnections()
+# Sys.time()
 
 #mout <- mout.2014.rasters.2016 
 
