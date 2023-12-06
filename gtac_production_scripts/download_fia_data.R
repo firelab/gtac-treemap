@@ -1,9 +1,9 @@
 # download FIA data
 library(glue)
 
-# Download and unzip all Landfire disturbance files
-# Available for manual download from this location: 
-# https://landfire.gov/disturbance_grids.php
+# Download individual tables from FIA db
+
+# alternately, is there a remote sqlite instance I can connect to? 
 
 # set longer time to permit download - in seconds
 options(timeout=120)
@@ -11,8 +11,8 @@ options(timeout=120)
 # set file destination
 dir <- "//166.2.126.25/TreeMap/01_Data/04_FIA/06_FIA_DataMart/"
 
-# list states - by abbreviation
-states <- c("UT")
+# list states - lower 48 states by abbreviation
+states <- c("ID", "UT", "WY")
 # states <- c("AL", "AR", "AZ", "CA", "CO", "CT", 
 #             "DE", "FL", "GA", "ID", "IL", "IN", 
 #             "IA", "KS", "KY", "LA", "ME", "MD",
@@ -22,49 +22,43 @@ states <- c("UT")
 #             "RI", "SD", "SC", "TN", "TX", "UT", 
 #             "VA", "VT", "WV", "WI", "WY", 'WA')
 
+# list tables to download
+tables <- c("COND", "PLOT")
+
 # sample download url https://apps.fs.usda.gov/fia/datamart/Databases/SQLite_FIADB_CA.zip
 
-url_base <- "https://apps.fs.usda.gov/fia/datamart/Databases/SQLite_FIADB_"
+#url_base <- "https://apps.fs.usda.gov/fia/datamart/Databases/SQLite_FIADB_" # for sqlite db
 
+url_base <- 'https://apps.fs.usda.gov/fia/datamart/CSV/'
 
 for(j in 1:length(states)){
   
-  j = 1
+  #j = 1
   
   state_name <- states[j]
   
   print(paste0("downloading ", state_name))
   
-  ##
-  ##### Set appropriate file name
-  ##
-  
-  #create url
-  url <- glue('{url_base}{state_name}.zip')
+  for(k in 1:length(tables)){
     
-  # create file name
-  zipfilename <- glue('{dir}{strsplit(url, "/")[[1]][7]}')
+    #k = 1
     
+    tbl <- tables[k]
+    
+    #create url
+    url <- glue('{url_base}{state_name}_{tbl}.csv')
+    
+    # create file name
+    filename <- glue('{dir}{strsplit(url, "/")[[1]][6]}')  
+    
+    #what url are you working on? 
+    print(url)
+    
+    #download files
+    download.file(url, filename, mode = "wb")
+    
+  }
   
-  ##
-  ##### Download and extract
-  ##
   
-  # create file name for out folder
-  filename <- gsub(".zip", "", zipfilename)
-  
-  #what url are you working on? 
-  print(url)
-  
-  #download files
-  download.file(url, zipfilename, mode = "wb")
-  
-  print(paste0("extracting ", state_name))
-  
-  #unzip
-  unzip(zipfilename, exdir = dir, overwrite = TRUE)
-  
-  #remove zipped files
-  file.remove(zipfilename)
   
 }
