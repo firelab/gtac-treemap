@@ -5,6 +5,12 @@
 
 # Set up a test run for one zone, using Karin's provided target data and x table
 
+# TO DO: 
+# - convert to r terra from r raster
+# - break into separate scripts for imputation prep and imputation run? 
+# - read in rasters as vrt
+# - export predicted + ref for left-out plots in RF 
+
 # Load libraries
 # -------------------------------#
 
@@ -36,38 +42,52 @@ cur.zone.zero <-  "z16" # when zone is only one digit, add zero to the front (e.
 ###Very important! Always run this first so that you allow for sufficient digits to differentiate plot cn numbers
 options("scipen"=100, "digits"=8)
 
-outfolder <- cur.zone
+#outfolder <- cur.zone
 
-##depends on number of cores your machine, below this gets overriden by the memory available. This will require tweeking depedning on your machine
-#ncores <- 24
-
-output_dir <- paste0("//166.2.126.25/TreeMap/03_Outputs/07_Raw_model_outputs/2016_Original_Test/",cur.zone.zero,"/")
+output_dir <-"//166.2.126.25/TreeMap/03_Outputs/07_Raw_model_outputs/2016_Original_Test/"
 if(!file.exists(output_dir)){
   dir.create(output_dir)
 }
+
+# Directory where target rasters live
+target_dir <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/02_Target/"
+
+# Set folder paths
+target_dir = glue('{target_dir}{cur.zone.zero}/')
+output_dir = glue('{output_dir}{cur.zone.zero}/')
+
 
 # Load target rasters
 # ------------------------------------------#
 
 ####First input files: Build raster stack of target data
 #setwd("G:\\Workspace\\treemap\\treemap2014_rasters2016\\target_data_reclassified_final")
-setwd("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/02_Target")
-setwd(cur.zone.zero)
+# setwd("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/02_Target")
+# setwd(cur.zone.zero)
+# 
+# flist.tif <- Sys.glob("*.tif")
 
-flist.tif <- Sys.glob("*.tif")
+# list raster files
+flist.tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
 
 raster.stack <- stack(flist.tif)
 p4s.albers <- proj4string(raster.stack)
-raster.list <- vector("list", length(flist.tif))
-nrasters <- length(flist.tif)
-for(i in 1:length(flist.tif))  
-{
-  raster.list[[i]] <- raster()  
-}
+crs.ras <- crs(raster.stack)
+#raster.list <- vector("list", length(flist.tif))
+# nrasters <- length(flist.tif)
+# for(i in 1:length(flist.tif))  
+# {
+#   raster.list[[i]] <- raster()  
+# }
+
+# get raster names 
+raster_names <- flist.tif %>%
+  str_extract(., "z[0-9][0-9]/([^.])*") %>%
+  str_replace("z[0-9][0-9]/", "")
 
 #add names to raster list
-names(raster.list) <- gsub(".tif", "",flist.tif)
-names(raster.stack) <- gsub(".tif", "", flist.tif)
+#names(raster.list) <- raster_names
+names(raster.stack) <- raster_names
 
 #convert raster stack to terra object
 #raster_rast <- terra::rast(raster.stack)
@@ -109,7 +129,7 @@ allplot_vect <- terra::vect(cbind(allplot$ACTUAL_LON, allplot$ACTUAL_LAT))
 crs(allplot_vect) <- "epsg:4326"
 
 # reproject to desired projection
-allplot_vect %<>% terra::project(crs(raster.stack))
+allplot_vect %<>% terra::project(crs.ras)
 
 # extract lat/long in meters
 allplot_xy <- terra::geom(allplot_vect) %>%
@@ -295,7 +315,7 @@ write.csv(Y.df.orig, glue('{output_dir}/xytables/{cur.zone.zero}_Ydf_orig.csv'))
 # -------------------------------------------------------#
 tic() # start the clock
 set.seed(56789)
-#yai.treelist.bin <- yai(X.df, Y.df, method = "randomForest", ntree = 400)
+yai.treelist.bin <- yai(X.df, Y.df, method = "randomForest", ntree = 400)
 
 toc()
 
@@ -548,12 +568,17 @@ impute.row <- function(currow)
 }
 
 
-# Load imputation model
+# Load imputation model and inputs
 # ---------------------------------------------------------- #
 
 #if necessary
 
 yai.treelist.bin <- read_rds(file = glue('{output_dir}model/{cur.zone.zero}_yai_treelist_bin.RDS'))
+
+# load x table and y table
+
+X.df <- read.csv(glue('{output_dir}/xytables/{cur.zone.zero}_Xdf_bin.csv'))
+Y.df <- read.csv(glue('{output_dir}/xytables/{cur.zone.zero}_Ydf_bin.csv'))
 
 
 # Set up test 
@@ -629,7 +654,11 @@ gc()
 # make rows with NAs to make full raster of test 
 d <- rep(NA, ncols.out)
 blank_rows_top <- do.call("rbind", replicate(testrow1-1, d, simplify = FALSE))
-blank_rows_bottom <- do.call("rbind", replicate(nrows.out-(testrow2 + 1), d, simplify = FALSE))
+blank_rows_bottom <- do.call("rbind", replicate(nrows.out-(testrow2), d, simplify = FALSE))
+
+# make sure this is the same size
+nrow(mout) + nrow(blank_rows_top) + nrow(blank_rows_bottom)
+nrows.out
 
 #bind test rows with NAs to make full raster
 mout_ras <- raster::raster(rbind(blank_rows_top,
