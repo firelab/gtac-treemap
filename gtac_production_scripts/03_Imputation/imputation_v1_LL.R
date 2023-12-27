@@ -3,7 +3,11 @@
 #   and Karin Riley (karin.riley@usda.gov)
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
-# Last updated
+# TO DO: 
+# - export predicted + ref for left-out plots in RF 
+# - read in rasters as vrt
+
+# Last updated: 12/5/2023
 
 ###########################################################################
 # Set inputs
@@ -57,7 +61,8 @@ cores_frac <- 0.75
 
 # packages required
 list.of.packages <- c("raster", "yaImpute", "randomForest", "pryr", 
-                      "terra", "tidyverse", "magrittr", "glue", "tictoc")
+                      "terra", "tidyverse", "magrittr", "glue", "tictoc",
+                      "parallel", "doParallel", "foreach")
 
 #check for packages and install if needed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -145,37 +150,44 @@ for(i in 1:length(flist.tif))
 names(raster.list) <- gsub(".tif", "",flist.tif)
 names(raster.stack) <- gsub(".tif", "", flist.tif)
 
-#convert raster stack to terra object
-raster_rast <- terra::rast(raster.stack)
-
-# Load plot coordinates 
-# ----------------------------------------------------------#
-
-fia_pts <- terra::vect(points_path)
-
-# convert from shapefile to data frame of points and vars
-fia_pts_xy <- data.frame(terra::geom(fia_pts))
-fia_pts_xy %<>% cbind(data.frame(fia_pts)) %>%
-  dplyr::rename("CN_xy" = CN) %>%
-  dplyr::select(CN_xy, PREV_PLT_C, x, y, PLOT) %>%
-  dplyr::arrange(PLOT) %>%
-  distinct(PLOT)  
-
 # Load X table
 # ----------------------------------------------------------#
-
 
 allplot <- read.csv(xtable_path)
 
 # Load EVT Group Remap table
 # ----------------------------------------------------------#
 
-
 evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
 
 ####################################################################
 # Prepare input data
 ####################################################################
+
+# Convert plot coordinates to meters
+#----------------------------------------------------------#
+# NOTE: this is currently a stand-in. the allplot table has abbreviated records of the lat and long 
+# (to 2 decimal places)
+
+# convert allplot to spatial object
+allplot_vect <- terra::vect(cbind(allplot$ACTUAL_LON, allplot$ACTUAL_LAT))
+
+# set input projection
+crs(allplot_vect) <- "epsg:4326"
+
+# reproject to desired projection
+allplot_vect %<>% terra::project(crs(raster.stack))
+
+# extract lat/long in meters
+allplot_xy <- terra::geom(allplot_vect) %>%
+  data.frame() %>%
+  dplyr::rename("POINT_X" = x,
+                "POINT_Y" = y) %>%
+  dplyr::select(POINT_X, POINT_Y)
+
+# bind back with allplot table
+allplot <- cbind(allplot, allplot_xy)
+
 
 # Remap EVT Group
 # ---------------------------------#
@@ -206,75 +218,107 @@ for(i in 1:n.evgs)
 # create evg.in - used in imputation
 evg.in <- as.factor(evg.out)
 
-
-# Bind with plot coordinates
-#---------------------------------------------------------#
-merge.df <- left_join(plot.df, fia_pts_xy,  by = c("ID" = "PLOT") )
+# re-assign EVT_GP
+plot.df$EVT_GP <- evg.out
 
 #Ensure plot.df variables are factors
 #--------------------------------------#
-plot.df$CN <- factor(plot.df$CN)
-plot.df$"EVT_GP" <- as.factor(evg.out)
 
+plot.df %<>%
+  mutate(CN = factor(CN),
+         EVT_GP = factor(EVT_GP),
+         disturb_code = factor(disturb_code))
 
-# Create X table (aka training table)
+# Re-calculate aspect - to northing and easting
+#----------------------------------------------------------#
+plot.df %<>%
+  mutate(radians = (pi/180)*ASPECT,
+         NORTHING = cos(radians),
+         EASTING = sin(radians)) %>%
+  select(-radians)
+
+# Calculate binary disturbance code
+#----------------------------------------------------------#
+plot.df %<>%
+  mutate(disturb_code_bin = ifelse(disturb_code != 0, 1, disturb_code),
+         disturb_code_bin = factor(disturb_code_bin))
+
+# Create X table - orig (aka training table)
 # ---------------------------------------------------------#
 
 #Create X Table
-X.df <- plot.df[,5:18]
+X.df_orig <- plot.df %>% dplyr::select(SLOPE, ASPECT, ELEV, PARI, PPTI, RELHUMI, TMAXI, TMINI, VPDI,
+              disturb_code, disturb_year, canopy_cover, canopy_height, EVT_GP)
 
-# Re-calculate aspect - to northing and easting
+rownames(X.df_orig) <- plot.df$ID
 
-aspect.temp <- X.df$ASPECT
-rad.temp <- (pi/180)*aspect.temp
-northing.temp <- cos(rad.temp)
-easting.temp <- sin(rad.temp)
-X.df <- X.df[,-2]
-#X.df$ASPECT <- NULL
-X.df$NORTHING <- northing.temp
-X.df$EASTING <- 	easting.temp
 
-rownames(X.df) <- plot.df$ID
+# Create Y table
+Y.df_orig <- plot.df %>%
+  dplyr::select(canopy_cover, canopy_height, EVT_GP)
+
+rownames(Y.df_orig) <- plot.df$ID
+
+#create id table
 id.table <-  plot.df$ID
-Y.df <- data.frame(plot.df[,16:18])
-rownames(Y.df) <- plot.df$ID
-#X.df <- X.df[,-c(9, 10)]
 
-# Create X table (aka training table) with Binary disturbance code
+# Add binary disturbance to X and Y dfs
 # ---------------------------------------------------------#
-##Recode Distrubrnce as 0/1, add to Y matrix
 
-dc.bin <- as.character(X.df$disturb_code)
-dc.bin[dc.bin !="0"] <- "1"
+X.df <- X.df_orig
+Y.df <- y.df_orig
 
-dc.bin <- as.factor(dc.bin)
-X.df.orig <- X.df 
-Y.df.orig <- Y.df
+X.df$disturb_code = plot.df$disturb_code_bin
+Y.df$disturb_code = plot.df$disturb_code_bin
 
-X.df$disturb_code <- dc.bin
-Y.df$disturb_code <- dc.bin
 
 # Build the random forests model (X=all predictors, Y=EVG, EVC, EVH)
 # -----------------------------------------------------------------------#
 set.seed(56789)
 
-yai.treelist <- yai(X.df.orig, Y.df.orig, method = "randomForest", ntree = 249)
+#yai.treelist <- yai(X.df.orig, Y.df.orig, method = "randomForest", ntree = 249)
 yai.treelist.bin <- yai(X.df, Y.df, method = "randomForest", ntree = 400)
+
+# Export model
+write_rds(yai.treelist.bin, glue('{output_dir}/eval/{cur.zone.zero}yai_treelist_bin.RDS'))
+
 
 # Report model accuracy for Y variables (EVC, EVH, EVG)
 # ------------------------------------------------------------------------#
 
+#RF summary
+RF_sum <- yaiRFsummary(yai.treelist.bin)
+
 # Confusion matrices
-yai.treelist.bin$ranForest$canopy_cover$confusion
-yai.treelist.bin$ranForest$canopy_height$confusion
-yai.treelist.bin$ranForest$EVT_GP$confusion
-yai.treelist.bin$ranForest$disturb_code$confusion
+cm_EVC <- yai.treelist.bin$ranForest$canopy_cover$confusion
+cm_EVH <- yai.treelist.bin$ranForest$canopy_height$confusion
+cm_EVT_GP <- yai.treelist.bin$ranForest$EVT_GP$confusion
+cm_DC <- yai.treelist.bin$ranForest$disturb_code$confusion
 
-# Export predicted + ref for left-out plots from each tree
-str(yai.treelist.bin$ranForest$canopy_cover$y)
-levels(yai.treelist.bin$ranForest$canopy_cover$y)
-levels(yai.treelist.bin$ranForest$canopy_height$y)
+# variable importance
+varImp <- data.frame(RF_sum$scaledImportance)
 
+# process variable importance table for plotting
+varImp$outVar <- rownames(varImp)
+rownames(varImp) <- NULL
+
+varImp %<>% 
+  tidyr::pivot_longer(1:ncol(varImp)-1, names_to = "var")
+
+#plot variable importance
+p <- varImp %>%
+  ggplot()+
+  geom_col(aes(x=var, y = value))+
+  coord_flip()+
+  facet_wrap(~outVar)+
+  theme_bw()
+
+# export to file
+ggsave(glue('{output_dir}/eval/varImp.png'))
+write.csv(cm_EVC, glue('{output_dir}/eval/CM_canopyCover.csv'))
+write.csv(cm_EVH, glue('{output_dir}/eval/CM_canopyHeight.csv'))
+write.csv(cm_EVT_GP, glue('{output_dir}/eval/CM_EVT_Group.csv'))
+write.csv(cm_DC, glue('{output_dir}/eval/CM_DisturbanceCode.csv'))
 
 
 # Build dataframes from the raster data
@@ -302,54 +346,49 @@ rs2 <- raster.stack
 
 impute.row <- function(currow)  
 { 
+  # External objects brought into this function" 
+  # rs2
+  # nrows.out
+  # ncols.out
+  # ## EVG processing
+  # n.evgs
+  # evg.in
+  # lev.dc
+  
+  
   #### Load libraries for function
-  library(yaImpute) 
-  library(raster) 
+  #library(yaImpute) 
+  #library(raster) 
   
   #library(rgdal)
   #raster.coords  <- coordinates(dem.raster)
   #currow.vals <- cellFromRow(dem.raster, currow)
   #coords.currow <- raster.coords[currow.vals,]  
   
-  #### Demo row - for testing
-  currow = 19000
-  
-  
   #### Get values from current row of raster
   rsvals <- cellFromRow(rs2, currow)
   rsmat <- rs2[rsvals]
-  #pptvals  <- cellFromRow(ppt.good.raster, currow)
-  #ppt.good <- ppt.good.raster[pptvals]
+  extract.currow <- data.frame(rsmat)
   
   #### Get coordinates from current row of raster
   xycoords <- xyFromCell(rs2, rsvals)
   xycoords <- data.frame(xycoords)
   
-  # get data from each row of rasters (coordinates)
-  #sp.currow <- SpatialPoints(xycoords , CRS(p4s.albers)) 
-  #extract.currow <- extract(rs2,   sp.currow)
-  #extract.ppt <- extract(ppt.good.raster, sp.currow)  
-  extract.currow <- data.frame(rsmat)
-  
-  #extract.currow$"PPTI" <- extract.ppt
+  #### Get dimensions of current row
   colseq <- 1:length(extract.currow[,1])
   valid.cols <- colseq[as.logical(1-is.na(extract.currow[,1]))]
-  # tempname <- paste(cur.zone,"slp_1_2", sep =   "")
-  #colseq <- 1:length(currow.vals)
-  #valid.cols <- colseq[as.logical(1-is.na(extract.currow[,1]))]
+  
   ncols.df <- dim(extract.currow)[2]
-  # invalid.cols <- colseq[as.logical(is.na(extract.currow[,1]))]
-  #extract.currow[invalid.cols,] <- rep(1, ncols.df)
-  extract.currow <- data.frame(extract.currow)
+  
+  #### Process current row
   extract.currow$"POINT_X" <- xycoords $x
   extract.currow$"POINT_Y" <-xycoords $y
   extract.currow <- na.exclude(extract.currow)
-  #extract.currow <- extract.currow[ppt.notequal,]
-  #valid.cols <- valid.cols[ppt.notequal]  
-  
+
   X.df.temp <- data.frame(extract.currow)
   nrow.temp <- dim(X.df.temp)[1]
   
+  #### Convert aspect to northing and easing
   aspect.temp <- X.df.temp$ASPECT  
   rad.temp <- (pi/180)*aspect.temp  
   northing.temp <- cos(rad.temp)  
@@ -357,7 +396,9 @@ impute.row <- function(currow)
   
   X.df.temp <- X.df.temp[,-1]  
   X.df.temp$NORTHING <- northing.temp  
-  X.df.temp$EASTING <- 	easting.temp  
+  X.df.temp$EASTING <- 	easting.temp
+  
+  #### Set evg 
   temp.evg <- X.df.temp$'EVT_GP'
   
   #get nonappearing evgs   
@@ -398,6 +439,7 @@ impute.row <- function(currow)
   
   impute.out <- rep(NA,nc.orig)  
   nrows.orig <- dim(extract.currow)[1]  
+  
   if(nrow.temp > 0)    
   {    
     colseq.out <- 1:dim(X.df.temp)[1]    
@@ -414,7 +456,11 @@ impute.row <- function(currow)
     temp.dc[temp.dc!= "0"] <- 1
     temp.dc <- as.factor(temp.dc)
     X.df.temp$disturb_code <- temp.dc
+    
+    # run imputation
     temp.newtargs <- newtargets(yai.treelist.bin, newdata = X.df.temp)    
+    
+    # process output
     temp.xall <- temp.newtargs$xall    
     out.neiIds <- temp.newtargs$neiIdsTrgs    
     out.trgrows <- temp.newtargs$trgRows    
