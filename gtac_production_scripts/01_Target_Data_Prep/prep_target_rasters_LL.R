@@ -4,9 +4,10 @@
 # - Forest mask derived from Landfire EVC
 # - Landfire Existing Vegetation Type Group
 # - Landfire Existing Vegetation Height (EVH)
+# EVT_GRP remap table
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
-# November 2023
+# Last Updated: December 2023
 
 # Based on "prep_target_rasters_v2.py" by Karin Riley
 
@@ -233,48 +234,54 @@ for (z in 1:length(zone_list)) {
   evt_z <- terra::crop(evt, zone, mask = TRUE)
   evh_z <- terra::crop(evh, zone, mask = TRUE)
   
+  
   # reclassify EVC: subset to only forested pixels
   evc_z <- terra::classify(evc_z, evc_forest_codes_mat,
                            right = NA)
   
-  # Apply forest mask to Vegetation layers
+  # Prepare EVT_GP layer - mask and remap
   # ---------------------------------------- #
   
-  #create forest mask from EVT
-  evt_gp <- terra::mask(evt_z, evc_z) %>%
-    # convert from EVT to EVT_GP
-      terra::classify(evt_levels) %>%
+
+  evt_gp <- terra::mask(evt_z, evc_z) %>%   # apply forest mask to EVT layer
+      terra::classify(evt_levels) %>%     # reclass from EVT to EVT_GP
     # reclassify a few EVT_GPS -
-    # there are only a few px for some of the EVT_GPs
-    # and/or no plots that keyed to these EVGs
+      # there are only a few px for some of the EVT_GPs
+      # and/or no plots that keyed to these EVGs
       terra::classify(cbind(evt_gps_na, NA)) 
   
-  # use EVG raster to mask EVC
-  evc_z <- terra::mask(evc_z, evt_gp)
-  
-  # use EVG raster to mask EVH, then reclassify to 2014 conventions
-  evh_z <- terra::mask(evh_z, evt_gp) %>%
-    terra::classify(evh_class_mat, 
-                    right = NA)
   
   # create reference files to connect EVT_GP with remapped group
   evt_gp_list <- unique(evt_gp)
   evg_remap_table <- data.frame(EVT_GP = evt_gp_list, 
                             EVT_GP_remap = seq(1:nrow(evt_gp_list)))
   
+  # remap EVT_GP raster
+  evt_gp_remap <- terra::classify(evt_gp, evg_remap_table) 
+  
   # export remap table
   write.csv(evg_remap_table, 
             glue('{veg_dir_zone}/EVG_remap_table.csv'), row.names = FALSE)
   
-  # remap EVT_GP raster
-  evt_gp_remap <- terra::classify(evt_gp, evg_remap_table) 
 
+  # Apply forest mask to remaining vegetation layers
+  # ---------------------------------------- #
   
-  # Mask Biophys and topo layers - to zone
-  # -------------------------------------------- #
+  #use EVT_GP raster to mask EVC
+  evc_z <- terra::mask(evc_z, evt_gp)
+  
+  # use EVT_GP raster to mask EVH
+  # then reclassify EVH raster to 2014 conventions
+  evh_z <- terra::mask(evh_z, evt_gp) %>%
+    terra::classify(evh_class_mat, 
+                    right = NA)
+  
+  
+  # Mask Biophys and topo layers - to forested px for each zone
+  # -------------------------------------------------------------#
   
   # Export rasters
-  # --------------------------------------- #
+  # -------------------------------------------------------- #
   print(glue('exporting rasters for zone {zone_num}'))
   
   # canopy cover
