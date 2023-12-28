@@ -6,11 +6,11 @@
 # - GTAC LCMS 2016 Disturbance vs Karin Riley 2016 Disturbance
 # - GTAC Landfire Target Rasters vs. Karin Riley Target Rasters
 
-# also currently serving as a playground to test modifications to eval_cm function
+# - MAKE THIS INTO A FUNCTION THAT'S INCORPORATED IN A LIBRARY
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 # Redcastle Resources and USFS Geospatial Technology and Applications Center (GTAC)
-# Last updated: 12/8/2023
+# Last updated: 11/17/2023
 
 ###############################################
 # USER INPUTS
@@ -26,7 +26,6 @@ tmp_dir <- "D:/tmp/"
 
 # set path to "reference" raster
 ref_raster <- '//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/01_Input/01_Disturbance/Spatial_data/disturbance_year/disturbance_year_1999_2016_nodata_reclass.tif'
-
 # set path to "predicted" raster
 pred_raster <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/01_Disturbance/02_Final/Landfire_Disturbance/1999_2016_LFz16_UtahHighPlateaus_DisturbanceYear.tif"
 
@@ -43,9 +42,6 @@ points <- "//166.2.126.25/TreeMap/01_Data/04_FIA/03_FullShp/FIA_US.shp"
 aoi_path <- NA
 zone_num <- 16
 
-# path to TreeMap library
-lib_path <- "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gtac_production_scripts/treemapLib.R"
-
 # set dir to save output evaluation
 # this directory will be created if it does not exists
 eval_out_dir <- "//166.2.126.25/TreeMap/03_Outputs/09_Evaluation/01_LCMS_Landfire_Disturbance_Layer/"
@@ -54,7 +50,7 @@ eval_out_dir <- "//166.2.126.25/TreeMap/03_Outputs/09_Evaluation/01_LCMS_Landfir
 eval_out_name <- "1999_2016_z16_RileyLandfire_vs_GTACLandfire_values_DistYear"
 
 # set NA values used in raster
-noDataVal = 99
+naValue = 99
 
 # name format:
 # {startyear}_{endyear}_{zonenum}_{refraster}_vs_{predraster}_{pts or px}_{attribute}"
@@ -102,8 +98,8 @@ if(length(new.packages) > 0) install.packages(new.packages)
 vapply(list.of.packages, library, logical(1L),
        character.only = TRUE, logical.return = TRUE)
 
-# load custom library
-source(lib_path)
+# make 'notin' function
+`%notin%` <- Negate('%in%')
 
 
 # Terra options
@@ -186,13 +182,13 @@ zone %<>% terra::project(crs(ref))
 ref %<>% terra::crop(zone, mask = TRUE)
 pred %<>% terra::crop(zone, mask = TRUE)
 
-# #inspect
-# plot(ref)
-# plot(pred)
+#inspect
+plot(ref)
+plot(pred)
 
 # make sure nodata values are the same
 #pred %<>% terra::classify(cbind(-99,0))
-pred %<>% terra::classify(cbind(-99, noDataVal))
+pred %<>% terra::classify(cbind(-99, 99))
 
 
 ###################################################
@@ -231,77 +227,69 @@ if(!is.na(points)) {
 #################
 t <- table
 
-
-
 # Function for Evaluation 
 # takes a two-column data frame as an input
 # produces confusion matrix tables formatted the way I like them :)
-#------------------------------------------------------------------------
+#------------------------------------------------------------------------#
 
-# eval_cm_function <- function(t, noDataVal) {
-#   
-#   #require(c(tidyverse, caret))
-#   
-#   #apply column names
-#   names(t) <- c("pred", "ref")
-#   
-#   # set levels for factors
-#   # get maximum value of table that's not the noDataValue
-#   tn <- t
-#   tn[tn == noDataVal] <- NA
-#   #levels_t <- seq(0, max(tn, na.rm = TRUE), 1)
-#   
-#   levels_t <- unique(c(as.numeric(unlist((unique(t$pred)))),
-#                        as.numeric(unlist((unique(t$ref))))))
-#   levels_t <- sort(levels_t)
-#   
-#   # ensure columns are factors with the same levels
-#   t %<>%
-#     mutate(ref = factor(ref, levels = levels_t),
-#            pred = factor(pred, levels = levels_t)) 
-#   
-#   # frequency table
-#   tfreq <- 
-#     cbind(table(t$ref),
-#           table(t$pred)) %>%
-#     data.frame()
-#   
-#   names(tfreq) <- c("ref", "pred")
-#   tfreq$value <- rownames(tfreq)
-#   rownames(tfreq) <- NULL
-#   
-#   # confusion matrix
-#   cm <- caret::confusionMatrix(t$pred, # pred
-#                                t$ref # ref
-#   )
-#   
-#   # process data frames for export
-#   #---------------------------------#
-#   
-#   # raw confusion matrix
-#   cm_raw_out <- as.table(cm)
-#   cm_raw_out <- addmargins(cm_raw_out)
-#   
-#   # make data frame of classes
-#   cm_t_classes <- data.frame(as.matrix(cm, what = "classes"))
-#   names(cm_t_classes) <- levels(t$pred)
-#   cm_t_classes %<>% 
-#     rownames_to_column(., var = 'metric')
-#   
-#   # overall eval stats
-#   cm_t_overall <- data.frame(as.matrix(cm, what = "overall"))
-#   names(cm_t_overall) <- c("value")
-#   
-#   # format output
-#   # ---------------------------- #
-#   out_list <- list(cm_raw_out,
-#                    cm_t_classes,
-#                    cm_t_overall)
-#   names(out_list) <- c("raw", "classes", "overall")
-#   
-#   return(out_list)
-#   
-# }
+noDataVal = 99
+
+#eval_cm_function <- function(t, noDataVal) {
+  
+  #require(c(tidyverse, caret))
+  
+  #apply column names
+  names(t) <- c("pred", "ref")
+  
+  # set levels for factors
+  # get maximum value of table that's not the noDataValue
+  
+  tn <- t
+  tn[tn == noDataVal] <- NA
+  #levels_t <- seq(0, max(tn, na.rm = TRUE), 1)
+  
+  levels_t <- unique(c(as.numeric(unlist((unique(t$pred)))),
+                       as.numeric(unlist((unique(t$ref))))))
+  levels_t <- sort(levels_t)
+  
+  # ensure columns are factors with the same levels
+  t %<>%
+    mutate(ref = factor(ref, levels = levels_t),
+           pred = factor(pred, levels = levels_t)) 
+  
+  
+  # confusion matrix
+  cm <- caret::confusionMatrix(t$pred, # pred
+                               t$ref # ref
+  )
+  
+  # process data frames for export
+  #---------------------------------#
+  
+  # raw confusion matrix
+  cm_raw_out <- as.table(cm)
+  cm_raw_out <- addmargins(cm_raw_out)
+  
+  # make data frame of classes
+  cm_t_classes <- data.frame(as.matrix(cm, what = "classes"))
+  names(cm_t_classes) <- levels(t$pred)
+  cm_t_classes %<>% 
+    rownames_to_column(., var = 'metric')
+  
+  # overall eval stats
+  cm_t_overall <- data.frame(as.matrix(cm, what = "overall"))
+  names(cm_t_overall) <- c("value")
+  
+  # format output
+  # ---------------------------- #
+  out_list <- list(cm_raw_out,
+                   cm_t_classes,
+                   cm_t_overall)
+  names(out_list) <- c("raw", "classes", "overall")
+  
+  return(out_list)
+  
+}
 
 # Apply function 
 ##############################

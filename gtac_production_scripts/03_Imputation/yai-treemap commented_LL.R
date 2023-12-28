@@ -5,6 +5,12 @@
 
 # Set up a test run for one zone, using Karin's provided target data and x table
 
+# TO DO: 
+# - convert to r terra from r raster
+# - break into separate scripts for imputation prep and imputation run? 
+# - read in rasters as vrt
+# - export predicted + ref for left-out plots in RF 
+
 # Load libraries
 # -------------------------------#
 
@@ -36,38 +42,55 @@ cur.zone.zero <-  "z16" # when zone is only one digit, add zero to the front (e.
 ###Very important! Always run this first so that you allow for sufficient digits to differentiate plot cn numbers
 options("scipen"=100, "digits"=8)
 
-outfolder <- cur.zone
+#outfolder <- cur.zone
 
-##depends on number of cores your machine, below this gets overriden by the memory available. This will require tweeking depedning on your machine
-#ncores <- 24
-
-output_dir <- paste0("//166.2.126.25/TreeMap/03_Outputs/07_Raw_model_outputs/2016_Original_Test/",cur.zone.zero,"/")
+output_dir <-"//166.2.126.25/TreeMap/03_Outputs/07_Raw_model_outputs/2016_Original_Test/"
 if(!file.exists(output_dir)){
   dir.create(output_dir)
 }
+
+# Output imputation name
+output_name <- "2016_Orig_Test"
+
+# Directory where target rasters live
+target_dir <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/02_Target/"
+
+# Set folder paths
+target_dir = glue('{target_dir}{cur.zone.zero}/')
+output_dir = glue('{output_dir}{cur.zone.zero}/')
+
 
 # Load target rasters
 # ------------------------------------------#
 
 ####First input files: Build raster stack of target data
 #setwd("G:\\Workspace\\treemap\\treemap2014_rasters2016\\target_data_reclassified_final")
-setwd("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/02_Target")
-setwd(cur.zone.zero)
+# setwd("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/02_Target")
+# setwd(cur.zone.zero)
+# 
+# flist.tif <- Sys.glob("*.tif")
 
-flist.tif <- Sys.glob("*.tif")
+# list raster files
+flist.tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
 
 raster.stack <- stack(flist.tif)
 p4s.albers <- proj4string(raster.stack)
-raster.list <- vector("list", length(flist.tif))
-nrasters <- length(flist.tif)
-for(i in 1:length(flist.tif))  
-{
-  raster.list[[i]] <- raster()  
-}
+crs.ras <- crs(raster.stack)
+#raster.list <- vector("list", length(flist.tif))
+# nrasters <- length(flist.tif)
+# for(i in 1:length(flist.tif))  
+# {
+#   raster.list[[i]] <- raster()  
+# }
+
+# get raster names 
+raster_names <- flist.tif %>%
+  str_extract(., "z[0-9][0-9]/([^.])*") %>%
+  str_replace("z[0-9][0-9]/", "")
 
 #add names to raster list
-names(raster.list) <- gsub(".tif", "",flist.tif)
-names(raster.stack) <- gsub(".tif", "", flist.tif)
+#names(raster.list) <- raster_names
+names(raster.stack) <- raster_names
 
 #convert raster stack to terra object
 #raster_rast <- terra::rast(raster.stack)
@@ -109,7 +132,7 @@ allplot_vect <- terra::vect(cbind(allplot$ACTUAL_LON, allplot$ACTUAL_LAT))
 crs(allplot_vect) <- "epsg:4326"
 
 # reproject to desired projection
-allplot_vect %<>% terra::project(crs(raster.stack))
+allplot_vect %<>% terra::project(crs.ras)
 
 # extract lat/long in meters
 allplot_xy <- terra::geom(allplot_vect) %>%
@@ -285,17 +308,17 @@ if(!file.exists(glue('{output_dir}/xytables'))){
 }
 
 
-write.csv(X.df, glue('{output_dir}/xytables/{cur.zone.zero}_Xdf_bin.csv'))
-write.csv(Y.df, glue('{output_dir}/xytables/{cur.zone.zero}_Ydf_bin.csv'))
+write.csv(X.df, glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Xdf_bin.csv'))
+write.csv(Y.df, glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Ydf_bin.csv'))
 
-write.csv(X.df.orig, glue('{output_dir}/xytables/{cur.zone.zero}_Xdf_orig.csv'))
-write.csv(Y.df.orig, glue('{output_dir}/xytables/{cur.zone.zero}_Ydf_orig.csv'))
+write.csv(X.df.orig, glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Xdf_orig.csv'))
+write.csv(Y.df.orig, glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Ydf_orig.csv'))
 
 # Create the imputation model
 # -------------------------------------------------------#
 tic() # start the clock
 set.seed(56789)
-#yai.treelist.bin <- yai(X.df, Y.df, method = "randomForest", ntree = 400)
+yai.treelist.bin <- yai(X.df, Y.df, method = "randomForest", ntree = 400)
 
 toc()
 
@@ -308,7 +331,7 @@ if(!file.exists(glue('{output_dir}/model/'))){
 }
 
 # Export model
-write_rds(yai.treelist.bin, glue('{output_dir}/model/{cur.zone.zero}_yai_treelist_bin.RDS'))
+write_rds(yai.treelist.bin, glue('{output_dir}/model/{cur.zone.zero}_{output_name}_yai_treelist_bin.RDS'))
 
 # Report model accuracy for Y variables (EVC, EVH, EVG)
 # ------------------------------------------------------------------------#
@@ -342,17 +365,17 @@ p <- varImp %>%
   title(glue('RF Variable Importance for {cur.zone.zero}'))
 
 #create output directory
-if(!file.exists(glue('{output_dir}/eval'))){
-  dir.create(glue('{output_dir}/eval'))
+if(!file.exists(glue('{output_dir}/model_eval'))){
+  dir.create(glue('{output_dir}/model_eval'))
 }
 
 
 # export to file
-ggsave(glue('{output_dir}/eval/varImp.png'), width = 7, height = 5)
-write.csv(cm_EVC, glue('{output_dir}/eval/CM_canopyCover.csv'))
-write.csv(cm_EVH, glue('{output_dir}/eval/CM_canopyHeight.csv'))
-write.csv(cm_EVT_GP, glue('{output_dir}/eval/CM_EVT_Group.csv'))
-write.csv(cm_DC, glue('{output_dir}/eval/CM_DisturbanceCode.csv'))
+ggsave(glue('{output_dir}/eval/{output_name}_varImp.png'), width = 7, height = 5)
+write.csv(cm_EVC, glue('{output_dir}/eval/{output_name}_CM_canopyCover.csv'))
+write.csv(cm_EVH, glue('{output_dir}/eval/{output_name}_CM_canopyHeight.csv'))
+write.csv(cm_EVT_GP, glue('{output_dir}/eval/{output_name}_CM_EVT_Group.csv'))
+write.csv(cm_DC, glue('{output_dir}/eval/{output_name}_CM_DisturbanceCode.csv'))
 
 # Build dataframes from the raster data
 #-------------------------------------------------------#
@@ -548,12 +571,17 @@ impute.row <- function(currow)
 }
 
 
-# Load imputation model
+# Load imputation model and inputs
 # ---------------------------------------------------------- #
 
-#if necessary
-
-yai.treelist.bin <- read_rds(file = glue('{output_dir}model/{cur.zone.zero}_yai_treelist_bin.RDS'))
+# #if necessary
+# 
+# yai.treelist.bin <- read_rds(file = glue('{output_dir}model/{cur.zone.zero}_yai_treelist_bin.RDS'))
+# 
+# # load x table and y table
+# 
+# X.df <- read.csv(glue('{output_dir}/xytables/{cur.zone.zero}_Xdf_bin.csv'))
+# Y.df <- read.csv(glue('{output_dir}/xytables/{cur.zone.zero}_Ydf_bin.csv'))
 
 
 # Set up test 
@@ -561,13 +589,13 @@ yai.treelist.bin <- read_rds(file = glue('{output_dir}model/{cur.zone.zero}_yai_
 
 test_row <- 7500
 
-ntest_rows <- 50
+ntest_rows <- 400
 
 testrow1 <- test_row
 testrow2 <- test_row + ntest_rows
 
 # Apply imputation function - test without parallelizing
-# ---------------------------------------------------------- #
+# ---------------------------------------------------------- 
 
 # test_rows<- foreach(m = testrow1:testrow2, .packages = c("raster", "yaImpute", "glue", "tictoc"), .combine="rbind") %dopar%   impute.row(m)
 # 
@@ -597,10 +625,12 @@ testrow2 <- test_row + ntest_rows
 # # clear unused memory
 # rm(test_rows_ras, blank_rows_bottom, blank_rows_)
 # gc()
-
+################################################
 
 # Run imputation - with parallelizing
 # ----------------------------------------------------#
+
+gc()
 
 # set proportion of available cores to use
 nCorefraction <- 0.25
@@ -629,7 +659,11 @@ gc()
 # make rows with NAs to make full raster of test 
 d <- rep(NA, ncols.out)
 blank_rows_top <- do.call("rbind", replicate(testrow1-1, d, simplify = FALSE))
-blank_rows_bottom <- do.call("rbind", replicate(nrows.out-(testrow2 + 1), d, simplify = FALSE))
+blank_rows_bottom <- do.call("rbind", replicate(nrows.out-(testrow2), d, simplify = FALSE))
+
+# make sure this is the same size
+nrow(mout) + nrow(blank_rows_top) + nrow(blank_rows_bottom)
+nrows.out
 
 #bind test rows with NAs to make full raster
 mout_ras <- raster::raster(rbind(blank_rows_top,
@@ -665,70 +699,70 @@ if(!file.exists(glue('{output_dir}raster/'))){
 
 # export test raster
 terra::writeRaster(mout_ras, 
-            glue('{output_dir}raster/testRows_{testrow1}_{testrow2}.tif'),
+            glue('{output_dir}raster/{output_name}_testRows_{testrow1}_{testrow2}.tif'),
             overwrite = TRUE)
 
 # clear unused memory
 rm(mout, mout_ras)
 gc()
 
-# Run imputation - original
-# ---------------------------------------------------#
-# mused <- pryr::mem_used()
-# mused <- as.numeric(mused)
-# mused.gb <- mused / 1e9
-
-
-#mused.gb <- 3.17
-#avail.cores <- floor(110 / mused.gb)
-#ncores <- avail.cores - 1
-
-#ncores <- min(60, ncores )
-
-ncores <- parallel::detectCores()
-ncores <- floor(ncores*.1)
-
-# Sys.time()
-# cl <- makeCluster(ncores)
-# registerDoParallel(cl)
-# Sys.time()
-#mout.2014.rasters.2016 <- foreach(m = 1:nrows.out, .packages = c("raster", "yaImpute"), .combine="rbind") %dopar%   impute.row(m)
-
-
-
-# # finish 
-# stopCluster(cl)
-# closeAllConnections()
-# Sys.time()
-
-#mout <- mout.2014.rasters.2016 
-
-#m.raster <-dem.raster
-
-m.raster.out <- raster(mout)
-m.raster.out@extent <-dem.raster@extent
-m.raster.out@crs <-dem.raster@crs
-
-
-#setwd("G:\\Workspace\\treemap\\treelist_2016\\Output")
-
-fout <- paste(cur.zone, "_2014-xtable-2016-raster-fixpptsc.tif", sep="")
-writeRaster(m.raster.out, fout, overwrite=TRUE)
-
+# # Run imputation - original
+# # ---------------------------------------------------#
+# # mused <- pryr::mem_used()
+# # mused <- as.numeric(mused)
+# # mused.gb <- mused / 1e9
 # 
-# subj.str <- paste("Zone ", cur.zone, "Complete!")
-# subj.str <- paste(subj.str, as.character(Sys.time()), sep = "\n")
-# text.str <- subj.str
 # 
-# email.complete <- gm_mime() %>%
-#   gm_to("igrenfell@gmail.com") %>%
-#   gm_from("igrenfell@gmail.com") %>%
-#   gm_subject(subj.str) %>%
-#   gm_text_body(text.str)
+# #mused.gb <- 3.17
+# #avail.cores <- floor(110 / mused.gb)
+# #ncores <- avail.cores - 1
 # 
-# gm_send_message(email.complete )
+# #ncores <- min(60, ncores )
 # 
-
-
+# ncores <- parallel::detectCores()
+# ncores <- floor(ncores*.1)
+# 
+# # Sys.time()
+# # cl <- makeCluster(ncores)
+# # registerDoParallel(cl)
+# # Sys.time()
+# #mout.2014.rasters.2016 <- foreach(m = 1:nrows.out, .packages = c("raster", "yaImpute"), .combine="rbind") %dopar%   impute.row(m)
+# 
+# 
+# 
+# # # finish 
+# # stopCluster(cl)
+# # closeAllConnections()
+# # Sys.time()
+# 
+# #mout <- mout.2014.rasters.2016 
+# 
+# #m.raster <-dem.raster
+# 
+# m.raster.out <- raster(mout)
+# m.raster.out@extent <-dem.raster@extent
+# m.raster.out@crs <-dem.raster@crs
+# 
+# 
+# #setwd("G:\\Workspace\\treemap\\treelist_2016\\Output")
+# 
+# fout <- paste(cur.zone, "_2014-xtable-2016-raster-fixpptsc.tif", sep="")
+# writeRaster(m.raster.out, fout, overwrite=TRUE)
+# 
+# # 
+# # subj.str <- paste("Zone ", cur.zone, "Complete!")
+# # subj.str <- paste(subj.str, as.character(Sys.time()), sep = "\n")
+# # text.str <- subj.str
+# # 
+# # email.complete <- gm_mime() %>%
+# #   gm_to("igrenfell@gmail.com") %>%
+# #   gm_from("igrenfell@gmail.com") %>%
+# #   gm_subject(subj.str) %>%
+# #   gm_text_body(text.str)
+# # 
+# # gm_send_message(email.complete )
+# # 
+# 
+# 
 
 
