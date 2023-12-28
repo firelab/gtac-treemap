@@ -1,0 +1,357 @@
+---
+title: "TreeMap Zonal Validation"
+output:
+  word_document: default
+  html_document:
+    df_print: paged
+  pdf_document: default
+  #latex_engine: xelatex
+date: "`r Sys.Date()`"
+---
+
+```{r setup, include=FALSE}
+# load libraries
+library(knitr)
+#library(kableExtra)
+library(tidyverse)
+library(magrittr)
+library(ggplot2)
+library(flextable)
+
+#load custom library
+source("C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gtac_production_scripts/treemapLib.R")
+
+# set chunk options
+knitr::opts_chunk$set(echo = FALSE)
+
+```
+
+
+
+```{r set input parameters}
+
+# choose a zone
+zone_num <- 16
+
+# name of the run
+run_name <- "testRows_7500_7900"
+
+# list variables to evaluate
+var_names <- c("canopy_cover", "canopy_height", "EVT_GP", 
+               "disturb_code", "disturb_year")
+
+home_dir <- "//166.2.126.25/TreeMap/"
+
+#path to evaluation data 
+eval_dir <- glue("{home_dir}03_Outputs/07_Raw_model_outputs/2016_Original_Test/z16/map_validation/")
+
+# set number of digits to round to
+round_dig <- 2
+
+```
+
+Landfire zone: `r zone_num`
+
+Run name: `r run_name`
+
+```{r load raw cm files, include = FALSE}
+# list raw confusion matrix files
+in_files_freq <- list.files(eval_dir, pattern = "*cmFreq.csv", full.names = TRUE, recursive = TRUE)
+in_files_classes <- list.files(eval_dir, pattern = "*cmClasses.csv", full.names = TRUE, recursive = TRUE)
+in_files_cm <- list.files(eval_dir, pattern = "*cmRaw.csv", full.names = TRUE, recursive = TRUE)
+in_files_overall <- list.files(eval_dir, pattern = "*cmOverall.csv", full.names = TRUE, recursive = TRUE)
+
+# subset to files for the run of interest
+in_files_freq <- in_files_freq[str_detect(in_files_freq, run_name)]
+in_files_classes <- in_files_classes[str_detect(in_files_classes, run_name)]
+in_files_cm <- in_files_cm[str_detect(in_files_cm, run_name)]
+in_files_overall <- in_files_overall[str_detect(in_files_overall, run_name)]
+
+# list all var names
+var_names_find <- paste(c(var_names), collapse = "|")
+
+```
+
+
+```{r initial import - read in all vars once, include = FALSE}
+
+# #### Frequency table
+# -----------------------------------#
+freq_all <- do.call("rbind", sapply(in_files_freq, read.csv, simplify = FALSE))
+freq_all$in_file <- rownames(freq_all)
+row.names(freq_all) <- NULL
+
+freq_all %<>%
+  dplyr::mutate(var_name = str_extract(in_file, var_names_find)) %>%
+  select(-in_file) 
+
+#inspect
+freq %>%
+  head()
+
+###### CM_Classes table
+# ---------------------------------------#
+cm_classes_all <- do.call("list", sapply(in_files_classes, read.csv, simplify = FALSE))
+
+names(cm_classes_all) <- str_extract(names(cm_classes_all), var_names_find)
+
+
+##### CM_raw
+#---------------------------------------------3
+cm_raw_all <- do.call("list", sapply(in_files_cm, read.csv, simplify = FALSE))
+
+names(cm_raw_all) <- str_extract(names(cm_raw_all), var_names_find)
+
+#### CM_overall
+# -----------------------------------------#
+cm_overall_all <- do.call("rbind", sapply(in_files_overall, read.csv, simplify = FALSE))
+
+cm_overall_all$in_file <- rownames(cm_overall_all)
+row.names(cm_overall_all) <- NULL
+
+cm_overall_all %<>%
+  dplyr::mutate(var_name = str_extract(in_file, var_names_find)) %>%
+  select(-in_file) 
+
+# #inspect
+# cm_overall %>%
+#   head()
+
+```
+
+```{r choose single variable to start}
+#choose single variable
+v <- 1
+var_in <- var_names[v]
+```
+
+
+```{r format and plot tables for each var, asis = TRUE}
+
+for(v in 1:length(var_names)){
+  
+  var_in <- var_names[v]
+
+  print(glue("Variable: {var_in}"))
+
+  ##### LOOP OVER EACH VAR
+  
+  # Initial Table formatting
+  ###################################################################################
+  
+  # Prep frequency table
+  #---------------------------------------------#
+  
+  freq <-
+    freq_all %>%
+    #filter to var of interest
+    filter(var_name == var_in) %>%
+    #select fields of interest
+    dplyr::select(class, ref, pred)
+  
+  
+  # Prep CM Classes
+  #---------------------------------------------#
+  
+  # get single cm for classes
+  cm_classes <- data.frame(cm_classes_all[`var_in`])
+  
+  # update column names
+  colnames(cm_classes) <- gsub(glue('{var_in}.'), "", colnames(cm_classes))
+  
+  #manipulate
+  cm_classes %<>%
+    pivot_longer(!metric, names_to = "class") %>%
+    mutate(class = as.numeric(gsub("X", "", class))) %>%
+    mutate(value = round(value, round_dig))
+  
+  # Prep raw CM
+  #------------------------------------------------#
+  
+  #load cm_raw table
+  cm_raw <- data.frame(cm_raw_all[`var_in`])
+  
+  # update column names
+  colnames(cm_raw) <- gsub(glue('{var_in}.'), "", colnames(cm_raw))
+  
+  # format cm
+  cm_raw %<>%
+    dplyr::rename("Imputed" = X)
+  
+  #remove X from column names
+  names(cm_raw) <-gsub("X", "", names(cm_raw))
+  
+  # Prep cm overall metrics table
+  #------------------------------------------------------#
+  
+  cm_overall <-
+    cm_overall_all %>%
+    #filter to var of interest
+    filter(var_name == var_in) 
+  
+  # # set metric names
+  # metric <- c("Accuracy", "Kappa", "AccuracyLower", "AccuracyUpper", "AccuracyNull",
+  #                   "AccuracyPValue", "McnemarPValue")
+  # 
+  # #bind with metric names (iif necessary)
+  # cm_overall <- cbind(metric, cm_overall)
+  
+  #format
+  cm_overall %<>% 
+    #dplyr::rename("metric" = X) %>%
+    mutate(value = round(value, round_dig))
+  
+  # get number of classes
+  nclass = length(unique(cm_classes$class))
+  
+  
+  
+  # Plotting
+  ##################################################################################
+  
+  # Bar plot: observed vs. predicted for each class 
+  # ---------------------------------------------------------#
+  
+  #format frequency table for plotting
+  freq_t1 <- freq %>%
+    #group_by(value) %>%
+    #dplyr::select(-X) %>%
+    #dplyr::rename("class" = value) %>%
+    pivot_longer(!class, names_to = "dataset") %>%
+    dplyr::mutate(class = factor(class)) %>%
+    dplyr::rename(frequency = "value") %>%
+    arrange(dataset, class)
+  
+  #plot
+  barchart <- freq_t1 %>%
+    ggplot() +
+    geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
+    scale_fill_manual(name = "Dataset", labels = c("Imputed", "Reference"),values = c("aquamarine3", "chartreuse4"))+
+    theme_bw() +
+    ggtitle(glue("Frequency of classes for imputed vs. reference data
+            Zone: z{zone_num} ; Attribute: {var_in}"))
+  
+  print(barchart)
+  
+  # Scatterplot: Total obs of class vs. classwise accuracy
+  # -----------------------------------------------------------------#
+  
+  # get accuracy for each class
+  acc <- cm_classes %>%
+    filter(metric == "Balanced Accuracy")
+  
+  # join with total N for each class
+  freq_t2 <- freq %>%
+    #select(-X) %>%
+    #rename("class" = value) %>%
+    group_by(class) %>%
+    summarise(n = ref + pred) %>%
+    left_join(acc, by = "class")
+  
+  # plot
+  scatter_plot <- freq_t2 %>%
+    ggplot()+
+    geom_point(aes(x = n, y = value), size = 2) + 
+    theme_bw() +
+    labs(x = "total N in class", y = "Balanced Accuracy") + 
+    ggtitle(glue("Accuracy vs. nObs per class
+            Zone: z{zone_num} ; Attribute: {var_in}"))
+  
+  print(scatter_plot)
+  
+  # Prep confusion matrix for display
+  # -------------------------------------------------#
+  
+  #get overall accuracy 
+  oa <- cm_overall %>%
+    filter(metric == "Accuracy") %>%
+    select(value) %>%
+    as.numeric()
+  
+  # get producer's accuracy for each class - precision
+  pa <- cm_classes %>%
+    filter(metric == "Precision") %>%
+    mutate(value = round(value, round_dig))  %>%
+    select(value) %>%
+    # replace NA with character
+    mutate(value = as.character(value)) %>%
+    replace_na(list(value = "NA")) %>%
+    #rename
+    rename("Producer's Acc" = value) %>%
+    # add extra row to be able to bind
+    rbind(c(NA))
+  
+  # get user's accuracy for each class - recall
+  ua <- cm_classes %>%
+    filter(metric == "Recall") %>% 
+    mutate(value = round(value, round_dig))  %>%
+    select(value) %>%
+    # replace NA with character
+    mutate(value = as.character(value)) %>%
+    replace_na(list(value = "NA"))
+  
+  # join producer's accuracy
+  cm_display <- cbind(cm_raw, pa)
+  
+  #format user's accuracy to be able to bind
+  # create list of length that will make it match size of cm_display
+  b <- data.frame(value = rep(NA, ncol(cm_display)- nrow(ua)-1))
+  ua <- c("User's Acc") %>%
+    rbind(ua) %>%
+    rbind(b) %>%
+    rename("User's Acc" = value) %>%
+    t() %>%
+    data.frame()
+  
+  # add names to ua be able to bind
+  names(ua) <- names(cm_display)
+  
+  #bind ua with cm
+  cm_display <- rbind(cm_display, ua)
+  
+  # remove row names
+  row.names(cm_display) <- NULL
+  
+  # #inspect
+  # cm_display
+  
+  
+  # flextable formatting for cm
+  
+  ### NOTE: column and row number selections are hard coded (based on canopy height) in formatting section
+  
+  table_cm <- flextable(cm_display) %>%
+    # add header and footer
+    add_header_row(values = c("", "Reference"), colwidths = c(1, ncol(cm_display)-1)) %>%
+    add_footer_row(values = c("Overall accuracy", oa), colwidths = c(ncol(cm_display)-1, 1)) %>%
+    # add background color for producer's and user's acc rows
+    bg(i = 1:nclass, j = nclass+3, bg = "darkseagreen1") %>%
+    bg(i = nclass+2, j = 1:nclass+1, bg = "darkseagreen1") %>%
+    # bold text
+    style(i = 1:nclass, j = c(1,nclass+3), fp_text_default(bold = TRUE)) %>%
+    style(i = nclass+2, j = 1:nclass+1, fp_text_default(bold = TRUE)) %>%
+    bold(part = "header") %>%
+    bold(part = "footer") %>%
+    # add background color for overall accuracy
+    bg(j = nclass + 3,  bg = "green4", part = "footer")%>%
+    # fit to page width
+    fontsize(size = 8, part = "all") %>%
+    autofit() %>%
+    # add title
+    set_caption(glue("Confusion Matrix  
+            Zone: z{zone_num} ; Attribute: {var_in}")) %>%
+    # highlight diagonal values - is it possible to write this without doing it one cell at a time?
+    bg(i = 2, j = 3, bg = "cornflowerblue") %>%
+    surround(i = 1, j = 2,
+             border = fp_border_default(color = "cornflowerblue", width = 1.5), part = "body")
+
+  table_cm
+  
+  # End loop
+}
+
+```
+
+
+
+
