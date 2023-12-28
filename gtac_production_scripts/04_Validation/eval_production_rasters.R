@@ -232,6 +232,8 @@ t <- table
 # produces confusion matrix tables formatted the way I like them :)
 #------------------------------------------------------------------------#
 
+noDataVal = 99
+
 #eval_cm_function <- function(t, noDataVal) {
   
   #require(c(tidyverse, caret))
@@ -241,6 +243,7 @@ t <- table
   
   # set levels for factors
   # get maximum value of table that's not the noDataValue
+  
   tn <- t
   tn[tn == noDataVal] <- NA
   #levels_t <- seq(0, max(tn, na.rm = TRUE), 1)

@@ -5,6 +5,27 @@
 # Last Updated:
 
 
+#################################################################
+# Load required packages
+#################################################################
+
+# packages required
+list.of.packages <- c("terra", "tidyverse", "magrittr", "glue", "tictoc", "caret")
+
+#check for packages and install if needed
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages) > 0) install.packages(new.packages)
+
+# load all packages
+vapply(list.of.packages, library, logical(1L),
+       character.only = TRUE, logical.return = TRUE)
+
+###########################
+# Helper functions
+###########################
+
+# make 'notin' function
+`%notin%` <- Negate('%in%')
 
 ###########################
 # Dictionaries
@@ -17,6 +38,8 @@
 
 # Function for Evaluation - Confusion matrices 
 # Takes a two-column data frame as an input
+# with PREDICTED VALUES as column 1
+# and REFERENCE VALUES as column 2
 # Produces confusion matrix tables formatted the way I like them :)
 ########################################################################
 
@@ -42,6 +65,18 @@ eval_cm_function <- function(t, noDataVal) {
     mutate(ref = factor(ref, levels = levels_t),
            pred = factor(pred, levels = levels_t)) 
   
+  # calculate frequency table
+  tfreq <- 
+    cbind(table(t$ref),
+          table(t$pred)) %>%
+    data.frame()
+  
+  # manipulate frequency table
+  names(tfreq) <- c("ref", "pred")
+  tfreq$class <- rownames(tfreq)
+  rownames(tfreq) <- NULL
+  tfreq %<>%
+    dplyr::select(class, ref, pred)
   
   # confusion matrix
   cm <- caret::confusionMatrix(t$pred, # pred
@@ -64,13 +99,16 @@ eval_cm_function <- function(t, noDataVal) {
   # overall eval stats
   cm_t_overall <- data.frame(as.matrix(cm, what = "overall"))
   names(cm_t_overall) <- c("value")
+  cm_t_overall$metric <- rownames(cm_t_overall)
   
   # format output
   # ---------------------------- #
   out_list <- list(cm_raw_out,
                    cm_t_classes,
-                   cm_t_overall)
-  names(out_list) <- c("raw", "classes", "overall")
+                   cm_t_overall,
+                   tfreq)
+  
+  names(out_list) <- c("raw", "classes", "overall", "freq")
   
   return(out_list)
   
@@ -80,9 +118,9 @@ eval_cm_function <- function(t, noDataVal) {
 ##################################################################
 
 # maybe call this "assembleExport"
-lookupExport <- function(layer_field, raster, lookup, id_field, export_path) {
+assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
   
-  print(glue('lookupExport: {layer_field}'))
+  print(glue('assembleExport: {layer_field}'))
   lt <- cbind(lookup[id_field], lookup[layer_field])
   #print(head(lt))
   rout <- terra::classify(raster, lt)
@@ -105,11 +143,11 @@ lookupExport <- function(layer_field, raster, lookup, id_field, export_path) {
 
 #maybe call this... "assembleValidation"
 
-lookupConcat <- function(layer_field, raster, lookup, id_field, 
+assembleConcat <- function(layer_field, raster, lookup, id_field, 
                          stackin_compare, stackin_compare_name, export_path, 
-                         cm) {
+                         cm, remapEVT_GP, EVT_GP_remap_table) {
   
-  print(glue('lookupConcat: {layer_field}'))
+  print(glue('assembleConcat: {layer_field}'))
   
   #print("make lookup table")
   #make lookup table
@@ -125,8 +163,21 @@ lookupConcat <- function(layer_field, raster, lookup, id_field,
   # get single lf raster
   lf1 <- lf[layer_field]
   
-  # mask with input raster - necessary for testing on subset 
+  # mask reference raster with input raster - necessary for testing on subset 
   lf1 <- terra::mask(lf1, imp1)
+  
+  # Conditionally remap EVT
+  if(remapEVT_GP) {
+    
+    # load remap table
+    lt_evg <- EVT_GP_remap_table
+    names(lt_evg) <- c("EVT_GP", "EVT_GP_remap")
+    lt_evg %<>%
+      select(EVT_GP_remap, EVT_GP)
+    
+    #remap
+    lf1 <- terra::classify(lf1, lt_evg)
+  } 
   
   #print("make diff")
   # get difference; set to NA where layers are the same
@@ -168,27 +219,36 @@ lookupConcat <- function(layer_field, raster, lookup, id_field,
   writeRaster(out1, 
               glue('{export_path}_{layer_field}_v{stackin_compare_name}.tif'),
               overwrite = TRUE)
-  rm(imp1, lf1, out1)
+  rm(out1)
   gc()
   
   # conditionally calculate confusion matrix
   if(isTRUE(cm)){
     
     print("calculating and exporting confusion matrix")
-    t <- data.frame(ref = terra::values(lf1),
-                    pred = terra::values(imp1))
+    t <- data.frame(pred = terra::values(imp1),
+                    ref = terra::values(lf1))
     
-    # create confusion matrices from input table
-    cms <- eval_cm_function(t, NA)
+    # calculate cms 
+    cms<- eval_cm_function(t, NA)
     
     #export confusion matrices to given path
     write.csv(cms$raw, 
-              glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmRaw.csv'))
+              glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmRaw.csv'),
+              row.names = TRUE) # row names list classes on y axis
     write.csv(cms$classes, 
-              glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmClasses.csv'))
+              glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmClasses.csv'),
+              row.names = FALSE)
     write.csv(cms$overall, 
-              glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmOverall.csv'))
+              glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmOverall.csv'),
+              row.names = FALSE)
+    write.csv(cms$freq,
+             glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmFreq.csv'),
+             row.names=FALSE)
+  
     rm(t)
   }
+  rm(imp1, lf1)
+  gc()
   
 }

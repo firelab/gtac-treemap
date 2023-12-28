@@ -1,12 +1,14 @@
 # Zonal Validation Script for TreeMap Outputs
-# Adapted from "Z01_validation_step1.py" written by Karin Riley
 
-# Adapted by Lila Leatherman (lila.leatherman@usda.gov)
+# Written by Lila Leatherman (lila.leatherman@usda.gov)
+
+# Last updated:
 
 # Goals: 
 # - load preliminiary imputation outputs
 # - join with x-table on ID 
 # - build raster of EVC, EVH, EVT_GP to assess accuracy 
+# - join with EVT_GP_remap table to get back to original evt_gps
 # - use concat to compare EVC, EVH, etc with landfire layers 
 
 
@@ -24,7 +26,10 @@ xtable_path <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/01_Input/03_XT
 raster_dir <- '//166.2.126.25/TreeMap/03_Outputs/07_Raw_model_outputs/2016_Original_Test/'
 
 # raster name
-raster_name <- "testRows_7500_7550"
+raster_name <- "testRows_7500_7900"
+
+# Directory where EVT_GP remap table is located
+evt_gp_remap_table_dir <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/02_Vegetation/"
 
 # desired projection
 prj <- terra::crs("//166.2.126.25/TreeMap/01_Data/02_Landfire/landfire_crs.prj")
@@ -47,7 +52,8 @@ layers_export <- c("canopy_cover", "canopy_height", "EVT_GP",
 output_dir <- "//166.2.126.25/TreeMap/03_Outputs/07_Raw_model_outputs/2016_Original_Test/"
 
 # Output imputation name
-output_name <- "2016_Orig_Test"
+#output_name <- "2016_Orig_Test"
+output_name <- raster_name
 
 # set tmp directory
 tmp_dir <- "D:/tmp/"
@@ -136,7 +142,7 @@ xtable <- read.csv(xtable_path)
   
   # Set folder paths
   raster_dir = glue('{raster_dir}{cur.zone.zero}/raster/')
-  output_dir = glue('{output_dir}{cur.zone.zero}/validation/')
+  output_dir = glue('{output_dir}{cur.zone.zero}/map_validation/')
   landfire_dir = glue('{landfire_dir}{cur.zone.zero}/')
   
   # create output folder if it does not exist
@@ -178,38 +184,36 @@ xtable <- read.csv(xtable_path)
     as.data.frame() 
   names(id_list) <- "PLOTID"
   
-  # join with x table to create lookup table
+  # join list of ids with x table to create lookup table
   lookup <- left_join(id_list, xtable, by = c("PLOTID" = "ID")) %>%
     select(PLOTID, CN, canopy_height, canopy_cover, EVT_GP, disturb_code, disturb_year) %>%
     mutate(across(where(is.numeric), ~na_if(., NA)))
-    
   
-  # # Write function to reclass and export
-  # #------------------------------------------------------#
-  # lookupExport <- function(layer_field, raster, lookup, id_field, export_path) {
-  #   
-  #   lt <- cbind(lookup[id_field], lookup[layer_field])
-  #   #print(head(lt))
-  #   rout <- terra::classify(raster, lt)
-  #   writeRaster(rout,
-  #               glue('{export_path}_{layer_field}.tif'),
-  #               overwrite = TRUE)
-  #   rm(rout)
-  #   gc(verbose = FALSE)
-  #   
-  # }
+  #####
   
+  # load evt_gp remap table
+  evt_gp_remap_table_path = glue('{evt_gp_remap_table_dir}/{cur.zone.zero}/EVG_remap_table.csv')
+  evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
+  evt_gp_remap_table %<>%
+    select(-X)
+  
+  lookup %<>%
+    left_join(evt_gp_remap_table, by = "EVT_GP")
   
   
   # # apply function - to only one layer for testing
-  # lookupExport("canopy_height", ras, lookup, "PLOTID",  
+  # assembleExport("canopy_height", ras, lookup, "PLOTID",  
   #              glue('{output_dir}{cur.zone.zero}'))
   
+  # apply function - to only one layer for testing
+  assembleExport("EVT_GP", ras, lookup, "PLOTID",
+               glue('{output_dir}{cur.zone.zero}'))
+  
   #lapply (can i tidyverse map? )
-  lapply(layers_export, lookupExport, 
+  lapply(layers_export, assembleExport, 
          # additional options for function
          ras = ras, lookup = lookup, id_field = "PLOTID",
-         export_path = glue('{output_dir}{cur.zone.zero}'))
+         export_path = glue('{output_dir}{cur.zone.zero}_{output_name}'))
   
   
   
@@ -229,216 +233,27 @@ xtable <- read.csv(xtable_path)
     str_extract(., "z[0-9][0-9]/([^.])*") %>%
     str_replace("z[0-9][0-9]/", "")
   
-  #     bELOW: REPLACED BY FUNCTION
-  #################################################
-  
-  # # make raster to compare
-  # imp1 <-  terra::classify(ras, cbind(lookup$PLOTID, lookup$canopy_cover)) %>%
-  #   terra::project(crs(lf)) %>%
-  #   as.int()
-  # 
-  # # get single lf raster
-  # lf1 <- lf$canopy_cover
-  # 
-  # # conditionally calculate confusion matrix
-  # 
-  #   print("calculating and exporting confusion matrix")
-  #   
-  #   t <- data.frame(ref = terra::values(lf1),
-  #                   pred = terra::values(imp1))
-  #   
-  #   names(t) <- c("ref", "pred")
-  #   
-  #   levels_t <- unique(c(as.numeric(unlist((unique(imp1)))), 
-  #                        as.numeric(unlist((unique(lf1))))))
-  #   levels_t <- sort(levels_t)
-  #   
-  #   # ensure columns are factors with the same levels
-  #   t %<>%
-  #     mutate(ref = factor(ref, levels = levels_t),
-  #            pred = factor(pred, levels = levels_t)) 
-  #   
-  #   # get confusion matrices
-  #   # confusion matrix
-  #   cm <- caret::confusionMatrix(t$pred, # pred
-  #                                t$ref # ref
-  #                                )
-  # 
-  #   # process data frames for export
-  #   #---------------------------------#
-  #   
-  #   # raw confusion matrix
-  #   cm_raw_out <- as.table(cm)
-  #   cm_raw_out <- addmargins(cm_raw_out)
-  #   
-  #   # make data frame of classes
-  #   cm_t_classes <- data.frame(as.matrix(cm, what = "classes"))
-  #   names(cm_t_classes) <- levels(t$pred)
-  #   cm_t_classes %<>% 
-  #     rownames_to_column(., var = 'metric')
-  #   
-  #   # overall eval stats
-  #   cm_t_overall <- data.frame(as.matrix(cm, what = "overall"))
-  #   names(cm_t_overall) <- c("value")
-  # 
-  # # get difference; set to NA where layers are the same
-  # diff <- imp1-as.int(lf1)
-  # diff %<>% terra::classify(cbind(0,NA))
-  # 
-  # # make both rasters categorical - get levels
-  # levels <- data.frame(id = sort(unique(lookup$canopy_cover)),
-  #                 levels = levels(as.factor(lookup$canopy_cover)))
-  # 
-  # # set levels
-  # levels(imp1) <- levels
-  # levels(lf1) <- levels
-  # 
-  # 
-  # # concat and mask with difference
-  # out1 <- terra::concats(imp1, lf1) 
-  # out1 %<>% terra::mask(diff)
-  # 
-  # # TO DO: 
-  # #remove non-existent levels in raster
-  # # l <- levels(out1)[[1]][,2]
-  # # l1 <- data.frame(id = 1:length(l), 
-  # #                  l1 = l)
-  # # 
-  # # lp <- freq(out1)$value
-  # # l2 <- data.frame(l2  = l[l %in% lp],
-  # #                  level = l[l %in% lp])
-  # # 
-  # # relevel <- left_join(l1, l2, by = c("l1" = "level")) %>%
-  # #   dplyr::rename('level' = l2) %>%
-  # #   dplyr::select(id, level)
-  # # 
-  # # levels(out1) <- relevel
-  # 
-  # #export
-  # writeRaster(out1, 
-  #             glue('{output_dir}/{cur.zone.zero}_canopy_cover_vLandfire.tif'),
-  #             overwrite = TRUE)
-  
-  ####################### write a function
-  
-  # lookupConcat <- function(layer_field, raster, lookup, id_field, 
-  #                          stackin_compare, stackin_compare_name, export_path, 
-  #                          cm) {
-  #   
-  #   print(glue('lookupConcat: {layer_field}'))
-  #   
-  #   #print("make lookup table")
-  #   #make lookup table
-  #   lt <- cbind(lookup[id_field], lookup[layer_field])
-  #   
-  #   #print("make imp1")
-  #   # make raster to compare
-  #   imp1 <-  terra::classify(raster, lt) %>%
-  #     terra::project(crs(stackin_compare)) %>%
-  #     as.int()
-  #   
-  #   #print("get lf1")
-  #   # get single lf raster
-  #   lf1 <- lf[layer_field]
-  #   
-  #   # mask with input raster - necessary for testing on subset 
-  #   lf1 <- terra::mask(lf1, imp1)
-  #   
-  #   #print("make diff")
-  #   # get difference; set to NA where layers are the same
-  #   diff <- imp1-as.int(lf1)
-  #   diff %<>% terra::classify(cbind(0,NA))
-  # 
-  #   #print("get levels")
-  #   # make both rasters categorical - get levels of layer field
-  #   levels <- data.frame(id = sort(unique(lt[,2])),
-  #                        levels = levels(as.factor(lt[,2])))
-  # 
-  #   #print("set levels")
-  #   # set levels for rasters to make them categorical
-  #   levels(imp1) <- levels
-  #   levels(lf1) <- levels
-  # 
-  #   #print("concat")
-  #   # concat and mask with difference
-  #   out1 <- terra::concats(imp1, lf1)
-  # 
-  #   #option to calc confusion matrix here!!!!
-  #   out1 %<>% terra::mask(diff)
-  #   
-  #   # conditionally calculate confusion matrix
-  #   if(isTRUE(cm)){
-  #     print("calculating and exporting confusion matrix")
-  #     t <- data.frame(ref = terra::values(lf1),
-  #                     pred = terra::values(imp1))
-  #     
-  #     names(t) <- c("ref", "pred")
-  #     
-  #     levels_t <- unique(c(as.numeric(unlist((unique(imp1)))), 
-  #                          as.numeric(unlist((unique(lf1))))))
-  #     levels_t <- sort(levels_t)
-  #     
-  #     # ensure columns are factors with the same levels
-  #     t %<>%
-  #       mutate(ref = factor(ref, levels = levels_t),
-  #              pred = factor(pred, levels = levels_t)) 
-  #     
-  #     # get confusion matrices
-  #     # confusion matrix
-  #     cm <- caret::confusionMatrix(t$pred, # pred
-  #                                  t$ref # ref
-  #     )
-  #     
-  #     # process data frames for export
-  #     #---------------------------------#
-  #     
-  #     # raw confusion matrix
-  #     cm_raw_out <- as.table(cm)
-  #     cm_raw_out <- addmargins(cm_raw_out)
-  #     
-  #     # make data frame of classes
-  #     cm_t_classes <- data.frame(as.matrix(cm, what = "classes"))
-  #     names(cm_t_classes) <- levels(t$pred)
-  #     cm_t_classes %<>% 
-  #       rownames_to_column(., var = 'metric')
-  #     
-  #     # overall eval stats
-  #     cm_t_overall <- data.frame(as.matrix(cm, what = "overall"))
-  #     names(cm_t_overall) <- c("value")
-  #     
-  #     #export confusion matrices to given path
-  #     write.csv(cm_raw_out, 
-  #               glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmRaw.csv'))
-  #     write.csv(cm_t_classes, 
-  #               glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmClasses.csv'))
-  #     write.csv(cm_t_overall, 
-  #               glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmOverall.csv'))
-  #     rm(t)
-  #   }
-  #   
-  #   #print("export")
-  #   
-  #   #export
-  #   writeRaster(out1, 
-  #               glue('{export_path}_{layer_field}_v{stackin_compare_name}.tif'),
-  #               overwrite = TRUE)
-  #   rm(imp1, lf1, out1)
-  #   gc()
-  # }
-  # 
+
+  ###################
   # test function
-  lookupConcat("canopy_cover", ras, lookup, "PLOTID",
-               lf, "Landfire", glue('{output_dir}{cur.zone.zero}'),
-               cm = TRUE)
+  ####################
+  assembleConcat("canopy_cover", ras, lookup, "PLOTID",
+               lf, "Landfire", glue('{output_dir}{cur.zone.zero}_{output_name}'),
+               cm = TRUE, remapEVT_GP = FALSE, evt_gp_remap_table)
+  
+  # assembleConcat("EVT_GP", ras, lookup, "PLOTID",
+  #              lf, "Landfire", glue('{output_dir}{cur.zone.zero}_{output_name}'),
+  #              cm = TRUE, remapEVT_GP = TRUE, evt_gp_remap_table)
   
   ##############################################################
   
-  #lapply function
-  lapply(layers_export, lookupConcat, # list to apply over, function to apply
+  #lapply  function
+  lapply(layers_export, assembleConcat, # list to apply over, function to apply
          # additional arguments to function
          ras = ras, lookup = lookup, id_field = "PLOTID",
          stackin_compare = lf, stackin_compare_name = "Landfire",
-         export_path = glue('{output_dir}{cur.zone.zero}'), cm = TRUE)
+         export_path = glue('{output_dir}{cur.zone.zero}_{output_name}'), 
+         cm = TRUE, remapEVT_GP = TRUE, evt_gp_remap_table)
   
   ####################################
   
