@@ -31,7 +31,18 @@ evc_path <- glue('{landfire_path}EVC/LF2016_EVC_200_CONUS/Tif/LC16_EVC_200.tif')
 evh_path <- glue('{landfire_path}EVH/LF2016_EVH_200_CONUS/Tif/LC16_EVH_200.tif')
 evt_path <- glue('{landfire_path}EVT/LF2016_EVT_200_CONUS/Tif/LC16_EVT_200.tif')
 bps_path <- glue('{landfire_path}BioPhys/LF2016_BPS_200_CONUS/Tif/LC16_BPS_200.tif')
-topo_path <- '//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Topo'
+
+topo_path <-'//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Topo/'
+elev_path <- glue('{topo_path}LF2020_Elev_220_CONUS\Tif\LC20_Elev_220.tif')
+slopeP_path <- glue('{topo_path}LF2020_SlpP_220_CONUS\Tif\LC20_SlpP_220.tif')
+slopeD_path <- glue('{topo_path}LF2020_SlpD_220_CONUS\Tif\LC20_SlpD_220.tif')
+
+# set paths to input disturbance rasters
+distYear_path <- ""
+distCode_path <- ""
+
+# set path to landfire zones
+landfire_zone_path <- glue('{home_dir}01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
 
 # set projection used for processing landfire rasters
 landfire_proj <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/landfire_crs.prj"
@@ -111,12 +122,14 @@ terraOptions(memfrac = 0.8)
 # ------------------------------#
 
 # load LF zone data
-LF_zones <- vect(glue('{home_dir}01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp'))
+LF_zones <- vect(landfire_zone_path)
 
 # load layers of interest
 evc <- terra::rast(evc_path)
 evh <-terra::rast(evh_path)
 evt <- terra::rast(evt_path)
+
+topio
 
 activeCat(evt) <- 7 # evt_gp
 
@@ -168,7 +181,7 @@ evt_levels <- levels(evt)[[1]] %>%
 ###################################################
 
 
-for (z in 1:length(zone_list)) {
+#for (z in 1:length(zone_list)) {
   
   tic() # start the clock
   
@@ -216,23 +229,22 @@ for (z in 1:length(zone_list)) {
   veg_dir_zone <-glue('{output_dir}02_Vegetation/{cur.zone.zero}')
   if(!file.exists(veg_dir_zone)) {
     dir.create(veg_dir_zone)
-  } else {}
+  } 
   
   # create output folders
   topobio_dir_zone <- glue('{output_dir}03_TopoBioPhys/{cur.zone.zero}')
   if(!file.exists(topobio_dir_zone)) {
     dir.create(topobio_dir_zone, recursive = TRUE)
-  } else {}
+  } 
   
   # Start geospatial operations
   # ---------------------------------------#
   
-  print("cropping to zone")
   
   # crop to zone
   evc_z <- terra::crop(evc, zone, mask = TRUE)
   evt_z <- terra::crop(evt, zone, mask = TRUE)
-  evh_z <- terra::crop(evh, zone, mask = TRUE)
+  
   
   
   # reclassify EVC: subset to only forested pixels
@@ -250,6 +262,17 @@ for (z in 1:length(zone_list)) {
       # and/or no plots that keyed to these EVGs
       terra::classify(cbind(evt_gps_na, NA)) 
   
+<<<<<<< Updated upstream
+=======
+  # use EVG raster to mask EVC
+  evc_z <- terra::mask(evc_z, evt_gp)
+  
+  # crop evh to zone, use EVG raster to mask EVH, then reclassify to 2014 conventions
+  evh_z <- terra::crop(evh, zone, mask = TRUE) %>%
+    terra::mask(evt_gp) %>%
+    terra::classify(evh_class_mat, 
+                    right = NA)
+>>>>>>> Stashed changes
   
   # create reference files to connect EVT_GP with remapped group
   evt_gp_list <- unique(evt_gp)
@@ -264,6 +287,7 @@ for (z in 1:length(zone_list)) {
             glue('{veg_dir_zone}/EVG_remap_table.csv'), row.names = FALSE)
   
 
+<<<<<<< Updated upstream
   # Apply forest mask to remaining vegetation layers
   # ---------------------------------------- #
   
@@ -283,8 +307,13 @@ for (z in 1:length(zone_list)) {
   # Export rasters
   # -------------------------------------------------------- #
   print(glue('exporting rasters for zone {zone_num}'))
+=======
+  # Export veg rasters
+  # --------------------------------------- #
+  print(glue('exporting vegetation rasters for zone {zone_num}'))
+>>>>>>> Stashed changes
   
-  # canopy cover
+  # export canopy cover
   writeRaster(evc_z, 
               glue('{veg_dir_zone}/canopy_cover.tif'),
               overwrite = TRUE)
@@ -293,7 +322,7 @@ for (z in 1:length(zone_list)) {
   writeRaster(evh_z, 
               glue('{veg_dir_zone}/canopy_height.tif'),
               overwrite = TRUE)
-
+  
   # evt_gp
   writeRaster(evt_gp, 
               glue('{veg_dir_zone}/EVT_GP.tif'),
@@ -304,11 +333,23 @@ for (z in 1:length(zone_list)) {
               glue('{veg_dir_zone}/EVT_GP_Remap.tif'),
               overwrite = TRUE)
   
-  #remove unused layers 
-  rm(evt_gp, evt_gp_remap, evc_z, evh_z)
+  #remove unused layers  - keep evt_gp_remap for masking other layers
+  rm(evt_gp, evc_z, evh_z)
   gc()
+  
+  
+  # Calculate Northing and Easting from Aspect
+  # -------------------------------------------- #
+  
+  # Mask Biophys and topo layers - to zone
+  # -------------------------------------------- #
+  
+  # Mask Disturbance layers - to zone
+  # -------------------------------------------- #
+  
+  
   print(glue('done with zone {zone_num}!'))
   toc()
 
-}
+#}
 
