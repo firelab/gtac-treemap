@@ -10,6 +10,7 @@
 # Restart R between runs that use parallelization
 
 # TO DO: 
+# - get parallelization to work
 # - read in rasters as vrt
 
 # Last updated: 12/28/2023
@@ -63,8 +64,8 @@ cur.zone.zero <- if(zone_num < 10) {
 # Update output and target dir with zone
 # -----------------------------------------#
 # Set folder paths
-target_dir = glue('{target_dir}/{cur.zone.zero}')
-output_dir = glue('{output_dir}/{cur.zone.zero}')
+target_dir = glue('{target_dir}/{cur.zone.zero}/')
+output_dir = glue('{output_dir}/{cur.zone.zero}/')
 evt_gp_remap_table_path = glue('{evt_gp_remap_table_path}/{cur.zone.zero}/EVG_remap_table.csv')
 
 
@@ -87,20 +88,20 @@ Ydf_path <- glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Ydf_bin.cs
 #--------------------------------------#
 
 # set percentage of available cores that should be used
-ncores <- 15
+ncores <- 10
 #nCorefraction <- 0.75
 
 # Test application settings
 #-----------------------------------------#
 
 # first row to start test on 
-test_row <- 8000
+test_row <- 400 # adjust this if using a test AOI vs whole zone
 
 ntest_rows <- 10
 
 # supply path, or NA
 aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-#aoi_name <- "UT_Uintas_rect"
+aoi_name <- "UT_Uintas_rect"
 #aoi_path <- NA
 
 ###########################################################################
@@ -182,7 +183,7 @@ yai.treelist.bin <- read_rds(model_path)
 
 # load x table and y table
 X.df <- read.csv(Xdf_path)
-Y.df <- read.csv(Ydf_path)
+#Y.df <- read.csv(Ydf_path) # y table isn't used in running imputation
 
 # # original - not binary reclass to disturbance code
 # X.df.orig <- read.csv(Xdf_path_orig)
@@ -209,14 +210,20 @@ names(raster.stack) <- raster_names
 
 # FOR TESTING: crop to aoi
 if (!is.na(aoi_path)) {
+  
+  print("using input shapefile as AOI")
+  
   # load aoi subset 
   aoi <- raster::shapefile(aoi_path) 
   aoi <- spTransform(aoi, lf.crs)
   
   # crop raster
   raster.stack <- raster::crop(raster.stack, aoi)
+  raster.stack <- raster::mask(raster.stack, aoi)
+  
+  # update output name
+  output_name = glue('{output_name}_{aoi_name}')
     
-  print("using input shapefile as AOI")
 } 
 
 # Load EVT Group Remap table
@@ -235,35 +242,27 @@ X.df %<>%
 
 # Set up inputs to imputation function data
 #-------------------------------------------------------------------------#
-#raster.coords <- coordinates(raster.stack)
-#asp.raster <- raster.stack[[1]]
-#dem.raster <- raster.stack[[2]]
-
-#currow.vals <- cellFromRow(dem.raster, 1500)
-#coords.currow <- raster.coords[currow.vals,]
-
-#extract.currow <- extract(raster.stack, coords.currow)
-p4s.latlong <- CRS("+proj=longlat +datum=NAD83") 
 
 # number of rows in X.df
 maxrow <- max(as.numeric(rownames(X.df)))
 
+#dimensions of raster stack
 nrows.out <- dim(raster.stack)[1]
 ncols.out <- dim(raster.stack)[2]
 
+# raster stack
 rs2 <- raster.stack
 
 # List of Plot IDs
 id.table <- X.df$X # comes from saved row names 
 
-#### Set up inputs for imputation function
-# -------------------------------------------#
-
 # EVG remap
 n.evgs <- nrow(evt_gp_remap_table)
 evg.in <- as.factor(X.df$EVT_GP)
+
+# Disturbance code levels
 lev.dc <- levels(X.df$disturb_code)
-lev.year <- levels(X.df$disturb_year)
+#lev.year <- levels(X.df$disturb_year)
 
 
 ##############################################################################
@@ -273,7 +272,7 @@ lev.year <- levels(X.df$disturb_year)
 impute.row <- function(currow)  { 
   
   # for testing
-  # currow <- 7500
+  #currow <- 100
   
   # External objects brought into this function:
   # yai.treelist.bin 
@@ -370,9 +369,6 @@ impute.row <- function(currow)  {
   # Set up template for output imputation
   nrows.orig <- dim(extract.currow)[1] # number of values to impute - without dummy rows for non-appearing evgs
   nrow.temp <- dim(X.df.temp)[1] # number of values to impute - with dummy rows for non-appearing evs
-
-  #impute.out <- rep(-1, nrow.temp)  
-  #X.df.temp <- X.df.temp[,-c(12, 13)]  
   
   #nc.orig <- dim(coords.currow)[1]  
   nc.orig <-length(rsvals) # number of values in row, including NAs
@@ -454,7 +450,8 @@ doParallel::registerDoParallel(cl)
 
 # RUN IMPUTATION ON ROWS
 tic()
-mout <- foreach(m = testrow1:testrow2, .packages = c("raster", "yaImpute"), .combine="rbind",
+mout <- foreach(m = testrow1:testrow2, .packages = c("raster", "yaImpute"), 
+                .combine="rbind",
                 .verbose = TRUE) %dopar% impute.row(m)
 toc()
 
@@ -506,7 +503,7 @@ if(!file.exists(glue('{output_dir}raster/'))){
 
 # export test raster
 terra::writeRaster(mout_ras, 
-                   glue('{output_dir}raster/{output_name}_testRows_{testrow1}_{testrow2}.tif'),
+                   glue('{output_dir}raster/{output_name}_testRows_{testrow1}_{testrow2}_doSeq.tif'),
                    overwrite = TRUE)
 
 # clear unused memory
