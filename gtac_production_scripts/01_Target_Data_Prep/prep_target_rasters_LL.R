@@ -33,9 +33,10 @@ evt_path <- glue('{landfire_path}EVT/LF2016_EVT_200_CONUS/Tif/LC16_EVT_200.tif')
 bps_path <- glue('{landfire_path}BioPhys/LF2016_BPS_200_CONUS/Tif/LC16_BPS_200.tif')
 
 topo_path <-'//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Topo/'
-elev_path <- glue('{topo_path}LF2020_Elev_220_CONUS\Tif\LC20_Elev_220.tif')
-slopeP_path <- glue('{topo_path}LF2020_SlpP_220_CONUS\Tif\LC20_SlpP_220.tif')
-slopeD_path <- glue('{topo_path}LF2020_SlpD_220_CONUS\Tif\LC20_SlpD_220.tif')
+elev_path <- glue('{topo_path}LF2020_Elev_220_CONUS/Tif/LC20_Elev_220.tif')
+slopeP_path <- glue('{topo_path}LF2020_SlpP_220_CONUS/Tif/LC20_SlpP_220.tif')
+slopeD_path <- glue('{topo_path}LF2020_SlpD_220_CONUS/Tif/LC20_SlpD_220.tif')
+aspect_path <- glue('{topo_path}LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.tif')
 
 # set paths to input disturbance rasters
 distYear_path <- ""
@@ -124,13 +125,17 @@ terraOptions(memfrac = 0.8)
 # load LF zone data
 LF_zones <- vect(landfire_zone_path)
 
-# load layers of interest
+# load layers of interest - veg
 evc <- terra::rast(evc_path)
 evh <-terra::rast(evh_path)
 evt <- terra::rast(evt_path)
 
-topio
+# load layers of interest - topo
+elev <- terra::rast(elev_path)
+slp <- terra::rast(slopeP_path)
+asp <- terra::rast(asp_path)
 
+# set EVT to display EVT_Gp - many layers
 activeCat(evt) <- 7 # evt_gp
 
 # Set up variables to reclassify 
@@ -238,13 +243,14 @@ evt_levels <- levels(evt)[[1]] %>%
   } 
   
   # Start geospatial operations
-  # ---------------------------------------#
   
+  ## VEGETATION
+  # ###################################################
+  #-------------------------------------------------------#
   
-  # crop to zone
+  ## crop to zone
   evc_z <- terra::crop(evc, zone, mask = TRUE)
   evt_z <- terra::crop(evt, zone, mask = TRUE)
-  
   
   
   # reclassify EVC: subset to only forested pixels
@@ -255,63 +261,44 @@ evt_levels <- levels(evt)[[1]] %>%
   # ---------------------------------------- #
   
 
-  evt_gp <- terra::mask(evt_z, evc_z) %>%   # apply forest mask to EVT layer
+  evt_gp_z <- terra::mask(evt_z, evc_z) %>%   # apply forest mask to EVT layer
       terra::classify(evt_levels) %>%     # reclass from EVT to EVT_GP
     # reclassify a few EVT_GPS -
       # there are only a few px for some of the EVT_GPs
       # and/or no plots that keyed to these EVGs
       terra::classify(cbind(evt_gps_na, NA)) 
   
-<<<<<<< Updated upstream
-=======
-  # use EVG raster to mask EVC
-  evc_z <- terra::mask(evc_z, evt_gp)
-  
-  # crop evh to zone, use EVG raster to mask EVH, then reclassify to 2014 conventions
-  evh_z <- terra::crop(evh, zone, mask = TRUE) %>%
-    terra::mask(evt_gp) %>%
-    terra::classify(evh_class_mat, 
-                    right = NA)
->>>>>>> Stashed changes
   
   # create reference files to connect EVT_GP with remapped group
-  evt_gp_list <- unique(evt_gp)
+  evt_gp_list <- unique(evt_gp_z)
   evg_remap_table <- data.frame(EVT_GP = evt_gp_list, 
                             EVT_GP_remap = seq(1:nrow(evt_gp_list)))
   
   # remap EVT_GP raster
-  evt_gp_remap <- terra::classify(evt_gp, evg_remap_table) 
+  evt_gp_z <- terra::classify(evt_gp_z, evg_remap_table) 
   
   # export remap table
   write.csv(evg_remap_table, 
             glue('{veg_dir_zone}/EVG_remap_table.csv'), row.names = FALSE)
   
 
-<<<<<<< Updated upstream
   # Apply forest mask to remaining vegetation layers
   # ---------------------------------------- #
   
   #use EVT_GP raster to mask EVC
-  evc_z <- terra::mask(evc_z, evt_gp)
+  evc_z <- terra::mask(evc_z, evt_gp_z)
   
   # use EVT_GP raster to mask EVH
   # then reclassify EVH raster to 2014 conventions
-  evh_z <- terra::mask(evh_z, evt_gp) %>%
+  evh_z <- terra::mask(evh_z, evt_gp_z) %>%
     terra::classify(evh_class_mat, 
                     right = NA)
   
   
-  # Mask Biophys and topo layers - to forested px for each zone
-  # -------------------------------------------------------------#
-  
-  # Export rasters
-  # -------------------------------------------------------- #
-  print(glue('exporting rasters for zone {zone_num}'))
-=======
   # Export veg rasters
   # --------------------------------------- #
   print(glue('exporting vegetation rasters for zone {zone_num}'))
->>>>>>> Stashed changes
+  
   
   # export canopy cover
   writeRaster(evc_z, 
@@ -324,22 +311,41 @@ evt_levels <- levels(evt)[[1]] %>%
               overwrite = TRUE)
   
   # evt_gp
-  writeRaster(evt_gp, 
+  writeRaster(evt_gp_Z, 
               glue('{veg_dir_zone}/EVT_GP.tif'),
               overwrite = TRUE)
   
-  # evt_gp_remap
-  writeRaster(evt_gp_remap, 
-              glue('{veg_dir_zone}/EVT_GP_Remap.tif'),
-              overwrite = TRUE)
   
-  #remove unused layers  - keep evt_gp_remap for masking other layers
-  rm(evt_gp, evc_z, evh_z)
+  
+  #remove unused layers  - keep evt_gp_z for masking other layers
+  rm(evc_z, evh_z)
   gc()
   
+  ## TOPOGRAPHY
+  # ###################################################
+  #-------------------------------------------------------#
+  
+  ## crop to zone
+  elev_z <- terra::crop(elev, zone, mask = TRUE)
+  slp_z <- terra::crop(slp, zone, mask = TRUE)
+  asp_z <- terra::crop(asp, zone, mask = TRUE)
   
   # Calculate Northing and Easting from Aspect
   # -------------------------------------------- #
+  
+  north_z <- terra::calc(asp, function(i) cos((pi/180)*i))
+  east_z <- terra::calc(asp, function(i) sin((pi/180)*i))
+  
+  # Mask Topo layers - to forested px for each zone
+  # -------------------------------------------------------------#
+  
+  # Mask Biophys layers - to forested px for each zone
+  # -------------------------------------------------------------#
+
+  
+  
+  
+  
   
   # Mask Biophys and topo layers - to zone
   # -------------------------------------------- #

@@ -23,7 +23,7 @@ states <- c("ID", "UT", "WY")
 #             "VA", "VT", "WV", "WI", "WY", 'WA')
 
 # list tables to download
-tables <- c("COND", "PLOT")
+tables <- c("COND", "PLOT", "TREE")
 
 # sample download url https://apps.fs.usda.gov/fia/datamart/Databases/SQLite_FIADB_CA.zip
 url_base <- 'https://apps.fs.usda.gov/fia/datamart/CSV/'
