@@ -1,7 +1,7 @@
 # TreeMap Imputation
-# Original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
-#   and Karin Riley (karin.riley@usda.gov)
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
+# Original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
+
 
 # PART 2: 
 # - Run imputation
@@ -12,7 +12,7 @@
 # TO DO: 
 # - read in rasters as vrt
 
-# Last updated: 12/13/2023
+# Last updated: 12/28/2023
 
 ###########################################################################
 # Set inputs
@@ -87,36 +87,25 @@ Ydf_path <- glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Ydf_bin.cs
 #--------------------------------------#
 
 # set percentage of available cores that should be used
-ncores <- 40
-nCorefraction <- 0.75
+ncores <- 15
+#nCorefraction <- 0.75
 
 # Test application settings
 #-----------------------------------------#
 
 # first row to start test on 
-test_row <- 7500
+test_row <- 8000
 
 ntest_rows <- 10
+
+# supply path, or NA
+aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+#aoi_name <- "UT_Uintas_rect"
+#aoi_path <- NA
 
 ###########################################################################
 # Set up libraries and directories
 ###########################################################################
-
-# Packages and functions
-#---------------------------------#
-
-# packages required
-list.of.packages <- c("raster", "yaImpute", "randomForest", 
-                      "terra", "tidyverse", "magrittr", "glue", "tictoc",
-                      "parallel", "doParallel", "foreach")
-
-#check for packages and install if needed
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages) > 0) install.packages(new.packages)
-
-# load all packages
-vapply(list.of.packages, library, logical(1L),
-       character.only = TRUE, logical.return = TRUE)
 
 # Set up temp directory 
 #----------------------------------#
@@ -133,8 +122,31 @@ if (file.exists(tmp_dir)){
 write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
 #empty temp dir
 do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
+
+#detect and delete folders with pattern "Rtmp"
+folders <- dir(tmp_dir, pattern = "Rtmp", full.names = TRUE)
+unlink(folders, recursive = TRUE, force = TRUE, expand = TRUE)
+
+
 #remove unused memory
 gc()
+
+
+# Packages and functions
+#---------------------------------#
+
+# packages required
+list.of.packages <- c("raster", "yaImpute", "randomForest", 
+                      "terra", "tidyverse", "magrittr", "glue", "tictoc",
+                      "doParallel", "foreach")
+
+#check for packages and install if needed
+#new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+#if(length(new.packages) > 0) install.packages(new.packages)
+
+# load all packages
+vapply(list.of.packages, library, logical(1L),
+       character.only = TRUE, logical.return = TRUE)
 
 # Set up other directories
 # ----------------------------------#
@@ -153,7 +165,8 @@ if (!file.exists(output_dir)) {
 # --------------------------------#
 
 # Allow for sufficient digits to differentiate plot cn numbers
-options("scipen"=100, "digits"=8)
+# plot CNs aren't present in the imputation portion, however
+#options("scipen"=100, "digits"=8)
 
 
 ####################################################################
@@ -184,6 +197,7 @@ flist.tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE,
 # load raster files as raster stack
 raster.stack <- stack(flist.tif)
 p4s.albers <- proj4string(raster.stack)
+lf.crs <- crs(raster.stack)
 
 # get raster names 
 raster_names <- flist.tif %>%
@@ -191,8 +205,19 @@ raster_names <- flist.tif %>%
   str_replace("z[0-9][0-9]/", "")
 
 #add names to raster list
-
 names(raster.stack) <- raster_names
+
+# FOR TESTING: crop to aoi
+if (!is.na(aoi_path)) {
+  # load aoi subset 
+  aoi <- raster::shapefile(aoi_path) 
+  aoi <- spTransform(aoi, lf.crs)
+  
+  # crop raster
+  raster.stack <- raster::crop(raster.stack, aoi)
+    
+  print("using input shapefile as AOI")
+} 
 
 # Load EVT Group Remap table
 # ----------------------------------------------------------#
@@ -251,9 +276,9 @@ impute.row <- function(currow)  {
   # currow <- 7500
   
   # External objects brought into this function:
+  # yai.treelist.bin 
   # rs2
   # nrows.out
-  # ncols.out
   # id.table
   # maxrow
   
@@ -335,7 +360,7 @@ impute.row <- function(currow)  {
   X.df.temp$'EVT_GP' <- as.factor(temp.fac)
   
   # Set factor levels for disturbance code 
-  dc.code.fac.temp <- factor(X.df.temp$disturb_code, levels=lev.dc)  
+  dc.code.fac.temp <- factor(X.df.temp$disturb_code, levels=lev.dc)  # INPUT OUTSIDE FUNCTION
   X.df.temp$disturb_code <- dc.code.fac.temp  
   
   # Set factor levels for disturbance year
@@ -360,7 +385,7 @@ impute.row <- function(currow)  {
     # Format row names for X.df.temp - cannot overlap with input X.df
     colseq.out <- 1:dim(X.df.temp)[1] 
     rownames.all <- colseq.out+maxrow    
-    rownames(X.df.temp) <- paste("T-", rownames.all) 
+    rownames(X.df.temp) <- paste0("T- ", rownames.all) 
     
     # Adjust column names and factor levels on X.df.temp
     X.df.temp$Total_Cover <- X.df.temp$canopy_cover
@@ -390,10 +415,10 @@ impute.row <- function(currow)  {
   # progress tracking
   outval <- currow / nrows.out
 
-  # write file with percentage completed
-  fout <- "zoneprog.txt"
-  write.table(outval, 
-              paste0(output_dir, fout))
+  # # write file with percentage completed
+  # fout <- "zoneprog.txt"
+  # write.table(outval, 
+  #             paste0(output_dir, fout))
   
   return(impute.out)  
 }
@@ -408,25 +433,31 @@ impute.row <- function(currow)  {
 testrow1 <- test_row
 testrow2 <- test_row + ntest_rows
 
-# test on one row - without parallelizing
-#out_test <- impute.row(testrow1)
-
+# # test on one row - without parallelizing
+# tic()
+# out_test <- impute.row(testrow1)
+# toc()
 
 # Run imputation - with parallelizing
 # ----------------------------------------------------#
 
 # Set number of cores
 #ncores <- parallel::detectCores()
-ncores <- floor(ncores*nCorefraction)
+#ncores <- floor(ncores*nCorefraction)
+
 
 # Set up cluster for parallel computing
-cl <- parallel::makeCluster(ncores, outfile = "")
+cl <- parallel::makeCluster(ncores, outfile = glue('{tmp_dir}cl_log.txt'))
 doParallel::registerDoParallel(cl)
+
+#registerDoSEQ() # register sequential backend - instead of parallel backend
 
 # RUN IMPUTATION ON ROWS
 tic()
-mout <- foreach(m = testrow1:testrow2, .packages = c("raster", "yaImpute", "terra", "tidyverse"), .combine="rbind") %dopar% impute.row(m)
+mout <- foreach(m = testrow1:testrow2, .packages = c("raster", "yaImpute"), .combine="rbind",
+                .verbose = TRUE) %dopar% impute.row(m)
 toc()
+
 
 # finish parallel
 parallel::stopCluster(cl)
@@ -434,7 +465,7 @@ closeAllConnections()
 gc()
 
 # Post-process test outputs
-#------------------------------------#
+#------------------------------------
 
 # make rows with NAs to make full raster of test 
 d <- rep(NA, ncols.out)
