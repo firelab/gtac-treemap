@@ -36,7 +36,7 @@ topo_path <-'//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Topo/'
 elev_path <- glue('{topo_path}LF2020_Elev_220_CONUS/Tif/LC20_Elev_220.tif')
 slopeP_path <- glue('{topo_path}LF2020_SlpP_220_CONUS/Tif/LC20_SlpP_220.tif')
 slopeD_path <- glue('{topo_path}LF2020_SlpD_220_CONUS/Tif/LC20_SlpD_220.tif')
-aspect_path <- glue('{topo_path}LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.tif')
+asp_path <- glue('{topo_path}LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.tif')
 
 # set paths to input disturbance rasters
 distYear_path <- ""
@@ -251,7 +251,7 @@ evt_levels <- levels(evt)[[1]] %>%
   ## crop to zone
   evc_z <- terra::crop(evc, zone, mask = TRUE)
   evt_z <- terra::crop(evt, zone, mask = TRUE)
-  
+  evh_z <- terra::crop(evh, zone, mask = TRUE)
   
   # reclassify EVC: subset to only forested pixels
   evc_z <- terra::classify(evc_z, evc_forest_codes_mat,
@@ -260,7 +260,6 @@ evt_levels <- levels(evt)[[1]] %>%
   # Prepare EVT_GP layer - mask and remap
   # ---------------------------------------- #
   
-
   evt_gp_z <- terra::mask(evt_z, evc_z) %>%   # apply forest mask to EVT layer
       terra::classify(evt_levels) %>%     # reclass from EVT to EVT_GP
     # reclassify a few EVT_GPS -
@@ -311,41 +310,61 @@ evt_levels <- levels(evt)[[1]] %>%
               overwrite = TRUE)
   
   # evt_gp
-  writeRaster(evt_gp_Z, 
+  writeRaster(evt_gp_z, 
               glue('{veg_dir_zone}/EVT_GP.tif'),
               overwrite = TRUE)
   
   
   
   #remove unused layers  - keep evt_gp_z for masking other layers
-  rm(evc_z, evh_z)
+  rm(evc_z, evh_z, evt_z)
   gc()
   
   ## TOPOGRAPHY
   # ###################################################
   #-------------------------------------------------------#
   
-  ## crop to zone
-  elev_z <- terra::crop(elev, zone, mask = TRUE)
-  slp_z <- terra::crop(slp, zone, mask = TRUE)
-  asp_z <- terra::crop(asp, zone, mask = TRUE)
+  ## Crop to zone and mask to forested px
+  #------------------------------------------------------#
+  elev_z <- terra::crop(elev, zone, mask = TRUE) %>%
+    terra::mask(evt_gp_z)
+  slp_z <- terra::crop(slp, zone, mask = TRUE) %>%
+    terra::mask(evt_gp_z)
+  asp_z <- terra::crop(asp, zone, mask = TRUE) %>%
+    terra::mask(evt_gp_z)
   
   # Calculate Northing and Easting from Aspect
   # -------------------------------------------- #
   
-  north_z <- terra::calc(asp, function(i) cos((pi/180)*i))
-  east_z <- terra::calc(asp, function(i) sin((pi/180)*i))
+  north_z <- terra::app(asp_z, function(i) cos((pi/180)*i))
+  east_z <- terra::app(asp_z, function(i) sin((pi/180)*i))
   
-  # Mask Topo layers - to forested px for each zone
-  # -------------------------------------------------------------#
+  
+  # Export topo layers
+  # -------------------------------------------- #
+  print(glue('exporting topo rasters for zone {zone_num}'))
+  writeRaster(elev_z, 
+              glue('{topobio_dir_zone}/ELEV.tif'))
+  writeRaster(slp_z, 
+              glue('{topobio_dir_zone}/SLOPE.tif'))
+  writeRaster(asp_z, 
+              glue('{topobio_dir_zone}/ASPECT.tif'))
+  writeRaster(north_z, 
+              glue('{topobio_dir_zone}/NORTHING.tif'))
+  writeRaster(east_z, 
+              glue('{topobio_dir_zone}/EASTING.tif'))
+  
+  #remove layers
+  rm(elev_z, slp_z, asp_z, north_z, east_z)
+  gc()
+  
+  ## BIOPHYS
+  # ###################################################
+  #-------------------------------------------------------#
   
   # Mask Biophys layers - to forested px for each zone
   # -------------------------------------------------------------#
 
-  
-  
-  
-  
   
   # Mask Biophys and topo layers - to zone
   # -------------------------------------------- #
