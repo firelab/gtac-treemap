@@ -5,7 +5,7 @@
 # Last updated:
 
 # Goals: 
-# - load preliminiary imputation outputs
+# - load preliminary imputation outputs
 # - join with x-table on ID 
 # - build raster of EVC, EVH, EVT_GP to assess accuracy 
 # - join with EVT_GP_remap table to get back to original evt_gps
@@ -15,30 +15,34 @@
 ###########################################################################
 # Set inputs
 ###########################################################################
+library(glue)
+
+#home_dir
+home_dir <- "D:/LilaLeatherman/01_TreeMap/"
 
 # Zone list
 zone_list <- c(16)
 
 # Path to X table
-xtable_path <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/01_Input/03_XTables/X_table_all_singlecondition.txt"
+xtable_path <- glue('{home_dir}01_Data/01_TreeMap2016_RDA/01_Input/03_XTables/X_table_all_singlecondition.txt')
 
 # path where raw raster output(s) live (zone will be added later)
-raster_dir <- '//166.2.126.25/TreeMap/03_Outputs/07_Raw_model_outputs/2016_Original_Test/'
+raster_dir <- glue('{home_dir}03_Outputs/07_Raw_model_outputs/2016_Original_Test')
 
 # raster name
-raster_name <- "testRows_7500_7900"
+raster_name <- "2016_Orig_TestLL_UT_Uintas_rect_testRows_1250_1260"
 
 # Directory where EVT_GP remap table is located
-evt_gp_remap_table_dir <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/02_Vegetation/"
+evt_gp_remap_table_dir <- glue('{home_dir}03_Outputs/05_Target_Rasters/02_Vegetation/')
 
 # desired projection
-prj <- terra::crs("//166.2.126.25/TreeMap/01_Data/02_Landfire/landfire_crs.prj")
+prj <- terra::crs(glue('{home_dir}01_Data/02_Landfire/landfire_crs.prj'))
 
 # path to landfire layers
-landfire_dir <- "//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/02_Target/"
+landfire_dir <- glue('{home_dir}01_Data/01_TreeMap2016_RDA/02_Target/')
 
 # path to TreeMap library
-lib_path <- "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gtac_production_scripts/treemapLib.R"
+lib_path <- "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gtac_production_scripts/05_Library/treemapLib.R"
 
 # list layers to export
 layers_export <- c("canopy_cover", "canopy_height", "EVT_GP",
@@ -49,7 +53,7 @@ layers_export <- c("canopy_cover", "canopy_height", "EVT_GP",
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
-output_dir <- "//166.2.126.25/TreeMap/03_Outputs/07_Raw_model_outputs/2016_Original_Test/"
+output_dir <- raster_dir
 
 # Output imputation name
 #output_name <- "2016_Orig_Test"
@@ -141,13 +145,13 @@ xtable <- read.csv(xtable_path)
     }
   
   # Set folder paths
-  raster_dir = glue('{raster_dir}{cur.zone.zero}/raster/')
-  output_dir = glue('{output_dir}{cur.zone.zero}/map_validation/')
-  landfire_dir = glue('{landfire_dir}{cur.zone.zero}/')
+  raster_dir = glue('{raster_dir}/{cur.zone.zero}/raster/')
+  output_dir = glue('{output_dir}/{cur.zone.zero}/map_validation/')
+  landfire_dir = glue('{landfire_dir}/{cur.zone.zero}/')
   
   # create output folder if it does not exist
   if(!file.exists(output_dir)){
-    dir.create(output_dir, )
+    dir.create(output_dir, recursive = TRUE)
   }
 
   # Load data
