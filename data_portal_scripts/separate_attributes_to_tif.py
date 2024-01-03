@@ -1235,69 +1235,12 @@ def generate_metadata(col_name, meta_mode):
         print(f'Image for {col_name} does not exist in the output folder. Skipping...')
 
 
-def check_pixel_vals(col_name):
-
-    image = gdal.Open(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif'), gdal.GA_ReadOnly)
-    band = image.GetRasterBand(1)
-
-    # Get the X + Y size of the original image's band for chunking purposes
-    xsize = band.XSize
-    ysize = band.YSize
-
-    # Process the image in chunks
-    for i in range(0, ysize, chunk_size):
-        if i + chunk_size < ysize:
-            rows = chunk_size
-        else:
-            rows = ysize - i
-        for j in range(0, xsize, chunk_size):
-            if j + chunk_size < xsize:
-                cols = chunk_size
-            else:
-                cols = xsize - j
-
-            # Print current chunk
-            print(f"Processing chunk ({i}, {j})")
-
-            # Read out original band data as an array for current chunk
-            band_data = band.ReadAsArray(j, i, cols, rows)
-
-            for val in band_data:
-                print(val)
-                #if val != band.GetNoDataValue():
-                #   print(val)
-
-def regen_pyramids(col_name):
-    # Open image
-    image = gdal.Open(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif'), gdal.GA_Update)
-
-    # Reset overviews
-    print(f'RESETTING OVERVIEWS FOR {col_name}...')
-    image.BuildOverviews('NONE', [])
-    image = None
-
-    # Reopen image
-    image = gdal.Open(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif'), gdal.GA_Update)
-
-    # Build overviews
-    print(f'BUILDING OVERVIEWS FOR {col_name}...')
-    image.BuildOverviews('NEAREST', [2, 4, 8, 16, 32, 64])
-
-    gdal.Translate(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}_REPYRAMID.tif'), image, format = 'COG', creationOptions = creation_options)
-    image = None
-
-
-
-
 ######################################################################
 # Main Function Calls
 ######################################################################
 
 # Determine the TreeMap version
 tm_ver = determine_version()
-
-#regen_pyramids('FORTYPCD')
-#quit()
 
 # Determine the general metadata template folder
 metd_template_dir = find_folder(os.path.dirname(os.path.abspath(__file__)), 'metadata_templates')
@@ -1321,7 +1264,6 @@ if mode == 'images':
         end_time = time.perf_counter()
         elapsed = (end_time - start_time)/60
         print(f'Time to complete: {elapsed} minutes')
-        quit()
 
 elif mode == 'meta':
     for col_name, gdal_dtype in cols:
@@ -1342,7 +1284,6 @@ elif mode == 'package':
         end_time = time.perf_counter()
         elapsed = (end_time - start_time)/60
         print(f'Time to complete: {elapsed} minutes')
-        quit()
 
 else:
     print(f'\n{mode} is not valid. Please restart the script and specify a valid mode.')
