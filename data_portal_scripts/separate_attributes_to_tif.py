@@ -2,6 +2,7 @@
 This script separates columns (attributes) from the raster attribute table of TreeMap tifs into separate images, builds pyramids for those images, 
 calculates statistics, converts to COG format, builds attribute tables (for discrete attributes), creates an xml + html metadata file based on a template,
 creates arc compatable metadata (tif.xml), creates arc compatable statistics (aux.xml), creates a readme, and zips all the files together (including manually made symbology files (lyrx + qml)).
+The user is prompted upon start which products they want processed.
 Please update use considerations and this description with any changes.
 
 """
@@ -11,7 +12,7 @@ Please update use considerations and this description with any changes.
 print('\n**************************************************************\n**************************************************************')
 print('USE CONSIDERATIONS: ')
 print('* This script makes use of gdal, numpy, simpledbf, bs4, and pandas python libraries. Please insure these are installed in the environment before running.')
-print('* Filepaths for the main TreeMap tif, dbf, xml, html, and the output folder are assigned within the script. If these need to be changed, it must done in the script.')
+print('* Filepaths for the main TreeMap tif, dbf and the output folder are assigned within the script. If these need to be changed, it must done in the script.')
 print('* Attributes to be separated and their data types are defined within the script. If these need to change, it must be done in the script.')
 print('* Existing attribute files in the output folder will NOT be reprocessed. Please delete their tif files if you wish to reprocess')
 print('* Chunk size can be adjusted in the script for higher or lower RAM availability. 29060 is typically appropriate for systems with 32gb of RAM, depending on other RAM usage. Greater chunk sizes will decrease processing time on systems that can afford it.')
@@ -21,7 +22,7 @@ print('**************************************************************\n*********
 # Import
 ######################################################################
 
-import os, sys
+import os
 import numpy as np
 from osgeo import gdal
 from simpledbf import Dbf5
@@ -29,7 +30,7 @@ import pandas as pd
 import json
 import re
 import xml.etree.ElementTree as ET
-from bs4 import BeautifulSoup, NavigableString, Tag
+from bs4 import BeautifulSoup
 from datetime import datetime
 from zipfile import ZipFile
 import msvcrt
@@ -44,21 +45,21 @@ gdal.UseExceptions()
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
 chunk_size = 29060 * 2
 
-# Specify filepath to .tif (image), .dbf (attribute table), and xml + html (metadata)
+# Specify filepath to .tif (image), .dbf (attribute table)
 treeMapTif = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif"
 treeMapDbf = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif.vat.dbf"
 
 # Specify output folder
-outputFolder = r"C:\Users\NicholasStorey\Desktop\Separated_Atts_2"
-
-# Specify data access link, used in metadata
-data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
+outputFolder = r"C:\Users\NicholasStorey\Desktop\tm_attribute_tifs"
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = -99.00000000000
 
 # Set creation options for GeoTIFF compression, tiling, and sparse file format
 creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
+
+# Specify data access link, used in metadata
+data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
 # Column names to create individual attribute images of, their full names, and their data type
     # Columns whose full precision can only be contained within Float64: VOLCFNET_L, VOLCFNET_D, VOLBFNET_L, DRYBIO_L, DRYBIO_D, CARBON_L, CARBON_D
@@ -157,7 +158,7 @@ driver = gdal.GetDriverByName('GTiff')
 ######################################################################
 
 
-def attributeToImage(columnName, gdal_dtype):
+def attributeToImage(columnName, gdal_dtype, processing_mode):
     '''
     Creates a new COG formatted geotiff from the main TreeMap tif with pyramids, statistics, metadata, and attribute tables (if applicable).
     Zips them all together in the output folder.
@@ -170,10 +171,12 @@ def attributeToImage(columnName, gdal_dtype):
         None
     '''
     
-    # Check if attribute image already exists in the output folder and skip if so
-    if os.path.isfile(outputFolder + f'\TreeMap{tm_ver}_{columnName}.tif'):
-        print(f'\n File for {columnName} already exists. Skipping...')
-        return
+    # If the image mode is 
+    if processing_mode == 'all':
+        # Check if attribute image already exists in the output folder and skip if so
+        if os.path.isfile(outputFolder + f'\TreeMap{tm_ver}_{columnName}.tif'):
+            print(f'\n File for {columnName} already exists. Skipping...')
+            return
     
     # Print the column being processed
     print('\n******************************************')
@@ -286,7 +289,7 @@ def create_basic_metadata(col_name):
     '''
 
     # XML
-    with open(os.path.join(tm_ver_metd_templ_dir, 'metadata_template.xml'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(metd_template_dir, f'{tm_ver}_metadata_template.xml'), 'r', encoding='utf-8') as file:
         content = file.read()
    
     content = content.replace('{col_name}', col_name)
@@ -298,7 +301,7 @@ def create_basic_metadata(col_name):
         f.write(content)
 
     # HTML
-    with open(os.path.join(tm_ver_metd_templ_dir, 'metadata_template.html'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(metd_template_dir, f'{tm_ver}_metadata_template.html'), 'r', encoding='utf-8') as file:
         content = file.read()
    
     content = content.replace('{col_name}', col_name)
@@ -962,17 +965,6 @@ def get_readme_text(col_name, zip_only=True):
             new_file.write(readme_text)
 
     return readme_text
-
-
-def get_script_directory():
-    '''
-    Gets the directory of this script.
-    
-    Returns:
-        String of the script's directory.
-
-    '''
-    return os.path.dirname(os.path.realpath(sys.argv[0]))
     
 
 def zip_files(files, col_name):
@@ -1076,19 +1068,31 @@ def prompt_user():
                 'images' to generate attribute tifs AND associated metadata (.tif, .xml, .html, .aux.xml, .tif.xml)
                 'meta' to generate metadata (.xml, .html, .aux.xml, .tif.xml - separated attribute tifs must already exist)
                 'package' to package all necessary files for the raster data gateway (tif, metadata, symbology files - if they exist)
-                        NOTE: symbology files must exist
                      
                 Please type choice: ''')
         
         second_mode = ''
         
         if mode == 'images':
+            choosing2 = True
+            while(choosing2):
+                second_mode = input('''\n\nChoose Image Mode: 
+                    'all' to generate all attributes. Existing attributes in the output folder will not be overwritten.
+                    OR
+                    Type the name of the attribute you want to process (e.g., 'FORTYPCD').
+                                
+                    Please type choice: ''')
+                
+                if second_mode.lower() != 'all' and (not any(col[0] == second_mode.upper() for col in cols)):
+                    print(f'\n{second_mode} is not a defined attribute. Please choose a valid option or update the attribute list in the script.')
+                else:
+                    choosing2 = False
+            
             print('\n\n****************************************************************************************************')
             print('Input tif: ' + treeMapTif)
             print('Input dbf: ' + treeMapDbf)
             print('Output folder: ' + outputFolder)
             print('Metadata template folder: ' + metd_template_dir)
-            print('Version specific metadata template folder: ' + tm_ver_metd_templ_dir)
             print('****************************************************************************************************')
             print('Current chunk size:' + str(chunk_size))
             print('****************************************************************************************************')
@@ -1124,7 +1128,6 @@ def prompt_user():
             print('\n\n****************************************************************************************************')
             print('Output folder (must contain attribute tifs): ' + outputFolder)
             print('Metadata template folder: ' + metd_template_dir)
-            print('Version specific metadata template folder: ' + tm_ver_metd_templ_dir)
             print('****************************************************************************************************')
             print('****************************************************************************************************')
             print('TreeMap version: ' + tm_ver)
@@ -1200,8 +1203,17 @@ def package_for_rdg(col_name):
     if col_name not in discrete_cols.keys():
         arc_lyrx_file = os.path.join(symbology_dir, f'TreeMap{tm_ver}_{col_name}.tif.lyrx')
         qgis_qml_file = os.path.join(symbology_dir, f'TreeMap{tm_ver}_{col_name}.tif.qml')
-        files_to_zip.append(arc_lyrx_file)
-        files_to_zip.append(qgis_qml_file)
+
+        # Check if the files exist and inform user if not
+        if not os.path.exists(arc_lyrx_file):
+            print(f'ArcGIS Pro layer file, TreeMap{tm_ver}_{col_name}.tif.lyrx, does not exist in {symbology_dir} and was not packaged.')
+        else:
+            files_to_zip.append(arc_lyrx_file)
+        
+        if not os.path.exists(qgis_qml_file):
+            print(f'QGIS layer file, TreeMap{tm_ver}_{col_name}.tif.qml, does not exist in {symbology_dir} and was not packaged.')
+        else:
+            files_to_zip.append(qgis_qml_file)
         
     # Zip files
     zip_files(files_to_zip, col_name)
@@ -1233,64 +1245,7 @@ def generate_metadata(col_name, meta_mode):
 
     else:
         print(f'Image for {col_name} does not exist in the output folder. Skipping...')
-
-<<<<<<< HEAD
-
-def check_pixel_vals(col_name):
-
-    image = gdal.Open(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif'), gdal.GA_ReadOnly)
-    band = image.GetRasterBand(1)
-
-    # Get the X + Y size of the original image's band for chunking purposes
-    xsize = band.XSize
-    ysize = band.YSize
-
-    # Process the image in chunks
-    for i in range(0, ysize, chunk_size):
-        if i + chunk_size < ysize:
-            rows = chunk_size
-        else:
-            rows = ysize - i
-        for j in range(0, xsize, chunk_size):
-            if j + chunk_size < xsize:
-                cols = chunk_size
-            else:
-                cols = xsize - j
-
-            # Print current chunk
-            print(f"Processing chunk ({i}, {j})")
-
-            # Read out original band data as an array for current chunk
-            band_data = band.ReadAsArray(j, i, cols, rows)
-
-            for val in band_data:
-                print(val)
-                #if val != band.GetNoDataValue():
-                #   print(val)
-
-def regen_pyramids(col_name):
-    # Open image
-    image = gdal.Open(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif'), gdal.GA_Update)
-
-    # Reset overviews
-    print(f'RESETTING OVERVIEWS FOR {col_name}...')
-    image.BuildOverviews('NONE', [])
-    image = None
-
-    # Reopen image
-    image = gdal.Open(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif'), gdal.GA_Update)
-
-    # Build overviews
-    print(f'BUILDING OVERVIEWS FOR {col_name}...')
-    image.BuildOverviews('NEAREST', [2, 4, 8, 16, 32, 64])
-
-    gdal.Translate(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}_REPYRAMID.tif'), image, format = 'COG', creationOptions = creation_options)
-    image = None
-
-
-
-=======
->>>>>>> data_portal_metadata_experiment
+        
 
 ######################################################################
 # Main Function Calls
@@ -1302,25 +1257,35 @@ tm_ver = determine_version()
 # Determine the general metadata template folder
 metd_template_dir = find_folder(os.path.dirname(os.path.abspath(__file__)), 'metadata_templates')
 
-# Determine the metadata template folder holding the version specific metadata templates
-tm_ver_metd_templ_dir = os.path.join(metd_template_dir, tm_ver)
-
 # Determine this TreeMap version's symbology folder
 symbology_dir = os.path.join(find_folder(os.path.dirname(os.path.abspath(__file__)), 'symbology_files'), tm_ver)
 
-# Inform user of assigned inputs + outputs
+# Inform user of assigned inputs + outputs and get input on modes to run
 mode, second_mode = prompt_user()
 
 # Main Function
 if mode == 'images':
-    for col_name, gdal_dtype in cols:
-        start_time = time.perf_counter()
+    # If user specified processing all images
+    if second_mode == 'all':
+        for col_name, gdal_dtype in cols:
+            start_time = time.perf_counter()
 
-        attributeToImage(col_name, gdal_dtype)
-            
-        end_time = time.perf_counter()
-        elapsed = (end_time - start_time)/60
-        print(f'Time to complete: {elapsed} minutes')
+            attributeToImage(col_name, gdal_dtype, second_mode)
+                
+            end_time = time.perf_counter()
+            elapsed = (end_time - start_time)/60
+            print(f'Time to complete: {elapsed} minutes')
+    # Else process the specific attribute they provided
+    else:
+        for col_name, gdal_dtype in cols:
+            if col_name == second_mode.upper():
+                start_time = time.perf_counter()
+
+                attributeToImage(col_name, gdal_dtype, second_mode)
+                
+                end_time = time.perf_counter()
+                elapsed = (end_time - start_time)/60
+                print(f'Time to complete: {elapsed} minutes')
 
 elif mode == 'meta':
     for col_name, gdal_dtype in cols:
