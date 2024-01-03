@@ -1234,6 +1234,7 @@ def generate_metadata(col_name, meta_mode):
     else:
         print(f'Image for {col_name} does not exist in the output folder. Skipping...')
 
+<<<<<<< HEAD
 
 def check_pixel_vals(col_name):
 
@@ -1288,6 +1289,8 @@ def regen_pyramids(col_name):
 
 
 
+=======
+>>>>>>> data_portal_metadata_experiment
 
 ######################################################################
 # Main Function Calls
