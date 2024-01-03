@@ -1076,7 +1076,7 @@ def prompt_user():
         if mode == 'images':
             choosing2 = True
             while(choosing2):
-                second_mode = input('''\n\nChoose Image Mode: 
+                second_mode = input('''\n*************************************\nChoose Image Mode: 
                     'all' to generate all attributes. Existing attributes in the output folder will not be overwritten.
                     OR
                     Type the name of the attribute you want to process (e.g., 'FORTYPCD').
@@ -1188,6 +1188,10 @@ def package_for_rdg(col_name):
     Returns:
         None.
     '''
+
+    if not os.path.exists(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif')):
+        print(f'\nThe tif for {col_name} was not found. Skipping...')
+        return
 
     # Define files to be zipped
     print(f'\nPackaging {col_name}...')
@@ -1301,7 +1305,7 @@ elif mode == 'package':
     for col_name, gdal_dtype in cols:
         start_time = time.perf_counter()
 
-        package_for_rdg('QMD_RMRS')
+        package_for_rdg(col_name)
             
         end_time = time.perf_counter()
         elapsed = (end_time - start_time)/60
