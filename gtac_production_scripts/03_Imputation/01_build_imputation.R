@@ -56,12 +56,6 @@ output_name <- "2016_Orig_TestLL"
 # set tmp directory
 tmp_dir <- "D:/tmp/"
 
-# Parallelization settings
-#--------------------------------------#
-
-# set percentage of available cores that should be used
-nCorefraction <- 0.25
-
 ###########################################################################
 # Set up libraries and directories
 ###########################################################################
@@ -71,8 +65,7 @@ nCorefraction <- 0.25
 
 # packages required
 list.of.packages <- c("raster", "yaImpute", "randomForest", 
-                      "terra", "tidyverse", "magrittr", "glue", "tictoc",
-                      "parallel", "doParallel", "foreach")
+                      "terra", "tidyverse", "magrittr", "glue", "tictoc")
 
 #check for packages and install if needed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -153,12 +146,6 @@ flist.tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE,
 # load raster files as raster stack
 raster.stack <- stack(flist.tif)
 p4s.albers <- proj4string(raster.stack)
-#raster.list <- vector("list", length(flist.tif))
-#nrasters <- length(flist.tif)
-# for(i in 1:length(flist.tif))  
-# {
-#   raster.list[[i]] <- raster()  
-# }
 
 # get raster names 
 raster_names <- flist.tif %>%
@@ -166,7 +153,7 @@ raster_names <- flist.tif %>%
   str_replace("z[0-9][0-9]/", "")
 
 #add names to raster list
-#names(raster.list) <- raster_names
+
 names(raster.stack) <- raster_names
 
 # Load X table
