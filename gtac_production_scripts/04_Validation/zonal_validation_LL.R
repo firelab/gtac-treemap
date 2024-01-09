@@ -18,7 +18,8 @@
 library(glue)
 
 #home_dir
-home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+#home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+home_dir <- "//166.2.126.25/TreeMap/"
 
 # Zone list
 zone_list <- c(16)

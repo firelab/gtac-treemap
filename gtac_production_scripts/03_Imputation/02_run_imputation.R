@@ -32,7 +32,8 @@ library(glue)
 zone_list <- c(16)
 
 #home_dir
-home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+#home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+home_dir<- "//166.2.126.25/TreeMap/"
 
 # Directory where target rasters live
 target_dir <- glue("{home_dir}01_Data/01_TreeMap2016_RDA/02_Target/")
@@ -92,7 +93,8 @@ Ydf_path <- glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Ydf_bin.cs
 #--------------------------------------#
 
 # set number of cores that should be used
-ncores <- 10
+#ncores <- 10
+ncores <- 3
 
 # set percentage of available cores that should be used
 #nCorefraction <- 0.75
@@ -145,11 +147,11 @@ gc()
 # packages required
 list.of.packages <- c("raster", "yaImpute", "randomForest", 
                       "terra", "tidyverse", "magrittr", "glue", "tictoc",
-                      "pryr", "doParallel", "foreach")
+                      "doParallel", "foreach")
 
 #check for packages and install if needed
-#new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-#if(length(new.packages) > 0) install.packages(new.packages)
+# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages) > 0) install.packages(new.packages)
 
 # load all packages
 vapply(list.of.packages, library, logical(1L),
@@ -173,6 +175,7 @@ if (!file.exists(output_dir)) {
 
 # Allow for sufficient digits to differentiate plot cn numbers
 # plot CNs aren't present in the imputation portion, however
+
 #options("scipen"=100, "digits"=8)
 
 

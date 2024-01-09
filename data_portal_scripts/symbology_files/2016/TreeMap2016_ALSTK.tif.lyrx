@@ -17,12 +17,12 @@
       "description" : "TreeMap2016_ALSTK.tif",
       "layerElevation" : {
         "type" : "CIMLayerElevationSurface",
-        "elevationSurfaceLayerURI" : "CIMPATH=Map/dbae243fa6704291b536b9d60fb4b20e.json"
+        "elevationSurfaceLayerURI" : "CIMPATH=Map/caf85905cab245fe8c97485bcc2987cd.json"
       },
       "expanded" : true,
       "layerType" : "Operational",
       "showLegends" : true,
-      "visibility" : true,
+      "visibility" : false,
       "displayCacheType" : "Permanent",
       "maxDisplayCacheAge" : 5,
       "showPopups" : true,
@@ -33,7 +33,7 @@
       "allowDrapingOnIntegratedMesh" : true,
       "dataConnection" : {
         "type" : "CIMStandardDataConnection",
-        "workspaceConnectionString" : "DATABASE=\\\\166.2.126.25\\TreeMap\\03_Outputs\\04_Separated_Attribute_Rasters",
+        "workspaceConnectionString" : "DATABASE=D:\\NickStorey\\TreeMap\\Separated_Attribute_Tifs",
         "workspaceFactory" : "Raster",
         "dataset" : "TreeMap2016_ALSTK.tif",
         "datasetType" : "esriDTAny"
@@ -164,7 +164,7 @@
           },
           {
             "type" : "CIMRasterStretchClass",
-            "label" : "100 (All Live Tree Stocking %)",
+            "label" : "100",
             "value" : 120.00399780273
           }
         ],
@@ -438,7 +438,8 @@
           "resolution" : 0.4540199915567863
         },
         "stretchType" : "PercentMinimumMaximum",
-        "useCustomStretchMinMax" : true
+        "useCustomStretchMinMax" : true,
+        "heading" : "All-Live-Tree Stocking (percent)"
       }
     }
   ],
@@ -448,7 +449,7 @@
     {
       "type" : "CIMElevationSurfaceLayer",
       "name" : "Ground",
-      "uRI" : "CIMPATH=Map/dbae243fa6704291b536b9d60fb4b20e.json",
+      "uRI" : "CIMPATH=Map/caf85905cab245fe8c97485bcc2987cd.json",
       "useSourceMetadata" : true,
       "description" : "Ground",
       "expanded" : true,

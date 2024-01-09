@@ -147,6 +147,14 @@ flist.tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE,
 raster.stack <- stack(flist.tif)
 p4s.albers <- proj4string(raster.stack)
 
+#raster.list <- vector("list", length(flist.tif))
+#nrasters <- length(flist.tif)
+# for(i in 1:length(flist.tif))  
+# {
+#   raster.list[[i]] <- raster()  
+# }
+
+
 # get raster names 
 raster_names <- flist.tif %>%
   str_extract(., "z[0-9][0-9]/([^.])*") %>%
@@ -259,7 +267,7 @@ X.df.orig <- plot.df %>% dplyr::select(SLOPE, ELEV, PARI, PPTI, RELHUMI, TMAXI, 
 rownames(X.df.orig) <- plot.df$ID
 
 
-# Create Y table
+# Create Y table (aka variables to be predicted)
 Y.df.orig <- plot.df %>%
   dplyr::select(canopy_cover, canopy_height, EVT_GP)
 
