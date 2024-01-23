@@ -11,20 +11,35 @@
 
 # TO DO: 
 # - get parallelization to work
-#   - export vars to dopar explicitly
-#   - export packages to dopar explicitly
 #   - break up zone into tiles, run rowwise imputation on tiles, mosaic tiles back together for zone
-# - read in raster stack as vrt
-# - convert raster processing to R terra
+#   - write out files as 
 # - data frame processing to tidyverse where it makes sense
 # - remove in-situ calc of northing and easting (pull from input rasters)
 
 
-# Last updated: 12/29/2023
+# Last updated: 1/23/2024
+
+
 
 ###########################################################################
 # Set inputs
 ###########################################################################
+
+# Test application settings
+#-----------------------------------------#
+
+# first row to start test on 
+test_row <- 400 # adjust this if using a test AOI vs whole zone
+
+ntest_rows <- 5 
+
+# # supply path, or NA
+aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+aoi_name <- "UT_Uintas_rect"
+#aoi_path <- NA
+
+# Standard inputs
+#---------------------------------------------#
 
 library(glue)
 
@@ -37,9 +52,6 @@ home_dir<- "//166.2.126.25/TreeMap/"
 
 # Directory where target rasters live
 target_dir <- glue("{home_dir}01_Data/01_TreeMap2016_RDA/02_Target/")
-
-# Directory where EVT_GP remap table is located
-evt_gp_remap_table_path <- glue("{home_dir}03_Outputs/05_Target_Rasters/02_Vegetation/")
 
 # Paths for exporting data
 #--------------------------------------#
@@ -71,7 +83,6 @@ cur.zone.zero <- if(zone_num < 10) {
 # Set folder paths
 target_dir = glue('{target_dir}/{cur.zone.zero}/')
 output_dir = glue('{output_dir}/{cur.zone.zero}/')
-evt_gp_remap_table_path = glue('{evt_gp_remap_table_path}/{cur.zone.zero}/EVG_remap_table.csv')
 
 
 # Model inputs
@@ -80,37 +91,17 @@ evt_gp_remap_table_path = glue('{evt_gp_remap_table_path}/{cur.zone.zero}/EVG_re
 # Path where model is located
 model_path <- glue('{output_dir}/model/{cur.zone.zero}_{output_name}_yai_treelist_bin.RDS')
 
-# load x table and y table
-
-Xdf_path <- glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Xdf_bin.csv')
-Ydf_path <- glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Ydf_bin.csv')
-
-# Xdf_path_orig <- glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Xdf_orig.csv')
-# Ydf_path_orig <- glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Ydf_orig.csv')
-
 
 # Parallelization settings
 #--------------------------------------#
 
 # set number of cores that should be used
-#ncores <- 10
-ncores <- 3
+ncores <- 10
+#ncores <- 3
 
 # set percentage of available cores that should be used
 #nCorefraction <- 0.75
 
-# Test application settings
-#-----------------------------------------#
-
-# first row to start test on 
-test_row <- 1250 # adjust this if using a test AOI vs whole zone
-
-ntest_rows <- 100
-
-# supply path, or NA
-aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-aoi_name <- "UT_Uintas_rect"
-#aoi_path <- NA
 
 ###########################################################################
 # Set up libraries and directories
@@ -133,8 +124,8 @@ write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renvi
 do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
 
 #detect and delete folders with pattern "Rtmp"
-folders <- dir(tmp_dir, pattern = "Rtmp", full.names = TRUE)
-unlink(folders, recursive = TRUE, force = TRUE, expand = TRUE)
+# folders <- dir(tmp_dir, pattern = "Rtmp", full.names = TRUE)
+# unlink(folders, recursive = TRUE, force = TRUE, expand = TRUE)
 
 
 #remove unused memory
@@ -147,6 +138,7 @@ gc()
 # packages required
 list.of.packages <- c("raster", "yaImpute", "randomForest", 
                       "terra", "tidyverse", "magrittr", "glue", "tictoc",
+                      "furrr",
                       "doParallel", "foreach")
 
 #check for packages and install if needed
@@ -183,20 +175,12 @@ if (!file.exists(output_dir)) {
 # Load data
 ####################################################################
 
-# Load imputation model and inputs
+# Load imputation model 
 # ---------------------------------------------------------- #
 
 #load model
+yai.treelist.bin <- readr::read_rds(model_path)
 
-yai.treelist.bin <- read_rds(model_path)
-
-# load x table and y table
-X.df <- read.csv(Xdf_path)
-#Y.df <- read.csv(Ydf_path) # y table isn't used in running imputation
-
-# # original - not binary reclass to disturbance code
-# X.df.orig <- read.csv(Xdf_path_orig)
-# Y.df.orig <- read.csv(Ydf_path_orig)
 
 # Load target rasters
 # --------------------------------------------------------------------#
@@ -204,21 +188,11 @@ X.df <- read.csv(Xdf_path)
 # list raster files
 flist.tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
 
-# # load raster files as raster stack
-# raster.stack <- stack(flist.tif)
-# p4s.albers <- proj4string(raster.stack)
-# lf.crs <- crs(raster.stack)
-# 
-# # get raster names 
-# raster_names <- flist.tif %>%
-#   str_extract(., "z[0-9][0-9]/([^.])*") %>%
-#   str_replace("z[0-9][0-9]/", "")
-# 
-# #add names to raster list
-# names(raster.stack) <- raster_names
+# load raster files as vrt - VRT CAN'T BE WRAPPED
+#rs2 <- terra::vrt(flist.tif, filename = glue('{tmp_dir}rs2.vrt'),  overwrite = TRUE, options = "-separate")
 
-# load raster files as vrt
-rs2 <- terra::vrt(flist.tif, filename = glue('{tmp_dir}rs2.vrt'), options = "-separate")
+# load raster files as terra raster
+rs2 <- terra::rast(flist.tif)
 
 # get raster layer names
 layer_names <- flist.tif %>%
@@ -236,224 +210,166 @@ if (!is.na(aoi_path)) {
   
   print("using input shapefile as AOI")
   
-  # load aoi subset 
-  # aoi <- raster::shapefile(aoi_path) 
-  # aoi <- spTransform(aoi, lf.crs)
-  aoi <- terra::vect(aoi_path) %>%
-    terra::project(lf.crs)
-  
+  # process w raster package
+  # load aoi subset
+  # aoi <- raster::shapefile(aoi_path)
+  # aoi <- raster::spTransform(aoi, lf.crs)
+
   # # crop raster
-  # raster.stack <- raster::crop(raster.stack, aoi)
-  # raster.stack <- raster::mask(raster.stack, aoi)
+  # rs2 <- raster::crop(rs2, aoi)
+  # rs2 <- raster::mask(rs2, aoi)
+  
+  # # process w terra package
+  aoi <- terra::vect(aoi_path) %>% terra::project(lf.crs)
   rs2 <- terra::crop(rs2, aoi, mask = TRUE)
   
   # update output name
   output_name = glue('{output_name}_{aoi_name}')
     
-} 
-
-# Load EVT Group Remap table
-# ----------------------------------------------------------#
-
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
-
-
-# Prep input tables - set factors etc
-#-------------------------------------------------------------------------#
-
-X.df %<>%
-  mutate(EVT_GP = as.factor(EVT_GP),
-         disturb_code = as.factor(disturb_code),
-         disturb_year = as.factor(disturb_year))
-
-# Set up inputs to imputation function data
-#-------------------------------------------------------------------------#
-
-# raster stack
-#rs2 <- raster.stack
-
-# List of Plot IDs
-id.table <- X.df$X # comes from saved row names 
-
-# number of rows in X.df
-maxrow <- max(as.numeric(rownames(X.df)))
-
-# EVG levels - to get non-appearing EVGs
-n.evgs <- nrow(evt_gp_remap_table)
-evg.in <- as.factor(X.df$EVT_GP)
-
-# Disturbance code levels
-lev.dc <- levels(X.df$disturb_code)
-#lev.year <- levels(X.df$disturb_year)
+} else {print("using extent of input raster stack as AOI")} 
 
 
 ##############################################################################
 # Build imputation function
 ##############################################################################
 
-impute.row <- function(currow, ras_file)  { 
-  
-  # for testing
-  #currow <- 50
-  #ras_file <- tiles[5]
-  
-  # External objects brought into this function:
-  # yai.treelist.bin 
-  # rs2
-  # nrows.out
-  # id.table
-  # maxrow
-  
-  ## EVG processing
-  # n.evgs
-  # evg.in
-  # lev.dc
+impute.row <- function(currow, yai, ras, test)  { 
 
-  ## Progress tracking
-  # output_dir
+  # #for testing
+  # currow <- 400
+  # yai <- yai.treelist.bin
+  # ras <- rs2
+  # test <- TRUE
   
-  
-  #### Get values from current row of raster
-  
-  #handle missing values
-  if(missing(ras_file)) {
-    ras_file <- NA
+  # handle missing test param
+  if(missing(test)) {
+    test <- FALSE
   }
   
-  # if file name provided, read in raster from file
-  if (!is.na(ras_file)) {
-    rs2 <- terra::rast(ras_file)
-  }
+  # handle a wrapped raster as input
+  if(is(ras) == "PackedSpatRaster") {
+    ras <- terra::unwrap(ras)}
+  
+  # Get data from yai
+  id.table <- as.numeric(row.names(yai$xRefs))
+  maxrow <- max(id.table)
   
   #### Get dimensions of input raster stack
-  nrows.out <- dim(rs2)[1]
-  ncols.out <- dim(rs2)[2]
+  nrows.out <- dim(ras)[1]
+  ncols.out <- dim(ras)[2]
   
-  # check if this tile has any non-null values and return all NAs if it doesn't
-  if (global(rs2[[1]], "notNA")$notNA == 0) {
-    print(paste0("No non-NA in tile ; moving to next tile!"))
-    impute.out <- rep(NA, ncols.out)
-  } else{
-  
-  #rsvals <- raster::cellFromRow(rs2, currow)
-  rsvals <- terra::cellFromRowCol(rs2, row = currow, col = 1:ncols.out)
-  rsmat <- rs2[rsvals]
+  # get cell numbers and raster values for current row
+  #rsvals <- raster::cellFromRow(ras, currow)
+  rsvals <- terra::cellFromRowCol(ras, row = currow, col = 1:ncols.out)
+  rsmat <- ras[rsvals]
   extract.currow <- data.frame(rsmat)
-  
+
   #### Get coordinates from current row of raster
-  #xycoords <- raster::xyFromCell(rs2, rsvals)
-  xycoords <- terra::xyFromCell(rs2, rsvals)
+  #xycoords <- raster::xyFromCell(ras, rsvals)
+  xycoords <- terra::xyFromCell(ras, rsvals)
   xycoords <- data.frame(xycoords)
-  
+
   #### Get dimensions of current row
   colseq <- 1:length(extract.currow[,1])
   valid.cols <- colseq[as.logical(1-is.na(extract.currow[,1]))]
   ncols.df <- dim(extract.currow)[2]
-  
+
   #### Get coords of current row
-  extract.currow$"POINT_X" <- xycoords $x
-  extract.currow$"POINT_Y" <-xycoords $y
-  
+  extract.currow$"POINT_X" <- xycoords$x
+  extract.currow$"POINT_Y" <-xycoords$y
+
   # Remove NAs
   extract.currow <- na.exclude(extract.currow)
-  
+
   # convert to data frame
   X.df.temp <- data.frame(extract.currow)
-  
-  #### Convert aspect to northing and easing
-  aspect.temp <- X.df.temp$ASPECT  
-  rad.temp <- (pi/180)*aspect.temp  
-  northing.temp <- cos(rad.temp)  
-  easting.temp <- sin(rad.temp)
-  X.df.temp <- X.df.temp[,-1]  
-  X.df.temp$NORTHING <- northing.temp  
-  X.df.temp$EASTING <- 	easting.temp
-  
 
+  #### Convert aspect to northing and easting
+  X.df.temp <-
+    X.df.temp %>%
+    dplyr::mutate(radians = (pi/180)*ASPECT,           
+                  NORTHING = cos(radians),
+                  EASTING = sin(radians)) %>%
+    dplyr::select(-radians)
+    
   #### Identify EVGs in zone that don't appear in X.df   
-  evg.orig <- 1:n.evgs 
-  evg.val <- evg.orig  
+  #evg.orig <- 1:n.evgs # INPUT OUTSIDE FUNCTION
+  evg.orig <- levels(yai$xRefs$EVT_GP)
   evg.val.temp <- X.df.temp$'EVT_GP'  
   n.evgs.orig <- length(sort(unique(evg.orig)))  
   evg.orig.seq <- 1:n.evgs.orig  
-  
-  nonappearing.evgs <- evg.val[-sort(unique(as.numeric(as.character(evg.val.temp))))]  
+    
+  nonappearing.evgs <- evg.orig[-sort(unique(as.numeric(as.character(evg.val.temp))))]  
   n.dummy.rows <- length(nonappearing.evgs)  
-  
+    
   # Create dummy rows for non-appearing EVGs
-  if(n.dummy.rows > 0)    
-  {    
+  if(n.dummy.rows > 0)
+    {    
     dummy.rows <- X.df.temp[1:n.dummy.rows,]    
     tempchar <- as.character(X.df.temp$'EVT_GP')    
     X.df.temp$'EVT_GP' <- tempchar    
     dummy.rows$'EVT_GP' <- as.character(nonappearing.evgs)    
     X.df.temp <- rbind(X.df.temp, dummy.rows)    
-  }
-  
-  #set factor levels for EVT_GP
-  temp.fac <- factor(X.df.temp$'EVT_GP', levels = levels(evg.in))  # INPUT OUTSIDE FUNCTION
-  X.df.temp$'EVT_GP' <- as.factor(temp.fac)
-  
-  # Set factor levels for disturbance code 
-  dc.code.fac.temp <- factor(X.df.temp$disturb_code, levels=lev.dc)  # INPUT OUTSIDE FUNCTION
-  X.df.temp$disturb_code <- dc.code.fac.temp  
-  
-  # Set factor levels for disturbance year
-  #dc.year.fac.temp <- factor( X.df.temp$disturb_year, levels=lev.year)
-  #X.df.temp$disturb_year <- dc.year.fac   
-  
-  # Set up template for output imputation
-  nrows.orig <- dim(extract.currow)[1] # number of values to impute - without dummy rows for non-appearing evgs
-  nrow.temp <- dim(X.df.temp)[1] # number of values to impute - with dummy rows for non-appearing evs
-  nc.orig <-length(rsvals) # number of values in row, including NAs
-  
-  # Default output from imputation - 
-  impute.out <- rep(NA,nc.orig) 
+    }
     
-  
-  if(nrow.temp > 0)  # if there are any non-NA pixels in the row we're imputing  
-  { 
-    # Format row names for X.df.temp - cannot overlap with input X.df
-    colseq.out <- 1:dim(X.df.temp)[1] 
-    rownames.all <- colseq.out+maxrow    
-    rownames(X.df.temp) <- paste0("T- ", rownames.all) 
+    # Set factor levels - make sure they match input factor levels in reference data used in model
+    X.df.temp <- 
+      X.df.temp %>%
+      dplyr::mutate(EVT_GP = factor(EVT_GP, levels = levels(yai$xRefs$EVT_GP)),
+             disturb_code = factor(disturb_code, levels = levels(yai$xRefs$disturb_code))) %>%
+      # put columns in order expected
+      dplyr::select(names(yai$xRefs))
     
-    # Adjust column names and factor levels on X.df.temp
-    X.df.temp$Total_Cover <- X.df.temp$canopy_cover
-    X.df.temp$Dominant_Nom_Ht <- X.df.temp$canopy_height
+    # Set up template for output of imputation
+    nrows.orig <- dim(extract.currow)[1] # number of values to impute - without dummy rows for non-appearing evgs
+    nrow.temp <- dim(X.df.temp)[1] # number of values to impute - with dummy rows for non-appearing evs
+    nc.orig <-length(rsvals) # number of values in row, including NAs
     
-    # # Recode disturbance to binary
-    # temp.dc <- as.character(X.df.temp$disturb_code)
-    # temp.dc[temp.dc!= "0"] <- 1 # recode disturbance to binary
-    # temp.dc <- as.factor(temp.dc)
-    # X.df.temp$disturb_code <- temp.dc
+    # Default output from imputation - all NAs 
+    impute.out <- rep(NA,nc.orig) 
     
-    ### Perform imputation
-    # take object from formed random forests model and use X.df.temp dataframe to make predictions
-    temp.newtargs <- yaImpute::newtargets(yai.treelist.bin, newdata = X.df.temp)
-
-    #### Get outputs of interest
-    out.trgrows <- temp.newtargs$trgRows # row names for target observations
-    temp.xall <- temp.newtargs$xall # x-variables (predictors) for all observations
-    out.neiIds <- temp.newtargs$neiIdsTrgs # a matrix of reference identifications that correspond to neiDstTrgs (distances between target and ref).
-
-    #### Format outputs into imputation results
-    yrows <- as.numeric(out.neiIds[,1]) # get list of plotIds; rowname = rowname from X.df.temp - corresponds to cell
-    id.out <- id.table[yrows] # subset id table to only the ids that appear in the output
-    impute.out[valid.cols] <- yrows[1:nrows.orig] # for each valid column: match it with the output row from imputation
-
-     }
+    # Option for TESTING  - skip imputation
+    if(test == TRUE){
+      # test output - simple extract the same size ans format as impute.row
+      test.out.tmp <- as.numeric(unlist(extract.currow[2]))
+      test.out <- impute.out
+      test.out[valid.cols] <- test.out.tmp
+      return(test.out)}
+    else{
+      # RUN IMPUTATION
+      if(nrow.temp > 0)  # if there are any non-NA pixels in the row we're imputing
+      {
+        # Format row names for X.df.temp - cannot overlap with input X.df
+        colseq.out <- 1:dim(X.df.temp)[1]
+        rownames.all <- colseq.out+maxrow
+        rownames(X.df.temp) <- paste0("T- ", rownames.all)
   
-  # progress tracking
-  outval <- currow / nrows.out
-
-  # # write file with percentage completed
-  # fout <- "zoneprog.txt"
-  # write.table(outval, 
-  #             paste0(output_dir, fout))
-  }
+        ### Perform imputation
+        # take object from formed random forests model and use X.df.temp dataframe to make predictions
+        temp.newtargs <- yaImpute::newtargets(yai, newdata = X.df.temp)
   
-  return(impute.out)  
+        #### Get outputs of interest
+        out.trgrows <- temp.newtargs$trgRows # row names for target observations
+        #temp.xall <- temp.newtargs$xall # x-variables (predictors) for all observations
+        out.neiIds <- temp.newtargs$neiIdsTrgs # a matrix of reference identifications that correspond to neiDstTrgs (distances between target and ref).
+  
+        #### Format outputs into imputation results
+        yrows <- as.numeric(out.neiIds[,1]) # get list of plotIds; rowname = rowname from X.df.temp - corresponds to cell
+        id.out <- id.table[yrows] # subset id table to only the ids that appear in the output
+        impute.out[valid.cols] <- yrows[1:nrows.orig] # for each valid column: match it with the output row from imputation
+  
+        # Format into tidyverse-friendly output
+        #impute.out <- data.frame(impute.out) %>% t()
+  
+        # garbage collection
+        gc()
+        
+        return(impute.out) 
+      }
+        
+    } 
+    
+ 
 }
 
 ##################################################################
@@ -466,108 +382,337 @@ impute.row <- function(currow, ras_file)  {
 testrow1 <- test_row
 testrow2 <- test_row + ntest_rows
 
-# # test on one row - without parallelizing
+# #test on one row - without parallelizing
 # tic()
-# out_test <- impute.row(testrow1)
+# out_test <- impute.row(testrow1, yai.treelist.bin, rs2)
 # toc()
 
-# Run imputation - parallelize
-# ----------------------------------------------------
+# # Run imputation - parallelize
+# # ----------------------------------------------------
+# 
+# # Set number of cores
+# #ncores <- parallel::detectCores()
+# #ncores <- floor(ncores*nCorefraction)
+# 
+# 
+# # Set up cluster for parallel computing
+# # cl <- parallel::makeCluster(ncores, outfile = glue('{tmp_dir}cl_log.txt'))
+# # doParallel::registerDoParallel(cl)
+# 
+# #registerDoSEQ() # register sequential backend - instead of parallel backend
+# 
+# # RUN IMPUTATION ON ROWS
+# tic()
+# # mout <- foreach(m = testrow1:testrow2,
+# #                 #.export = c("yai.treelist.bin", "rs2"),
+# #                 .packages = c("raster", "yaImpute", "tidyverse", "glue"),
+# #                 .combine="rbind",
+# #                 .verbose = TRUE) %dopar% impute.row(m, yai.treelist.bin, rs2, output_dir_lines
+# 
+# # rs3 <- terra::wrap(rs2) # must run on terra::rast object - crashes on vrt
+# 
+# foreach(m = testrow1:testrow2,
+#                 #.export = c("yai.treelist.bin", "rs2"),
+#                 .packages = c("raster", "yaImpute", "tidyverse", "glue"),
+#                 #.combine="rbind",
+#                 .verbose = TRUE) %dopar% impute.row(m, yai.treelist.bin, rs2)
+# 
+# toc()
+# 
+# 
+# # finish parallel
+# parallel::stopCluster(cl)
+# closeAllConnections()
+# gc()
 
-# Set number of cores
-#ncores <- parallel::detectCores()
-#ncores <- floor(ncores*nCorefraction)
+# ##############################################################
+# # Assemble output from lines
+# # ------------------------------------------------------------------#
+# 
+# # list output files
+# l_files <- list.files(output_dir_lines,full.names = TRUE)
+# 
+# # read in all files
+# mout <- data.table::rbindlist(lapply(l_files, read.table, sep = ",")) 
+# 
+# # subset to rows in test rows
+# row_num <- l_files %>%
+#   str_extract(., "imputed_lines/l_([^.])*") %>%
+#   str_replace("imputed_lines/l_", "") %>%
+#   as.numeric()
+# 
+# mout <- cbind(row_num, mout) %>%
+#   filter(row_num>= testrow1 & row_num <= testrow2) %>%
+#   arrange(row_num) %>%
+#   select(-row_num) %>%
+#   as.matrix()
 
 
-# Set up cluster for parallel computing
-cl <- parallel::makeCluster(ncores, outfile = glue('{tmp_dir}cl_log.txt'))
-doParallel::registerDoParallel(cl)
 
-#registerDoSEQ() # register sequential backend - instead of parallel backend
-
-# RUN IMPUTATION ON ROWS
-tic()
-mout <- foreach(m = testrow1:testrow2,
-                .export = c("rs2", "yai.treelist.bin", "id.table", "maxrow","n.evgs", "evg.in", "lev.dc"),
-                .packages = c("raster", "yaImpute"),
-                .combine="rbind",
-                .verbose = TRUE) %dopar% impute.row(m)
-toc()
-
-
-# finish parallel
-parallel::stopCluster(cl)
-closeAllConnections()
-gc()
 
 ##############################################################
-# Run imputation - parallelize- tile raster and nest tiles
+# Run imputation - furrr on rows
+
+# set up parallel processing
+#future::plan(sequential)
+future::plan(multisession, workers = ncores)
+
+max_px <- 500
+
+# make a teeny raster to test
+agg <- terra::aggregate(rs2, fact = max_px)
+
+# subset the raster and create temporary files
+# the function returns file names for the temporary files
+tiles <- rs2 %>%
+  terra::makeTiles(agg, paste0(tempfile(), '_.tif'))
+
+tile <- terra::rast(tiles[3])
+
+# wrap() raster so it can be used in parallel - CUMBERSOME with large raster!!!
+#rs2_wrap <- terra::wrap(rs2)
+rs2_wrap <- terra::wrap(tile)
+
+# garbage collection
+gc()
+
+#run
+tic()
+
+test <- testrow1:testrow2 %>%
+  future_map(impute.row, yai = yai.treelist.bin, ras = rs2_wrap, test = TRUE,
+             .progress = TRUE) #%>%
+  # set_names(c(testrow1:testrow2)) %>%
+  # dplyr::bind_rows() %>%
+  # as.matrix()
+
+# bind rows of matrix together
+mout <- do.call(rbind, test)
+
+# conditionally add extra rows-- to match input raster extent if working on a subset
+# add this to library?
+if(nrow(mout) < nrow(tile)) {
+  # make rows with NAs to make full raster of test 
+  ncols.out <- ncol(tile)
+  nrows.out <- nrow(tile)
+  d <- rep(NA, ncols.out)
+  blank_rows_top <- do.call("rbind", replicate(testrow1-1, d, simplify = FALSE))
+  blank_rows_bottom <- do.call("rbind", replicate(nrows.out-(testrow2), d, simplify = FALSE))
+  
+  # will the output raster, with blank rows, be the same size as the input raster?
+  identical(as.numeric(nrows.out), as.numeric(nrow(blank_rows_top) + nrow(mout) + nrow(blank_rows_bottom)))
+  
+  #bind test rows with NAs to make full raster
+  test_process <- terra::rast(rbind(blank_rows_top,
+                                mout,
+                                blank_rows_bottom))
+  
+
+} else {
+  # convert to raster
+  test_process <-test2 %>%
+    terra::rast() 
+}
+
+# set geospatial info
+ext(test_process) <- terra::ext(tile)
+crs(test_process) <- terra::crs(tile)
+
+# trim
+test_process <- terra::trim(test_process)
+  
+# inspect
+test_process
+plot(test_process)
+
+toc()
+
+##############################################################
+# Run imputation - furr on tiles and rows tile raster and nest tiles
 # ----------------------------------------------------------
 
-# # set break up value  
-# break.up <- 2
-# 
-# 
-# # break up raster into multiple sections to speed up processing
-# h <- base::ceiling(ncol(rs2)/break.up)
-# v <- base::ceiling(nrow(rs2)/break.up)
-# 
-# agg <- terra::aggregate(rs2, fact = c(h,v))
-# 
-# # subset the raster and create temporary files
-# # the function returns file names for the temporary files 
-# tiles <- rs2 %>%
-#   makeTiles(agg, paste0(tempfile(), '_.tif'))
-# 
-# registerDoSEQ()
-# 
-# # run nested parallelization over tiles
-# mout <- foreach(i = 1:length(tiles)) %:% 
-#   foreach(m = 100:105, 
-#           .export = c("rs2", "yai.treelist.bin", "id.table", "maxrow","n.evgs", "evg.in", "lev.dc"),
-#           .packages = c("raster", "yaImpute"), 
-#           .combine="rbind",
-#           .verbose = TRUE) %dopar% impute.row(m, tiles[i])
+# set max number of px on a side of a tile
+max_px <- 500
 
+# aggregate - template for making tiles
+agg <- terra::aggregate(rs2, fact = max_px)
+
+# subset the raster and create temporary files
+# the function returns file names for the temporary files
+tiles <- rs2 %>%
+  terra::makeTiles(agg, paste0(tempfile(), '_.tif'))
+
+# garbage collector
+gc()
+
+# set up for parallel processing
+#ncores <- availableCores(omit = 1)
+#plan(multisession, workers = ncores)
+
+# set up nested future sessions
+future::plan(
+  list(
+    future::tweak(
+      future::multisession,
+      workers = 2),
+    future::tweak(
+      future::multisession,
+      workers = 4)
+  )
+)
+
+
+fn <- tiles[2]
+tiles_test <- tiles[2:3]
+
+# options for future 
+options(future.rng.onMisuse = "ignore")
+options(future.globals.onReference = "error")
+
+#########################################
+
+
+r_out <- tiles_test %>%
   
+  # Apply over tiles
+  future_imap(function(fn, i, ...) {
+    
+    # read raster into memory
+    ras <- terra::rast(fn)
+    NAflag(ras) <- NA
+    ras <- terra::wrap(ras)
+    
+    # # check if this tile has non-null values and skip if it doesn't 
+    # if (global(ras[[1]], "notNA")$notNA == 0) {
+    #   print(glue("No non-NA pixels in tile {i}, moving to next tile!"))
+    #   # create raster of NAs to return
+    #   return(ras)
+    #   
+    #   } else {
+    #     print(glue("working on tile {i}!"))
+        
+        # Do work on tile
+        #--------------------------------#
+        rows <- 
+          testrow1:testrow2 %>%
+          future_map(impute.row, # function
+                     yai = yai.treelist.bin, ras = ras, test = FALSE) # function params
+        
+        mout <- do.call(rbind, rows)
+
+        #unwrap raster
+        ras <-terra::unwrap(ras)
+        
+        # turn into a raster tile 
+        if(nrow(mout) < nrow(ras)) {
+          
+          # make rows with NAs to make full raster of test 
+          ncols.out <- ncol(ras)
+          nrows.out <- nrow(ras)
+          d <- rep(NA, ncols.out)
+          blank_rows_top <- do.call("rbind", replicate(testrow1-1, d, simplify = FALSE))
+          blank_rows_bottom <- do.call("rbind", replicate(nrows.out-(testrow2), d, simplify = FALSE))
+          
+          # will the output raster, with blank rows, be the same size as the input raster?
+          #identical(as.numeric(nrows.out), as.numeric(nrow(blank_rows_top) + nrow(mout) + nrow(blank_rows_bottom)))
+          
+          #bind test rows with NAs to make full raster
+          tile_out <- terra::rast(rbind(blank_rows_top,
+                                            mout,
+                                            blank_rows_bottom))
+          
+          #post-process tile
+          ext(tile_out) <- ext(ras)
+          crs(tile_out) <- crs(ras)
+          # wrap - for handling in parallel
+          tile_out %<>% terra::wrap()
+          
+          return(tile_out)
+          
+          } else {
+            
+            # convert to raster
+            tile_out <- mout %>% terra::rast() 
+            #post-process tile
+            ext(tile_out) <- ext(ras)
+            crs(tile_out) <- crs(ras)
+            # wrap - for handling in parallel
+            tile_out %<>% terra::wrap()
+            
+            return(tile_out)
+          }
+      
+      # end of else working on tile
+    
+    },
+    .progress = TRUE) # end of working on in # merge all tiles into one raster 
+  #terra::sprc() %>% # make a spat raster collection 
+  #terra::mosaic()
+
+#inspect
+r_out
+
+mout_ras <- r_out %>%
+  terra::unwrap() %>%
+  map(unwrap) %>%
+  terra::sprc() %>%
+  terra::mosaic()
+  
+
+mout_ras
+plot(mout_ras)
+      
+    
 
 #------------------------------------
 # Post-process test outputs
 #------------------------------------
+# 
+# # make rows with NAs to make full raster of test 
+# ncols.out <- ncol(rs2)
+# nrows.out <- nrow(rs2)
+# d <- rep(NA, ncols.out)
+# blank_rows_top <- do.call("rbind", replicate(testrow1-1, d, simplify = FALSE))
+# blank_rows_bottom <- do.call("rbind", replicate(nrows.out-(testrow2), d, simplify = FALSE))
+# 
+# # will the output raster, with blank rows, be the same size as the input raster?
+# identical(as.numeric(nrows.out), as.numeric(nrow(blank_rows_top) + nrow(mout) + nrow(blank_rows_bottom)))
+# 
+# #bind test rows with NAs to make full raster
+# mout_ras <- terra::rast(rbind(blank_rows_top,
+#                                  mout,
+#                                  blank_rows_bottom))
+# 
+# # mout_ras <- raster::raster(rbind(blank_rows_top, 
+# #                                  mout, 
+# #                                  blank_rows_bottom))
+# 
+# #rm(d, blank_rows_top, blank_rows_bottom)
+# gc()
 
-# make rows with NAs to make full raster of test 
-ncols.out <- ncol(rs2)
-nrows.out <- nrow(rs2)
-d <- rep(NA, ncols.out)
-blank_rows_top <- do.call("rbind", replicate(testrow1, d, simplify = FALSE))
-blank_rows_bottom <- do.call("rbind", replicate(nrows.out-(testrow2 + 1), d, simplify = FALSE))
-
-#bind test rows with NAs to make full raster
-mout_ras <- raster::raster(rbind(blank_rows_top,
-                                 mout,
-                                 blank_rows_bottom))
-
-rm(d, blank_rows_top, blank_rows_bottom)
-gc()
-
+#-------------------------------------------
 # Post-process raster outputs
-#------------------------------------#
+#------------------------------------
 
 #mout_ras <- terra::rast(mout)
 
+# mout_ras@extent <- rs2@extent
+# crs(mout_ras) <- lf.crs
+
+# mask NAs to reduce output file size
+#mout_ras <- raster::mask(mout_ras, mout_ras)
+
+
 # set geospatial attributes
-raster::extent(mout_ras) <- raster::extent(raster.stack[[1]])
-crs(mout_ras) <- crs(raster.stack[[1]])
-
-
-# mout_ras@extent <- raster.stack[[1]]@extent
-# raster::crs(mout_ras) <- p4s.albers
+terra::ext(mout_ras) <- terra::ext(rs2[[1]])
+crs(mout_ras) <- lf.crs
+mout_ras <- terra::trim(mout_ras) # trim off NA pixels from extent
 
 
 # inspect
 mout_ras
-# plot(mout_ras)
-# freq(mout_ras)
+plot(mout_ras)
+freq(mout_ras)
 
 # create output directory
 if(!file.exists(glue('{output_dir}raster/'))){
@@ -575,9 +720,11 @@ if(!file.exists(glue('{output_dir}raster/'))){
 }
 
 # export test raster
-terra::writeRaster(mout_ras, 
+writeRaster(mout_ras, 
                    glue('{output_dir}raster/{output_name}_testRows_{testrow1}_{testrow2}.tif'),
                    overwrite = TRUE)
+
+gc()
 
 # clear unused memory
 rm(mout, mout_ras)
