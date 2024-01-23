@@ -19,7 +19,7 @@ library(ggplot2)
 library(flextable)
 
 #load custom library
-source("C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gtac_production_scripts/treemapLib.R")
+source("C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gtac_production_scripts/00_Library/treemapLib.R")
 
 # set chunk options
 knitr::opts_chunk$set(echo = FALSE)
@@ -126,10 +126,10 @@ var_in <- var_names[v]
 ```
 
 
-```{r format and plot tables for each var, asis = TRUE}
+```{r format and plot tables for each var, results = 'asis'}
 
 for(v in 1:length(var_names)){
-  
+
   var_in <- var_names[v]
 
   print(glue("Variable: {var_in}"))
@@ -313,7 +313,7 @@ for(v in 1:length(var_names)){
   row.names(cm_display) <- NULL
   
   # #inspect
-  # cm_display
+  #cm_display
   
   
   # flextable formatting for cm
@@ -345,7 +345,7 @@ for(v in 1:length(var_names)){
     surround(i = 1, j = 2,
              border = fp_border_default(color = "cornflowerblue", width = 1.5), part = "body")
 
-  table_cm
+  flextable_to_rmd(table_cm)
   
   # End loop
 }
