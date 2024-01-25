@@ -15,7 +15,7 @@
 # - remove in-situ calc of northing and easting (pull from input rasters)
 
 
-# Last updated: 1/23/2024
+# Last updated: 1/25/2024
 
 
 
@@ -26,10 +26,19 @@
 # Test application settings
 #-----------------------------------------#
 
+# set dimensions of tile - value is the length of one side
+max_px <- 1000
+
 # first row to start test on 
 test_row <- 1 # adjust this if using a test AOI or tiles vs whole zone
 
-ntest_rows <- 500 
+ntest_rows <- max_px
+
+# set number of tiles to run
+# if NA, defaults to all tiles in list
+ntiles <- NA
+
+
 
 # # supply path, or NA
 aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
@@ -227,10 +236,13 @@ if (!is.na(aoi_path)) {
 impute.row <- function(currow, yai, ras, test)  { 
 
   # #for testing
-  # currow <- 400
+  # currow <- 75
   # yai <- yai.treelist.bin
-  # ras <- rs2
-  # test <- TRUE
+  # ras <- ras
+  # test <- FALSE
+  
+  # Manage inputs
+  #---------------------------------------#
   
   # handle missing test param
   if(missing(test)) {
@@ -244,6 +256,9 @@ impute.row <- function(currow, yai, ras, test)  {
   # Get data from yai
   id.table <- as.numeric(row.names(yai$xRefs))
   maxrow <- max(id.table)
+  
+  # Get data from raster
+  #------------------------------------------------#
   
   #### Get dimensions of input raster stack
   nrows.out <- dim(ras)[1]
@@ -273,35 +288,51 @@ impute.row <- function(currow, yai, ras, test)  {
   # convert to data frame
   X.df.temp <- data.frame(extract.currow)
 
-  #### Convert aspect to northing and easting
-  X.df.temp <-
-    X.df.temp %>%
-    dplyr::mutate(radians = (pi/180)*ASPECT,           
-                  NORTHING = cos(radians),
-                  EASTING = sin(radians)) %>%
-    dplyr::select(-radians)
+  # Set up template for output of imputation
+  nrows.orig <- dim(extract.currow)[1] # number of values to impute - without dummy rows for non-appearing evgs
+  nrow.temp <- dim(X.df.temp)[1] # number of values to impute - with dummy rows for non-appearing evs
+  nc.orig <-length(rsvals) # number of values in row, including NAs
+  
+  # Default output from imputation - all NAs 
+  impute.out <- rep(NA,nc.orig) 
+  
+  # CHECK FOR NA VALUES
+  #------------------------#
+  if(nrow.temp > 0) { # if there are any non-NA pixels in the row we're imputing
+  
+    #### Convert aspect to northing and easting
+    #------------------------------------------------------#
+    X.df.temp <-
+      X.df.temp %>%
+      dplyr::mutate(radians = (pi/180)*ASPECT,           
+                    NORTHING = cos(radians),
+                    EASTING = sin(radians)) %>%
+      dplyr::select(-radians)
     
-  #### Identify EVGs in zone that don't appear in X.df   
-  #evg.orig <- 1:n.evgs # INPUT OUTSIDE FUNCTION
-  evg.orig <- levels(yai$xRefs$EVT_GP)
-  evg.val.temp <- X.df.temp$EVT_GP  
-  n.evgs.orig <- length(sort(unique(evg.orig)))  
-  evg.orig.seq <- 1:n.evgs.orig  
-    
-  nonappearing.evgs <- evg.orig[-sort(unique(as.numeric(as.character(evg.val.temp))))]  
-  n.dummy.rows <- length(nonappearing.evgs)  
-    
-  # Create dummy rows for non-appearing EVGs
-  if(n.dummy.rows > 0)
-    {    
-    dummy.rows <- X.df.temp[1:n.dummy.rows,]    
-    tempchar <- as.character(X.df.temp$EVT_GP)    
-    X.df.temp$EVT_GP <- tempchar    
-    dummy.rows$EVT_GP <- as.character(nonappearing.evgs)    
-    X.df.temp <- rbind(X.df.temp, dummy.rows)    
-    }
-    
-    # Set factor levels - make sure they match input factor levels in reference data used in model
+    # EVG handling - 
+    #### Identify EVGs in zone that don't appear in X.df   
+    #-------------------------------------------------------#
+    evg.orig <- levels(yai$xRefs$EVT_GP)
+    evg.val.temp <- X.df.temp$EVT_GP  
+    n.evgs.orig <- length(sort(unique(evg.orig)))  
+    evg.orig.seq <- 1:n.evgs.orig  
+      
+    nonappearing.evgs <- evg.orig[-sort(unique(as.numeric(as.character(evg.val.temp))))]  
+    n.dummy.rows <- length(nonappearing.evgs)  
+      
+    # Create dummy rows for non-appearing EVGs
+    if(n.dummy.rows > 0)
+      {    
+      dummy.rows <- X.df.temp[1:n.dummy.rows,]    
+      tempchar <- as.character(X.df.temp$EVT_GP)    
+      X.df.temp$EVT_GP <- tempchar    
+      dummy.rows$EVT_GP <- as.character(nonappearing.evgs)    
+      X.df.temp <- rbind(X.df.temp, dummy.rows)    
+      }
+      
+    # Set factor levels
+    #make sure they match input factor levels in reference data used in model
+    #-------------------------------------------------------#
     X.df.temp <- 
       X.df.temp %>%
       dplyr::mutate(EVT_GP = factor(EVT_GP, levels = levels(yai$xRefs$EVT_GP)),
@@ -309,13 +340,8 @@ impute.row <- function(currow, yai, ras, test)  {
       # put columns in order expected
       dplyr::select(names(yai$xRefs))
     
-    # Set up template for output of imputation
-    nrows.orig <- dim(extract.currow)[1] # number of values to impute - without dummy rows for non-appearing evgs
-    nrow.temp <- dim(X.df.temp)[1] # number of values to impute - with dummy rows for non-appearing evs
-    nc.orig <-length(rsvals) # number of values in row, including NAs
-    
-    # Default output from imputation - all NAs 
-    impute.out <- rep(NA,nc.orig) 
+    # Run imputation
+    #--------------------------------------------------------#
     
     # Option for TESTING  - skip imputation
     if(test == TRUE){
@@ -328,36 +354,33 @@ impute.row <- function(currow, yai, ras, test)  {
       }
    
     else{
-      # RUN IMPUTATION
-      if(nrow.temp > 0) { # if there are any non-NA pixels in the row we're imputing
-
-        # Format row names for X.df.temp - cannot overlap with input X.df
-        colseq.out <- 1:dim(X.df.temp)[1]
-        rownames.all <- colseq.out+maxrow
-        rownames(X.df.temp) <- paste0("T- ", rownames.all)
+      # Format row names for X.df.temp - cannot overlap with input X.df
+      colseq.out <- 1:dim(X.df.temp)[1]
+      rownames.all <- colseq.out+maxrow
+      rownames(X.df.temp) <- paste0("T- ", rownames.all)
   
-        ### Perform imputation
-        # take object from formed random forests model and use X.df.temp dataframe to make predictions
-        temp.newtargs <- yaImpute::newtargets(yai, newdata = X.df.temp)
+      ### Perform imputation
+      # take object from formed random forests model and use X.df.temp dataframe to make predictions
+      temp.newtargs <- yaImpute::newtargets(yai, newdata = X.df.temp)
   
-        #### Get outputs of interest
-        #out.trgrows <- temp.newtargs$trgRows # row names for target observations
-        #temp.xall <- temp.newtargs$xall # x-variables (predictors) for all observations
-        out.neiIds <- temp.newtargs$neiIdsTrgs # a matrix of reference identifications that correspond to neiDstTrgs (distances between target and ref).
+      #### Get outputs of interest
+      #out.trgrows <- temp.newtargs$trgRows # row names for target observations
+      #temp.xall <- temp.newtargs$xall # x-variables (predictors) for all observations
+      out.neiIds <- temp.newtargs$neiIdsTrgs # a matrix of reference identifications that correspond to neiDstTrgs (distances between target and ref).
   
-        #### Format outputs into imputation results
-        yrows <- as.numeric(out.neiIds[,1]) # get list of plotIds; rowname = rowname from X.df.temp - corresponds to cell
-        #id.out <- id.table[yrows] # subset id table to only the ids that appear in the output
-        impute.out[valid.cols] <- yrows[1:nrows.orig] # for each valid column: match it with the output row from imputation
+      #### Format outputs into imputation results
+      yrows <- as.numeric(out.neiIds[,1]) # get list of plotIds; rowname = rowname from X.df.temp - corresponds to cell
+      #id.out <- id.table[yrows] # subset id table to only the ids that appear in the output
+      impute.out[valid.cols] <- yrows[1:nrows.orig] # for each valid column: match it with the output row from imputation
   
-        # garbage collection
-        gc()
-        
+      # garbage collection
+      gc()
       }
-      
-      return(impute.out) 
-    } 
     }
+  
+  return(impute.out)
+  
+  }
 
 ##################################################################
 #Apply Imputation Function
@@ -367,11 +390,11 @@ impute.row <- function(currow, yai, ras, test)  {
 # ---------------------------------------------------------- #
 
 testrow1 <- test_row
-testrow2 <- test_row + ntest_rows
+testrow2 <- test_row + ntest_rows - 1
 
-# #test on one row - without parallelizing
+#test on one row - without parallelizing
 # tic()
-# out_test <- impute.row(testrow1, yai.treelist.bin, rs2)
+# out_test <- impute.row(500, yai.treelist.bin, rs2)
 # toc()
 
 # # Run imputation - parallelize
@@ -458,13 +481,11 @@ testrow2 <- test_row + ntest_rows
 # Run imputation - furrr on tiles 
 # ----------------------------------------------------------
 
-# set max number of px on a side of a tile
-max_px <- 500
-
 # aggregate - template for making tiles
 agg <- terra::aggregate(rs2, fact = max_px)
 
 # subset the raster and create temporary files
+# tiles with only NA values are omitted
 # the function returns file names for the temporary files
 tiles <- rs2 %>%
   terra::makeTiles(agg, paste0(tempfile(), '_.tif'), na.rm = TRUE)
@@ -477,16 +498,23 @@ future::plan(
   list(
     future::tweak(
       future::multisession,
-      workers = ncores/10),
+      workers = floor(ncores/10)),
     future::tweak(
       future::multisession,
-      workers = ncores/2)
+      workers = floor(ncores/2))
   )
 )
 
 
-#fn <- tiles[32]
-#tiles_test <- tiles[1:5]
+fn <- tiles[3]
+
+# if ntiles is NA, default to number of tiles created
+if(is.na(ntiles)) {
+  ntiles <- length(tiles)
+}
+
+# select tiles to run
+tiles_run <- tiles[1:ntiles]
 
 
 #########################################
@@ -494,7 +522,7 @@ future::plan(
 
 tic()
 
-r_out <- tiles %>%
+r_out <- tiles_run %>%
   
   # Apply over tiles
   future_imap(function(fn, i, ...) {
@@ -573,7 +601,7 @@ r_out <- tiles %>%
     },
     .progress = TRUE) 
 
-toc()
+toc()/60
 
 # convert tiles to a single raster
 mout_ras <- r_out %>%
@@ -644,7 +672,7 @@ if(!file.exists(glue('{output_dir}raster/'))){
 
 # export test raster
 writeRaster(mout_ras, 
-                   glue('{output_dir}raster/{output_name}_testRows_{testrow1}_{testrow2}_maxpx{max_px}_nT{length(tiles)}.tif'),
+                   glue('{output_dir}raster/{output_name}_testRows_{testrow1}_{testrow2}_maxpx{max_px}_nT{ntiles}.tif'),
                    overwrite = TRUE)
 
 
