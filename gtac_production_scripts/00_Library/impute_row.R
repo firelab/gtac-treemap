@@ -27,7 +27,6 @@ impute.row <- function(dat, yai, test)  {
   #   ras <- terra::unwrap(ras)}
   
   
-  
   # # Get data from raster
   # #------------------------------------------------#
   # 
@@ -44,14 +43,14 @@ impute.row <- function(dat, yai, test)  {
   # xycoords <- terra::xyFromCell(ras, rsvals)
   # xycoords <- data.frame(xycoords)
   
+  # #### Get coords of current row
+  # extract.currow$POINT_X <- xycoords$x
+  # extract.currow$POINT_Y <-xycoords$y
+  
   #### Get dimensions of current row
   colseq <- 1:length(extract.currow[,1])
   valid.cols <- colseq[as.logical(1-is.na(extract.currow[,1]))]
   ncols.df <- dim(extract.currow)[2]
-  
-  # #### Get coords of current row
-  # extract.currow$POINT_X <- xycoords$x
-  # extract.currow$POINT_Y <-xycoords$y
   
   # Remove NAs
   extract.currow <- na.exclude(extract.currow)
@@ -87,12 +86,14 @@ impute.row <- function(dat, yai, test)  {
     n.dummy.rows <- length(nonappearing.evgs)  
     
     # Create dummy rows for non-appearing EVGs
+    # Question: are dummy rows necessary? 
     if(n.dummy.rows > 0)
     {    
       dummy.rows <- X.df.temp[1:n.dummy.rows,]    
       tempchar <- as.character(X.df.temp$EVT_GP)    
       X.df.temp$EVT_GP <- tempchar    
-      dummy.rows$EVT_GP <- as.character(nonappearing.evgs)    
+      dummy.rows$EVT_GP <- as.character(nonappearing.evgs) 
+      dummy.rows$disturb_code <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
       X.df.temp <- rbind(X.df.temp, dummy.rows)    
     }
     
