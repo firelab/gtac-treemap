@@ -90,9 +90,10 @@ model_path <- glue::glue('{output_dir}/model/{cur.zone.zero}_{output_name}_yai_t
 #devtools::install_github("lleather/yaImpute")
 
 # packages required
-list.of.packages <- c("this.path", "raster",   
+list.of.packages <- c("raster",   
                       "yaImpute",
                       "randomForest",
+                      "this.path",
                       "terra", "tidyverse", "magrittr", "glue", "tictoc",
                       "caret", "furrr", "progressr")
 
