@@ -142,10 +142,10 @@ eval_cm_function <- function(t, noDataVal) {
   
 }
 
+################################################################################
 # Write function to reclass rasters from id field to variable field, and export
 ##################################################################
 
-# maybe call this "assembleExport"
 assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
   
   print(glue('assembleExport: {layer_field}'))
@@ -160,20 +160,85 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
   
 }
 
+########################################################################
+# Returns a confusion matrix of lookup raster vs. reference raster
+###############################################################################
 
+assembleCM <- function(layer_field, raster, lookup, id_field, 
+                       stackin_compare, stackin_compare_name,  
+                       remapEVT_GP, EVT_GP_remap_table) {
+  
+  print(glue('assembleCM: {layer_field}'))
+  
+  #print("make lookup table")
+  #make lookup table
+  lt <- cbind(lookup[id_field], lookup[layer_field])
+  
+  #print("make imp1")
+  # make raster to compare
+  imp1 <-  terra::classify(raster, lt) %>%
+    terra::project(crs(stackin_compare)) %>%
+    as.int()
+  
+  #print("get lf1")
+  # get single lf raster
+  lf1 <- lf[layer_field]
+  
+  # mask reference raster with input raster - necessary for testing on subset 
+  lf1 <- terra::crop(lf1, imp1, mask = TRUE)
+  
+  # Conditionally remap EVT
+  if(remapEVT_GP & layer_field == "EVT_GP") {
+    
+    # load remap table
+    lt_evg <- EVT_GP_remap_table
+    names(lt_evg) <- c("EVT_GP", "EVT_GP_remap")
+    lt_evg %<>%
+      select(EVT_GP_remap, EVT_GP)
+    
+    #remap
+    lf1 <- terra::classify(lf1, lt_evg)
+  } 
+
+  
+  #print("get levels")
+  # make both rasters categorical - get levels of layer field
+  levels <- data.frame(id = sort(unique(lt[,2])),
+                       levels = levels(as.factor(lt[,2])))
+  
+  #print("set levels")
+  # set levels for rasters to make them categorical
+  levels(imp1) <- levels
+  levels(lf1) <- levels
+  
+  # Calculate confusion matrix
+  #--------------------------------------#
+  
+  #print("calculating and exporting confusion matrix")
+  t <- data.frame(pred = terra::values(imp1),
+                  ref = terra::values(lf1))
+  
+  # calculate cms 
+  cms<- eval_cm_function(t, NA)
+  
+  rm(imp1, lf1)
+  gc()
+  
+  return(cms)
+}
+
+######################################################################################
 # Function to lookup variable by id from lookup table,
 # and concat against variable with the same name in another raster stack (stackin_compare)
 # Produces a concat raster with categorical values formatted like p_r
 # where p = the predicted value and
 # where r = the reference value
-#   Can also output confusion matrix of lookup raster vs. reference raster
 ##################################################################################
 
-#maybe call this... "assembleValidation"
 
 assembleConcat <- function(layer_field, raster, lookup, id_field, 
                          stackin_compare, stackin_compare_name, export_path, 
-                         cm, remapEVT_GP, EVT_GP_remap_table) {
+                         remapEVT_GP, EVT_GP_remap_table) {
   
   print(glue('assembleConcat: {layer_field}'))
   
@@ -192,10 +257,10 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   lf1 <- lf[layer_field]
   
   # mask reference raster with input raster - necessary for testing on subset 
-  lf1 <- terra::mask(lf1, imp1)
+  lf1 <- terra::crop(lf1, imp1, mask = TRUE)
   
   # Conditionally remap EVT
-  if(remapEVT_GP) {
+  if(remapEVT_GP & layer_field == "EVT_GP") {
     
     # load remap table
     lt_evg <- EVT_GP_remap_table
@@ -250,33 +315,6 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   rm(out1)
   gc()
   
-  # conditionally calculate confusion matrix
-  if(isTRUE(cm)){
-    
-    print("calculating and exporting confusion matrix")
-    t <- data.frame(pred = terra::values(imp1),
-                    ref = terra::values(lf1))
-    
-    # calculate cms 
-    cms<- eval_cm_function(t, NA)
-    
-    #export confusion matrices to given path
-    write.csv(cms$raw, 
-              glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmRaw.csv'),
-              row.names = TRUE) # row names list classes on y axis
-    write.csv(cms$classes, 
-              glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmClasses.csv'),
-              row.names = FALSE)
-    write.csv(cms$overall, 
-              glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmOverall.csv'),
-              row.names = FALSE)
-    write.csv(cms$freq,
-             glue('{export_path}_{layer_field}_v{stackin_compare_name}_cmFreq.csv'),
-             row.names=FALSE)
-  
-    rm(t)
-  }
-  rm(imp1, lf1)
-  gc()
   
 }
+
