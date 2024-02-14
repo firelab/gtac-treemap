@@ -23,7 +23,7 @@ input_script.path <- paste( c(spl[c(1:length(spl)-1)],
 source(input_script.path)
 
 # input raster tile base name
-tile_name <- "2016_Orig_TestLL_UT_Uintas_rect_testRows_1_1000_maxpx1000_nT12"
+tile_name <- "2016_Orig_Test_keepinbag_UT_Uintas_rect_maxpx500_nT37"
 
 # desired name for output raster
 rout_name <- tile_name
@@ -212,9 +212,11 @@ vrt <- terra::vrt(tile.list, filename = glue::glue('{tmp_dir}/t_assemble.tif'),
 # inspect
 plot(vrt)
 
+
+
 # export as single raster per zone
 writeRaster(vrt, 
-            glue('{output_dir}raster/{rout_name}.tif'),
+            glue('{assembled_dir}/01_Imputation/{rout_name}.tif'),
             overwrite = TRUE)
 
 
