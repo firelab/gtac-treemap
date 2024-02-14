@@ -10,8 +10,8 @@
 #################################################################
 
 # packages required
-list.of.packages <- c("terra", "tidyverse", "magrittr", 
-                      "glue", "tictoc", "caret", "yaImpute", "this.path")
+list.of.packages <- c("this.path", "terra", "tidyverse", "magrittr", 
+                      "glue", "tictoc", "caret", "yaImpute", "randomForest")
 
 #check for packages and install if needed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -258,7 +258,7 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
                     ref = terra::values(lf1))
     
     # calculate cms 
-    cms<- eval_cm_function(t, NA)
+    cms <- eval_cm_function(t, NA)
     
     #export confusion matrices to given path
     write.csv(cms$raw, 
