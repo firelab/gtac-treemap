@@ -4,8 +4,8 @@
 
 
 # PART 2: 
-# - Run imputation
-# - Save outputs as a raster
+# - Run imputation over input area / target rasters
+# - Save outputs as raster tiles
 
 
 # TO DO: 
@@ -21,7 +21,7 @@
 # Tiling settings
 # ---------------------------------------#
 # set dimensions of tile - value is the length of one side
-max_px <- 500
+max_px <- 1000
 
 # Test application settings
 #-----------------------------------------#
@@ -31,7 +31,9 @@ aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
 aoi_name <- "UT_Uintas_rect"
 #aoi_path <- NA
 
-
+# set number of cores that should be used
+ncores <- 20
+#ncores <- 3
 
 # Standard inputs
 #---------------------------------------------#
@@ -46,111 +48,6 @@ input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
                             collapse = "/")
 
 source(input_script.path)
-
-# ##########################################################
-# 
-# #library(glue)
-# 
-# # Zone list
-# zone_list <- c(16)
-# 
-# #home_dir
-# #home_dir <- "D:/LilaLeatherman/01_TreeMap/"
-# home_dir<- "//166.2.126.25/TreeMap/"
-# 
-# # Directory where target rasters live
-# target_dir <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/02_Target/")
-# 
-# # Paths for exporting data
-# #--------------------------------------#
-# 
-# # set path to save output rasters
-# # this directory will be created if it does not already exist
-# output_dir <- glue::glue('{home_dir}03_Outputs/07_Raw_model_outputs/2016_Original_Test/')
-# 
-# # Output imputation name
-# output_name <- "2016_Orig_TestLL"
-# 
-# # set tmp directory
-# tmp_dir <- "D:/tmp/"
-# 
-# 
-# # set zone_number
-# # ----------------------------------------------#
-# zone_num <- zone_list[1]
-# 
-# # Set zone name options
-# cur.zone <- glue::glue('z{zone_num}')
-# cur.zone.zero <- if(zone_num < 10) {
-#   glue::glue('z0{zone_num}') } else {
-#     cur.zone
-#   }
-# 
-# # Update output and target dir with zone
-# # -----------------------------------------#
-# # Set folder paths
-# target_dir = glue::glue('{target_dir}/{cur.zone.zero}/')
-# output_dir = glue::glue('{output_dir}/{cur.zone.zero}/')
-# 
-# # Model inputs
-# #----------------------------------#
-# 
-# # Path where model is located
-# model_path <- glue::glue('{output_dir}/model/{cur.zone.zero}_{output_name}_yai_treelist_bin.RDS')
-# 
-# 
-# ###########################################################################
-# # Set up libraries and directories
-# ###########################################################################
-# 
-# # Set up temp directory 
-# #----------------------------------#
-# 
-# # check if tmp directory exists 
-# if (file.exists(tmp_dir)){
-#   
-# } else {
-#   # create a new sub directory inside the main path
-#   dir.create(tmp_dir)
-# }
-# 
-# # set temp directory - helps save space with R terra
-# write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
-# 
-# #empty temp dir
-# do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
-# 
-# #detect and delete folders with pattern "Rtmp"
-# # folders <- dir(tmp_dir, pattern = "Rtmp", full.names = TRUE)
-# # unlink(folders, recursive = TRUE, force = TRUE, expand = TRUE)
-# 
-# 
-# #remove unused memory
-# gc()
-# 
-# 
-# # Packages and functions
-# #---------------------------------#
-# 
-# # packages required
-# list.of.packages <- c("raster", "yaImpute", "randomForest", 
-#                       "terra", "tidyverse", "magrittr", "glue", "tictoc",
-#                       "furrr")
-# 
-# #check for packages and install if needed
-# # new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-# # if(length(new.packages) > 0) install.packages(new.packages)
-# 
-# # load all packages
-# vapply(list.of.packages, library, logical(1L),
-#        character.only = TRUE, logical.return = TRUE)
-# 
-# 
-# # Create output dir
-# # ---------------------------#
-# if (!file.exists(output_dir)) {
-#   dir.create(output_dir, recursive = TRUE)
-# }
 
 ############################################################
 
@@ -171,9 +68,7 @@ source(input_script.path)
 # Parallelization settings
 #--------------------------------------#
 
-# set number of cores that should be used
-ncores <- 20
-#ncores <- 3
+
 
 # options for future 
 options(future.rng.onMisuse = "ignore") # ignore errors with random number generators
@@ -411,21 +306,21 @@ gc()
 #Apply Imputation Function
 ###################################################################
 
-# Set up test 
+# Set up run
 # ---------------------------------------------------------- #
 
 # first row to start test on
-test_row <- 1 # adjust this if using a test AOI or tiles vs whole zone
+#test_row <- 1 # adjust this if using a test AOI or tiles vs whole zone
 
-ntest_rows <- max_px
+#ntest_rows <- max_px
 
 # # set number of tiles to run
 # # if NA, defaults to all tiles in list
 ntiles <- NA
 
-# set up test
-row1 <- test_row
-row2 <- test_row + ntest_rows - 1
+# set up rows to run over
+row1 <- 1
+row2 <- max_px
 
 
 #test on one row - without parallelizing
@@ -467,10 +362,10 @@ tiles_run <- tiles[1:ntiles]
 for(j in 1:length(tiles_run)) {
   
   # for test 
-  #j <- 37
+  #j <- 1
   
+  # select tile to run
   fn <- tiles_run[j]
-  
   print(glue::glue("working on tile {j} of {length(tiles_run)}"))
   
   # start timer
@@ -505,9 +400,8 @@ for(j in 1:length(tiles_run)) {
   # Do work on tile
   #--------------------------------#
 
-  #function to track progress
-  with_progress({
-    
+  #wrapper function to track progress
+  progressr::with_progress({
     p <- progressr::progressor(steps = length(rows_in))
   
     # work over tile
@@ -515,11 +409,13 @@ for(j in 1:length(tiles_run)) {
       1:length(rows_in) %>%
       future_imap(function(fn, i, ...) {
         
-        p() # report progress
+        # report progress
+        p() 
         
-        # for testing
-        #i = 100
-        #dat = rows_in[i]
+        # # for testing
+        # i = 1
+        # dat = rows_in[i]
+        # print(glue::glue("working on row {i}/{length(rows_i)}"))
         
         # impute on row of data - input is named row of data + yai
         row <- impute.row(dat = rows_in[i],
@@ -527,13 +423,18 @@ for(j in 1:length(tiles_run)) {
         
         return(row)
       }) # end future over rows
-    })
+    }) # end wrapper function to track progress
   
   #bind rows together
   mout <- do.call(rbind, rows_out)
   
   # turn into a raster tile 
   if(nrow(mout) < nrow_r) {
+    
+    # this could be broken out into library as a helper function
+    #----------------------------------------------------#
+    # make_raster_tile <- function(mout, ncol_r, nrow_r) { require(terra) }
+    
     
     # make rows with NAs to make full raster of test 
     ncols.out <- ncol_r
