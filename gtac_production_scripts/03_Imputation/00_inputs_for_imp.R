@@ -33,6 +33,10 @@ evt_gp_remap_table_path <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/02
 # Plot coordinates- shapefile
 #points_path <- "//166.2.126.25/TreeMap/01_Data/04_FIA/03_FullShp/FIA_US.shp"
 
+# path to file with desired projection
+prj_path <- glue::glue('{home_dir}01_Data/02_Landfire/landfire_crs.prj')
+
+
 # Test application settings
 #-----------------------------------------#
 
@@ -46,7 +50,15 @@ aoi_name <- "UT_Uintas_rect"
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
+# UPDATE THIS TO BE FLEX FOR FUTURE RUNS
 output_dir <- glue::glue('{home_dir}03_Outputs/07_Raw_model_outputs/2016_Original_Test/')
+
+#set path for assembled rasters
+# UPDATE THIS TO BE FLEX FOR FUTURE RUNS
+assembled_dir <- glue::glue('{home_dir}03_Outputs/08_Assembled_model_outputs/2016_Original_Test/')
+
+# Evaluation dir
+eval_dir <- glue::glue('{home_dir}/03_Outputs/09_Evaluation/02_TreeMap_Runs/2016_Original_Test/')
 
 # set tmp directory
 tmp_dir <- "D:/tmp/"
@@ -61,12 +73,13 @@ cur.zone.zero <- if(zone_num < 10) {
     cur.zone
   }
 
-# Update output and target dir with zone
+# Update dirs with zone
 # -----------------------------------------#
 # Set folder paths
 target_dir = glue::glue('{target_dir}/{cur.zone.zero}/')
 output_dir = glue::glue('{output_dir}/{cur.zone.zero}/')
-
+assembled_dir = glue::glue('{assembled_dir}/{cur.zone.zero}')
+eval_dir <- glue::glue('{eval_dir}{cur.zone.zero}')
 
 tile_dir <- glue::glue('{output_dir}raster/tiles/')
 
@@ -136,12 +149,36 @@ gc()
 # Create all directories
 # ----------------------------------#
 
+# output dir
 if (!file.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
   
-# create output directory
+# tile_dir
 if(!file.exists(tile_dir)){
   dir.create(tile_dir, recursive = TRUE)
 }
-  
+
+# assembled_dir
+if(!file.exists(assembled_dir)){
+  dir.create(assembled_dir, recursive = TRUE)
+}
+
+# create assembled dir if necessary
+if(!file.exists(glue::glue('{assembled_dir}/01_Imputation/'))){
+  dir.create(glue::glue('{assembled_dir}/01_Imputation/'), recursive = TRUE)
+}
+
+# create assembled dir if necessary
+if(!file.exists(glue::glue('{assembled_dir}/02_Derived_vars/'))){
+  dir.create(glue::glue('{assembled_dir}/02_Derived_vars/'), recursive = TRUE)
+}
+
+# create eval dir if necessary 
+if(!file.exists(glue::glue('{eval_dir}/01_Map_Validation'))) {
+  dir.create(glue::glue('{eval_dir}/01_Map_Validation'), recursive = TRUE)
+}
+
+# Load other standard inputs
+#---------------------------------------------#
+prj <- terra::crs(prj_path)
