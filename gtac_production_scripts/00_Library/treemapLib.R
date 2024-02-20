@@ -75,6 +75,11 @@ eval_cm_function <- function(t, noDataVal) {
   
   #require(c(tidyverse, caret))
   
+  # handle missing param
+  if(missing(noDataVal)) {
+    noDataVal <- NA
+  }
+  
   #apply column names
   names(t) <- c("pred", "ref")
   
@@ -180,11 +185,14 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
     terra::project(crs(stackin_compare)) %>%
     as.int()
   
+  gc()
+  
   #print("get lf1")
   # get single lf raster
   lf1 <- lf[layer_field]
   
-  # mask reference raster with input raster - necessary for testing on subset 
+  # crop and mask reference raster with input raster
+  # necessary for testing on subset 
   lf1 <- terra::crop(lf1, imp1, mask = TRUE)
   
   # Conditionally remap EVT
@@ -200,6 +208,7 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
     lf1 <- terra::classify(lf1, lt_evg)
   } 
 
+  gc()
   
   #print("get levels")
   # make both rasters categorical - get levels of layer field

@@ -1,7 +1,7 @@
 ### This script is used to set inputs for all steps in the imputation process
 ## To ensure that all scripts refer to the same input and output products
 
-# Last updated: 2/12/2024
+# Last updated: 2/14/2024
 
 ###########################################################################
 # Set inputs
@@ -14,12 +14,11 @@ output_name <- "2016_Orig_Test_keepinbag"
 #-----------------------------------------------#
 
 # Zone list
-zone_list <- c(16)
-zone_num <- zone_list[1]
+zone_num <- 16
 
 #home_dir
-#home_dir <- "D:/LilaLeatherman/01_TreeMap/"
-home_dir<- "//166.2.126.25/TreeMap/"
+home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+#home_dir <- "//166.2.126.25/TreeMap/"
 
 # Path to X table
 xtable_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/01_Input/03_XTables/X_table_all_singlecondition.txt")
@@ -36,14 +35,6 @@ evt_gp_remap_table_path <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/02
 # path to file with desired projection
 prj_path <- glue::glue('{home_dir}01_Data/02_Landfire/landfire_crs.prj')
 
-
-# Test application settings
-#-----------------------------------------#
-
-# # supply path to a shapefile to use as subset, or NA
-aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-aoi_name <- "UT_Uintas_rect"
-#aoi_path <- NA
 
 # Paths for exporting data
 #--------------------------------------#
@@ -111,8 +102,8 @@ list.of.packages <- c("raster",
                       "caret", "furrr", "progressr")
 
 #check for packages and install if needed
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages) > 0) install.packages(new.packages)
+#new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+#if(length(new.packages) > 0) install.packages(new.packages)
 
 # load all packages
 vapply(list.of.packages, library, logical(1L),
@@ -183,3 +174,7 @@ if(!file.exists(glue::glue('{eval_dir}/01_Map_Validation'))) {
 # Load other standard inputs
 #---------------------------------------------#
 prj <- terra::crs(prj_path)
+
+# Remove unused objects
+#------------------------------------------------#
+rm(spl, input_script.path, this.path, list.of.packages)

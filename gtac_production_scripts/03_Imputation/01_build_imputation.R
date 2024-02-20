@@ -3,6 +3,8 @@
 #   and Karin Riley (karin.riley@usda.gov)
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
+# Last updated: 2/13/2024
+
 # PART 1: 
 # - BUILD x and y tables
 # - save x and y tables
@@ -10,11 +12,8 @@
 # - Save model validation
 
 # TO DO: 
-# - export predicted + ref for left-out plots in RF 
-# - incorporate eval cm function here
 # - replace coords here (currently  buffered from FIA db) with full coords
 
-# Last updated: 2/13/2024
 
 ##################################################
 # Set inputs
@@ -30,135 +29,6 @@ input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
                             collapse = "/")
 
 source(input_script.path)
-
-# ###########################################################################
-# # Set inputs
-# ###########################################################################
-# 
-# # Zone list
-# zone_list <- c(16)
-# 
-# #home_dir
-# #home_dir <- "D:/LilaLeatherman/01_TreeMap/"
-# home_dir<- "//166.2.126.25/TreeMap/"
-# 
-# # Path to X table
-# xtable_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/01_Input/03_XTables/X_table_all_singlecondition.txt")
-# 
-# # Directory where target rasters live
-# target_dir <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/02_Target/")
-# 
-# # Directory where EVT_GP remap table is located
-# evt_gp_remap_table_path <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/02_Vegetation/")
-# 
-# # Plot coordinates- shapefile
-# #points_path <- "//166.2.126.25/TreeMap/01_Data/04_FIA/03_FullShp/FIA_US.shp"
-# 
-# # supply path to AOI for testing, or NA
-# #aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-# #aoi_name <- "UT_Uintas_rect"
-# aoi_path <- NA
-# 
-# # Paths for exporting data
-# #--------------------------------------#
-# 
-# # set path to save output rasters
-# # this directory will be created if it does not already exist
-# output_dir <- glue::glue('{home_dir}03_Outputs/07_Raw_model_outputs/2016_Original_Test/')
-# 
-# # Output imputation name
-# output_name <- "2016_Orig_Test_keepinbag"
-# 
-# # set tmp directory
-# tmp_dir <- "D:/tmp/"
-# 
-# ###########################################################################
-# # Set up libraries and directories
-# ###########################################################################
-# 
-# # Packages and functions
-# #---------------------------------#
-# 
-# # install dev version of yaimpute from forked repo 
-# #devtools::install_github("lleather/yaImpute")
-# 
-# # packages required
-# list.of.packages <- c("raster", 
-#                       "yaImpute", 
-#                       "randomForest", 
-#                       "terra", "tidyverse", "magrittr", "glue", "tictoc")
-# 
-# #check for packages and install if needed
-# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-# if(length(new.packages) > 0) install.packages(new.packages)
-# 
-# # load all packages
-# vapply(list.of.packages, library, logical(1L),
-#        character.only = TRUE, logical.return = TRUE)
-# 
-# 
-# 
-# # Set up temp directory 
-# #----------------------------------#
-# 
-# # check if tmp directory exists 
-# if (file.exists(tmp_dir)){
-#   
-# } else {
-#   # create a new sub directory inside the main path
-#   dir.create(tmp_dir)
-# }
-# 
-# # set temp directory - helps save space with R terra
-# write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
-# #empty temp dir
-# do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
-# #remove unused memory
-# gc()
-# 
-# # Set up other directories
-# # ----------------------------------#
-# 
-# if (!file.exists(output_dir)) {
-#   dir.create(output_dir, recursive = TRUE)
-# }
-# 
-# # Terra options
-# # --------------------------------#
-# 
-# #increase memory fraction available
-# #terraOptions(memfrac = 0.8)
-# 
-# # Other options
-# # --------------------------------#
-# 
-# # Allow for sufficient digits to differentiate plot cn numbers
-# options("scipen"=100, "digits"=8)
-# 
-# 
-# ####################################################################
-# # Load zone number datadata
-# ####################################################################
-# 
-# # set zone_num
-# zone_num <- zone_list[1]
-# 
-# # Set zone name options
-# cur.zone <- glue('z{zone_num}')
-# cur.zone.zero <- if(zone_num < 10) {
-#   glue('z0{zone_num}') } else {
-#     cur.zone
-#   }
-# 
-# # Set folder paths
-# target_dir = glue('{target_dir}/{cur.zone.zero}')
-# output_dir = glue('{output_dir}/{cur.zone.zero}')
-# evt_gp_remap_table_path = glue('{evt_gp_remap_table_path}/{cur.zone.zero}/EVG_remap_table.csv')
-# 
-# # create output folder if it does not exist
-# if(!file.exists(output_dir)){
-#   dir.create(output_dir)
-# }
 
 ##########################################################
 

@@ -29,16 +29,15 @@ input_script.path <- paste( c(spl[c(1:(length(spl)-2))],
 
 source(input_script.path)
 
-knitr::opts_knit$set(root.dir = eval_dir)
+#knitr::opts_knit$set(root.dir = eval_dir)
 
 ```
 
 
-
-```{r set input parameters}
+```{r set input parameters, include = FALSE}
 
 # name of raster to validate
-raster_name <- "2016_Orig_Test_keepinbag_UT_Uintas_rect_maxpx500_nT37"
+raster_name <- "2016_Orig_Test_keepinbag_UT_Uintas_rect_maxpx1000_nT12"
 
 # list variables to evaluate
 var_names <- c("canopy_cover", "canopy_height", "EVT_GP", 
@@ -51,82 +50,17 @@ round_dig <- 2
 
 Landfire zone: `r zone_num`
 
-Run name: `r raster_name`
+Run name: `r raster_name` 
 
 
 ```{r}
 
 # load RDS of cm files
-cms_all <- readRDS(glue::glue('{eval_dir}/01_Map_Validation/CMs_derivedVars.RDS'))
+cms_all <- readRDS(glue::glue('{eval_dir}/01_Map_Validation/{output_name}_CMs_derivedVars.RDS'))
 
 
 ```
 
-
-```{r load raw cm files, include = FALSE}
-# # list raw confusion matrix files
-# in_files_freq <- list.files(eval_dir, pattern = "*cmFreq.csv", full.names = TRUE, recursive = TRUE)
-# in_files_classes <- list.files(eval_dir, pattern = "*cmClasses.csv", full.names = TRUE, recursive = TRUE)
-# in_files_cm <- list.files(eval_dir, pattern = "*cmRaw.csv", full.names = TRUE, recursive = TRUE)
-# in_files_overall <- list.files(eval_dir, pattern = "*cmOverall.csv", full.names = TRUE, recursive = TRUE)
-# 
-# # subset to files for the run of interest
-# in_files_freq <- in_files_freq[str_detect(in_files_freq, run_name)]
-# in_files_classes <- in_files_classes[str_detect(in_files_classes, run_name)]
-# in_files_cm <- in_files_cm[str_detect(in_files_cm, run_name)]
-# in_files_overall <- in_files_overall[str_detect(in_files_overall, run_name)]
-# 
-# # list all var names
-# var_names_find <- paste(c(var_names), collapse = "|")
-
-```
-
-
-```{r initial import - read in all vars once, include = FALSE}
-
-# # #### Frequency table
-# # -----------------------------------#
-# freq_all <- do.call("rbind", sapply(in_files_freq, read.csv, simplify = FALSE))
-# freq_all$in_file <- rownames(freq_all)
-# row.names(freq_all) <- NULL
-# 
-# freq_all %<>%
-#   dplyr::mutate(var_name = str_extract(in_file, var_names_find)) %>%
-#   select(-in_file) 
-# 
-# #inspect
-# freq %>%
-#   head()
-# 
-# ###### CM_Classes table
-# # ---------------------------------------#
-# cm_classes_all <- do.call("list", sapply(in_files_classes, read.csv, simplify = FALSE))
-# 
-# names(cm_classes_all) <- str_extract(names(cm_classes_all), var_names_find)
-# 
-# 
-# ##### CM_raw
-# #---------------------------------------------3
-# cm_raw_all <- do.call("list", sapply(in_files_cm, read.csv, simplify = FALSE))
-# 
-# names(cm_raw_all) <- str_extract(names(cm_raw_all), var_names_find)
-# 
-# #### CM_overall
-# # -----------------------------------------#
-# cm_overall_all <- do.call("rbind", sapply(in_files_overall, read.csv, simplify = FALSE))
-# 
-# cm_overall_all$in_file <- rownames(cm_overall_all)
-# row.names(cm_overall_all) <- NULL
-# 
-# cm_overall_all %<>%
-#   dplyr::mutate(var_name = str_extract(in_file, var_names_find)) %>%
-#   select(-in_file) 
-# 
-# # #inspect
-# # cm_overall %>%
-# #   head()
-
-```
 
 ```{r choose single variable to start}
 #choose single variable

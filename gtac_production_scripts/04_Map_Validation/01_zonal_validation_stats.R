@@ -3,7 +3,7 @@
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last updated:
-#2/13/2024
+# 2/13/2024
 
 # Goals: 
 # - load preliminary imputation outputs
@@ -14,8 +14,7 @@
 # - use concat to compare EVC, EVH, etc with landfire layers 
 
 # TO DO: 
-# - reclass landfire disturb code to binary
-# - try mapping over list instead of lapply
+# - subset to lf to layers of interest from reference data earlier
 # - update when full lookup table with FIA computed values is available
 # - remove unused levels from concat / diff
 
@@ -24,16 +23,15 @@
 ###########################################################################
 
 # name of raster to validate
-raster_name <- "2016_Orig_Test_keepinbag_UT_Uintas_rect_maxpx500_nT37"
+raster_name <- "2016_Orig_Test_keepinbag_UT_Uintas_rect_maxpx1000_nT12"
 
 # list layers to export
 layers_export <- c("canopy_cover", "canopy_height", "EVT_GP",
                    "disturb_code", "disturb_year")
 
 
-###########################################################################
-# Set inputs
-###########################################################################
+# Standard Inputs
+#-----------------------------------------------#
 
 # Set inputs - from input script
 # Id where script is located
@@ -46,94 +44,6 @@ input_script.path <- paste( c(spl[c(1:(length(spl)-2))],
                             collapse = "/")
 
 source(input_script.path)
-
-
-
-
-###################################################################
-
-# library(glue)
-# 
-# #home_dir
-# #home_dir <- "D:/LilaLeatherman/01_TreeMap/"
-# home_dir <- "//166.2.126.25/TreeMap/"
-# 
-# # Zone list
-# zone_list <- c(16)
-# 
-# # Path to X table
-# xtable_path <- glue('{home_dir}01_Data/01_TreeMap2016_RDA/01_Input/03_XTables/X_table_all_singlecondition.txt')
-# 
-# # path where raw raster output(s) live (zone will be added later)
-# raster_dir <- glue('{home_dir}03_Outputs/07_Raw_model_outputs/2016_Original_Test')
-# 
-# # Directory where EVT_GP remap table is located
-# evt_gp_remap_table_dir <- glue('{home_dir}03_Outputs/05_Target_Rasters/02_Vegetation/')
-# 
-# # desired projection
-# prj <- terra::crs(glue('{home_dir}01_Data/02_Landfire/landfire_crs.prj'))
-# 
-# 
-# # path to landfire layers
-# landfire_dir <- glue('{home_dir}01_Data/01_TreeMap2016_RDA/02_Target/')
-# 
-# # path to TreeMap library
-# lib_path <- "C:/Users/lleatherman/Documents/GitHub/gtac-treemap/gtac_production_scripts/05_Library/treemapLib.R"
-# 
-# 
-# 
-# # Paths for exporting data
-# #--------------------------------------#
-# 
-# # set path to save output rasters
-# # this directory will be created if it does not already exist
-# output_dir <- raster_dir
-# 
-# # Output imputation name
-# #output_name <- "2016_Orig_Test"
-# output_name <- raster_name
-# 
-# # set tmp directory
-# tmp_dir <- "D:/tmp/"
-# 
-# ###########################################################################
-# # Set up libraries and directories
-# ###########################################################################
-# 
-# # Packages and functions
-# #---------------------------------#
-# 
-# # packages required
-# list.of.packages <- c("terra", "tidyverse", "magrittr", "glue", "tictoc", "caret")
-# 
-# #check for packages and install if needed
-# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-# if(length(new.packages) > 0) install.packages(new.packages)
-# 
-# # load all packages
-# vapply(list.of.packages, library, logical(1L),
-#        character.only = TRUE, logical.return = TRUE)
-# 
-# # load custom library
-# source(lib_path)
-# 
-# # Set up temp directory 
-# #----------------------------------#
-# 
-# # check if tmp directory exists 
-# if (file.exists(tmp_dir)){
-#   
-# } else {
-#   # create a new sub directory inside the main path
-#   dir.create(tmp_dir)
-# }
-# 
-# # set temp directory - helps save space with R terra
-# write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
-# #empty temp dir
-# do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
-# #remove unused memory
-# gc()
 
 #########################################################################
 
@@ -164,6 +74,10 @@ xtable <- read.csv(xtable_path)
 
 # list landfire rasters in dir
 target_files <- list.files(target_dir, pattern = ".tif$", recursive = TRUE, full.names = TRUE)
+
+# filter to only raster that match target layers
+target_files %>%
+  str_detect(layers_export)
 
 #read in as vrt
 lf <- terra::vrt(target_files, filename = "lf.vrt", options = "-separate", overwrite = TRUE)
@@ -202,6 +116,10 @@ ras <- as.int(ras)
 ras
 plot(ras)
 
+# clear memory
+#--------------------#
+gc()
+
 #####################################################################
 # Assemble derived values from imputation
 ####################################################################
@@ -228,10 +146,10 @@ lookup %<>%
 # Apply function
 #-----------------------------------------#
 
-# apply function - to only one layer for testing
-assembleExport(layer_field = "EVT_GP", raster = ras, lookup = lookup, 
-               id_field = "PLOTID", 
-               export_path = glue('{assembled_dir}/02_Derived_vars/{raster_name}'))
+# # apply function - to only one layer for testing
+# assembleExport(layer_field = "EVT_GP", raster = ras, lookup = lookup, 
+#                id_field = "PLOTID", 
+#                export_path = glue('{assembled_dir}/02_Derived_vars/{raster_name}'))
 
 #lapply
 lapply(layers_export, assembleExport, 
@@ -239,16 +157,16 @@ lapply(layers_export, assembleExport,
        raster = ras, lookup = lookup, id_field = "PLOTID",
        export_path = glue('{assembled_dir}/02_Derived_vars/{raster_name}'))
 
-# #
 
+####################################################################
 # Evaluation: Calculate confusion matrices of Imputation vs Landfire 
-###################################################################
+####################################################################
 
 
 # apply function to one layer - for testing
-cm <- assembleCM(layer_field = "EVT_GP", raster = ras, lookup = lookup, id_field = "PLOTID",
-                 stackin_compare = lf, stackin_compare_name =  "Landfire", 
-                 remapEVT_GP = TRUE, EVT_GP_remap_table =  evt_gp_remap_table )
+# cm <- assembleCM(layer_field = "EVT_GP", raster = ras, lookup = lookup, id_field = "PLOTID",
+#                  stackin_compare = lf, stackin_compare_name =  "Landfire", 
+#                  remapEVT_GP = TRUE, EVT_GP_remap_table =  evt_gp_remap_table )
 
 # apply function to all layers
 cms <- layers_export %>%
@@ -258,9 +176,10 @@ cms <- layers_export %>%
 names(cms) <- layers_export
 
 # export as RDS
-write_rds(cms, glue::glue('{eval_dir}/01_Map_Validation/CMs_derivedVars.RDS'))
+write_rds(cms, glue::glue('{eval_dir}/01_Map_Validation/{output_name}_CMs_derivedVars.RDS'))
 
-###########################
+
+############################################################
 # Evaluation: Concat for selected fields to see difference when compared vs. landfire
 ######################################################################
 
