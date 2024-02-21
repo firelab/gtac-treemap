@@ -1,0 +1,128 @@
+# Evaluate reference data - GTAC-calculated against Raster Attribute table
+
+# Written by Lila Leatherman (lila.leatherman@usda.gov)
+
+##################################################
+
+# Set inputs
+#-----------------------------------------------------#
+
+home_dir <- "//166.2.126.25/TreeMap/"
+
+# set start year - obtain data for this year and all years after
+start_year <- 1999
+end_year <- 2016
+
+# set location of input csvs
+data_path <- glue::glue('{home_dir}01_Data/04_FIA/06_FIA_DataMart/CSV/')
+
+# set location to export ref data to
+ref_export <- glue::glue('{home_dir}03_Outputs/06_Reference_Data/')
+
+# set location of raster attribute table
+rast_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
+
+# list states - lower 48 states by abbreviation
+states <- c("ID", "UT", "WY")
+# states <- c("AL", "AR", "AZ", "CA", "CO", "CT", 
+#             "DE", "FL", "GA", "ID", "IL", "IN", 
+#             "IA", "KS", "KY", "LA", "ME", "MD",
+#             "MA", "MI", "MN", "MS", "MO", "MT",   
+#             "NE", "NV", "NH", "NJ", "NM", "NY", 
+#             "NC", "ND", "OH", "OK", "OR", "PA", 
+#             "RI", "SD", "SC", "TN", "TX", "UT", 
+#             "VA", "VT", "WV", "WI", "WY", 'WA')
+
+# Set script options
+#-------------------------------------------------------#
+
+# load libraries
+library(glue)
+library(tidyverse)
+library(magrittr)
+library(terra)
+
+# Allow for sufficient digits to differentiate plot cn numbers
+options("scipen"=100, "digits"=8)
+
+# Run - by state
+#-------------------------------------------------------#
+
+# iterate over state - save by state
+
+#for(i in 1:length(states)) {
+
+# for testing  
+i <- 3
+state_name <- states[i]
+
+# Load calculated data
+#-------------------------------------------#
+ref_dat <- read.csv(glue::glue('{ref_export}{state_name}_treelist.csv'))
+ref_dat %<>%
+  select(-c(PLOT, LAT, LON, ELEV, SLOPE, ASPECT, NORTHING, EASTING)) 
+
+
+# Load raster attribute table
+#-------------------------------------------------#
+rat <- terra::rast(glue::glue('{rast_path}TreeMap2016.tif'))
+t <- data.frame(cats(rat))
+
+t %<>% 
+  rename("SDIPCT_RMRS" = SDIPCT_RMR,
+         "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
+  mutate(CN = as.numeric(CN)) %>%
+  select(-Value)
+
+names(t)
+
+# Join
+# -------------------------------------------------#
+table <- left_join(ref_dat, t, by = c("PLT_CN" = "CN"))
+
+
+# Initial Inspect 
+# --------------------------------------------------#
+
+plot(table$FORTYPCD.y, table$FORTYPCD.x)
+plot(table$CARBON_D.y, table$CARBON_D.x)
+plot(table$CARBON_L.y, table$CARBON_L.x)
+
+# Better Join
+# ------------------------------------------------------#
+
+#fields we want to evaluate
+fields_val <- c(#"FORTYPCD",   "FLDTYPCD",   "STDSZCD",    "FLDSZCD",   
+                #"BALIVE",     "CANOPYPCT",  "STANDHT",    "ALSTK",      
+                #"GSSTK" ,     "QMD_RMRS",   "SDIPCT_RMRS", 
+                "TPA_LIVE",   
+                "TPA_DEAD",   "VOLCFNET_L", "VOLCFNET_D", "VOLBFNET_L",
+                "DRYBIO_L",   "DRYBIO_D", "CARBON_L",   "CARBON_D",   "CARBON_DOWN_DEAD")
+
+refs <- t %>%
+  filter(CN %in% ref_dat$PLT_CN) %>%
+  select(-c(ForTypName, FldTypName)) %>%
+  pivot_longer(any_of(fields_val), names_to = "var", values_to = "ref") %>%
+                 mutate(var = factor(var))
+
+
+preds <- ref_dat %>%
+  filter(PLT_CN %in% t$CN) %>% 
+  pivot_longer(any_of(fields_val), names_to = "var", values_to = "pred") %>%
+  mutate(var = factor(var))
+
+p_r <- left_join(preds, refs, by = c("PLT_CN" = "CN", "var"))
+
+
+
+
+p <- 
+p_r %>%
+  #filter(var == fields_val[i]) %>%
+  ggplot() +
+  geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) + 
+  geom_point(aes(x = ref, y = pred), alpha = 0.1) + 
+  facet_wrap(~var, scales = "free")
+  #labs(title = fields_val[i])
+
+print(p)

@@ -9,7 +9,7 @@ library(glue)
 options(timeout=120)
 
 # set file destination - will be created if it does not eists
-dir <- "//166.2.126.25/TreeMap/01_Data/04_FIA/06_FIA_DataMart/CSV/"
+dir <- "//166.2.126.25/TreeMap/01_Data/04_FIA/05_FIA_DataMart/CSV/"
 
 # list states - lower 48 states by abbreviation
 states <- c("ID", "UT", "WY")
