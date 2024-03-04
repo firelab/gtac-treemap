@@ -4,6 +4,7 @@
 impute.row <- function(dat, yai, test)  { 
   
   require(yaImpute)
+  require(dplyr)
   
   # #for testing
   #currow <- 400
@@ -117,7 +118,7 @@ impute.row <- function(dat, yai, test)  {
       test.out <- impute.out
       test.out[valid.cols] <- test.out.tmp
       
-      return(test.out)
+      impute.out <- test.out
     }
     
     else{
@@ -145,6 +146,7 @@ impute.row <- function(dat, yai, test)  {
     }
   }
   
-  return(impute.out)
+  # return at end of function
+  impute.out
   
 }

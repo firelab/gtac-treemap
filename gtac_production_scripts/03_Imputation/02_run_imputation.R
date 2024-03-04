@@ -2,7 +2,7 @@
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # Original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
 
-# Last updated: 2/20/2024
+# Last updated: 2/27/2024
 
 # PART 2: 
 # - Run imputation over input area / target rasters
@@ -19,17 +19,17 @@
 
 # Number of cores
 # --------------------------#
-ncores <- 25
+ncores <- 27
 
 # Tiling settings
 # ---------------------------------------#
 # set dimensions of tile - value is the length of one side
-tile_size <- 1750
+tile_size <- 2000
 
 # # select tiles to run
 # # if NA, defaults to all tiles in list
 #which_tiles <- NA
-which_tiles <- c(10:11)
+which_tiles <- c(8)
 
 # Test application settings
 #-----------------------------------------#
@@ -73,14 +73,24 @@ terraOptions(memfrac = 0.8)
 # Parallelization settings
 #--------------------------------------#
 
-# options for future 
+# options for future
 options(future.rng.onMisuse = "ignore") # ignore errors with random number generators
-options(future.globals.onReference = "error") # give an error if a pointer can't access somehting in a future loop
+options(future.globals.onReference = "error") # give an error if a pointer can't access something in a future loop
 options(future.globals.maxSize = 750 * 1024 ^ 2 ) # maximum size for an object that can be exported to a future loop
 
 
 # set up future session
 future::plan("multisession", workers=ncores)
+
+# # set up dopar
+# cl <- makeCluster(ncores)
+# registerDoParallel(cl)
+# 
+# # load packages to each cluster
+# clusterCall(cl, function(){ 
+#   library(tidyverse);
+#   library(yaImpute);
+#   library(randomForest)})
 
 ####################################################################
 # Load data
@@ -145,8 +155,7 @@ if (!is.na(aoi_path)) {
 row1 <- 1
 row2 <- tile_size
 
-##############################################################
-# Run imputation - furrr on tiles 
+# Set up tiles for imputation 
 # ----------------------------------------------------------
 
 # aggregate - template for making tiles
@@ -177,7 +186,7 @@ p$cell <- seq(1:nrow(p))
 plot(rs2[[1]], legend = FALSE)
 plot(p, 'cell', alpha = 0.25, add=TRUE)
 
-# Set tiles to run
+# Select tiles to run
 #--------------------------------------------#
 
 # if which_tiles is NA, default to all tiles
@@ -187,7 +196,8 @@ if(is.na(which_tiles[1])) {
 
 
 #########################################
-# APPLY OVER TILES
+# APPLY Imputation OVER TILES
+#------------------------------------------#
 
 print(glue::glue("running over tiles {min(which_tiles)} to {max(which_tiles)}!"))
 
@@ -197,7 +207,7 @@ for(j in which_tiles) {
   tic()
   
   # for test 
-  #j <- 10
+  j <- 8
   
   # select tile to run
   fn <- tiles[j]
@@ -242,74 +252,92 @@ for(j in which_tiles) {
   # convert raster to matrix
   mat <- as.matrix(ras)
   
-  # convert matrix to list of data frames - one data frame for each row
-  rows_in <- NULL
-  
-  for(r in row1:nrow_r) {
-    
-    d <- list(data.frame(
-      mat[(ncol_r*(r-1)+1):(ncol_r*r),])) # get extracted values from each field for each row of input raster
-    
-    if(is.null(rows_in)){
-      rows_in <- d
-    } else {
-      rows_in <- c(rows_in, d)
-    }}
+  # # convert matrix to list of data frames - one data frame for each row
+  # rows_in <- NULL
+  # 
+  # # MOVE DATA FRAME CONVERSION TO WITHIN FUTURE LOOP
+  # for(r in row1:nrow_r) {
+  #   
+  #   d <- list(data.frame(
+  #     mat[(ncol_r*(r-1)+1):(ncol_r*r),])) # get extracted values from each field for each row of input raster
+  #   
+  #   if(is.null(rows_in)){
+  #     rows_in <- d
+  #   } else {
+  #     rows_in <- c(rows_in, d)
+  #   }}
   
   # Do work on tile
   #--------------------------------#
 
+  # PARALLEL WITH FURRR
+  #---------------------------#
+  
   #wrapper function to track progress
   progressr::with_progress({
-    p <- progressr::progressor(steps = length(rows_in))
-  
+    p <- progressr::progressor(steps = nrow_r)
+
     # work over tile
-    rows_out <-
-      1:length(rows_in) %>%
+    #rows_out <-
+      1:nrow_r %>%
       future_imap(function(fn, i, ...) {
-        
+
         # report progress
-        p() 
-        
+        p()
+  
+  # # PARALLEL WITH DOPAR
+  # #----------------------------#
+  #       
+  # foreach(i = 1:nrow_r, 
+  #         .packages = "tidyverse","yaImpute", "glue") %do% {
+      
         # # for testing
-        # i = 1
-        # dat = rows_in[i]
-        # print(glue::glue("working on row {i}/{length(rows_in)}"))
+        #i = 37
+        # print(glue::glue("working on row {i}/{nrow_r}"))
+        
+        # get extracted values from each field for each row of input raster
+        d <- data.frame(
+          mat[(ncol_r*(i-1)+1):(ncol_r*i),]) 
         
         # impute on row of data - input is named row of data + yai
-        row <- impute.row(dat = rows_in[i],
+        row <- impute.row(dat = d,
                           yai = yai.treelist.bin, test = FALSE)
         
-        return(row)
+        # label for row - to keep rows in order
+        i_out <- if(i < 10) {glue::glue('000{i}') } else 
+          if(i < 100) {glue::glue('00{i}')} else 
+            if(i < 1000) {glue::glue('0{i}')} else 
+              if(i < 10000) {glue('{i}')}
+        
+        saveRDS(row, 
+                #file = glue::glue('{tmp_dir}/rows/row{i}.RDS') # glue doesn't work with variables in future loops
+                paste0(tmp_dir, "/rows/row", i_out, ".RDS")
+                )
+   
+   #}# end do par
+             
       }) # end future over rows
     }) # end wrapper function to track progress
   
-  #bind rows together
-  mout <- do.call(rbind, rows_out)
+  # read rows back in 
+  rlist <- list.files(glue::glue('{tmp_dir}/rows/'), "row[0-9]*.RDS", full.names = TRUE )
+  
+  # potential for error catch - if length(rlist) > nrow_r
+  
+  # bind rows together
+  mout <- do.call(rbind, 
+          lapply(rlist, readRDS))
+  
+  # delete rows from tmp dir - fresh start for next tile 
+  #do.call(file.remove, rlist)
+  
   
   # Turn rows into a raster tile 
   #-----------------------------------------#
   if(nrow(mout) < nrow_r) {
     
-    # this could be broken out into library as a helper function
-    #----------------------------------------------------#
-    # make_raster_tile <- function(mout, ncol_r, nrow_r) { require(terra) }
-    
-    
-    # make rows with NAs to make full raster of test 
-    ncols.out <- ncol_r
-    nrows.out <- nrow_r
-    d <- rep(NA, ncols.out)
-    blank_rows_top <- do.call("rbind", replicate(row1-1, d, simplify = FALSE))
-    blank_rows_bottom <- do.call("rbind", replicate(nrows.out-nrow(mout), d, simplify = FALSE))
-    
-    # will the output raster, with blank rows, be the same size as the input raster?
-    #identical(as.numeric(nrows.out), as.numeric(nrow(blank_rows_top) + nrow(mout) + nrow(blank_rows_bottom)))
-    
-    #bind test rows with NAs to make full raster
-    tile_out <- terra::rast(rbind(blank_rows_top,
-                                  mout,
-                                  blank_rows_bottom))
+    # fill any missing rows in tile, when compared to input raster tile
+    tile_out <- fill_matrix_to_raster(mout, ncol_r, nrow_r, row1)
     
   } else {
     
@@ -328,17 +356,19 @@ for(j in which_tiles) {
   # export
   terra::writeRaster(tile_out, 
               # glue doesn't work for file names within future loop
-              #glue::glue('{output_dir}raster/tiles/{output_name}_tilesz{tile_size}_nT{length(tiles)}_tile{j}.tif'),
-              paste0(output_dir,'raster/tiles/',output_name,'_tilesz',tile_size,'_nT',length(tiles),'_tile',j,'.tif'),
+              glue::glue('{output_dir}raster/tiles/{output_name}_tilesz{tile_size}_nT{length(tiles)}_tile{j}.tif'),
+              #paste0(output_dir,'raster/tiles/',output_name,'_tilesz',tile_size,'_nT',length(tiles),'_tile',j,'.tif'),
               overwrite = TRUE)
   
-  rm(tile_out, rows_in)
+  #rm(tile_out)
   gc() # end of work on tile 
   
   print(glue::glue("done with tile {j} !"))
-  print(toc()) # report time elapsed
+  toc() # report time elapsed
   
 }
+
+#stopCluster(myCluster)
 
 print(glue::glue("Done with zone {zone_num}!"))
 

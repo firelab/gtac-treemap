@@ -49,11 +49,39 @@ snames <- snames[snames != this.path]
 # how do i make this silent? 
 lapply(snames, source)
 
+# remove unused objects
+rm(this.path, spl, script.path, snames )
+
 ###########################
 # Dictionaries
 ###########################
 
+#####################################################
+# Raster operations
+#####################################################
 
+fill_matrix_to_raster <- function(mout, ncol_r, nrow_r, row1) { 
+  
+  require(terra) 
+
+  # make rows with NAs to make full raster of test 
+  ncols.out <- ncol_r
+  nrows.out <- nrow_r
+  d <- rep(NA, ncols.out)
+  blank_rows_top <- do.call("rbind", replicate(row1-1, d, simplify = FALSE))
+  blank_rows_bottom <- do.call("rbind", replicate(nrows.out-nrow(mout), d, simplify = FALSE))
+  
+  # will the output raster, with blank rows, be the same size as the input raster?
+  #identical(as.numeric(nrows.out), as.numeric(nrow(blank_rows_top) + nrow(mout) + nrow(blank_rows_bottom)))
+  
+  #bind test rows with NAs to make full raster
+  tile_out <- terra::rast(rbind(blank_rows_top,
+                                mout,
+                                blank_rows_bottom))
+  
+  return(tile_out)
+
+  }
 ###########################
 # Validation
 ###########################
@@ -326,3 +354,5 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   
 }
 
+# Remove unused ovjects
+###################################################

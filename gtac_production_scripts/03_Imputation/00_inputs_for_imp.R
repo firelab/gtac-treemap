@@ -8,7 +8,7 @@
 ###########################################################################
 
 # Output imputation name
-output_name <- "2016_Orig_Test_keepinbag"
+output_name <- "2016_Orig_Test_keepinbag_ntree250"
 
 # Standard inputs
 #-----------------------------------------------#
@@ -17,8 +17,8 @@ output_name <- "2016_Orig_Test_keepinbag"
 zone_num <- 16
 
 #home_dir
-home_dir <- "D:/LilaLeatherman/01_TreeMap/"
-#home_dir <- "//166.2.126.25/TreeMap/"
+#home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+home_dir <- "//166.2.126.25/TreeMap/"
 
 # Path to X table
 xtable_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/01_Input/03_XTables/X_table_all_singlecondition.txt")
@@ -99,7 +99,9 @@ list.of.packages <- c("raster",
                       "randomForest",
                       "this.path",
                       "terra", "tidyverse", "magrittr", "glue", "tictoc",
-                      "caret", "furrr", "progressr")
+                      "caret", 
+                      "furrr", "progressr",
+                      "doParallel")
 
 #check for packages and install if needed
 #new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -133,8 +135,16 @@ if (!file.exists(tmp_dir)){
 
 # set temp directory - helps save space with R terra
 write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
+
 #empty temp dir
-do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
+do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRUE)))
+#rmdir(tmp_dir, recursive = FALSE)
+
+# create tmp dir folder for rows
+if (!file.exists(glue::glue('{tmp_dir}/rows/'))) {
+  dir.create(glue::glue('{tmp_dir}/rows/'))
+}
+                                                       
 #remove unused memory
 gc()
 
@@ -177,4 +187,4 @@ prj <- terra::crs(prj_path)
 
 # Remove unused objects
 #------------------------------------------------#
-rm(spl, input_script.path, this.path, list.of.packages)
+rm(input_script.path, list.of.packages)

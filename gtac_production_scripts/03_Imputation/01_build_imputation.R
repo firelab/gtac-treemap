@@ -170,7 +170,9 @@ write.csv(Y.df, glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Ydf_bi
 set.seed(56789)
 
 tic()
-yai.treelist.bin <- yai(X.df, Y.df, method = "randomForest", ntree = 400)
+yai.treelist.bin <- yai(X.df, Y.df, 
+                        method = "randomForest", 
+                        ntree = 250)
 toc()
 
 # Export model

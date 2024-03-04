@@ -15,7 +15,7 @@
 ###################################################
 
 # input raster tile base name
-tile_name <- "2016_Orig_Test_keepinbag_UT_Uintas_rect_maxpx1000_nT12"
+tile_name <- "2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36"
 
 # desired name for output raster
 rout_name <- tile_name
