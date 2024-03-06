@@ -1,18 +1,23 @@
-# download FIA data
-library(glue)
+# Download PLOT, COND, and TREE tables from FIA database, by State
+# Save tables to specified drive as .csv
 
-# Download individual tables from FIA db
+# Written by Lila Leatherman (lila.leatherman @usda.gov)
+
+# Last updated: 2/21/24
+
+##########################################################
 
 # alternately, is there a remote sqlite instance I can connect to? 
 
-# set longer time to permit download - in seconds
-options(timeout=120)
+# set home dir
+home_dir <- "//166.2.126.25/TreeMap/"
 
 # set file destination - will be created if it does not eists
-dir <- "//166.2.126.25/TreeMap/01_Data/04_FIA/05_FIA_DataMart/CSV/"
+dir <- glue::glue("{home_dir}TreeMap/01_Data/04_FIA/05_FIA_DataMart/CSV/")
 
 # list states - lower 48 states by abbreviation
-states <- c("ID", "UT", "WY")
+# states <- c("ID", "UT", "WY")
+states <- c("NV", "CO", "MT")
 # states <- c("AL", "AR", "AZ", "CA", "CO", "CT", 
 #             "DE", "FL", "GA", "ID", "IL", "IN", 
 #             "IA", "KS", "KY", "LA", "ME", "MD",
@@ -33,6 +38,11 @@ if(!exists(dir)) {
   dir.create(dir)
 }
 
+# set longer time to permit download - in seconds
+options(timeout=120)
+
+# Download FIA data by state
+###########################################################
 
 for(j in 1:length(states)){
   

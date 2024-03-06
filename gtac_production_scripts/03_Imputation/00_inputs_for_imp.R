@@ -16,24 +16,46 @@ output_name <- "2016_Orig_Test_keepinbag_ntree250"
 # Zone list
 zone_num <- 16
 
-#home_dir
-#home_dir <- "D:/LilaLeatherman/01_TreeMap/"
-home_dir <- "//166.2.126.25/TreeMap/"
+# Project name
+project_name <- "2016_GTAC_Test"
+
+# target data version
+target_data_version <- "v2016_RMRS"
+
+# reference data version
+ref_data_version <- "v2016_RMRS"
+
+# home dir
+home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+#home_dir <- "//166.2.126.25/TreeMap/"
+
+# data directory - where source data are located
+data_dir <- glue::glue('{home_dir}/01_Data/')
+
+# where version-specific inputs and outputs will live
+project_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/')
+
+# Directory where target data lives
+target_dir <- glue::glue("{data_dir}/01_TreeMap2016_RDA/01_Target/") # specific to first iteration
+#target_dir <- glue::glue("{data_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/")
+
+# Directory where reference data lives
+ref_dir <- glue::glue("{data_dir}/03_outputs/06_Reference_Data/{ref_data_varsion}/")
 
 # Path to X table
-xtable_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/01_Input/03_XTables/X_table_all_singlecondition.txt")
+xtable_path <- glue::glue("{data_dir}/01_TreeMap2016_RDA/01_Input/03_XTables/X_table_all_singlecondition.txt") #  specific to first version
+#xtable_path <- glue::glue("{ref_dir}/03_XTables/X_table_all_singlecondition.txt")
 
-# Directory where target rasters live
-target_dir <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/02_Target/")
 
 # Directory where EVT_GP remap table is located
-evt_gp_remap_table_path <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/02_Vegetation/")
+evt_gp_remap_table_path <- glue::glue("{project_dir}/02_Target_Rasters/") # specific to first version
+#evt_gp_remap_table_path <- target_dir
 
 # Plot coordinates- shapefile
 #points_path <- "//166.2.126.25/TreeMap/01_Data/04_FIA/03_FullShp/FIA_US.shp"
 
 # path to file with desired projection
-prj_path <- glue::glue('{home_dir}01_Data/02_Landfire/landfire_crs.prj')
+prj_path <- glue::glue('{data_dir}/02_Landfire/landfire_crs.prj')
 
 
 # Paths for exporting data
@@ -42,14 +64,14 @@ prj_path <- glue::glue('{home_dir}01_Data/02_Landfire/landfire_crs.prj')
 # set path to save output rasters
 # this directory will be created if it does not already exist
 # UPDATE THIS TO BE FLEX FOR FUTURE RUNS
-output_dir <- glue::glue('{home_dir}03_Outputs/07_Raw_model_outputs/2016_Original_Test/')
+output_dir <- glue::glue('{project_dir}/03_Raw_Model_Outputs/')
 
 #set path for assembled rasters
 # UPDATE THIS TO BE FLEX FOR FUTURE RUNS
-assembled_dir <- glue::glue('{home_dir}03_Outputs/08_Assembled_model_outputs/2016_Original_Test/')
+assembled_dir <- glue::glue('{project_dir}/04_Assembled_Model_Outputs/')
 
 # Evaluation dir
-eval_dir <- glue::glue('{home_dir}/03_Outputs/09_Evaluation/02_TreeMap_Runs/2016_Original_Test/')
+eval_dir <- glue::glue('{project_dir}/05_Evaluation/')
 
 # set tmp directory
 tmp_dir <- "D:/tmp/"

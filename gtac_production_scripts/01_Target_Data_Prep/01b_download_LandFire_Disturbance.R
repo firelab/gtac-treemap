@@ -2,19 +2,33 @@
 # Available for manual download from this location: 
 # https://landfire.gov/disturbance_grids.php
 
+#####################################
+# Set Inputs
+#######################################
+
 # set file destination
 dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Disturbance/"
 
 # list years
 years <- 2018:2020
 
+################################################
+# Run
+################################################
 
+# create directory if necessary 
+if(!file_exists(dir)) {
+  dir.create(dir, recursive = TRUE)
+}
+
+# File name format, by years: 
+# ---------------------------------------#
 # 1999-2014: US_DIST1999
 # 2015-2016: LF2015_Dist_200
 # 2017-2020: LF2020_Dist_220
 
 # sample download url pre 2020 "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST1999.zip&TYPE=landfire
-# sample download url 22015 "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-LF2020_Dist_220_CONUS.zip&TYPE=landfire"
+# sample download url 2015 "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-LF2020_Dist_220_CONUS.zip&TYPE=landfire"
 url_base_1 <- "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST"
 url_base_2 <- "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-LF"
 url_base_2_2016 <- "_Dist_200_CONUS.zip&TYPE=landfire"
