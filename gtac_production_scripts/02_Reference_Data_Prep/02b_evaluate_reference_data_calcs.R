@@ -13,17 +13,15 @@ home_dir <- "//166.2.126.25/TreeMap/"
 start_year <- 1999
 end_year <- 2016
 
-# set location of input csvs
-data_path <- glue::glue('{home_dir}01_Data/04_FIA/06_FIA_DataMart/CSV/')
-
-# set location to export ref data to
-ref_export <- glue::glue('{home_dir}03_Outputs/06_Reference_Data/')
+# set location of prepared reference data
+ref_path <- glue::glue('{home_dir}03_Outputs/06_Reference_Data/')
 
 # set location of raster attribute table
 rast_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
 
 # list states - lower 48 states by abbreviation
-states <- c("ID", "UT", "WY")
+states <- c("ID", "UT", "WY",
+            "NV", "CO", "MT")
 # states <- c("AL", "AR", "AZ", "CA", "CO", "CT", 
 #             "DE", "FL", "GA", "ID", "IL", "IN", 
 #             "IA", "KS", "KY", "LA", "ME", "MD",
@@ -53,12 +51,12 @@ options("scipen"=100, "digits"=8)
 #for(i in 1:length(states)) {
 
 # for testing  
-i <- 3
+i <- 1
 state_name <- states[i]
 
 # Load calculated data
 #-------------------------------------------#
-ref_dat <- read.csv(glue::glue('{ref_export}{state_name}_treelist.csv'))
+ref_dat <- read.csv(glue::glue('{ref_path}/01_ByState/{state_name}_{start_year}_{end_year}_attributes.csv'))
 ref_dat %<>%
   select(-c(PLOT, LAT, LON, ELEV, SLOPE, ASPECT, NORTHING, EASTING)) 
 
@@ -84,9 +82,9 @@ table <- left_join(ref_dat, t, by = c("PLT_CN" = "CN"))
 # Initial Inspect 
 # --------------------------------------------------#
 
-plot(table$FORTYPCD.y, table$FORTYPCD.x)
-plot(table$CARBON_D.y, table$CARBON_D.x)
-plot(table$CARBON_L.y, table$CARBON_L.x)
+# plot(table$FORTYPCD.y, table$FORTYPCD.x)
+# plot(table$CARBON_D.y, table$CARBON_D.x)
+# plot(table$CARBON_L.y, table$CARBON_L.x)
 
 # Better Join
 # ------------------------------------------------------#
@@ -97,7 +95,7 @@ fields_val <- c(#"FORTYPCD",   "FLDTYPCD",   "STDSZCD",    "FLDSZCD",
                 #"GSSTK" ,     "QMD_RMRS",   "SDIPCT_RMRS", 
                 "TPA_LIVE",   
                 "TPA_DEAD",   "VOLCFNET_L", "VOLCFNET_D", "VOLBFNET_L",
-                "DRYBIO_L",   "DRYBIO_D", "CARBON_L",   "CARBON_D",   "CARBON_DOWN_DEAD")
+                "DRYBIO_L",   "DRYBIO_D", "CARBON_L",   "CARBON_D")
 
 refs <- t %>%
   filter(CN %in% ref_dat$PLT_CN) %>%
@@ -114,7 +112,8 @@ preds <- ref_dat %>%
 p_r <- left_join(preds, refs, by = c("PLT_CN" = "CN", "var"))
 
 
-
+# Plot vars
+#######################################
 
 p <- 
 p_r %>%
@@ -126,3 +125,12 @@ p_r %>%
   #labs(title = fields_val[i])
 
 print(p)
+
+# Calculate r squared
+#######################################
+
+p_r %>%
+  split(p_r$var) %>%
+  map(\(df) lm(pred~ref, data = df)) %>%
+  map(summary) %>%
+  map_dbl("r.squared")

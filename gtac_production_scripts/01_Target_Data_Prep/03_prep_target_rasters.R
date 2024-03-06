@@ -1,20 +1,20 @@
 # Prep target rasters for TreeMap Imputation
 # Outputs: 
+# Masked to forested px for each zone 
 # - Landfire Existing Vegetation Cover (EVC)
 # - Forest mask derived from Landfire EVC
 # - Landfire Existing Vegetation Type Group
 # - Landfire Existing Vegetation Height (EVH)
-# EVT_GRP remap table
+# - EVT_GP remap table
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
-# Last Updated: December 2023
+# Last Updated: 2/22/24
 
 # Based on "prep_target_rasters_v2.py" by Karin Riley
 
 ##########################################################
 # Setup - data
 ##########################################################
-library(glue)
 
 # list landfire zones of interest
 zone_list <- c(16)
@@ -23,30 +23,40 @@ zone_list <- c(16)
 #----------------------------#
 
 # set home dir
-home_dir <- "//166.2.126.25/TreeMap/"
+home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+#home_dir <- "//166.2.126.25/TreeMap/"
+
+# data directory - where source data are located. these won't be changed
+#data_dir <- glue::glue('{home_dir}/01_Data/')
+data_dir <- "//166.2.126.25/TreeMap/01_Data/"
+
+# where version-specific inputs and outputs will live
+project_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/2016_GTAC_Test/')
 
 # set paths to input landfire rasters 
-landfire_path <- '//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_200/'
-evc_path <- glue('{landfire_path}EVC/LF2016_EVC_200_CONUS/Tif/LC16_EVC_200.tif')
-evh_path <- glue('{landfire_path}EVH/LF2016_EVH_200_CONUS/Tif/LC16_EVH_200.tif')
-evt_path <- glue('{landfire_path}EVT/LF2016_EVT_200_CONUS/Tif/LC16_EVT_200.tif')
-bps_path <- glue('{landfire_path}BioPhys/LF2016_BPS_200_CONUS/Tif/LC16_BPS_200.tif')
+landfire_path <- glue::glue('{data_dir}02_Landfire/LF_200/')
+evc_path <- glue::glue('{landfire_path}EVC/LF2016_EVC_200_CONUS/Tif/LC16_EVC_200.tif')
+evh_path <- glue::glue('{landfire_path}EVH/LF2016_EVH_200_CONUS/Tif/LC16_EVH_200.tif')
+evt_path <- glue::glue('{landfire_path}EVT/LF2016_EVT_200_CONUS/Tif/LC16_EVT_200.tif')
 
-topo_path <-'//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Topo/'
-elev_path <- glue('{topo_path}LF2020_Elev_220_CONUS/Tif/LC20_Elev_220.tif')
-slopeP_path <- glue('{topo_path}LF2020_SlpP_220_CONUS/Tif/LC20_SlpP_220.tif')
-slopeD_path <- glue('{topo_path}LF2020_SlpD_220_CONUS/Tif/LC20_SlpD_220.tif')
-asp_path <- glue('{topo_path}LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.tif')
+topo_path <-glue::glue('{data_dir}02_Landfire/LF_220/Topo/')
+elev_path <- glue::glue('{topo_path}LF2020_Elev_220_CONUS/Tif/LC20_Elev_220.tif')
+slopeP_path <- glue::glue('{topo_path}LF2020_SlpP_220_CONUS/Tif/LC20_SlpP_220.tif')
+slopeD_path <- glue::glue('{topo_path}LF2020_SlpD_220_CONUS/Tif/LC20_SlpD_220.tif')
+asp_path <- glue::glue('{topo_path}LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.tif')
+
+# set paths to input biophys rasters
+biphys_path <- glue::glue('{data_dir}02_Landfire/BioPhys/')
 
 # set paths to input disturbance rasters
 distYear_path <- ""
 distCode_path <- ""
 
 # set path to landfire zones
-landfire_zone_path <- glue('{home_dir}01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
+landfire_zone_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
 
 # set projection used for processing landfire rasters
-landfire_proj <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/landfire_crs.prj"
+landfire_proj <- glue::glue('{data_dir}/02_Landfire/landfire_crs.prj')
 
 # supply path to AOI for testing, or NA
 #aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
@@ -60,8 +70,9 @@ tmp_dir <- "D:/tmp/"
 #--------------------------------------#
 
 # set path to save output rasters
-# this directory will be created if it does not already exist
-output_dir <- '//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/'
+target_dir <- glue::glue("{project_dir}01_Target_Data/")
+
+
 
 ##############################################
 # SETUP - environments
@@ -105,8 +116,8 @@ gc()
 # Set up other directories
 # ----------------------------------#
 
-if (!file.exists(output_dir)) {
-  dir.create(output_dir, recursive = TRUE)
+if (!file.exists(target_dir)) {
+  dir.create(target_dir, recursive = TRUE)
 }
 
 # Terra options
@@ -127,7 +138,7 @@ LF_zones <- vect(landfire_zone_path)
 
 # load layers of interest - veg
 evc <- terra::rast(evc_path)
-evh <-terra::rast(evh_path)
+evh <- terra::rast(evh_path)
 evt <- terra::rast(evt_path)
 
 # load layers of interest - topo
@@ -186,14 +197,14 @@ evt_levels <- levels(evt)[[1]] %>%
 ###################################################
 
 
-#for (z in 1:length(zone_list)) {
+#for (z in zone_list) {
   
   tic() # start the clock
   
   #for testing
-  z <- 1
+  z <- 16
   
-  zone_num <- zone_list[z]
+  zone_num <- z
   
   # status update
   print(glue("working on zone {zone_num}"))
@@ -205,10 +216,26 @@ evt_levels <- levels(evt)[[1]] %>%
   zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num) 
   
   # get name of zone
-  zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
+  zone_name <- glue::glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
   
-  # inspect
-  #LF_zones$ZONE_NAME
+  #set zone identifiers
+  cur.zone <- glue::glue('z{zone_num}')
+  cur.zone.zero <- if(zone_num < 10) {
+    glue::glue('z0{zone_num}') } else {
+      cur.zone
+    }
+  
+  # Update dirs with zone
+  # -----------------------------------------#
+  # Set folder paths
+  target_dir_z = glue::glue('{target_dir}/{cur.zone.zero}/')
+
+  # create output folders
+  if(!file.exists(target_dir_z)) {
+    dir.create(target_dir_z, recursive = TRUE)
+  } 
+  
+  # Start geospatial operations
   
   if (!is.na(aoi_path)) {
     # load aoi subset - utah uintas only
@@ -222,27 +249,6 @@ evt_levels <- levels(evt)[[1]] %>%
   } else{
     print("using landfire zone as AOI")
   }
-  
-  #set zone identifiers
-  cur.zone <- glue('z{zone_num}')
-  cur.zone.zero <- if(zone_num < 10) {
-    glue('z0{zone_num}') } else {
-      cur.zone
-    }
-  
-  # create output folders
-  veg_dir_zone <-glue('{output_dir}02_Vegetation/{cur.zone.zero}')
-  if(!file.exists(veg_dir_zone)) {
-    dir.create(veg_dir_zone)
-  } 
-  
-  # create output folders
-  topobio_dir_zone <- glue('{output_dir}03_TopoBioPhys/{cur.zone.zero}')
-  if(!file.exists(topobio_dir_zone)) {
-    dir.create(topobio_dir_zone, recursive = TRUE)
-  } 
-  
-  # Start geospatial operations
   
   ## VEGETATION
   # ###################################################
@@ -278,7 +284,7 @@ evt_levels <- levels(evt)[[1]] %>%
   
   # export remap table
   write.csv(evg_remap_table, 
-            glue('{veg_dir_zone}/EVG_remap_table.csv'), row.names = FALSE)
+            glue::glue('{target_dir_z}/EVG_remap_table.csv'), row.names = FALSE)
   
 
   # Apply forest mask to remaining vegetation layers
@@ -301,19 +307,18 @@ evt_levels <- levels(evt)[[1]] %>%
   
   # export canopy cover
   writeRaster(evc_z, 
-              glue('{veg_dir_zone}/canopy_cover.tif'),
+              glue::glue('{target_dir_z}/canopy_cover.tif'),
               overwrite = TRUE)
   
   # canopy height
   writeRaster(evh_z, 
-              glue('{veg_dir_zone}/canopy_height.tif'),
+              glue::glue('{target_dir_z}/canopy_height.tif'),
               overwrite = TRUE)
   
   # evt_gp
   writeRaster(evt_gp_z, 
-              glue('{veg_dir_zone}/EVT_GP.tif'),
+              glue::glue('{target_dir_z}/EVT_GP.tif'),
               overwrite = TRUE)
-  
   
   
   #remove unused layers  - keep evt_gp_z for masking other layers
@@ -344,15 +349,15 @@ evt_levels <- levels(evt)[[1]] %>%
   # -------------------------------------------- #
   print(glue('exporting topo rasters for zone {zone_num}'))
   writeRaster(elev_z, 
-              glue('{topobio_dir_zone}/ELEV.tif'))
+              glue::glue('{target_dir_z}/ELEV.tif'))
   writeRaster(slp_z, 
-              glue('{topobio_dir_zone}/SLOPE.tif'))
+              glue::glue('{target_dir_z}/SLOPE.tif'))
   writeRaster(asp_z, 
-              glue('{topobio_dir_zone}/ASPECT.tif'))
+              glue::glue('{target_dir_z}/ASPECT.tif'))
   writeRaster(north_z, 
-              glue('{topobio_dir_zone}/NORTHING.tif'))
+              glue::glue('{target_dir_z}/NORTHING.tif'))
   writeRaster(east_z, 
-              glue('{topobio_dir_zone}/EASTING.tif'))
+              glue::glue('{target_dir_z}/EASTING.tif'))
   
   #remove layers
   rm(elev_z, slp_z, asp_z, north_z, east_z)
@@ -362,14 +367,26 @@ evt_levels <- levels(evt)[[1]] %>%
   # ###################################################
   #-------------------------------------------------------#
   
+  # update biophys path - biophys layers stored by zone
+  biophys_path_z <- glue::glue('{biophys_path}/{cur.zone.zero}/')
+  
+  # load layers 
+  
+  
   # Mask Biophys layers - to forested px for each zone
   # -------------------------------------------------------------#
 
+  # Export Biophys layers
+  # --------------------------------------------------------------#
   
-  # Mask Biophys and topo layers - to zone
-  # -------------------------------------------- #
+  # remove layers
+  rm()
+  gc()
   
-  # Mask Disturbance layers - to zone
+  ## DISTURBANCE
+  # ########################################
+  
+  # Mask Disturbance layers - to forested px for each zone
   # -------------------------------------------- #
   
   

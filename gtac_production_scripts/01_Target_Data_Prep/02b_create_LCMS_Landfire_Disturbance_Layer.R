@@ -1,5 +1,10 @@
 # Create input disturbance layer - GTAC LCMS 2016
 
+# Written by: Lila Leatherman (lila.leatherman@usda.gov)
+# Redcastle Resources and USFS Geospatial Technology and Applications Center (GTAC)
+
+# Last updated: 3/4/24
+
 # Input rasters: 
 # - Annual raw probability of slowloss, fast loss, and gain from LCMS
 # - Annual Landfire disturbance 
@@ -8,109 +13,126 @@
 # - years since disturbance
 # - type of disturbance 
 
-# Written by: Lila Leatherman (lila.leatherman@usda.gov)
-# Redcastle Resources and USFS Geospatial Technology and Applications Center (GTAC)
-# Last updated: 11/17/2023
-
 
 ###############################
-# SET USER INPUTS
+# SET Inputs
 ###############################
 
-#list landfire zones of interest
-zone_list <- c(16)
+# Set inputs - from input script
+this.path <- this.path::this.path() # Id where THIS script is located
 
-# set year range
-start_year <- 1999
-end_year <- 2016
+# get path to input script
+spl <- stringr::str_split(this.path, "/")[[1]]
+input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
+                              "00_inputs_for_targetdata.R" ),
+                            collapse = "/")
 
-# set current modeling year (for years since disturbance)
-cur_year <- end_year
+source(input_script.path)
 
-# set threshold for probability of slow loss from LCMS
-slow_loss_thresh <- 14 # default value for LCMS processing: 14
 
-# set home dir
-home_dir <- "//166.2.126.25/TreeMap/"
-
-# set path to input lcms raw probability rasters
-lcms_path <- '//166.2.126.25/TreeMap/01_Data/05_LCMS/01_Threshold_Testing/01_Raw/02_Raw_Probabilities/'
-
-# set path to input landfire rasters 
-landfire_path <- '//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Disturbance/'
-
-# set path to save output rasters
-# this directory will be created if it does not already exist
-output_dir <- '//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/01_Disturbance/'
-
-# set projection used for processing lcms rasters
-lcms_proj <- "//166.2.126.25/TreeMap/01_Data/05_LCMS/00_Supporting/lcms_crs_albers.prj"
-
-# set projection used for processing landfire rasters
-landfire_proj <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/landfire_crs.prj"
-
-# supply path, or NA
-#aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-#aoi_name <- "UT_Uintas_rect"
-aoi_path <- NA
-
-# set tmp directory
-tmp_dir <- "D:/tmp/"
-
-# setting to remove intermediate files from memory
-# all intermediate files required to generate end product are written to disk
-# Y: deletes intermediate files (better for iteration and development)
-# N: retains intermediate files (better for computational efficiency)
-remove_intermediate_files <- "Y"
-
-##############################################
-# SETUP
-#############################################
-
-# Packages and functions
-#---------------------------------#
-
-# packages required
-list.of.packages <- c("terra", "tidyverse", "magrittr", "glue", "tictoc")
-
-#check for packages and install if needed
-#new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages) > 0) install.packages(new.packages)
-
-# load all packages
-vapply(list.of.packages, library, logical(1L),
-       character.only = TRUE, logical.return = TRUE)
-
-# make 'notin' function
-`%notin%` <- Negate('%in%')
-
-# Set up temp directory 
-#----------------------------------#
-
-# check if tmp directory exists 
-if (file.exists(tmp_dir)){
-  
-} else {
-  # create a new sub directory inside the main path
-  dir.create(tmp_dir)
-}
-
-# set temp directory - helps save space with R terra
-write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
-#empty temp dir
-do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
-#remove unused memory
-gc()
-
-# Set up other directories
-# ----------------------------------#
-dir.create(output_dir, recursive = TRUE)
-
-# Terra options
-# --------------------------------#
-
-#increase memory fraction available
-#terraOptions(memfrac = 0.8)
+# #list landfire zones of interest
+# zone_list <- c(16)
+# 
+# # set year range
+# start_year <- 1999
+# end_year <- 2016
+# 
+# # set current modeling year (for years since disturbance)
+# model_year <- end_year
+# 
+# # set threshold for probability of slow loss from LCMS
+# slow_loss_thresh <- 14 # default value for LCMS processing: 14
+# 
+# # set home dir
+# home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+# #home_dir <- "//166.2.126.25/TreeMap/"
+# 
+# # data directory - where source data are located. these won't be changed
+# #data_dir <- glue::glue('{home_dir}/01_Data/')
+# data_dir <- "//166.2.126.25/TreeMap/01_Data/"
+# 
+# # where version-specific inputs and outputs will live
+# project_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/2016_GTAC_Test/')
+# 
+# # set path to save output rasters
+# # this directory will be created if it does not already exist
+# target_dir <- glue::glue('{project_dir}/01_Target_Data/')
+# 
+# # set dir to lcms raw probability rasters
+# lcms_dir <- glue::glue('{data_dir}05_LCMS/01_Threshold_Testing/01_Raw/02_Raw_Probabilities/')
+# 
+# # set path to landfire rasters 
+# landfire_dir <- glue::glue('{data_dir}02_Landfire/LF_220/Disturbance/')
+# 
+# # set projection used for processing lcms rasters
+# lcms_proj <- glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj')
+# 
+# # path to projection used for processing landfire rasters
+# landfire_proj <- glue::glue('{data_dir}02_Landfire/landfire_crs.prj')
+# 
+# # supply path, or NA
+# # aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+# # aoi_name <- "UT_Uintas_rect"
+# aoi_path <- NA
+# 
+# # set tmp directory
+# tmp_dir <- "D:/tmp/"
+# 
+# # setting to remove intermediate files from memory
+# # all intermediate files required to generate end product are written to disk
+# # Y: deletes intermediate files (better for iteration and development)
+# # N: retains intermediate files (better for computational efficiency)
+# remove_intermediate_files <- "N"
+# 
+# ##############################################
+# # SETUP
+# #############################################
+# 
+# # Packages and functions
+# #---------------------------------#
+# 
+# # packages required
+# list.of.packages <- c("terra", "tidyverse", "magrittr", "glue", "tictoc")
+# 
+# #check for packages and install if needed
+# #new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages) > 0) install.packages(new.packages)
+# 
+# # load all packages
+# vapply(list.of.packages, library, logical(1L),
+#        character.only = TRUE, logical.return = TRUE)
+# 
+# # make 'notin' function
+# `%notin%` <- Negate('%in%')
+# 
+# # Set up temp directory 
+# #----------------------------------#
+# 
+# # check if tmp directory exists 
+# if (file.exists(tmp_dir)){
+#   
+# } else {
+#   # create a new sub directory inside the main path
+#   dir.create(tmp_dir)
+# }
+# 
+# # set temp directory - helps save space with R terra
+# write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
+# #empty temp dir
+# do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
+# #remove unused memory
+# gc()
+# 
+# # Set up other directories
+# # ----------------------------------#
+# if(!file.exists(target_dir)) {
+#   dir.create(target_dir, recursive = TRUE)}
+# 
+# # Terra options
+# # --------------------------------#
+# 
+# #increase memory fraction available
+# terraOptions(memfrac = 0.8)
 
 ###################################################
 # LOAD DATA
@@ -123,11 +145,7 @@ lcms_crs <- crs(lcms_proj)
 landfire_crs <- crs(landfire_proj)
 
 # load LF zone data
-LF_zones <- vect(glue('{home_dir}01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp'))
-
-#project
-LF_zones %<>%
-  project(lcms_crs)
+LF_zones <- vect(lf_zones_path)
 
 #build year list
 year_list <- seq(start_year, end_year, 1)
@@ -137,12 +155,12 @@ year_list <- seq(start_year, end_year, 1)
 ##################################################
 
 tic()
-for (z in 1:length(zone_list)) {
+for (z in zone_list) {
   
   #for testing
-  z <- 1
+  z = 16
   
-  zone_num <- zone_list[z]
+  zone_num <- z
   
   # status update
   print(glue("working on zone {zone_num}"))
@@ -151,13 +169,31 @@ for (z in 1:length(zone_list)) {
   #-----------------------------------------#
   
   # select single LF zone
-  zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num) #z16 = Utah High Plateaus
+  zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num) 
+  
+  #project
+  zone %<>%
+    terra::project(lcms_crs)
   
   # get name of zone
   zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
   
-  # inspect
-  #LF_zones$ZONE_NAME
+  #set zone identifiers
+  cur.zone <- glue::glue('z{zone_num}')
+  cur.zone.zero <- if(zone_num < 10) {
+    glue::glue('z0{zone_num}') } else {
+      cur.zone
+    }
+  
+  # Update dirs with zone
+  # -----------------------------------------#
+  # Set folder paths
+  target_dir_z = glue::glue('{target_dir}/{cur.zone.zero}/')
+  if(!file.exists(target_dir_z)) {dir.create(target_dir_z)}
+  
+  
+  # Optional subset
+  #---------------------------------------#
   
   if (!is.na(aoi_path)) {
     # load aoi subset - utah uintas only
@@ -172,18 +208,19 @@ for (z in 1:length(zone_list)) {
     print("using landfire zone as AOI")
   }
   
+  
   #####################################################
   # PREP LCMS SLOW LOSS
   ####################################################
   
-  # Set variables
-  NAvalue <- -32768
-  
-  # set probability thresholds for change
-  change_thresholds <- c(29, # fast loss; default = 29
-                         slow_loss_thresh, # slow loss; default = 14
-                         20 # gain; default = 20
-                         )
+  # # Set variables
+  # NAvalue <- -32768
+  # 
+  # # set probability thresholds for change
+  # change_thresholds <- c(29, # fast loss; default = 29
+  #                        slow_loss_thresh, # slow loss; default = 14
+  #                        20 # gain; default = 20
+  #                        )
   
   
   # Convert raw probability layers into change layers
@@ -207,10 +244,10 @@ for (z in 1:length(zone_list)) {
     print(glue("working on {year}"))
   
     # list raw probability tile layers for a given year
-    year_files <- list.files(lcms_path, pattern = paste0(year, '.+.tif$'), full.names = TRUE)
+    year_files <- list.files(lcms_dir, pattern = paste0(year, '.+.tif$'), full.names = TRUE)
   
     # load in all tiles for single year as a vrt
-    raw_prob <- vrt(year_files, glue('{tmp_dir}/raw_prob_{year}.vrt'), overwrite = TRUE)
+    raw_prob <- vrt(year_files, glue::glue('{tmp_dir}/raw_prob_{year}.vrt'), overwrite = TRUE)
   
     # add layer names for clarity
     names(raw_prob) <- c( "FastLoss_Raw_Prob", "SlowLoss_Raw_Prob", "Gain_Raw_Prob")
@@ -219,7 +256,7 @@ for (z in 1:length(zone_list)) {
     raw_prob_process <-
     raw_prob %>%
       crop(zone, mask = TRUE) %>% # crop to zone
-      terra::classify(cbind(NAvalue, NA)) # update NA values
+      terra::classify(cbind(LCMS_NAvalue, NA)) # update NA values
     
     # # inspect
     #   rbind(freq(raw_prob_process[[1]], value = NA),
@@ -233,9 +270,9 @@ for (z in 1:length(zone_list)) {
       min()
   
     # reclassify classes: values below threshold go to NA
-    raw_prob_process[[1]] <- terra::classify(raw_prob_process[[1]], cbind(seq(1, change_thresholds[1], 1), NA))
-    raw_prob_process[[2]] <- terra::classify(raw_prob_process[[2]], cbind(seq(1, change_thresholds[2], 1), NA))
-    raw_prob_process[[3]] <- terra::classify(raw_prob_process[[3]], cbind(seq(1, change_thresholds[3], 1), NA))
+    raw_prob_process[[1]] <- terra::classify(raw_prob_process[[1]], cbind(seq(1, LCMS_change_thresholds[1], 1), NA))
+    raw_prob_process[[2]] <- terra::classify(raw_prob_process[[2]], cbind(seq(1, LCMS_change_thresholds[2], 1), NA))
+    raw_prob_process[[3]] <- terra::classify(raw_prob_process[[3]], cbind(seq(1, LCMS_change_thresholds[3], 1), NA))
   
     maxProbClass <-
       raw_prob_process %>%
@@ -294,27 +331,22 @@ for (z in 1:length(zone_list)) {
   # Export
   #---------------------------------------#
   
-  # create export directory
-  output_dir_lcms <- glue('{output_dir}01_Input/01_LCMS_Slow_Loss')
-  dir.create(output_dir_lcms)
   
-  # create output file names
-  lcms_slowloss_years_outpath <- glue('{output_dir_lcms}/{start_year}_{end_year}_{zone_name}_LCMS_SlowLoss_Years.tif')
-  lcms_slowloss_binary_outpath <- glue('{output_dir_lcms}/{start_year}_{end_year}_{zone_name}_LCMS_SlowLoss_Binary.tif')
+
   
-  # write these files out
-  writeRaster(lcms_slowloss_years, lcms_slowloss_years_outpath,
-              overwrite = TRUE)
-  writeRaster(lcms_slowloss_binary, lcms_slowloss_binary_outpath,
-              overwrite = TRUE)
+  # # write these files out
+  # writeRaster(lcms_slowloss_years, glue::glue('{target_dir_prelim}/disturb_year_LFLCMS.tif'),
+  #             overwrite = TRUE)
+  # writeRaster(lcms_slowloss_binary, glue::glue('{target_dir_prelim}/disturb_code_LFLCMS.tif'),
+  #             overwrite = TRUE)
   
   # clear memory
   gc()
   
-  # option to remove intermediate files
-  if(remove_intermediate_files == "Y") {
-    rm(lcms_slowloss, lcms_slowloss_years, lcms_slowloss_binary)
-  } else {}
+  # # option to remove intermediate files
+  # if(remove_intermediate_files == "Y") {
+  #   rm(lcms_slowloss, lcms_slowloss_years, lcms_slowloss_binary)
+  # } else {}
   
   ###############################################
   # PREP LANDFIRE FIRE DATA
@@ -347,7 +379,7 @@ for (z in 1:length(zone_list)) {
   nums <- c(-9999, seq(0, 1133, 1))
   no.class.val.fire <- nums[nums %notin% fire_codes]
   
-  #reproject zone for landfire
+  # reproject zone for landfire
   zone %<>% 
     project(landfire_crs)
   
@@ -355,7 +387,7 @@ for (z in 1:length(zone_list)) {
   print("preparing landfire fire")
   
   # list landfire files
-  landfire_files <- list.files(landfire_path, pattern = '.tif$', full.names = TRUE, recursive = TRUE)
+  landfire_files <- list.files(glue::glue('{landfire_dir}/Disturbance'), pattern = '.tif$', full.names = TRUE, recursive = TRUE)
   
   # filter files to only files we're interested in
   landfire_files %<>%
@@ -373,8 +405,9 @@ for (z in 1:length(zone_list)) {
   #inspect
   #landfire_files
   
-  # load all landfire files as vrt
+  # load all landfire files 
   landfire_dist <- vrt(landfire_files$path, glue('{tmp_dir}/landfire_dist.vrt'), options = '-separate', overwrite = TRUE)
+  #landfire_dist <- terra::rast(landfire_files$path)
   
   # add names to layers for clarity
   names(landfire_dist) <- year_list
@@ -408,28 +441,28 @@ for (z in 1:length(zone_list)) {
   # Export
   #---------------------------------------#
   
-  # create export directory
-  output_dir_landfire <- glue('{output_dir}01_Input/02_Landfire_Fire')
-  dir.create(output_dir_landfire)
-  
-  # create output file names
-  landfire_fire_years_outpath <- glue('{output_dir_landfire}/{start_year}_{end_year}_{zone_name}_Landfire_Fire_Years.tif')
-  landfire_fire_binary_outpath <- glue('{output_dir_landfire}/{start_year}_{end_year}_{zone_name}_Landfire_Fire_Binary.tif')
-  
-  # write these files out
-  writeRaster(landfire_fire_years, landfire_fire_years_outpath, 
-              overwrite = TRUE)
-  writeRaster(landfire_fire_binary, landfire_fire_binary_outpath, 
-              overwrite = TRUE)
-  
-  # remove unused files
-  rm(landfire_dist, landfire_files)
-  gc()
-  
-  # option to remove intermediate files
-  if(remove_intermediate_files == "Y") {
-    rm(landfire_fire_years, landfire_fire_binary)
-  } else {}
+  # # create export directory
+  # output_dir_landfire <- glue('{output_dir}01_Input/02_Landfire_Fire')
+  # dir.create(output_dir_landfire)
+  # 
+  # # create output file names
+  # landfire_fire_years_outpath <- glue('{output_dir_landfire}/{start_year}_{end_year}_{zone_name}_Landfire_Fire_Years.tif')
+  # landfire_fire_binary_outpath <- glue('{output_dir_landfire}/{start_year}_{end_year}_{zone_name}_Landfire_Fire_Binary.tif')
+  # 
+  # # write these files out
+  # writeRaster(landfire_fire_years, landfire_fire_years_outpath, 
+  #             overwrite = TRUE)
+  # writeRaster(landfire_fire_binary, landfire_fire_binary_outpath, 
+  #             overwrite = TRUE)
+  # 
+  # # remove unused files
+  # rm(landfire_dist, landfire_files)
+  # gc()
+  # 
+  # # option to remove intermediate files
+  # if(remove_intermediate_files == "Y") {
+  #   rm(landfire_fire_years, landfire_fire_binary)
+  # } else {}
   
   #################################################
   # MERGE LCMS and LANDIRE LAYERS
@@ -461,12 +494,19 @@ for (z in 1:length(zone_list)) {
   # #apply names for clarity
   # names(dist_input) <-fnames
   
-  # load input rasters back in - save memory
-  landfire_fire_years <- terra::rast(landfire_fire_years_outpath)
-  lcms_slowloss_years <- terra::rast(lcms_slowloss_years_outpath)
-  landfire_fire_binary <- terra::rast(landfire_fire_binary_outpath)
-  lcms_slowloss_binary <- terra::rast(lcms_slowloss_binary_outpath)
+  # # load input rasters back in - save memory
+  # landfire_fire_years <- terra::rast(landfire_fire_years_outpath)
+  # lcms_slowloss_years <- terra::rast(lcms_slowloss_years_outpath)
+  # landfire_fire_binary <- terra::rast(landfire_fire_binary_outpath)
+  # lcms_slowloss_binary <- terra::rast(lcms_slowloss_binary_outpath)
   
+  # ensure rasters are in the same projection
+  lcms_slowloss_binary %<>% terra::project(landfire_crs)
+  lcms_slowloss_years %<>% terra::project(landfire_crs)
+  landfire_fire_binary %<>% terra::project(landfire_crs)
+  landfire_fire_binary %<>% terra::project(landfire_crs)
+  
+    gc()
   
   # for existing disturbance layer: 
   # fire code: 1
@@ -474,47 +514,39 @@ for (z in 1:length(zone_list)) {
   
   
   dist_year <- terra::merge(landfire_fire_years, lcms_slowloss_years) %>% # merge fire and slow loss 
-    terra::app(function(x) cur_year - x ) %>% # calculate years since disturbance
-    terra::classify(cbind(NA,-99)) # set no data values
+    terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
+    terra::classify(cbind(NA, 99)) %>% # set no data values
+    terra::mask(zone) # mask
   
   dist_type <- terra::merge(landfire_fire_binary, lcms_slowloss_binary) %>% # merge fire and slow loss
-    terra::classify(cbind(NA, 0)) # set no data values
+    terra::classify(cbind(NA, 0)) %>% # set no data values
+    terra::mask(zone) # mask
   
   
   # #inspect
   # plot(landfire_fire_years)
+  # plot(lcms_slowloss_years)
   # plot(dist_year)
   # plot(landfire_fire_binary)
+  # plot(lcms_slowloss_binary)
   # plot(dist_type)
   
   # Export
   # -------------------------------------------------#
   
-  # set projection?
-  
-  print("exporting disturbance year and disturbance type!")
-  
-  # create export directory
-  output_dir_dist <- glue('{output_dir}02_Final/LCMS_Landfire_Disturbance/')
-  dir.create(output_dir_dist)
-  
-  # create output file names
-  dist_year_outpath <- glue('{output_dir_dist}/{start_year}_{end_year}_{zone_name}_DisturbanceYear.tif')
-  dist_type_outpath <- glue('{output_dir_dist}/{start_year}_{end_year}_{zone_name}_DisturbanceType.tif')
-  
   #export
-  writeRaster(dist_year, dist_year_outpath,
+  writeRaster(dist_year, glue::glue('{target_dir_z}/disturb_year_LFLCMS.tif'),
               overwrite = TRUE)
-  writeRaster(dist_type, dist_type_outpath,
+  writeRaster(dist_type, glue::glue('{target_dir_z}/disturb_code_LFLCMS.tif'),
               overwrite = TRUE)
   
   toc()
   
-  #remove products
-  # option to remove intermediate files
-  if(remove_intermediate_files == "Y") {
-    rm(dist_year, dist_type)
-  } else {}
+  # #remove products
+  # # option to remove intermediate files
+  # if(remove_intermediate_files == "Y") {
+  #   rm(dist_year, dist_type)
+  # } else {}
   
   #clear unused memory
   gc()

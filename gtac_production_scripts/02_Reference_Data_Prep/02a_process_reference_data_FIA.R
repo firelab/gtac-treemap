@@ -1,24 +1,38 @@
 # Extract reference data from FIA database
+# Run for each state at a time
+# FIA data must already be dowloaded
 
-# Fields to obtain: 
+# Written by Lila Leatherman (Lila.leatherman@usda.gov)
+
+# Last Updated: 2/21/2024
+
+#######################################################
+
+# Fields to obtain from COND table 
+# - DSTRBCD1 DSTRBYR1 # initial fields
+# LIVE_CANOPY_CVR_PCT # canopy cover 
+# FORTYPCD
+# FLDTYPCD
+# STDSZCD
+# FLDSZCD
+# BALIVE
+# ALSTK
+# GSSTK,
+# CARBON_DOWN_DEAD
+# QMD_RMRS
+# SDIPCT_RMRS
+
+# Fields to calculate based on data in TREE table: 
 # - "CARBON_D", 
 # - "CARBON_L",
 # - "DRYBIO_D",
 # - "DRYBIO_L", 
 # - TPA_DEAD"
 # - "TPA_LIVE"
-# -"VOLCFNET_L", 
+# - "VOLCFNET_L", 
 # - "VOLCFNET_D", 
 
   
-
-   
-  
-# - "CARBON_DOWN_DEAD")
-
-# if available: 
-# Canopy Cover
-# Canopy Height
 
 # To obtain in order to calculate derived attributes and prepare Tree List:
 # - Cond table: 
@@ -26,6 +40,7 @@
 # - Tree table: 
 #   - DRYBIO_BOLE
 #   - DRYBIO_STUMP
+#   - DRYBIO_BRANCH
 #   - TPA_UNADJ
 #   - STATUS_CD
 #   - DIA
@@ -57,13 +72,14 @@ start_year <- 1999
 end_year <- 2016
 
 # set location of input csvs
-data_path <- glue::glue('{home_dir}01_Data/04_FIA/05_FIA_DataMart/CSV/')
+fia_path <- glue::glue('{home_dir}01_Data/04_FIA/05_FIA_DataMart/CSV/')
 
 # set location to export ref data to
-ref_export <- glue::glue('{home_dir}03_Outputs/06_Reference_Data/')
+ref_path <- glue::glue('{home_dir}03_Outputs/06_Reference_Data/')
 
 # list states - lower 48 states by abbreviation
-states <- c("ID", "UT", "WY")
+states <- c("ID", "UT", "WY",
+            "NV", "CO", "MT")
 # states <- c("AL", "AR", "AZ", "CA", "CO", "CT", 
 #             "DE", "FL", "GA", "ID", "IL", "IN", 
 #             "IA", "KS", "KY", "LA", "ME", "MD",
@@ -84,23 +100,29 @@ library(magrittr)
 # Allow for sufficient digits to differentiate plot cn numbers
 options("scipen"=100, "digits"=8)
 
+# Create directory
+if(!file.exists(glue::glue('{ref_path}/01_ByState/'))) {
+  dir.create(glue::glue('{ref_path}/01_ByState/'), recursive = TRUE)
+}
+
+
 # Run - by state
 #-------------------------------------------------------#
 
 # iterate over state - save by state
 
-#for(i in 1:length(states)) {
+for(i in 1:length(states)) {
   
 # for testing  
-  i <- 3
+  #i <- 3
   state_name <- states[i]
   
   print(glue("working on {state_name}"))
   
   # load input tables
-  plot <- read.csv(glue('{data_path}{state_name}_PLOT.csv'))
-  cond <- read.csv(glue('{data_path}{state_name}_COND.csv'))
-  tree <- read.csv(glue('{data_path}{state_name}_TREE.csv'))
+  plot <- read.csv(glue('{fia_path}{state_name}_PLOT.csv'))
+  cond <- read.csv(glue('{fia_path}{state_name}_COND.csv'))
+  tree <- read.csv(glue('{fia_path}{state_name}_TREE.csv'))
   
   # get fields from plot table
   plot_in <- plot %>% 
@@ -122,7 +144,7 @@ options("scipen"=100, "digits"=8)
   # Join plot and cond data
   t <- inner_join(plot_in, cond_in, by = c("PLT_CN", "PLOT", "STATECD", "UNITCD", "COUNTYCD")) %>%
     # filter to years of interest
-    filter(INVYR >= start_year) %>%
+    filter(INVYR >= start_year & INVYR <= end_year) %>%
     # filter to forested plots
     filter(COND_STATUS_CD == 1) %>%
     # filter to single-condition plots
@@ -139,8 +161,13 @@ options("scipen"=100, "digits"=8)
   
   # join with coordinates
   
+  # check for duplicates
+  t %>%
+    group_by(PLT_CN) %>%
+    filter(n()> 1)
+  
   # save
-  write.csv(t, glue('{ref_export}{state_name}_FIAextract_allVars.csv'))
+  #write.csv(t, glue('{ref_path}{state_name}_FIAextract_allVars.csv'))
   
   # BUILD TREE TABLE
   # ------------------------------------------------------------#
@@ -151,7 +178,7 @@ options("scipen"=100, "digits"=8)
     filter(INVYR > start_year) %>%
     dplyr::select(CN, PLT_CN, PLOT, STATECD, UNITCD, COUNTYCD,
                   #DRYBIO_TOP, DRYBIO_SAPLING, DRYBIO_WDLD_SPP, # not in tree table for some reason?
-                  DRYBIO_STEM, DRYBIO_FOLIAGE,
+                  DRYBIO_STEM, DRYBIO_BRANCH, DRYBIO_FOLIAGE,
                   DRYBIO_AG, DRYBIO_BG, 
                   DRYBIO_BOLE,  DRYBIO_STUMP,  
                   TPA_UNADJ, STATUSCD, DIA, STANDING_DEAD_CD, VOLBFNET, VOLCFNET,
@@ -177,7 +204,7 @@ options("scipen"=100, "digits"=8)
                     STATUSCD == 2 &
                     DIA >= 5 &
                     STANDING_DEAD_CD == 1) %>%
-    dplyr::reframe(CARBON_D = sum(DRYBIO_BOLE, DRYBIO_STUMP, DRYBIO_STEM)/2/2000 * TPA_UNADJ) %>%
+    dplyr::reframe(CARBON_D = sum(DRYBIO_BOLE, DRYBIO_STUMP, DRYBIO_BRANCH )/2/2000 * TPA_UNADJ) %>%
     distinct()
   
   # CARBON_L
@@ -188,7 +215,7 @@ options("scipen"=100, "digits"=8)
     treelist %>%
     dplyr::filter(COND_STATUS_CD == 1 &
                     STATUSCD == 1 ) %>%
-    dplyr::reframe(CARBON_L = sum(DRYBIO_BOLE, DRYBIO_STUMP, DRYBIO_STEM )/2/2000*TPA_UNADJ)%>%
+    dplyr::reframe(CARBON_L = sum(DRYBIO_BOLE, DRYBIO_STUMP, DRYBIO_BRANCH  )/2/2000*TPA_UNADJ)%>%
     distinct()
   
   #DRYBIO_D
@@ -200,7 +227,7 @@ options("scipen"=100, "digits"=8)
                     STATUSCD == 2 &
                     DIA >= 5 &
                     STANDING_DEAD_CD == 1) %>%
-    dplyr::reframe(DRYBIO_D = sum(DRYBIO_BOLE, DRYBIO_STUMP, DRYBIO_STEM)/2000*TPA_UNADJ)%>%
+    dplyr::reframe(DRYBIO_D = sum(DRYBIO_BOLE, DRYBIO_STUMP, DRYBIO_BRANCH )/2000*TPA_UNADJ)%>%
     distinct()
   
   # DRYBIO_L 
@@ -210,7 +237,7 @@ options("scipen"=100, "digits"=8)
   DRYBIO_L <- treelist %>%
     dplyr::filter(COND_STATUS_CD == 1 &
                     STATUSCD == 1 ) %>%
-    dplyr::reframe(DRYBIO_L = sum(DRYBIO_BOLE, DRYBIO_STUMP, DRYBIO_STEM)/2000*TPA_UNADJ)%>%
+    dplyr::reframe(DRYBIO_L = sum(DRYBIO_BOLE, DRYBIO_STUMP, DRYBIO_BRANCH )/2000*TPA_UNADJ)%>%
     distinct()
  
     #TPA_DEAD
@@ -244,9 +271,8 @@ options("scipen"=100, "digits"=8)
     dplyr::filter(TREECLCD == 2 &
                     COND_STATUS_CD == 1 &
                     STATUSCD == 1) %>%
-    dplyr::reframe(VOLBFNET_L = sum(VOLBFNET)*TPA_UNADJ) %>%
-    distinct()
-    
+    dplyr::reframe(VOLBFNET_L = sum(VOLBFNET*TPA_UNADJ)) %>%
+    distinct() 
     
     # VOLCFNET_D: Volume, Standing Dead (ft3/acre)
     # Volume, standing dead, cubic feet per acre. Calculated via the following FIA query:
@@ -257,7 +283,7 @@ options("scipen"=100, "digits"=8)
                     STATUSCD == 2 &
                     DIA >= 5 &
                     STANDING_DEAD_CD == 1) %>%
-    dplyr::reframe(VOLCFNET_D = sum(VOLCFNET)*TPA_UNADJ) %>%
+    dplyr::reframe(VOLCFNET_D = sum(VOLCFNET*TPA_UNADJ)) %>%
     distinct()
   
     # VOLCFNET_L: Volume, Live (ft3/acre)
@@ -275,7 +301,7 @@ options("scipen"=100, "digits"=8)
   #--------------------------------------------#
   d_list <- list(CARBON_D, CARBON_L, DRYBIO_D, DRYBIO_L, TPA_DEAD, TPA_LIVE, VOLBFNET_L, VOLCFNET_D, VOLCFNET_L)
   
-  treelist_out <- purrr::reduce(d_list,
+  attributes_out <- purrr::reduce(d_list,
                 full_join,
                 by = "PLT_CN") %>%
     dplyr::full_join(t, by = "PLT_CN") %>%
@@ -287,6 +313,21 @@ options("scipen"=100, "digits"=8)
            GSSTK, LIVE_CANOPY_CVR_PCT,QMD_RMRS, STDSZCD,  SDIPCT_RMRS, TPA_DEAD,
            TPA_LIVE, VOLBFNET_L, VOLCFNET_D, VOLCFNET_L)
   
+  dupes <- attributes_out %>%
+    group_by(PLT_CN) %>%
+    filter(n() > 1)
+  
+  # check for duplicates
+  print("duplicate CNs - first 6")
+  print(
+    attributes_out %>%
+      group_by(PLT_CN) %>%
+      filter(n() > 1) %>% 
+      head()
+    )
+  
   # save
-  write.csv(treelist_out, glue('{ref_export}{state_name}_treelist.csv'), row.names = FALSE )
+  write.csv(attributes_out, glue('{ref_path}/01_ByState/{state_name}_{start_year}_{end_year}_attributes.csv'), row.names = FALSE )
+
+  }
   
