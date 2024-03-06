@@ -2,7 +2,7 @@
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # Original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
 
-# Last updated: 2/27/2024
+# Last updated: 3/4/2024
 
 # PART 2: 
 # - Run imputation over input area / target rasters
@@ -10,6 +10,7 @@
 
 
 # TO DO: 
+# - add progress bar to dopar - parabar https://parabar.mihaiconstantin.com/
 # - check for tiles available and then run whatever tiles aren't run
 
 
@@ -29,7 +30,7 @@ tile_size <- 2000
 # # select tiles to run
 # # if NA, defaults to all tiles in list
 #which_tiles <- NA
-which_tiles <- c(8)
+which_tiles <- c(9:36)
 
 # Test application settings
 #-----------------------------------------#
@@ -73,24 +74,24 @@ terraOptions(memfrac = 0.8)
 # Parallelization settings
 #--------------------------------------#
 
-# options for future
-options(future.rng.onMisuse = "ignore") # ignore errors with random number generators
-options(future.globals.onReference = "error") # give an error if a pointer can't access something in a future loop
-options(future.globals.maxSize = 750 * 1024 ^ 2 ) # maximum size for an object that can be exported to a future loop
-
-
-# set up future session
-future::plan("multisession", workers=ncores)
-
-# # set up dopar
-# cl <- makeCluster(ncores)
-# registerDoParallel(cl)
+# # options for future
+# options(future.rng.onMisuse = "ignore") # ignore errors with random number generators
+# options(future.globals.onReference = "error") # give an error if a pointer can't access something in a future loop
+# options(future.globals.maxSize = 750 * 1024 ^ 2 ) # maximum size for an object that can be exported to a future loop
 # 
-# # load packages to each cluster
-# clusterCall(cl, function(){ 
-#   library(tidyverse);
-#   library(yaImpute);
-#   library(randomForest)})
+# # set up future session
+# future::plan("multisession", workers=ncores)
+
+# set up dopar
+cl <- makeCluster(ncores)
+registerDoParallel(cl)
+
+# load packages to each cluster
+clusterCall(cl, function(){
+  library(tidyverse);
+  library(yaImpute);
+  library(randomForest);
+  library(glue)})
 
 ####################################################################
 # Load data
@@ -106,7 +107,7 @@ yai.treelist.bin <- readr::read_rds(model_path)
 # Load target rasters
 # --------------------------------------------------------------------#
 
-# list raster files
+# list target raster files
 flist.tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
 
 # load raster files as terra raster
@@ -207,7 +208,7 @@ for(j in which_tiles) {
   tic()
   
   # for test 
-  j <- 8
+  #j <- 8
   
   # select tile to run
   fn <- tiles[j]
@@ -252,20 +253,6 @@ for(j in which_tiles) {
   # convert raster to matrix
   mat <- as.matrix(ras)
   
-  # # convert matrix to list of data frames - one data frame for each row
-  # rows_in <- NULL
-  # 
-  # # MOVE DATA FRAME CONVERSION TO WITHIN FUTURE LOOP
-  # for(r in row1:nrow_r) {
-  #   
-  #   d <- list(data.frame(
-  #     mat[(ncol_r*(r-1)+1):(ncol_r*r),])) # get extracted values from each field for each row of input raster
-  #   
-  #   if(is.null(rows_in)){
-  #     rows_in <- d
-  #   } else {
-  #     rows_in <- c(rows_in, d)
-  #   }}
   
   # Do work on tile
   #--------------------------------#
@@ -273,24 +260,26 @@ for(j in which_tiles) {
   # PARALLEL WITH FURRR
   #---------------------------#
   
-  #wrapper function to track progress
-  progressr::with_progress({
-    p <- progressr::progressor(steps = nrow_r)
-
-    # work over tile
-    #rows_out <-
-      1:nrow_r %>%
-      future_imap(function(fn, i, ...) {
-
-        # report progress
-        p()
+  # #wrapper function to track progress
+  # progressr::with_progress({
+  #   p <- progressr::progressor(steps = nrow_r)
+  # 
+  #   # work over tile
+  #   #rows_out <-
+  #     1:nrow_r %>%
+  #     future_imap(function(fn, i, ...) {
+  # 
+  #       # report progress
+  #       p()
   
-  # # PARALLEL WITH DOPAR
-  # #----------------------------#
-  #       
-  # foreach(i = 1:nrow_r, 
-  #         .packages = "tidyverse","yaImpute", "glue") %do% {
-      
+  # PARALLEL WITH DOPAR
+  #----------------------------#
+
+  f <- foreach(i = 1:nrow_r,
+          .packages = c("tidyverse","yaImpute", "glue")
+          #.export = c("mat", "impute.row", "yai.treelist.bin")
+          ) %dopar% {
+
         # # for testing
         #i = 37
         # print(glue::glue("working on row {i}/{nrow_r}"))
@@ -307,17 +296,17 @@ for(j in which_tiles) {
         i_out <- if(i < 10) {glue::glue('000{i}') } else 
           if(i < 100) {glue::glue('00{i}')} else 
             if(i < 1000) {glue::glue('0{i}')} else 
-              if(i < 10000) {glue('{i}')}
+              if(i < 10000) {glue::glue('{i}')}
         
         saveRDS(row, 
-                #file = glue::glue('{tmp_dir}/rows/row{i}.RDS') # glue doesn't work with variables in future loops
+                #file = glue::glue('{tmp_dir}/rows/row{i_out}.RDS') # glue doesn't work with variables in future loops
                 paste0(tmp_dir, "/rows/row", i_out, ".RDS")
                 )
    
-   #}# end do par
+   }# end do par
              
-      }) # end future over rows
-    }) # end wrapper function to track progress
+   #   }) # end future over rows
+  #  }) # end wrapper function to track progress
   
   # read rows back in 
   rlist <- list.files(glue::glue('{tmp_dir}/rows/'), "row[0-9]*.RDS", full.names = TRUE )
@@ -329,7 +318,7 @@ for(j in which_tiles) {
           lapply(rlist, readRDS))
   
   # delete rows from tmp dir - fresh start for next tile 
-  #do.call(file.remove, rlist)
+  do.call(unlink, list(rlist))
   
   
   # Turn rows into a raster tile 
@@ -368,7 +357,7 @@ for(j in which_tiles) {
   
 }
 
-#stopCluster(myCluster)
+stopCluster(cl)
 
 print(glue::glue("Done with zone {zone_num}!"))
 
