@@ -1,13 +1,13 @@
-# TreeMap Imputation
+# TreeMap Evaluation
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# PART 4: 
+# Out-of-bag stats and validation 
 # - Extract model validation stats from yai object
 # - Report out model accuracy for vars
 
 # TO DO: 
 
-# Last updated: 2/13/2024
+# Last updated: 3/6/2024
 
 ###########################################################################
 # Set inputs
@@ -21,8 +21,8 @@ this.path <- this.path::this.path() # Id where THIS script is located
 
 # get path to input script
 spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
-                              "00_inputs_for_imp.R" ),
+input_script.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "03_Imputation/00_inputs_for_imp.R" ),
                             collapse = "/")
 
 source(input_script.path)
@@ -161,6 +161,6 @@ for(i in eval_vars) {
 
 # save cms as RDS 
 write_rds(cms, file = 
-            glue::glue('{eval_dir}/02_Model_Validation/CMs_OOB.RDS'))
+            glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
 
 gc()

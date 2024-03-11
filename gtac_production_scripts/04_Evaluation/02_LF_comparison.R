@@ -1,4 +1,5 @@
 # Zonal Validation Script for TreeMap Outputs
+# Validation, in this instance, means comparing against the LandFire layers used as target data
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
@@ -23,7 +24,7 @@
 ###########################################################################
 
 # name of raster to validate
-raster_name <- "2016_Orig_Test_keepinbag_UT_Uintas_rect_maxpx1000_nT12"
+raster_name <- "2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36"
 
 # list layers to export
 layers_export <- c("canopy_cover", "canopy_height", "EVT_GP",
@@ -76,8 +77,10 @@ xtable <- read.csv(xtable_path)
 target_files <- list.files(target_dir, pattern = ".tif$", recursive = TRUE, full.names = TRUE)
 
 # filter to only raster that match target layers
-target_files %>%
-  str_detect(layers_export)
+target_files <- target_files[target_files %>%
+                               str_detect(layers_export %>%
+                                            paste(., collapse = "|")) 
+                             ]
 
 #read in as vrt
 lf <- terra::vrt(target_files, filename = "lf.vrt", options = "-separate", overwrite = TRUE)
@@ -112,9 +115,9 @@ names(ras) <- c("value")
 #convert to integer
 ras <- as.int(ras)
 
-# inspect
-ras
-plot(ras)
+# # inspect
+# ras
+# plot(ras)
 
 # clear memory
 #--------------------#
@@ -176,7 +179,7 @@ cms <- layers_export %>%
 names(cms) <- layers_export
 
 # export as RDS
-write_rds(cms, glue::glue('{eval_dir}/01_Map_Validation/{output_name}_CMs_derivedVars.RDS'))
+write_rds(cms, glue::glue('{eval_dir}/02_LF_Comparison/{output_name}_CMs_derivedVars.RDS'))
 
 
 ############################################################
@@ -186,10 +189,10 @@ write_rds(cms, glue::glue('{eval_dir}/01_Map_Validation/{output_name}_CMs_derive
 
 # test function - apply on one input field
 #-----------------------------------------#
-assembleConcat(layer_field = "canopy_cover", raster = ras, lookup = lookup, 
-               id_field = "PLOTID", stackin_compare = lf, stackin_compare_name =  "Landfire", 
-               export_path =  glue('{eval_dir}/01_Map_Validation/{output_name}'),
-               remapEVT_GP = FALSE, EVT_GP_remap_table =  evt_gp_remap_table)
+# assembleConcat(layer_field = "canopy_cover", raster = ras, lookup = lookup, 
+#                id_field = "PLOTID", stackin_compare = lf, stackin_compare_name =  "Landfire", 
+#                export_path =  glue('{eval_dir}/02_LF_Comparison/{output_name}'),
+#                remapEVT_GP = FALSE, EVT_GP_remap_table =  evt_gp_remap_table)
 
 # assembleConcat("EVT_GP", ras, lookup, "PLOTID",
 #              lf, "Landfire", glue('{output_dir}{cur.zone.zero}_{output_name}'),
@@ -202,7 +205,7 @@ lapply(layers_export, assembleConcat, # list to apply over, function to apply
        # additional arguments to function
        ras = ras, lookup = lookup, id_field = "PLOTID",
        stackin_compare = lf, stackin_compare_name = "Landfire",
-       export_path = glue('{eval_dir}/01_Map_Validation/{output_name}'), 
+       export_path = glue('{eval_dir}/02_LF_Comparison/{output_name}'), 
        remapEVT_GP = TRUE, evt_gp_remap_table)
 
 ####################################
