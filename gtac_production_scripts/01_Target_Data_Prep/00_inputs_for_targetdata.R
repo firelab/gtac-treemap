@@ -18,18 +18,9 @@
 
 # supply path to a shapefile to use as a subset, or NA
 # aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-# aoi_name <- "UT_Uintas_rect"
+# aoi_name <- "UT_Uintas_rect_"
 aoi_path <- NA
-
-# setting to remove intermediate files from memory
-# all intermediate files required to generate end product are written to disk
-# Y: deletes intermediate files (better for iteration and development)
-# N: retains intermediate files (better for computational efficiency)
-remove_intermediate_files <- "N"
-
-#option to calculate landfire fire files anew
-#may not be necessary if this has already been run for the year and zone of interest
-calculate_landfire_fire <- "Y"
+aoi_name <- NA
 
 # Standard inputs
 #-----------------------------------------------#
@@ -37,14 +28,16 @@ calculate_landfire_fire <- "Y"
 # Zone list
 zone_list <- c(16)
 
+zone_num <- 16
+
 # Project name
 project_name <- "2016_GTAC_Test"
 
 # target data version
-target_data_version <- "v2016_RMRS"
+target_data_version <- "v2016_GTAC"
 
 # reference data version
-ref_data_version <- "v2016_RMRS"
+ref_data_version <- "v2016_GTAC"
 
 # set year range
 start_year <- 1999
@@ -52,6 +45,9 @@ end_year <- 2016
 
 # set current modeling year (for years since disturbance)
 model_year <- end_year
+
+#build year list
+year_list <- seq(start_year, end_year, 1)
 
 # Input data directories
 #-----------------------------------------#
@@ -93,7 +89,7 @@ slopeD_path <- glue::glue('{topo_dir}LF2020_SlpD_220_CONUS/Tif/LC20_SlpD_220.tif
 asp_path <- glue::glue('{topo_dir}LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.tif')
 
 # set paths to input biophys rasters
-biphys_path <- glue::glue('{data_dir}02_Landfire/BioPhys/')
+biophys_path <- glue::glue('{data_dir}02_Landfire/BioPhys/')
 
 # Export data directories
 #----------------------------------------------------#
@@ -102,10 +98,41 @@ biphys_path <- glue::glue('{data_dir}02_Landfire/BioPhys/')
 project_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/')
 
 # Directory where target data lives
-target_dir <- glue::glue("{home_dir}/01_Data/03_Outputs/05_Target_Rasters/{target_data_version}/")
+target_dir <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/")
 
 # Directory where EVT_GP remap table will be located
 evt_gp_remap_table_path <- target_dir
+
+# Prep zone
+#-----------------------------------------#
+
+#set zone identifiers
+cur.zone <- glue::glue('z{zone_num}')
+cur.zone.zero <- if(zone_num < 10) {
+  glue::glue('z0{zone_num}') } else {
+    cur.zone
+  }
+
+# Update dirs with zone
+# -----------------------------------------#
+# Set folder paths
+target_dir_z = glue::glue('{target_dir}/{cur.zone.zero}/')
+
+
+
+
+# Export data paths
+#---------------------------------------------------------------#
+# create output file names
+landfire_fire_years_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LandfireDist_Fire_Years.tif')
+landfire_fire_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LandfireDist_Fire_Binary.tif')
+
+landfire_ind_years_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LandfireDist_InsectDisease_Years.tif')
+landfire_ind_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LandfireDist_InsectDisease_Binary.tif')
+
+lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
+lcms_slowloss_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
+
 
 # Input parameters for LCMS Disturbance
 #-----------------------------------------------------------#
@@ -116,7 +143,6 @@ LCMS_NAvalue<- -32768
 # set threshold for probability of slow loss from LCMS
 slow_loss_thresh <- 14 # default value for LCMS processing: 14
 
-
 # set probability thresholds for change
 LCMS_change_thresholds <- c(29, # fast loss; default = 29
                        slow_loss_thresh, # slow loss; default = 14
@@ -124,58 +150,8 @@ LCMS_change_thresholds <- c(29, # fast loss; default = 29
                        )
 
 ##########################################
-
-# set tmp directory
-tmp_dir <- "D:/tmp"
-
-# setting to remove intermediate files from memory
-# all intermediate files required to generate end product are written to disk
-# Y: deletes intermediate files (better for iteration and development)
-# N: retains intermediate files (better for computational efficiency)
-remove_intermediate_files <- "N"
-
-#option to calculate landfire fire files anew
-#may not be necessary if this has already been run for the year and zone of interest
-calculate_landfire_fire <- "Y"
-
-#####################
 # SETUP
 ######################
-
-# Temp directories 
-#----------------------------------#
-
-# check if tmp directory exists 
-if (file.exists(tmp_dir)){
-  
-} else {
-  # create a new sub directory inside the main path
-  dir.create(tmp_dir, recursive = TRUE)
-  
-}
-
-#empty temp dir
-#do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE)))
-
-# set temp directory - helps save space with R terra
-write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
-
-#remove unused memory
-gc()
-
-# Packages and functions
-#---------------------------------#
-
-# packages required
-list.of.packages <- c("terra", "tidyverse", "magrittr", "glue", "tictoc")
-
-# #check for packages and install if needed
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages) > 0) install.packages(new.packages)
-
-# load all packages
-vapply(list.of.packages, library, logical(1L),
-       character.only = TRUE, logical.return = TRUE)
 
 # Load TreeMap script library
 #--------------------------------------------------#
@@ -192,6 +168,52 @@ input_script.path <- paste( c(spl[c(1:(length(spl)-2))],
 
 source(input_script.path)
 
+
+# Temp directories 
+#----------------------------------#
+
+# set tmp directory
+tmp_dir <- "D:/tmp"
+
+# check if tmp directory exists 
+if (file.exists(tmp_dir)){
+  
+} else {
+  # create a new sub directory inside the main path
+  dir.create(tmp_dir, recursive = TRUE)
+  
+}
+
+# create tmp dir folder for LCMS tiles
+if (!file.exists(glue::glue('{tmp_dir}/lcms/'))) {
+  dir.create(glue::glue('{tmp_dir}/lcms/'))
+}
+
+# create tmp dir folder for LF tiles
+if (!file.exists(glue::glue('{tmp_dir}/lf/'))) {
+  dir.create(glue::glue('{tmp_dir}/lf/'))
+}
+
+
+#empty temp dir
+do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRUE)))
+
+# set temp directory - helps save space with R terra
+write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
+
+# Packages and functions
+#---------------------------------#
+
+# packages required
+list.of.packages <- c("terra", "tidyverse", "magrittr", "glue", "tictoc", "foreach", "doParallel")
+
+# #check for packages and install if needed
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages) > 0) install.packages(new.packages)
+
+# load all packages
+vapply(list.of.packages, library, logical(1L),
+       character.only = TRUE, logical.return = TRUE)
 
 # Other file directories
 #---------------------------------#
@@ -212,6 +234,22 @@ if (!file.exists(target_dir)) {
   dir.create(target_dir, recursive = TRUE)
 }
 
+if(!file.exists(target_dir_z)) {
+  dir.create(target_dir_z, recursive = TRUE)
+  }
+
+# target dir
+if (!file.exists(glue::glue('{target_dir_z}/00_prelim_dist'))) {
+  dir.create(glue::glue('{target_dir_z}/00_prelim_dist'), recursive = TRUE)
+}
+
+# target dir
+if (!file.exists(glue::glue('{target_dir_z}/01_final'))) {
+  dir.create(glue::glue('{target_dir_z}/01_final'), recursive = TRUE)
+}    
+
+
 # Remove unused objects
 #------------------------------------------------#
 rm(input_script.path, list.of.packages)
+

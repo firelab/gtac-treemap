@@ -14,20 +14,12 @@ list.of.packages <- c("this.path", "terra", "tidyverse", "magrittr",
                       "glue", "tictoc", "caret", "yaImpute", "randomForest")
 
 #check for packages and install if needed
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages) > 0) install.packages(new.packages)
+#new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+#if(length(new.packages) > 0) install.packages(new.packages)
 
 # load all packages
 vapply(list.of.packages, library, logical(1L),
        character.only = TRUE, logical.return = TRUE)
-
-###########################
-# Helper functions
-###########################
-
-# make 'notin' function
-`%notin%` <- Negate('%in%')
-
 
 ###########################
 # Run other scripts in this folder
@@ -50,11 +42,52 @@ snames <- snames[snames != this.path]
 lapply(snames, source)
 
 # remove unused objects
-rm(this.path, spl, script.path, snames )
+rm(this.path, script.path, snames )
 
 ###########################
 # Dictionaries
 ###########################
+
+
+###########################
+# Helper functions
+###########################
+
+# make 'notin' function
+`%notin%` <- Negate('%in%')
+
+
+# which.max analog
+# in the case of a tie, returns the index with the highest value
+which.max.hightie <- function(x) {
+  
+  if(all(is.na(x))) {
+    NA
+  } else {
+    z <- which(x==max(x, na.rm = TRUE))
+    as.integer(z[length(z)])
+  }
+}
+
+# # test
+# r1 <- rast(ncols=10, nrows=10)
+# values(r1) <- 1:ncell(r1)
+# 
+# r2 <- rast(ncols = 10, nrows = 10)
+# values(r2) <- 2
+# 
+# r3 <- rast(ncols = 10, nrows = 10)
+# values(r3) <- 3
+# 
+# r4 <- rast(ncols = 10, nrows = 10)
+# values(r4) <- c(NA, 4)
+# 
+# rs <- c(r1, r2, r3, r4)
+# 
+# v <- c(0,2,2,NA,2,2,0,2)
+# str(which.max.hightie(v))
+# 
+# out <- terra::app(rs, which.max.hightie)
 
 #####################################################
 # Raster operations
