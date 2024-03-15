@@ -21,7 +21,7 @@
 
 # breakup factor - how many tiles to break the area into? as a factor of area px 
 # 1 = 1 tile, 5 = many tiles
-break.up <- 3
+break.up <- 4
 
 # Set inputs - from input script
 this.path <- this.path::this.path() # Id where THIS script is located
@@ -118,7 +118,7 @@ tic()
   #---------------------------------------------#
   
   # set aoi_name field if it doesn't already exist via aoi subset
-  if(aoi_name == "NA") {
+  if(is.na(aoi_name)) {
     aoi_name <- ""
   }
   
@@ -241,6 +241,7 @@ tic()
     
       # name to year 
       names(maxProbClass) <- year
+      
       #inspect
       # maxProbClass
       # rbind(freq(maxProbClass),
@@ -265,8 +266,9 @@ tic()
     slowloss_tile <- 
       #terra::which.max(slowloss_tile) #%>% # identify year with maximum
       terra::app(slowloss_tile, which.max.hightie)     %>% # identify year with maximum value; ties go to highest index
-      terra::classify(cbind(c(seq(1:length(year_list))), year_list)) # reclassify index values to years
-    
+      terra::classify(cbind(c(seq(1:length(year_list))), year_list)) %>% # reclassify index values to years
+      terra::project(landfire_crs) # reproject to desired crs
+      
     # write out single tile as tmp file (then read all in later as .vrt)
     terra::writeRaster(slowloss_tile,
             filename = paste0(tmp_dir, "/lcms/slowloss_years_tile", i, ".tif"),

@@ -34,21 +34,21 @@ source(input_script.path)
 # Parallelization settings
 #--------------------------------------#
 
-# set number of cores used for parallelization
-ncores <- 5
-
-# set up dopar
-cl <- makeCluster(ncores, outfile = glue::glue("{tmp_dir}/cl_report.txt"))
-registerDoParallel(cl)
-#registerDoSEQ() # option to register sequentially - for testing
-
-# load packages to each cluster
-clusterCall(cl, function(){
-  library(tidyverse);
-  library(magrittr);
-  #library(glue);
-  library(terra)
-})
+# # set number of cores used for parallelization
+# ncores <- 5
+# 
+# # set up dopar
+# cl <- makeCluster(ncores, outfile = glue::glue("{tmp_dir}/cl_report.txt"))
+# registerDoParallel(cl)
+# #registerDoSEQ() # option to register sequentially - for testing
+# 
+# # load packages to each cluster
+# clusterCall(cl, function(){
+#   library(tidyverse);
+#   library(magrittr);
+#   #library(glue);
+#   library(terra)
+# })
 
 
 ###################################################
@@ -100,10 +100,6 @@ if(is.na(aoi_name)) {
   aoi_name <- ""
 }
 
-# rasterize zone
-zone_r <- terra::rast(terra::ext(zone), crs = lcms_crs, resolution = 30)
-zone_r <- terra::rasterize(zone, zone_r)
-
 # Load Landfire data
 #-----------------------------------------------------#
 
@@ -129,8 +125,15 @@ landfire_files %<>%
 # load all landfire files as vrt
 landfire_dist <- vrt(landfire_files$path, glue::glue('{tmp_dir}/landfire_dist.vrt'), options = '-separate', overwrite = TRUE)
 
+# crop to zone
+landfire_dist %<>%
+  terra::crop(zone) %>%
+  terra::mask(zone)
+
 # rename layers as years
 names(landfire_dist) <- year_list
+
+gc()
 
 # #inspect
 #landfire_dist
@@ -188,11 +191,11 @@ rcl_ind[rcl_ind != 2] <- NA
 
 # Crop landfire data
 #------------------------------------#
-# Prep landfire data
-landfire_dist <- landfire_dist %>%
-  terra::crop(zone, mask = TRUE)
-
-gc()
+# # Prep landfire data
+# landfire_dist <- landfire_dist %>%
+#   terra::crop(zone, mask = TRUE)
+# 
+# gc()
 
 # Make tiles
 #----------------------------------------------------#
@@ -202,11 +205,11 @@ gc()
 expanse <- terra::expanse(zone, unit = "km")
 
 # break up raster into multiple sections to speed up processing
-h <- base::ceiling(ncol(zone_r)/break.up)
-v <- base::ceiling(nrow(zone_r)/break.up)
+h <- base::ceiling(ncol(landfire_dist[[1]])/break.up)
+v <- base::ceiling(nrow(landfire_dist[[1]])/break.up)
 
 # aggregate - template for making tiles to divvy up zone
-agg <- terra::aggregate(zone_r, fact = c(h,v), na.rm = TRUE)
+agg <- terra::aggregate(landfire_dist[[1]], fact = c(h,v))
 agg[] <- 1:ncell(agg)
 
 # inspect zones
