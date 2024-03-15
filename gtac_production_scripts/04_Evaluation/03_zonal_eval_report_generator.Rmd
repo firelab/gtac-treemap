@@ -5,7 +5,6 @@ output:
   html_document:
     df_print: paged
   pdf_document: default
-  #latex_engine: xelatex
 date: "`r Sys.Date()`"
 ---
 
@@ -37,11 +36,11 @@ source(input_script.path)
 ```{r set input parameters, include = FALSE}
 
 # name of raster to validate
-raster_name <- "2016_Orig_Test_keepinbag_UT_Uintas_rect_maxpx1000_nT12"
+#raster_name <- "2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36"
 
 # list variables to evaluate
 var_names <- c("canopy_cover", "canopy_height", "EVT_GP", 
-               "disturb_code", "disturb_year")
+               "disturb_code")
 
 # set number of digits to round to
 round_dig <- 2
@@ -56,9 +55,8 @@ Run name: `r raster_name`
 ```{r}
 
 # load RDS of cm files
-cms_all <- readRDS(glue::glue('{eval_dir}/01_Map_Validation/{output_name}_CMs_derivedVars.RDS'))
-
-
+#cms_all <- readRDS(glue::glue('{eval_dir}/02_LF_Comparison/{output_name}_CMs_derivedVars.RDS'))
+cms_all <- readRDS(glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
 ```
 
 
@@ -94,6 +92,8 @@ for(v in 1:length(var_names)){
     dplyr::select(class, ref, pred) %>%
     dplyr::mutate(class = factor(class))
   
+  
+  n_classes <- nrow(freq)
   
   # Prep CM Classes
   #---------------------------------------------#
@@ -148,6 +148,12 @@ for(v in 1:length(var_names)){
     ggtitle(glue("Frequency of classes for imputed vs. reference data
             Zone: z{zone_num} ; Attribute: {var_in}"))
   
+  # conditionally flip axis text labeling
+  if(var_in == "EVT_GP") {
+    barchart <- barchart + 
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  }
+  
   print(barchart)
   
   # Scatterplot: Total obs of class vs. classwise accuracy
@@ -183,9 +189,13 @@ for(v in 1:length(var_names)){
   oa <- cm_overall %>%
     filter(metric == "Accuracy") %>%
     select(value) %>%
-    as.numeric() %>%
-    round(round_dig)
+    as.numeric() 
+ 
+  print(glue::glue("Overall accuracy: {round(oa*100,4)}%"))
   
+  oa %<>%
+    round(round_dig)
+   
   # get producer's accuracy for each class - precision
   pa <- cm_classes %>%
     filter(metric == "Precision") %>%

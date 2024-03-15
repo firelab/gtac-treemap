@@ -4,7 +4,7 @@
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last updated:
-# 2/13/2024
+# 3/6/24
 
 # Goals: 
 # - load preliminary imputation outputs
@@ -24,7 +24,7 @@
 ###########################################################################
 
 # name of raster to validate
-raster_name <- "2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36"
+#raster_name <- "2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36"
 
 # list layers to export
 layers_export <- c("canopy_cover", "canopy_height", "EVT_GP",
@@ -158,7 +158,7 @@ lookup %<>%
 lapply(layers_export, assembleExport, 
        # additional options for function
        raster = ras, lookup = lookup, id_field = "PLOTID",
-       export_path = glue('{assembled_dir}/02_Derived_vars/{raster_name}'))
+       export_path = glue::glue('{assembled_dir}/02_Derived_vars/{raster_name}'))
 
 
 ####################################################################
