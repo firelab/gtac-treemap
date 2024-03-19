@@ -264,7 +264,6 @@ tic()
     
     # get most recent year of slow loss
     slowloss_tile <- 
-      #terra::which.max(slowloss_tile) #%>% # identify year with maximum
       terra::app(slowloss_tile, which.max.hightie)     %>% # identify year with maximum value; ties go to highest index
       terra::classify(cbind(c(seq(1:length(year_list))), year_list)) %>% # reclassify index values to years
       terra::project(landfire_crs) # reproject to desired crs
@@ -272,6 +271,7 @@ tic()
     # write out single tile as tmp file (then read all in later as .vrt)
     terra::writeRaster(slowloss_tile,
             filename = paste0(tmp_dir, "/lcms/slowloss_years_tile", i, ".tif"),
+            datatype = "INT2U",
             overwrite = TRUE)
     
     gc()
@@ -291,8 +291,8 @@ tic()
   lcms_slowloss_years <- terra::vrt(lcms_files,  glue('{tmp_dir}/lcms_slowloss.vrt'), overwrite = TRUE)
   
   #inspect
-  lcms_slowloss_years
-  plot(lcms_slowloss_years)
+  #lcms_slowloss_years
+  #plot(lcms_slowloss_years)
 
   
   # convert to binary indicator of slow loss
@@ -306,18 +306,20 @@ tic()
   # inspect
   # lcms_slowloss
   # freq(lcms_slowloss)
-  # plot(lcms_slowloss_years)
-  # plot(lcms_slowloss_binary)
+  plot(lcms_slowloss_years)
+  plot(lcms_slowloss_binary)
   
   # Export
   #----------------------------#
   
   writeRaster(lcms_slowloss_years, 
               lcms_slowloss_years_outpath, 
+              datatype = "INT2U",
               overwrite = TRUE)
   
   writeRaster(lcms_slowloss_binary, 
               lcms_slowloss_binary_outpath, 
+              datatype = "INT2U",
               overwrite = TRUE)
 
   #}

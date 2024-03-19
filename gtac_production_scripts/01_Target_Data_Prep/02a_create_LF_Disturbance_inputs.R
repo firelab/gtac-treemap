@@ -280,6 +280,7 @@ f <- foreach(i = 1:length(tiles),
   #            overwrite = TRUE)
   writeRaster(landfire_fire_years_tile, 
               filename = paste0(tmp_dir, "/lf/fire_years_tile", i, ".tif"),
+              datatype = "INT2U",
               overwrite = TRUE)
   
   # remove unused files
@@ -317,6 +318,7 @@ f <- foreach(i = 1:length(tiles),
   
   writeRaster(landfire_ind_years_tile, 
               filename = paste0(tmp_dir, "/lf/ind_years_tile", i, ".tif"),
+              datatype = "INT2U",
               overwrite = TRUE)
   
   # remove unused files
@@ -352,7 +354,7 @@ lf_fire_binary <-
   terra::classify(cbind(year_list, 1))
 
 # reclassify to binary indicator of ind over all years
-#inset and disease code = 2
+#insect and disease code = 2
 lf_ind_binary <-
   lf_ind_years %>%
   terra::classify(cbind(year_list, 2))
@@ -362,14 +364,18 @@ lf_ind_binary <-
 
 # write these files out
 writeRaster(lf_fire_years, landfire_fire_years_outpath,
-           overwrite = TRUE)
+            datatype = "INT2U",
+            overwrite = TRUE)
 writeRaster(lf_fire_binary, landfire_fire_binary_outpath,
-           overwrite = TRUE)
+            datatype = "INT1U",
+            overwrite = TRUE)
 
 # write these files out
 writeRaster(lf_ind_years, landfire_ind_years_outpath,
+            datatype = "INT2U",
             overwrite = TRUE)
 writeRaster(lf_ind_binary, landfire_ind_binary_outpath,
+            datatype = "INT1U",
             overwrite = TRUE)
 
 

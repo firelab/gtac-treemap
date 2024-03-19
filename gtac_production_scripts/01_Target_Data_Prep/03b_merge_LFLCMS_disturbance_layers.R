@@ -47,7 +47,7 @@ zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
 
 #project
 zone %<>%
-  terra::project(lcms_crs)
+  terra::project(landfire_crs)
 
 # get name of zone
 zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
@@ -74,7 +74,7 @@ if(is.na(aoi_name)) {
 }
 
 ################################################
-# LOAD LCMS DATA
+# LOAD INPUT DATA
 ################################################
 
 # load lcms rasters
@@ -119,29 +119,24 @@ dist_type <- terra::merge(landfire_fire_binary, lcms_slowloss_binary) %>% # merg
 gc()
 
 # #inspect
-# plot(landfire_fire_years)
-# plot(lcms_slowloss_years)
-# plot(dist_year)
-# plot(landfire_fire_binary)
-# plot(lcms_slowloss_binary)
-# plot(dist_type)
+plot(landfire_fire_years)
+plot(lcms_slowloss_years)
+plot(dist_year)
+plot(landfire_fire_binary)
+plot(lcms_slowloss_binary)
+plot(dist_type)
 
 # Export
 # -------------------------------------------------#
 
 #export
 writeRaster(dist_year, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_year_LFLCMS.tif'),
+            datatype = "INT1U",
             overwrite = TRUE)
 writeRaster(dist_type, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_code_LFLCMS.tif'),
+            datatype = "INT1U",
             overwrite = TRUE)
 
-toc()
-
-# #remove products
-# # option to remove intermediate files
-# if(remove_intermediate_files == "Y") {
-#   rm(dist_year, dist_type)
-# } else {}
 
 #clear unused memory
 gc()

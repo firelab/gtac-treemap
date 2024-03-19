@@ -17,8 +17,8 @@
 #-----------------------------------------------#
 
 # supply path to a shapefile to use as a subset, or NA
-# aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-# aoi_name <- "UT_Uintas_rect_"
+#aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+#aoi_name <- "UT_Uintas_rect_"
 aoi_path <- NA
 aoi_name <- NA
 
@@ -53,8 +53,8 @@ year_list <- seq(start_year, end_year, 1)
 #-----------------------------------------#
 
 # home dir
-home_dir <- "D:/LilaLeatherman/01_TreeMap/"
-#home_dir <- "//166.2.126.25/TreeMap/"
+#home_dir <- "D:/LilaLeatherman/01_TreeMap/"
+home_dir <- "//166.2.126.25/TreeMap/"
 
 # data directory - where source data are located
 #data_dir <- glue::glue('{home_dir}/01_Data/')
@@ -115,11 +115,14 @@ cur.zone.zero <- if(zone_num < 10) {
 
 # Update dirs with zone
 # -----------------------------------------#
+
 # Set folder paths
 target_dir_z = glue::glue('{target_dir}/{cur.zone.zero}/')
 
-
-
+# set aoi_name field if it doesn't already exist via aoi subset
+if(is.na(aoi_name)) {
+  aoi_name <- ""
+}
 
 # Export data paths
 #---------------------------------------------------------------#

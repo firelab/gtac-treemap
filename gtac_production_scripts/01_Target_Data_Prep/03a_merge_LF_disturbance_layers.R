@@ -74,7 +74,9 @@ print("exporting disturbance year and disturbance type!")
 
 #export
 writeRaster(dist_year, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_year_LF.tif'),
+            datatype = "INT1U",
             overwrite = TRUE)
 writeRaster(dist_type, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_code_LF.tif'),
+            datatype = "INT1U",
             overwrite = TRUE)
 
