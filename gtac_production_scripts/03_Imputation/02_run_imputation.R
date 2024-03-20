@@ -2,7 +2,7 @@
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # Original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
 
-# Last updated: 3/4/2024
+# Last updated: 3/19/2024
 
 # PART 2: 
 # - Run imputation over input area / target rasters
@@ -11,7 +11,6 @@
 
 # TO DO: 
 # - add progress bar to dopar - parabar https://parabar.mihaiconstantin.com/
-# - check for tiles available and then run whatever tiles aren't run
 
 
 ###########################################################################
@@ -29,17 +28,7 @@ tile_size <- 2000
 
 # # select tiles to run
 # # if NA, defaults to all tiles in list
-#which_tiles <- NA
-which_tiles <- c(9:36)
-
-# Test application settings
-#-----------------------------------------#
-
-# # supply path to a shapefile to use as subset, or NA
-# aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-# aoi_name <- "UT_Uintas_rect"
-aoi_path <- NA
-
+which_tiles <- NA
 
 # Standard inputs
 #---------------------------------------------#
@@ -73,14 +62,6 @@ terraOptions(memfrac = 0.8)
 
 # Parallelization settings
 #--------------------------------------#
-
-# # options for future
-# options(future.rng.onMisuse = "ignore") # ignore errors with random number generators
-# options(future.globals.onReference = "error") # give an error if a pointer can't access something in a future loop
-# options(future.globals.maxSize = 750 * 1024 ^ 2 ) # maximum size for an object that can be exported to a future loop
-# 
-# # set up future session
-# future::plan("multisession", workers=ncores)
 
 # set up dopar
 cl <- makeCluster(ncores)
@@ -124,7 +105,57 @@ names(rs2) <- layer_names
 # get crs
 lf.crs <- crs(rs2)
 
+# Conditionally load disturbance rasters from another dir
+#----------------------------------------------------------#
+
+# conditional 
+if(!is.na(dist_raster_dir)) {
+  
+  print("loading disturbance rasters to test")
+  
+  # list files
+  dist_files <- list.files(dist_raster_dir, full.names = TRUE, recursive = TRUE)
+  
+  # filter files if necessary
+  dist_files %<>% 
+    str_subset(pattern = glue::glue('{dist_layer_type}.tif$') ) %>%
+    str_subset(pattern = glue::glue('{cur.zone.zero}_disturb'))
+  
+  # load files in 
+  dist <- terra::vrt(dist_files, options = "-separate", 
+                     filename = glue::glue('{tmp_dir}/dist.tif'),
+                     overwrite = TRUE)
+  
+  # ensure layer names match
+  names(dist) <- c("disturb_code", "disturb_year")
+  
+  # reclass disturbance code
+  dist$disturb_code <- terra::classify(dist$disturb_code, cbind(2, 1))
+  
+  # make sure they're in the right projection 
+  dist %<>% terra::project(lf.crs) 
+  
+  # make sure layers align
+  dist %<>% terra::crop(rs2) %>%
+    terra::extend(terra::ext(rs2)) %>%
+    terra::crop(rs2) %>%
+    terra::resample(rs2, method = "near") # check this / maybe make align earlier in processing? off by a fraction of a degree
+  
+  
+  gc()
+  
+  # combine replace disturbance layers in target data
+  rs2$disturb_code <- dist$disturb_code
+  rs2$disturb_year <- dist$disturb_year
+  
+  rm(dist)
+  
+  gc()
+  
+}
+
 # FOR TESTING: Conditionally crop to aoi
+#---------------------------------------------------#
 if (!is.na(aoi_path)) {
   
   print("using input shapefile as AOI")
@@ -132,9 +163,6 @@ if (!is.na(aoi_path)) {
   # crop and mask
   aoi <- terra::vect(aoi_path) %>% terra::project(lf.crs)
   rs2 <- terra::crop(rs2, aoi, mask = TRUE)
-  
-  # update output name
-  output_name = glue('{output_name}_{aoi_name}')
   
   gc()
   
@@ -184,7 +212,7 @@ names(p) <- "cell"
 p$cell <- seq(1:nrow(p))
 
 # plot tiles
-plot(rs2[[1]], legend = FALSE)
+plot(rs2[[2]], legend = FALSE)
 plot(p, 'cell', alpha = 0.25, add=TRUE)
 
 # Select tiles to run
@@ -208,7 +236,7 @@ for(j in which_tiles) {
   tic()
   
   # for test 
-  #j <- 8
+  #j <- 2
   
   # select tile to run
   fn <- tiles[j]
@@ -299,15 +327,11 @@ for(j in which_tiles) {
               if(i < 10000) {glue::glue('{i}')}
         
         saveRDS(row, 
-                #file = glue::glue('{tmp_dir}/rows/row{i_out}.RDS') # glue doesn't work with variables in future loops
-                paste0(tmp_dir, "/rows/row", i_out, ".RDS")
+                paste0(tmp_dir, "/rows/row", i_out, ".RDS") # glue doesn't work in parallel
                 )
    
-   }# end do par
+   } # end do par
              
-   #   }) # end future over rows
-  #  }) # end wrapper function to track progress
-  
   # read rows back in 
   rlist <- list.files(glue::glue('{tmp_dir}/rows/'), "row[0-9]*.RDS", full.names = TRUE )
   
@@ -316,10 +340,6 @@ for(j in which_tiles) {
   # bind rows together
   mout <- do.call(rbind, 
           lapply(rlist, readRDS))
-  
-  # delete rows from tmp dir - fresh start for next tile 
-  do.call(unlink, list(rlist))
-  
   
   # Turn rows into a raster tile 
   #-----------------------------------------#
@@ -342,15 +362,22 @@ for(j in which_tiles) {
   # trim NAs from tile, now that we have appropriate extent and CRS 
   tile_out <- terra::trim(tile_out)
   
+  # inspect
+  plot(tile_out)
+  
   # export
   terra::writeRaster(tile_out, 
               # glue doesn't work for file names within future loop
               glue::glue('{output_dir}raster/tiles/{output_name}_tilesz{tile_size}_nT{length(tiles)}_tile{j}.tif'),
               #paste0(output_dir,'raster/tiles/',output_name,'_tilesz',tile_size,'_nT',length(tiles),'_tile',j,'.tif'),
+              datatype = "INT4U",
               overwrite = TRUE)
   
   #rm(tile_out)
   gc() # end of work on tile 
+  
+  # delete rows from tmp dir - fresh start for next tile 
+  do.call(unlink, list(rlist))
   
   print(glue::glue("done with tile {j} !"))
   toc() # report time elapsed

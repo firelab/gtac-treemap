@@ -3,7 +3,7 @@
 #   and Karin Riley (karin.riley@usda.gov)
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
-# Last updated: 2/13/2024
+# Last updated: 3/15/2024
 
 # PART 1: 
 # - BUILD x and y tables
@@ -72,7 +72,7 @@ evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
 allplot_vect <- terra::vect(cbind(allplot$ACTUAL_LON, allplot$ACTUAL_LAT))
 
 # set input projection
-crs(allplot_vect) <- "epsg:4326"
+terra::crs(allplot_vect) <- "epsg:4326"
 
 # reproject to desired projection
 allplot_vect %<>% terra::project(crs(rs2))
@@ -128,6 +128,7 @@ plot.df %<>%
          EASTING = sin(radians)) %>%
   dplyr::select(-radians)
 
+
 # Calculate binary disturbance code and convert to factor
 #----------------------------------------------------------#
 plot.df %<>%
@@ -156,11 +157,6 @@ rownames(Y.df) <- plot.df$ID
 # Export X and Y tables
 # ------------------------------------------------------#
 
-#create output directory
-if(!file.exists(glue('{output_dir}/xytables'))){
-  dir.create(glue('{output_dir}/xytables'))
-}
-
 write.csv(X.df, glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Xdf_bin.csv'))
 write.csv(Y.df, glue('{output_dir}/xytables/{cur.zone.zero}_{output_name}_Ydf_bin.csv'))
 
@@ -176,7 +172,7 @@ yai.treelist.bin <- yai(X.df, Y.df,
 toc()
 
 # Export model
-write_rds(yai.treelist.bin, glue('{output_dir}/model/{cur.zone.zero}_{output_name}_yai_treelist_bin.RDS'))
+write_rds(yai.treelist.bin, model_path)
 
 
 # Report model accuracy for Y variables (EVC, EVH, EVG)
@@ -210,18 +206,13 @@ p <- varImp %>%
   theme_bw() + 
   ggtitle(glue('RF Variable Importance for {cur.zone.zero}'))
 
-#create output directory
-if(!file.exists(glue('{output_dir}/eval'))){
-  dir.create(glue('{output_dir}/eval'))
-}
-
 
 # export to file
-ggsave(glue('{output_dir}/eval/{output_name}_varImp.png'), width = 7, height = 5)
-write.csv(cm_EVC, glue('{output_dir}/eval/{output_name}_CM_canopyCover.csv'))
-write.csv(cm_EVH, glue('{output_dir}/eval/{output_name}_CM_canopyHeight.csv'))
-write.csv(cm_EVT_GP, glue('{output_dir}/eval/{output_name}_CM_EVT_Group.csv'))
-write.csv(cm_DC, glue('{output_dir}/eval/{output_name}_CM_DisturbanceCode.csv'))
+ggsave(glue('{output_dir}/model_eval/{output_name}_varImp.png'), width = 7, height = 5)
+write.csv(cm_EVC, glue('{output_dir}/model_eval/{output_name}_CM_canopyCover.csv'))
+write.csv(cm_EVH, glue('{output_dir}/model_eval/{output_name}_CM_canopyHeight.csv'))
+write.csv(cm_EVT_GP, glue('{output_dir}/model_eval/{output_name}_CM_EVT_Group.csv'))
+write.csv(cm_DC, glue('{output_dir}/model_eval/{output_name}_CM_DisturbanceCode.csv'))
 
 # clear unused memory
 gc()

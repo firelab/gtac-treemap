@@ -14,12 +14,6 @@
 # Set inputs
 ###################################################
 
-# input raster tile base name
-tile_name <- "2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36"
-
-# desired name for output raster
-rout_name <- tile_name
-
 # Standard Inputs
 #--------------------------------------#
 
@@ -35,6 +29,13 @@ input_script.path <- paste( c(spl[c(1:length(spl)-1)],
 
 source(input_script.path)
 
+#------------------------------------------------#
+# input raster tile base name
+tile_name <- glue::glue('{output_name}_tilesz2000_nT36')
+#tile_name <- glue::glue('{output_name}_tilesz2000_nT4')
+
+# desired name for output raster
+rout_name <- tile_name
 
 
 #####################################################################
@@ -49,7 +50,7 @@ flist.tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE,
 
 # load raster files as terra raster
 # - only load first raster, for reference and metadata
-rs2 <- terra::rast(flist.tif[1])
+rs2 <- terra::rast(flist.tif[2])
 
 # get raster layer names
 layer_names <- flist.tif %>%
@@ -57,10 +58,25 @@ layer_names <- flist.tif %>%
   str_replace("z[0-9][0-9]/", "")
 
 #add names to raster list
-names(rs2) <- layer_names[1]
+names(rs2) <- layer_names[2]
 
 # get crs
 lf.crs <- crs(rs2)
+
+# FOR TESTING: Conditionally crop to aoi
+#---------------------------------------------------#
+if (!is.na(aoi_path)) {
+  
+  print("using input shapefile as AOI")
+  
+  # crop and mask
+  aoi <- terra::vect(aoi_path) %>% terra::project(lf.crs)
+  rs2 <- terra::crop(rs2, aoi, mask = TRUE)
+  
+  gc()
+  
+} else {print("using extent of input raster stack as AOI")} 
+
 
 #######################################################################
 # Run
@@ -77,7 +93,6 @@ vrt <- terra::vrt(tile.list, filename = glue::glue('{tmp_dir}/t_assemble.tif'),
                   overwrite = TRUE)
 # inspect
 plot(vrt)
-
 
 
 # export as single raster per zone

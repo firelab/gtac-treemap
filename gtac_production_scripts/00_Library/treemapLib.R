@@ -3,7 +3,7 @@
 # Author: Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last Updated:
-# 2/7/2024
+# 3/20/2024
 
 #################################################################
 # Load required packages
@@ -26,23 +26,22 @@ vapply(list.of.packages, library, logical(1L),
 ###########################
 
 # Id where script is located
-this.path <- this.path::this.path()
+thispath <- this.path::this.path()
 
-spl <- str_split(this.path, "/")[[1]]
-spl <- c(spl[c(1:length(spl)-1)])
+spl1 <- str_split(thispath, "/")[[1]]
+spl1 <- c(spl1[c(1:length(spl1)-1)])
 
-script.path <- paste(spl, collapse = "/")
+script.path <- paste(spl1, collapse = "/")
 
 # List other scripts in library
-snames <- list.files(script.path, full.names = TRUE)
-snames <- snames[snames != this.path]
+snames <- list.files(script.path, full.names = TRUE, pattern = ".R$")
+snames <- snames[snames != thispath]
 
 # source other scripts in library
-# how do i make this silent? 
 lapply(snames, source)
 
 # remove unused objects
-rm(this.path, script.path, snames )
+rm(spl1, this.path, script.path, snames )
 
 ###########################
 # Dictionaries
@@ -69,25 +68,7 @@ which.max.hightie <- function(x) {
   }
 }
 
-# # test
-# r1 <- rast(ncols=10, nrows=10)
-# values(r1) <- 1:ncell(r1)
-# 
-# r2 <- rast(ncols = 10, nrows = 10)
-# values(r2) <- 2
-# 
-# r3 <- rast(ncols = 10, nrows = 10)
-# values(r3) <- 3
-# 
-# r4 <- rast(ncols = 10, nrows = 10)
-# values(r4) <- c(NA, 4)
-# 
-# rs <- c(r1, r2, r3, r4)
-# 
-# v <- c(0,2,2,NA,2,2,0,2)
-# str(which.max.hightie(v))
-# 
-# out <- terra::app(rs, which.max.hightie)
+
 
 #####################################################
 # Raster operations
@@ -387,5 +368,8 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   
 }
 
-# Remove unused ovjects
+# Report Rendering
+########################################################
+
+# Remove unused objects
 ###################################################

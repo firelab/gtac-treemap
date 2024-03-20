@@ -1,14 +1,35 @@
 ### This script is used to set inputs for all steps in the imputation process
 ## To ensure that all scripts refer to the same input and output products
 
-# Last updated: 2/14/2024
+# TO DO: 
+# - write out input parameters used for a given output name
+
+# Last updated: 3/19/2024
 
 ###########################################################################
 # Set inputs
 ###########################################################################
 
+# Identifiers - for outputs 
+#--------------------------------------------------#
+# Project name
+project_name <- "2016_GTAC_LCMSDist"
+
 # Output imputation name
-output_name <- "2016_Orig_Test_keepinbag_ntree250"
+output_name <- "2016_GTAC_LCMSDist"
+
+# name of output raster / raster to validate
+# will get overwritten in 02_run_imputation 
+#raster_name <- glue::glue('{output_name}_tilesz2000_nT36')
+
+# Test application settings
+#-----------------------------------------#
+
+# # supply path to a shapefile to use as subset, or NA
+# aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+# aoi_name <- "UT_Uintas_rect"
+aoi_path <- NA
+aoi_name <- NA
 
 # Standard inputs
 #-----------------------------------------------#
@@ -16,47 +37,47 @@ output_name <- "2016_Orig_Test_keepinbag_ntree250"
 # Zone list
 zone_num <- 16
 
-# Project name
-project_name <- "2016_GTAC_Test"
-
-# target data version
+# target data version to use
 target_data_version <- "v2016_RMRS"
 
-# reference data version
+# reference data version to use
 ref_data_version <- "v2016_RMRS"
 
-# home dir
-home_dir <- "D:/LilaLeatherman/01_TreeMap/"
-#home_dir <- "//166.2.126.25/TreeMap/"
+# model to use - supply specific model to pull into imputation, or NA
+# if NA, uses default model name and path
+model_path <- '//166.2.126.25/TreeMap/03_Outputs/99_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
 
-# data directory - where source data are located
-data_dir <- glue::glue('{home_dir}/01_Data/')
+#home_dir
+home_dir <- "//166.2.126.25/TreeMap/"
 
-# where version-specific inputs and outputs will live
-project_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/')
 
-# Directory where target data lives
-target_dir <- glue::glue("{data_dir}/01_TreeMap2016_RDA/01_Target/") # specific to first iteration
-#target_dir <- glue::glue("{data_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/")
-
-# Directory where reference data lives
-ref_dir <- glue::glue("{data_dir}/03_outputs/06_Reference_Data/{ref_data_varsion}/")
+# Constructed inputs - less likely to change
+#-----------------------------------------------------------------#
 
 # Path to X table
-xtable_path <- glue::glue("{data_dir}/01_TreeMap2016_RDA/01_Input/03_XTables/X_table_all_singlecondition.txt") #  specific to first version
-#xtable_path <- glue::glue("{ref_dir}/03_XTables/X_table_all_singlecondition.txt")
+xtable_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/{ref_data_version}/X_table_all_singlecondition.txt")
 
+# Directory where target rasters live
+target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/")
+
+# Directory where disturbance layers live
+# If disturbance layers live in the same dir, then NA
+#dist_raster_dir <- NA
+dist_raster_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
+
+# disturbance type - options are "LF" or "LFLCMS".
+# This param only used if !is.na(dist_raster_dir)
+dist_layer_type <- "LFLCMS"
 
 # Directory where EVT_GP remap table is located
-evt_gp_remap_table_path <- glue::glue("{project_dir}/02_Target_Rasters/") # specific to first version
-#evt_gp_remap_table_path <- target_dir
+#evt_gp_remap_table_dir <- target_dir
+evt_gp_remap_table_dir <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/')
 
-# Plot coordinates- shapefile
-#points_path <- "//166.2.126.25/TreeMap/01_Data/04_FIA/03_FullShp/FIA_US.shp"
+# Plot coordinates
+#points_path <- glue::glue('{home_dir}01_Data\04_FIA\06_Coordinates\select_TREEMAP2022_2send\select_TREEMAP2022_2send.xlsx')
 
 # path to file with desired projection
-prj_path <- glue::glue('{data_dir}/02_Landfire/landfire_crs.prj')
-
+prj_path <- glue::glue('{home_dir}01_Data/02_Landfire/landfire_crs.prj')
 
 # Paths for exporting data
 #--------------------------------------#
@@ -64,14 +85,13 @@ prj_path <- glue::glue('{data_dir}/02_Landfire/landfire_crs.prj')
 # set path to save output rasters
 # this directory will be created if it does not already exist
 # UPDATE THIS TO BE FLEX FOR FUTURE RUNS
-output_dir <- glue::glue('{project_dir}/03_Raw_Model_Outputs/')
+output_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/01_Raw_model_outputs/')
 
 #set path for assembled rasters
-# UPDATE THIS TO BE FLEX FOR FUTURE RUNS
-assembled_dir <- glue::glue('{project_dir}/04_Assembled_Model_Outputs/')
+assembled_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/02_Assembled_model_outputs/')
 
 # Evaluation dir
-eval_dir <- glue::glue('{project_dir}/05_Evaluation/')
+eval_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/03_Evaluation/')
 
 # set tmp directory
 tmp_dir <- "D:/tmp/"
@@ -86,24 +106,43 @@ cur.zone.zero <- if(zone_num < 10) {
     cur.zone
   }
 
+if(!is.na(aoi_name)) {
+  output_name <- glue::glue('{output_name}_{aoi_name}')
+}
+
+if(is.na(aoi_name)) {
+  aoi_name <- ""
+}
+
+
 # Update dirs with zone
 # -----------------------------------------#
 # Set folder paths
 target_dir = glue::glue('{target_dir}/{cur.zone.zero}/')
+dist_raster_dir = glue::glue('{dist_raster_dir}/{cur.zone.zero}/01_final')
 output_dir = glue::glue('{output_dir}/{cur.zone.zero}/')
 assembled_dir = glue::glue('{assembled_dir}/{cur.zone.zero}')
 eval_dir <- glue::glue('{eval_dir}{cur.zone.zero}')
 
 tile_dir <- glue::glue('{output_dir}raster/tiles/')
+model_dir = glue::glue('{output_dir}/model/')
 
-evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_path}/{cur.zone.zero}/EVG_remap_table.csv')
+evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur.zone.zero}/01_final/EVG_remap_table.csv')
 
 
 # Model inputs
 #----------------------------------#
 
-# Path where model is located
-model_path <- glue::glue('{output_dir}/model/{cur.zone.zero}_{output_name}_yai_treelist_bin.RDS')
+# build default model path
+if(is.na(model_path)) {
+  model_path1 <- glue::glue('{output_name}_yai_treelist_bin')
+  
+  # Path where model is located
+  # This path will be used for export and import
+  model_path <- glue::glue('{output_dir}/model/{cur.zone.zero}_{model_path1}.RDS')
+  
+}
+
 
 ###########################################################################
 # Set up libraries and directories
@@ -116,18 +155,17 @@ model_path <- glue::glue('{output_dir}/model/{cur.zone.zero}_{output_name}_yai_t
 #devtools::install_github("lleather/yaImpute")
 
 # packages required
-list.of.packages <- c("raster",   
+list.of.packages <- c("terra",   
                       "yaImpute",
                       "randomForest",
                       "this.path",
-                      "terra", "tidyverse", "magrittr", "glue", "tictoc",
+                      "tidyverse", "magrittr", "glue", "tictoc",
                       "caret", 
-                      "furrr", "progressr",
                       "doParallel")
 
-#check for packages and install if needed
-#new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-#if(length(new.packages) > 0) install.packages(new.packages)
+# #check for packages and install if needed
+# new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+# if(length(new.packages) > 0) install.packages(new.packages)
 
 # load all packages
 vapply(list.of.packages, library, logical(1L),
@@ -140,13 +178,13 @@ vapply(list.of.packages, library, logical(1L),
 # Id where script is located
 this.path <- this.path::this.path()
 
-# get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-2))],
+# get path to library script
+spl1 <- stringr::str_split(this.path, "/")[[1]]
+lib.path <- paste( c(spl1[c(1:(length(spl1)-2))],
                               "00_Library/treemapLib.R" ),
                             collapse = "/")
 
-source(input_script.path)
+source(lib.path)
 
 # Set up temp directory 
 #----------------------------------#
@@ -177,7 +215,27 @@ gc()
 if (!file.exists(output_dir)) {
   dir.create(output_dir, recursive = TRUE)
 }
-  
+
+#create output directory
+if(!file.exists(glue('{output_dir}/xytables'))){
+  dir.create(glue('{output_dir}/xytables'))
+}
+
+#create output directory
+if(!file.exists(glue('{output_dir}/model'))){
+  dir.create(glue('{output_dir}/model'))
+}
+
+#create output directory
+if(!file.exists(glue('{output_dir}/model_eval'))){
+  dir.create(glue('{output_dir}/model_eval'))
+}
+
+#create output directory
+if(!file.exists(glue('{output_dir}/params'))){
+  dir.create(glue('{output_dir}/params'))
+}
+
 # tile_dir
 if(!file.exists(tile_dir)){
   dir.create(tile_dir, recursive = TRUE)
@@ -199,9 +257,21 @@ if(!file.exists(glue::glue('{assembled_dir}/02_Derived_vars/'))){
 }
 
 # create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/01_Map_Validation'))) {
-  dir.create(glue::glue('{eval_dir}/01_Map_Validation'), recursive = TRUE)
+if(!file.exists(glue::glue('{eval_dir}/01_OOB_Evaluation'))) {
+  dir.create(glue::glue('{eval_dir}/01_OOB_Evaluation'), recursive = TRUE)
 }
+
+# create eval dir if necessary 
+if(!file.exists(glue::glue('{eval_dir}/02_LF_Comparison'))) {
+  dir.create(glue::glue('{eval_dir}/02_LF_Comparison'), recursive = TRUE)
+}
+
+# create eval dir if necessary 
+if(!file.exists(glue::glue('{eval_dir}/03_Eval_Reports'))) {
+  dir.create(glue::glue('{eval_dir}/03_Eval_Reports'), recursive = TRUE)
+}
+
+
 
 # Load other standard inputs
 #---------------------------------------------#
@@ -209,4 +279,36 @@ prj <- terra::crs(prj_path)
 
 # Remove unused objects
 #------------------------------------------------#
-rm(input_script.path, list.of.packages)
+rm(input_script.path, list.of.packages, evt_gp_remap_table_dir)
+
+# Write out input parameters used
+#----------------------------------------------------#
+
+params_out <- c(
+  glue::glue('project_name : {project_name}'),
+  glue::glue('output_name  : {output_name}'), 
+  glue::glue('cur.zone.zero : {cur.zone.zero}'),
+  glue::glue('aoi_name : {aoi_name}'), 
+  glue::glue('target_data_version : {target_data_version}'),
+  glue::glue('ref_data_version : {ref_data_version}'), 
+  glue::glue('dist_raster_dir : {dist_raster_dir}'),
+  glue::glue('model_path : {model_path}'),
+  glue::glue('xtable_path : {xtable_path}')
+)
+
+# params_out <- c(
+#   project_name, 
+#   output_name,
+#   cur.zone.zero,
+#   aoi_name,
+#   target_data_version,
+#   ref_data_version,
+#   dist_raster_dir,
+#   model_path,
+#   xtable_path
+#   )
+
+
+write.table(as.data.frame(params_out), glue('{output_dir}/params/{cur.zone.zero}_{output_name}_params.txt'),
+            row.names = FALSE)
+
