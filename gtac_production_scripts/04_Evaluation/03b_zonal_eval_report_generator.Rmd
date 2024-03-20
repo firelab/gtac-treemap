@@ -1,5 +1,9 @@
 ---
-title: "TreeMap Zonal Validation"
+params:
+  eval_vars:
+  raster_name:
+  zone_num:
+title: "TreeMap Zonal Validation: Zone `r params$zone_num` "
 output:
   word_document: default
   html_document:
@@ -35,28 +39,35 @@ source(input_script.path)
 
 ```{r set input parameters, include = FALSE}
 
-# name of raster to validate
-#raster_name <- "2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36"
-
-# list variables to evaluate
-var_names <- c("canopy_cover", "canopy_height", "EVT_GP", 
-               "disturb_code")
+# # name of raster to validate
+# raster_name <- glue::glue("2016_GTAC_Test_ntree250_UT_Uintas_rect_tilesz2000_nT36")
+# 
+# # list variables to evaluate
+# var_names <- c("canopy_cover", "canopy_height", "EVT_GP", 
+#                "disturb_code", "disturb_year")
 
 # set number of digits to round to
 round_dig <- 2
 
 ```
 
-Landfire zone: `r zone_num`
+Landfire zone: `r params$zone_num`
 
-Run name: `r raster_name` 
+Run name: `r params$raster_name` 
+
+Variables to evaluate: `r params$eval_vars`
+
+```{r plot raster}
+# plot raster 
+plot(ras, main = glue::glue("Raw Imputation: Zone {params$zone_num}"))
+```
 
 
 ```{r}
 
 # load RDS of cm files
 #cms_all <- readRDS(glue::glue('{eval_dir}/02_LF_Comparison/{output_name}_CMs_derivedVars.RDS'))
-cms_all <- readRDS(glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
+#cms_all <- readRDS(glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
 ```
 
 
@@ -74,7 +85,8 @@ for(v in 1:length(var_names)){
 
   var_in <- var_names[v]
 
-  print(glue("Variable: {var_in}"))
+  print(glue("Variable: {var_in}
+             "))
 
   ##### LOOP OVER EACH VAR
   
@@ -191,7 +203,9 @@ for(v in 1:length(var_names)){
     select(value) %>%
     as.numeric() 
  
-  print(glue::glue("Overall accuracy: {round(oa*100,4)}%"))
+  print(glue::glue("
+                   Overall accuracy: {round(oa*100,4)}%
+                   "))
   
   oa %<>%
     round(round_dig)
@@ -205,7 +219,7 @@ for(v in 1:length(var_names)){
     mutate(value = as.character(value)) %>%
     replace_na(list(value = "NA")) %>%
     #rename
-    rename("Producer's Acc" = value) %>%
+    rename("Prod. Acc" = value) %>%
     # add extra row to be able to bind
     rbind(c("NA"))
   
@@ -265,9 +279,10 @@ for(v in 1:length(var_names)){
     bold(part = "footer") %>%
     # add background color for overall accuracy
     bg(j = nclass + 3,  bg = "green4", part = "footer")%>%
-    # fit to page width
+    # make font smaller
     fontsize(size = 8, part = "all") %>%
-    autofit() %>%
+    # add borders to body cells
+    surround(border = fp_border_default(color = "gray", width = 1), part = "body") %>%
     # add title
     set_caption(glue("Confusion Matrix  
              Zone: z{zone_num} ; Attribute: {var_in}")) 
@@ -278,8 +293,15 @@ for(v in 1:length(var_names)){
     surround(i = r, j = r+1, border = fp_border_default(color = "cornflowerblue", width = 1.5), part = "body")
     }
 
-  # inspect
-  #table_cm
+  # fit to page
+  
+  # table_cm %<>%
+  #   # fit to page width
+  #   autofit() %>% 
+  #   fit_to_width(7.5)
+  
+  table_cm <- FitFlextableToPage(ft = table_cm, 
+                                 pgwidth = 7)
   
   
   #flextable_to_rmd(table_cm)
@@ -287,7 +309,6 @@ for(v in 1:length(var_names)){
   
   # End loop
 }
-
 ```
 
 

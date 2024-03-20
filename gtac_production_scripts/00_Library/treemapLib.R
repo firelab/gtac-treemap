@@ -371,5 +371,14 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
 # Report Rendering
 ########################################################
 
+FitFlextableToPage <- function(ft, pgwidth){
+  
+  ft_out <- ft %>% autofit()
+  
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+
+
 # Remove unused objects
 ###################################################
