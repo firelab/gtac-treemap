@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 3/11/24
+# Last Updated: 3/26/24
 
 # Output rasters: 
 # - years since most recent disturbance
@@ -29,11 +29,45 @@ source(input_script.path)
 # LOAD DATA
 ###################################################
 
-# load lcms projections
-lcms_crs <- crs(lcms_proj)
+# load LF zone data
+LF_zones <- vect(lf_zones_path)
 
-#load landfire projection
-landfire_crs <- crs(landfire_proj)
+# Prep zone
+#-----------------------------------------#
+
+# select single LF zone
+zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
+
+#project
+zone %<>%
+  terra::project(landfire_crs)
+
+# get name of zone
+zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
+
+# Optional subset
+#---------------------------------------#
+
+if (!is.na(aoi_path)) {
+  # load aoi subset - utah uintas only
+  aoi <- vect(aoi_path) %>%
+    project(landfire_crs)
+  
+  # reassign
+  zone <- aoi
+  zone_name <- aoi_name
+  print("using input shapefile as AOI")
+} else{
+  print("using landfire zone as AOI")
+}
+
+# set aoi_name field if it doesn't already exist via aoi subset
+if(is.na(aoi_name)) {
+  aoi_name <- ""
+}
+
+# Load input rasters
+#-------------------------------------------#
 
 # bookkeeping
 print("combining Landfire fire and Landfire insect and disease")
@@ -54,10 +88,14 @@ landfire_ind_binary <- terra::rast(landfire_ind_binary_outpath)
 
 dist_year <- terra::merge(landfire_fire_years, landfire_ind_years) %>% # merge fire and slow loss 
   terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
-  terra::classify(cbind(NA,99)) # set no data values
+  terra::classify(cbind(NA,99)) %>% # set no data values 
+  terra::project(landfire_crs) %>%
+  terra::mask(zone)
 
 dist_type <- terra::merge(landfire_fire_binary, landfire_ind_binary) %>% # merge fire and slow loss
-  terra::classify(cbind(NA, 0)) # set no data values
+  terra::classify(cbind(NA, 0)) %>% # set no data values 
+  terra::project(landfire_crs) %>%
+  terra::mask(zone)
 
 # #inspect
 # plot(landfire_fire_years)
@@ -68,15 +106,15 @@ dist_type <- terra::merge(landfire_fire_binary, landfire_ind_binary) %>% # merge
 # Export
 # -------------------------------------------------#
 
-# set projection?
 
 print("exporting disturbance year and disturbance type!")
 
 #export
-writeRaster(dist_year, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_year_LF.tif'),
+writeRaster(dist_year, lf_disturb_year_outpath,
             datatype = "INT1U",
             overwrite = TRUE)
-writeRaster(dist_type, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_code_LF.tif'),
+
+writeRaster(dist_type, lf_disturb_code_outpath,
             datatype = "INT1U",
             overwrite = TRUE)
 

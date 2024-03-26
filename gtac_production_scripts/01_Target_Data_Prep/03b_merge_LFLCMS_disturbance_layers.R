@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 3/11/24
+# Last Updated: 3/26/24
 
 # Output rasters: 
 # - years since most recent disturbance
@@ -29,12 +29,6 @@ source(input_script.path)
 ###################################################
 # LOAD DATA
 ###################################################
-
-# load lcms projections
-lcms_crs <- crs(lcms_proj)
-
-#load landfire projection
-landfire_crs <- crs(landfire_proj)
 
 # load LF zone data
 LF_zones <- vect(lf_zones_path)
@@ -109,12 +103,12 @@ gc()
 
 dist_year <- terra::merge(landfire_fire_years, lcms_slowloss_years) %>% # merge fire and slow loss
   terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
-  terra::classify(cbind(NA, 99)) %>% # set no data values
-  terra::mask(zone) # mask
-
+  terra::classify(cbind(NA, 99))  %>% # set no data values 
+  terra::mask(zone)
+  
 dist_type <- terra::merge(landfire_fire_binary, lcms_slowloss_binary) %>% # merge fire and slow loss
-  terra::classify(cbind(NA, 0)) %>% # set no data values
-  terra::mask(zone) # mask
+  terra::classify(cbind(NA, 0))   %>% # set no data values 
+  terra::mask(zone)
 
 gc()
 
@@ -130,10 +124,10 @@ plot(dist_type)
 # -------------------------------------------------#
 
 #export
-writeRaster(dist_year, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_year_LFLCMS.tif'),
+writeRaster(dist_year, lcms_disturb_year_outpath,
             datatype = "INT1U",
             overwrite = TRUE)
-writeRaster(dist_type, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_code_LFLCMS.tif'),
+writeRaster(dist_type, lcms_disturb_code_outpath,
             datatype = "INT1U",
             overwrite = TRUE)
 

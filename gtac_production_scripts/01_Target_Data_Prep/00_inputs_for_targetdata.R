@@ -3,11 +3,13 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 3/4/24
+# Last updated: 3/25/24
 
 # TO DO:
 # - address inconsistencies in EVT vs Topo Landfire Paths
 # - add a switch for LCMS+LF disturbance vs LF only disturbance? 
+# - export file showing input data and parameters: 
+# - model year, years of data, versions of input data used, lcms thresholds
 
 ###########################################################################
 # Set inputs
@@ -26,11 +28,11 @@ aoi_name <- NA
 #-----------------------------------------------#
 
 # Zone list
-zone_list <- c(16)
+#zone_list <- c(16)
 
-zone_num <- 16
+zone_num <- 19
 
-# Project name
+#project name
 project_name <- "2016_GTAC_Test"
 
 # target data version
@@ -60,10 +62,22 @@ home_dir <- "//166.2.126.25/TreeMap/"
 #data_dir <- glue::glue('{home_dir}/01_Data/')
 data_dir <- "//166.2.126.25/TreeMap/01_Data/"
 
+# set landfire version 
+landfire_version_veg <- 200
+landfire_year_veg <- 2016
+landfire_version_disturbance <- 220
+landfire_year_disturbance <- 2020
+landfire_version_topo <- 220
+landfire_year_topo <- 2020
+
+# Constructed Inputs (less likely to change)
+#----------------------------------------------------------#
+
 # set path to landfire rasters 
-landfire_dir <- glue::glue('{data_dir}02_Landfire/LF_220/')
-landfire_version <- 220
-landfire_year <- 2020
+#landfire_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version}/')
+landfire_veg_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_veg}/')
+landfire_topo_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_topo}/Topo/')
+landfire_disturbance_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_disturbance}/Disturbance/')
 
 # set path to landfire vector data
 lf_zones_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
@@ -78,18 +92,17 @@ lcms_proj <- glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj')
 landfire_proj <- glue::glue('{data_dir}02_Landfire/landfire_crs.prj')
 
 # Paths to specific Landfire rasters - not disturbance
-evc_path <- glue::glue('{landfire_dir}EVC/LF2016_EVC_200_CONUS/Tif/LC16_EVC_200.tif')
-evh_path <- glue::glue('{landfire_dir}EVH/LF2016_EVH_200_CONUS/Tif/LC16_EVH_200.tif')
-evt_path <- glue::glue('{landfire_dir}EVT/LF2016_EVT_200_CONUS/Tif/LC16_EVT_200.tif')
+evc_path <- glue::glue('{landfire_veg_dir}/EVC/LF{landfire_year_veg}_EVC_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVC_{landfire_version_veg}.tif')
+evh_path <- glue::glue('{landfire_veg_dir}/EVH/LF{landfire_year_veg}_EVH_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVH_{landfire_version_veg}.tif')
+evt_path <- glue::glue('{landfire_veg_dir}/EVT/LF{landfire_year_veg}_EVT_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVT_{landfire_version_veg}.tif')
 
-topo_dir <-glue::glue('{landfire_dir}/Topo/')
-elev_path <- glue::glue('{topo_dir}LF2020_Elev_220_CONUS/Tif/LC20_Elev_220.tif')
-slopeP_path <- glue::glue('{topo_dir}LF2020_SlpP_220_CONUS/Tif/LC20_SlpP_220.tif')
-slopeD_path <- glue::glue('{topo_dir}LF2020_SlpD_220_CONUS/Tif/LC20_SlpD_220.tif')
-asp_path <- glue::glue('{topo_dir}LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.tif')
+elev_path <- glue::glue('{landfire_topo_dir}/LF{landfire_year_topo}_Elev_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Elev_{landfire_version_topo}.tif')
+slopeP_path <- glue::glue('{landfire_topo_dir}/LF{landfire_year_topo}_SlpP_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpP_{landfire_version_topo}.tif')
+slopeD_path <- glue::glue('{landfire_topo_dir}/LF{landfire_year_topo}_SlpD_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpD_{landfire_version_topo}.tif')
+asp_path <- glue::glue('{landfire_topo_dir}/LF{landfire_year_topo}_Asp_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Asp_{landfire_version_topo}.tif')
 
-# set paths to input biophys rasters
-biophys_path <- glue::glue('{data_dir}02_Landfire/BioPhys/')
+# set dir for input biophys rasters
+biophys_dir <- glue::glue('{data_dir}02_Landfire/BioPhys/')
 
 # Export data directories
 #----------------------------------------------------#
@@ -119,6 +132,10 @@ cur.zone.zero <- if(zone_num < 10) {
 # Set folder paths
 target_dir_z = glue::glue('{target_dir}/{cur.zone.zero}/')
 
+# update biophys path - biophys layers stored by zone
+biophys_dir_z <- glue::glue('{biophys_dir}/{cur.zone.zero}/')
+
+
 # set aoi_name field if it doesn't already exist via aoi subset
 if(is.na(aoi_name)) {
   aoi_name <- ""
@@ -136,6 +153,11 @@ landfire_ind_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_
 lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
 lcms_slowloss_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
 
+lf_disturb_code_outpath <- glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_code_LF.tif')
+lf_disturb_year_outpath <- glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_year_LF.tif')
+
+lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_code_LFLCMS.tif')
+lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_year_LFLCMS.tif')
 
 # Input parameters for LCMS Disturbance
 #-----------------------------------------------------------#
@@ -250,6 +272,15 @@ if (!file.exists(glue::glue('{target_dir_z}/00_prelim_dist'))) {
 if (!file.exists(glue::glue('{target_dir_z}/01_final'))) {
   dir.create(glue::glue('{target_dir_z}/01_final'), recursive = TRUE)
 }    
+
+# Load crs objects
+#-----------------------------------------------------#
+
+# load lcms projections
+lcms_crs <- crs(lcms_proj)
+
+#load landfire projection
+landfire_crs <- crs(landfire_proj)
 
 
 # Remove unused objects

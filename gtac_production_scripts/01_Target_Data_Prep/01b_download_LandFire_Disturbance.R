@@ -2,6 +2,13 @@
 # Available for manual download from this location: 
 # https://landfire.gov/disturbance_grids.php
 
+# Written by Lila Leatherman (Lila.Leatherman@usda.gov)
+# Last Updated: 
+
+# TO DO: 
+# - remove zipped files
+# - copy unzipped folders to next folder up, with the same name 
+
 #####################################
 # Set Inputs
 #######################################
@@ -11,6 +18,8 @@ dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Disturbance/"
 
 # list years
 years <- 2018:2020
+
+
 
 ################################################
 # Run
