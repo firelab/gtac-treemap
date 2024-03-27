@@ -2,7 +2,7 @@
 
 # Objective: Compare output rasters - extract values to FIA points 
 
-# Last update: 3/21/24
+# Last update: 3/26/24
 
 
 ########################################################
@@ -43,7 +43,11 @@ rast_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data
 evt_path <- glue::glue("{home_dir}01_Data/02_Landfire/LF_200/EVT/LF2016_EVT_200_CONUS/CSV_Data/LF16_EVT_200.csv")
 
 # path to coords
-coords_path <- "//166.2.126.25/TreeMap/01_Data/04_FIA/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv"
+coords_path <- "{home_dir}01_Data/04_FIA/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv"
+
+# crs raster data are in 
+landfire_crs <- terra::crs(glue::glue('{home_dir}/01_Data/02_Landfire/landfire_crs.prj'))
+
 
 # libraries
 #--------------------------------------------------------#
@@ -85,7 +89,7 @@ pts <- terra::vect(pts_path)
 
 # load x.df
 X.df <- read.csv(xtable_path) %>%
-  select(-CN)
+  rename(PLOTID = ID)
 
 # load evt dat
 evt_dat <- read.csv(evt_path) 
@@ -126,81 +130,70 @@ pts_df <- data.frame(pts)
 
 # Prep coords data
 #----------------------------------------------------------------#
+coords %<>%
+  filter(PLT_CN %in% rat$CN) # limit to CNs with reference values in RAT
 
-# inspect
-coords %>%
-  filter(PLT_CN %in% pts_df$PREV_PLT_C) %>%
-  nrow()
+# separate out into data frame
+coords_df <- coords
+
+
+# convert coords to spatial 
+coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:4269")
+
 
 # Prep data to plot
 #----------------------------------------------------------#
 
-# i have CN and treemap id
+# Data Dictionary for extracts / Outputs:
+# ID: row number of FIA point in original coords
+# PLOTID: imputed treemap plot id
+# CN_pt : CN of FIA point in original coords
+# CN_plot: CN of plot imputed to fia point
 
-# for r1_ex
-#pts$CN - original CN at a point
-# PLOTID - imputed plot id 
+# extract  values to points - imputed plot ID at original FIA point
+# -----------------------------------------------#
+r1_ex <- terra::extract(r1, coords) %>%
+  cbind(coords_df$PLT_CN) %>% # bind with CNs to identify plots
+  rename("CN_pt" = `coords_df$PLT_CN`) %>%
+  filter(!is.na(PLOTID)) # remove NAs
 
+r2_ex <- terra::extract(r2, coords) %>%
+  cbind(coords_df$PLT_CN) %>% # bind with CNs to identify plots
+  rename("CN_pt" = `coords_df$PLT_CN`) %>%
+  filter(!is.na(PLOTID))  # remove NAs
 
-# join r1_ex$PLOTID to X.df$ID
-# join r1_ex$PLOTID to rat$tm_id
-
-# for refs
-#pts$CN - original CN at a point
-# rat$CN 
-
-
-# extract  values to points - imputed plot ID
-r1_ex <- terra::extract(r1, pts) %>%
-  cbind(pts_df$CN) %>% # bind with CNs to identify plots
-  rename("CN" = `pts_df$CN`) %>%
-  filter(!is.na(PLOTID)) #%>% # remove NAs
-  #select(-ID) 
-
-r2_ex <- terra::extract(r2, pts) %>%
-  cbind(pts_df$CN) %>%
-  rename("CN" = `pts_df$CN`) %>%
-  filter(!is.na(PLOTID)) #%>% # remove NAs
-  #select(-ID) 
 
 # join extracts with x table and RAT - join ri_ex$PLOTID to RAT$tm_id
 # to get values of the imputed plot
 r1_ex %<>% left_join(X.df,
-                   by = c("PLOTID" = "ID")) %>%
-  left_join(rat, by = c("PLOTID" = "tm_id")) %>%
-  select(c(CN.x, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
-    rename(CN = CN.x) %>%
+                   by = c("PLOTID" = "PLOTID")) %>%
+  left_join(rat, by = c("CN" = "CN", "PLOTID" = "tm_id")) %>%
+  rename(CN_plot = "CN") %>%
+  select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
   mutate(dataset = r1_name) 
 
 r2_ex %<>% left_join(X.df,
-                  by = c("PLOTID" = "ID")) %>%
-  left_join(rat, by = c("PLOTID" = "tm_id")) %>%
-  select(c(CN.x, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
-  rename(CN = CN.x) %>%
+                  by = c("PLOTID" = "PLOTID")) %>%
+  left_join(rat, by = c("CN" = "CN", "PLOTID" = "tm_id")) %>%
+  rename(CN_plot = "CN") %>%
+  select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
   mutate(dataset = r2_name) 
 
-# prep reference values - join pts$CN with RAT$CN
+# prep reference values - from "X.df / reference table" 
 refs <- 
-  data.frame(pts) %>%
-  filter(!is.na(CN)) %>%
-  filter(CN %in% r1_ex$CN) %>%
-  group_by(CN) %>%
-  slice_head() %>% # get first instance of each plot cn
-  #inner_join(rat, by = c("CN")) #%>% 
-  #left_join(X.df, by = c("tm_id" = "ID")) %>%
-  mutate(disturb_code = ShannonCla,
-       ## make change classes with FIA data match those in X.df
-       disturb_code = as.numeric(case_match(disturb_code, 'N' ~ '0', 'B' ~ '0', 'S' ~ '2', 'F' ~ '1'))
-  ) %>%
-  select(c(CN, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
-  mutate(dataset = "Reference")
-
+  r1_ex %>% 
+  select(ID, CN_pt) %>%
+  left_join(X.df, by = c("CN_pt" = "CN")) %>%
+  left_join(rat, by = c("CN_pt" = "CN")) %>%
+  mutate(CN_plot = as.numeric(NA)) %>%
+  mutate(PLOTID = as.numeric(NA)) %>%
+  select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
+  mutate(dataset = "Reference") 
 
 # join
-p_r <- bind_rows(r1_ex, r2_ex) %>%
-  # apply any filters
-  #filter(QMD_RMRS >-1) %>%
-  pivot_longer(!c(CN, PLOTID, dataset, disturb_code), names_to = "var", values_to = "value") %>%
+p_r <- bind_rows(r1_ex, r2_ex, refs) %>%
+  # pivot longer
+  pivot_longer(!c(ID, CN_pt, CN_plot, PLOTID, dataset, disturb_code), names_to = "var", values_to = "value") %>%
   mutate(var = factor(var),
          value = na_if(value, -99.00000), # update NA values from RAT
          disturb_code = factor(disturb_code, 
@@ -222,25 +215,25 @@ p_r <- bind_rows(r1_ex, r2_ex) %>%
 for(i in 1:(length(eval_vars_cat)-1)) {
   
   # for testing
-  #i = 1
+  #i = 2
   
   var_name <- eval_vars_cat[i]
   
-p <-  p_r %>%
+  p <-  p_r %>%
     filter(var == var_name) %>%
     ggplot(aes(x=as.factor(value),  fill=dataset)) + 
     geom_bar(position="dodge") + 
     facet_wrap(~disturb_code) + 
     labs(title = glue::glue('Variation in {var_name} by disturbance code, by model')) + 
     xlab(var_name)
-
-print(p)
+  
+  print(p)
 
 # save
-ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_{var_name}.png'),
+ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
        plot = p,
-       width = 7, 
-       height = 4.5)    
+       width = 7,
+       height = 4.5)
 
 }
 
@@ -268,13 +261,12 @@ for(i in 1:(length(eval_vars_cont))) {
   print(p)
   
   # save
-  ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_{var_name}.png'),
+  ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
          plot = p,
          width = 7, 
          height = 4.5)    
   
 }
-
 
 
 #############################################
@@ -316,7 +308,7 @@ p_r_evt %>%
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 # save
-ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_EVT_GP.png'),
+ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_EVT_GP.png'),
        plot = last_plot(),
        width = 7, 
        height = 4.5)  
@@ -376,21 +368,24 @@ ggplot(majors,
 
 # format data for take 2
 p_r_alluvia_2 <- p_r_evt %>%
-  select(c(PLOTID, EVT_GP, disturb_code, dataset)) %>%
-  group_by(dataset) %>%
-  slice_head(n = 15)
+  select(c(PLOTID, disturb_code, dataset)) %>%
+  group_by(disturb_code, dataset) %>%
+  summarize(freq = n()) %>%
+  ungroup() %>%
+  mutate(group = row_number())
 
 is_alluvia_form(p_r_alluvia_2)
 
 p_r_alluvia_2 %>%
-ggplot(aes(x = dataset, stratum = EVT_GP, alluvium = PLOTID,
-           fill = EVT_GP, label = EVT_GP)) +
-  #scale_fill_brewer(type = "qual", palette = "Set2") +
-  geom_flow(stat = "alluvium", lode.guidance = "frontback",
-            color = "darkgray") +
-  geom_stratum() +
-  theme(legend.position = "bottom") +
-  ggtitle("EVT_GP across models")
+ggplot(aes(x = dataset, stratum = disturb_code, alluvium = group,
+           y = freq,
+           fill = disturb_code, label = disturb_code)) +
+  scale_x_discrete(expand = c(.1, .1)) +
+  geom_flow() +
+  geom_stratum(alpha = .5) +
+  geom_text(stat = "stratum", size = 3) +
+  theme(legend.position = "none") +
+  ggtitle("vaccination survey responses at three points in time")
 
 # take 3 example
 
@@ -412,19 +407,35 @@ ggplot(vaccinations,
 # format data for take 3
 p_r_alluvia_3 <- p_r_evt %>%
   select(c(PLOTID, EVT_GP, disturb_code, dataset)) %>%
-  group_by(EVT_GP, disturb_code, dataset) %>%
-  #mutate(group = cur_group_id()) %>%
-  group_by(EVT_GP, disturb_code, dataset) %>%
-  summarize(freq = n()) %>%
-  ungroup() %>%
-  mutate(group = row_number())
+  mutate(EVT_GP = as.numeric(EVT_GP)) %>%
+  group_by(EVT_GP) %>%
+  count(disturb_code, dataset) %>%
+  ungroup()
+
+all <- p_r_alluvia_3 %>%
+  expand(EVT_GP, disturb_code, dataset) 
+
+p_r_alluvia_3 %<>% dplyr::right_join(all) %>%
+  arrange(EVT_GP, disturb_code, dataset) %>%
+  mutate(n = replace_na(n, 0))
 
 is_alluvia_form(p_r_alluvia_3)
 
 p_r_alluvia_3 %>%
   ggplot(aes(x = dataset, stratum = disturb_code, alluvium = EVT_GP,
+             y = n,
+             fill = disturb_code, label = disturb_code)) +
+  scale_x_discrete(expand = c(.1, .1)) +
+  geom_flow() +
+  geom_stratum(alpha = .5) +
+  geom_text(stat = "stratum", size = 3) +
+  theme(legend.position = "none") +
+  ggtitle("vaccination survey responses at three points in time")
+
+p_r_alluvia_3 %>%
+  ggplot(aes(x = dataset, stratum = disturb_code, alluvium = EVT_GP,
       y = freq,
-      fill = EVT_GP, label = EVT_GP)) +
+      fill = disturb_code, label = disturb_code)) +
   scale_x_discrete(expand = c(.1, .1)) +
   geom_flow() +
   geom_stratum(alpha = .5) +
