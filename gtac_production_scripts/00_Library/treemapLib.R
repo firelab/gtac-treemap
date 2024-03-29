@@ -11,11 +11,11 @@
 
 # packages required
 list.of.packages <- c("this.path", "terra", "tidyverse", "magrittr", 
-                      "glue", "tictoc", "caret", "yaImpute", "randomForest")
+                      "glue", "tictoc", "caret", "yaImpute", "randomForest", "this.path")
 
 #check for packages and install if needed
-#new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-#if(length(new.packages) > 0) install.packages(new.packages)
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages) > 0) install.packages(new.packages)
 
 # load all packages
 vapply(list.of.packages, library, logical(1L),
@@ -41,7 +41,7 @@ snames <- snames[snames != thispath]
 lapply(snames, source)
 
 # remove unused objects
-rm(spl1, this.path, script.path, snames )
+rm(spl1, thispath, script.path, snames )
 
 ###########################
 # Dictionaries
