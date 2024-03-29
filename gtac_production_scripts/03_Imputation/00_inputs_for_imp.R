@@ -1,10 +1,7 @@
 ### This script is used to set inputs for all steps in the imputation process
 ## To ensure that all scripts refer to the same input and output products
 
-# TO DO: 
-# - write out input parameters used for a given output name
-
-# Last updated: 3/19/2024
+# Last updated: 3/28/2024
 
 ###########################################################################
 # Set inputs
@@ -13,10 +10,13 @@
 # Identifiers - for outputs 
 #--------------------------------------------------#
 # Project name
+#project_name <- "2016_GTAC_Test"
 project_name <- "2016_GTAC_LCMSDist"
 
 # Output imputation name
-output_name <- "2016_GTAC_LCMSDist"
+# describes the run and parameters; zone will be added later
+#output_name <- "2016_Orig_Test_keepinbag_ntree250"
+output_name <- project_name
 
 # name of output raster / raster to validate
 # will get overwritten in 02_run_imputation 
@@ -45,14 +45,21 @@ ref_data_version <- "v2016_RMRS"
 
 # model to use - supply specific model to pull into imputation, or NA
 # if NA, uses default model name and path
-model_path <- '//166.2.126.25/TreeMap/03_Outputs/99_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
+#model_path <- '//166.2.126.25/TreeMap/03_Outputs/99_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
+model_path <- NA
 
 #home_dir
 home_dir <- "//166.2.126.25/TreeMap/"
 
+# output crs - desired crs for output products
+#options include: "lcms_crs", "landfire_crs", "tm16_crs"
+output_crs_name <- "tm16_crs"
 
 # Constructed inputs - less likely to change
 #-----------------------------------------------------------------#
+
+# data dir
+data_dir <- "//166.2.126.25/TreeMap/01_Data/"
 
 # Path to X table
 xtable_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/{ref_data_version}/X_table_all_singlecondition.txt")
@@ -74,10 +81,7 @@ dist_layer_type <- "LFLCMS"
 evt_gp_remap_table_dir <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/')
 
 # Plot coordinates
-#points_path <- glue::glue('{home_dir}01_Data\04_FIA\06_Coordinates\select_TREEMAP2022_2send\select_TREEMAP2022_2send.xlsx')
-
-# path to file with desired projection
-prj_path <- glue::glue('{home_dir}01_Data/02_Landfire/landfire_crs.prj')
+coords_path <- glue::glue('{home_dir}01_Data/04_FIA/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv')
 
 # Paths for exporting data
 #--------------------------------------#
@@ -93,17 +97,32 @@ assembled_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/02
 # Evaluation dir
 eval_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/03_Evaluation/')
 
+# Params path
+params_path <- glue::glue('{output_dir}/params/')
+
 # set tmp directory
 tmp_dir <- "D:/tmp/"
+
+# CRS paths
+#----------------------------------------------------#
+# set projection used for processing lcms rasters
+lcms_proj <- glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj')
+
+# path to projection used for processing landfire rasters
+landfire_proj <- glue::glue('{data_dir}02_Landfire/landfire_crs.prj')
+
+# path to desired projection for end outputs (tm = TreeMap)
+tm16_proj <- glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj")
+
 
 # set zone_number
 # ----------------------------------------------#
 
 # Set zone name options
-cur.zone <- glue::glue('z{zone_num}')
-cur.zone.zero <- if(zone_num < 10) {
+cur_zone <- glue::glue('z{zone_num}')
+cur_zone_zero <- if(zone_num < 10) {
   glue::glue('z0{zone_num}') } else {
-    cur.zone
+    cur_zone
   }
 
 if(!is.na(aoi_name)) {
@@ -118,16 +137,17 @@ if(is.na(aoi_name)) {
 # Update dirs with zone
 # -----------------------------------------#
 # Set folder paths
-target_dir = glue::glue('{target_dir}/{cur.zone.zero}/')
-dist_raster_dir = glue::glue('{dist_raster_dir}/{cur.zone.zero}/01_final')
-output_dir = glue::glue('{output_dir}/{cur.zone.zero}/')
-assembled_dir = glue::glue('{assembled_dir}/{cur.zone.zero}')
-eval_dir <- glue::glue('{eval_dir}{cur.zone.zero}')
+target_dir = glue::glue('{target_dir}/{cur_zone_zero}/')
+dist_raster_dir = glue::glue('{dist_raster_dir}/{cur_zone_zero}/01_final')
+output_dir = glue::glue('{output_dir}/{cur_zone_zero}/')
+assembled_dir = glue::glue('{assembled_dir}/{cur_zone_zero}')
+eval_dir <- glue::glue('{eval_dir}{cur_zone_zero}')
 
 tile_dir <- glue::glue('{output_dir}raster/tiles/')
 model_dir = glue::glue('{output_dir}/model/')
 
-evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur.zone.zero}/01_final/EVG_remap_table.csv')
+evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/01_final/EVG_remap_table.csv')
+params_path = glue::glue('{output_dir}/params/{cur_zone_zero}_{output_name}_params.txt')
 
 
 # Model inputs
@@ -139,7 +159,7 @@ if(is.na(model_path)) {
   
   # Path where model is located
   # This path will be used for export and import
-  model_path <- glue::glue('{output_dir}/model/{cur.zone.zero}_{model_path1}.RDS')
+  model_path <- glue::glue('{output_dir}/model/{cur_zone_zero}_{model_path1}.RDS')
   
 }
 
@@ -252,8 +272,13 @@ if(!file.exists(glue::glue('{assembled_dir}/01_Imputation/'))){
 }
 
 # create assembled dir if necessary
-if(!file.exists(glue::glue('{assembled_dir}/02_Derived_vars/'))){
-  dir.create(glue::glue('{assembled_dir}/02_Derived_vars/'), recursive = TRUE)
+if(!file.exists(glue::glue('{assembled_dir}/02_Derived_vars_LF/'))){
+  dir.create(glue::glue('{assembled_dir}/02_Derived_vars_LF/'), recursive = TRUE)
+}
+
+# create assembled dir if necessary
+if(!file.exists(glue::glue('{assembled_dir}/03_Derived_vars_FIA/'))){
+  dir.create(glue::glue('{assembled_dir}/03_Derived_vars_FIA/'), recursive = TRUE)
 }
 
 # create eval dir if necessary 
@@ -272,43 +297,46 @@ if(!file.exists(glue::glue('{eval_dir}/03_Eval_Reports'))) {
 }
 
 
+# Load crs objects
+#-----------------------------------------------------#
 
-# Load other standard inputs
-#---------------------------------------------#
-prj <- terra::crs(prj_path)
+# load lcms projections
+lcms_crs <- terra::crs(lcms_proj)
+
+#load landfire projection
+landfire_crs <- terra::crs(landfire_proj)
+
+# load treemap projection
+tm16_crs <- terra::crs(tm16_proj)
+
+# load output crs
+output_crs <- eval(parse(text = output_crs_name))
 
 # Remove unused objects
 #------------------------------------------------#
 rm(input_script.path, list.of.packages, evt_gp_remap_table_dir)
 
-# Write out input parameters used
+# Make table of input parameters used
 #----------------------------------------------------#
 
-params_out <- c(
-  glue::glue('project_name : {project_name}'),
-  glue::glue('output_name  : {output_name}'), 
-  glue::glue('cur.zone.zero : {cur.zone.zero}'),
-  glue::glue('aoi_name : {aoi_name}'), 
-  glue::glue('target_data_version : {target_data_version}'),
-  glue::glue('ref_data_version : {ref_data_version}'), 
-  glue::glue('dist_raster_dir : {dist_raster_dir}'),
-  glue::glue('model_path : {model_path}'),
-  glue::glue('xtable_path : {xtable_path}')
-)
-
-# params_out <- c(
-#   project_name, 
-#   output_name,
-#   cur.zone.zero,
-#   aoi_name,
-#   target_data_version,
-#   ref_data_version,
-#   dist_raster_dir,
-#   model_path,
-#   xtable_path
-#   )
-
-
-write.table(as.data.frame(params_out), glue('{output_dir}/params/{cur.zone.zero}_{output_name}_params.txt'),
-            row.names = FALSE)
+params_out <- data.frame(
+  project_name,
+  output_name,
+  cur_zone_zero,
+  aoi_name,
+  target_data_version,
+  ref_data_version,
+  dist_raster_dir,
+  model_path,
+  xtable_path,
+  output_crs_name, 
+  output_crs
+  ) %>%
+  bind_rows() %>%
+  t() %>%
+  data.frame() %>%
+  rownames_to_column() %>%
+  rename(value = ".",
+         param = "rowname") %>%
+  select(param, value)
 
