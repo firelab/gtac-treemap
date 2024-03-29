@@ -3,7 +3,7 @@
 # Author: Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last Updated:
-# 3/20/2024
+# 3/28/2024
 
 #################################################################
 # Load required packages
@@ -131,34 +131,25 @@ eval_cm_function <- function(t, noDataVal) {
   tn[tn == noDataVal] <- NA
   
   # get levels - all levels that appear in each of pred and ref
-  levels_t <- unique(c(as.numeric(unlist((unique(t$pred)))),
-                       as.numeric(unlist((unique(t$ref))))))
+  levels_t <- unique(c(as.numeric(unlist((unique(tn$pred)))),
+                       as.numeric(unlist((unique(tn$ref))))))
   levels_t <- sort(levels_t)
   
   # ensure columns are factors with the same levels
-  t %<>%
-    mutate(ref = factor(ref, levels = levels_t),
-           pred = factor(pred, levels = levels_t)) 
+  tn %<>%
+    mutate(pred = factor(pred, levels = levels_t),
+           ref = factor(ref, levels = levels_t)
+    )  
   
-  # calculate frequency table
-  tfreq <- 
-    cbind(table(t$ref),
-          table(t$pred)) %>%
-    data.frame()
-  
-  # manipulate frequency table
-  names(tfreq) <- c("ref", "pred")
-  tfreq$class <- rownames(tfreq)
-  rownames(tfreq) <- NULL
-  tfreq %<>%
-    dplyr::select(class, ref, pred)
+  # Get confusion  matrix
+  #---------------------------------------------#
   
   # confusion matrix
-  cm <- caret::confusionMatrix(t$pred, # pred
-                               t$ref # ref
+  cm <- caret::confusionMatrix(tn$pred, # pred
+                               tn$ref # ref
   )
   
-  # process data frames for export
+  # Process data frames for export
   #---------------------------------#
   
   # raw confusion matrix
@@ -167,7 +158,7 @@ eval_cm_function <- function(t, noDataVal) {
   
   # make data frame of classes
   cm_t_classes <- data.frame(as.matrix(cm, what = "classes"))
-  names(cm_t_classes) <- levels(t$pred)
+  names(cm_t_classes) <- levels_t
   cm_t_classes %<>% 
     rownames_to_column(., var = 'metric')
   
@@ -176,14 +167,38 @@ eval_cm_function <- function(t, noDataVal) {
   names(cm_t_overall) <- c("value")
   cm_t_overall$metric <- rownames(cm_t_overall)
   
+  # calculate frequency table
+  tfreq <- 
+    cbind(table(tn$pred),
+          table(tn$ref)
+    ) %>%
+    data.frame()
+  
+  # manipulate frequency table
+  names(tfreq) <- c("pred", "ref")
+  tfreq$class <- factor(rownames(tfreq), levels = levels_t)
+  rownames(tfreq) <- NULL
+  
+  #Calculate normalized frequency table also 
+
+  # calc total to use in normalizing
+  total_pred = sum(tfreq$pred)
+  total_ref = sum(tfreq$ref)
+  
+  # add normalized frequency
+  tfreq_norm <- tfreq %>%
+    mutate(pred = pred/total_pred, 
+           ref = ref/total_ref)
+  
   # format output
   # ---------------------------- #
   out_list <- list(cm_raw_out,
                    cm_t_classes,
                    cm_t_overall,
-                   tfreq)
+                   tfreq,
+                   tfreq_norm)
   
-  names(out_list) <- c("raw", "classes", "overall", "freq")
+  names(out_list) <- c("raw", "classes", "overall", "freq", "freq_norm")
   
   return(out_list)
   
@@ -203,7 +218,7 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
               glue('{export_path}_{layer_field}.tif'),
               overwrite = TRUE)
   rm(rout)
-  gc(verbose = FALSE)
+  gc()
   
 }
 
@@ -213,9 +228,11 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
 
 assembleCM <- function(layer_field, raster, lookup, id_field, 
                        stackin_compare, stackin_compare_name,  
-                       remapEVT_GP, EVT_GP_remap_table) {
+                       remapEVT_GP, EVT_GP_remap_table,
+                       exportTF, export_path) {
   
-  print(glue('assembleCM: {layer_field}'))
+  print(glue::glue("assembleCM: {layer_field}"))
+  print(glue::glue("export?: {exportTF}"))
   
   #print("make lookup table")
   #make lookup table
@@ -223,19 +240,30 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   
   #print("make imp1")
   # make raster to compare
-  imp1 <-  terra::classify(raster, lt) %>%
-    terra::project(crs(stackin_compare)) %>%
-    as.int()
+  imp1 <-  terra::classify(raster, lt) 
+  
+  # if(!identical(crs(imp1), crs(stackin_compare))) {
+  #   imp1 %<>% terra::project(crs(stackin_compare))
+  # }
+  
+  if(exportTF) {
+    writeRaster(imp1,
+                glue::glue("{export_path}_{layer_field}.tif"),
+                overwrite = TRUE)
+  }
   
   gc()
   
   #print("get lf1")
   # get single lf raster
-  lf1 <- lf[layer_field]
+  lf1 <- stackin_compare[layer_field]
+  lf1 %<>% terra::trim() # remove NA values on borders
   
   # crop and mask reference raster with input raster
   # necessary for testing on subset 
-  lf1 <- terra::crop(lf1, imp1, mask = TRUE)
+  if(!compareGeom(lf1, imp1, ext = TRUE)) { # if the extents don't match
+    lf1 <- terra::crop(lf1, imp1, mask = TRUE) # crop and mask 
+  }
   
   # Conditionally remap EVT
   if(remapEVT_GP & layer_field == "EVT_GP") {
@@ -257,20 +285,29 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   levels <- data.frame(id = sort(unique(lt[,2])),
                        levels = levels(as.factor(lt[,2])))
   
-  #print("set levels")
-  # set levels for rasters to make them categorical
-  levels(imp1) <- levels
-  levels(lf1) <- levels
+  # #print("set levels")
+  # # set levels for rasters to make them categorical
+  # levels(imp1) <- levels
+  # levels(lf1) <- levels
   
   # Calculate confusion matrix
   #--------------------------------------#
   
   #print("calculating and exporting confusion matrix")
-  t <- data.frame(pred = terra::values(imp1),
-                  ref = terra::values(lf1))
+  t <- data.frame(cbind(terra::values(imp1),
+                        terra::values(lf1)))
+  
+  #update names
+  names(t) <- c("pred", "ref")
+  
+  # replace any NaN with NA
+  t %<>% mutate_all(~ifelse(is.nan(.), NA, .))
+  
+  # remove rows that are only na
+  t %<>% drop_na()
   
   # calculate cms 
-  cms<- eval_cm_function(t, NA)
+  cms <- eval_cm_function(t, NA)
   
   rm(imp1, lf1)
   gc()

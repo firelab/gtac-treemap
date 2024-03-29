@@ -3,7 +3,11 @@ params:
   eval_vars:
   raster_name:
   zone_num:
+  var_names:
+  cms_path:
+  ref_type:
 title: "TreeMap Zonal Validation: Zone `r params$zone_num` "
+subtitle: "`r params$raster_name` ; `r params$ref_type`"
 output:
   word_document: default
   html_document:
@@ -22,15 +26,15 @@ knitr::opts_chunk$set(echo = FALSE)
 
 # Set inputs - from input script
 # Id where script is located
-this.path <- this.path::this.path()
+#this.path <- this.path::this.path()
 
-# get path to input script with settings for imputation
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-2))],
-                              "03_Imputation/00_inputs_for_imp.R" ),
-                            collapse = "/")
-
-source(input_script.path)
+# # get path to input script with settings for imputation
+# spl <- stringr::str_split(this.path, "/")[[1]]
+# input_script.path <- paste( c(spl[c(1:(length(spl)-2))],
+#                               "03_Imputation/00_inputs_for_imp.R" ),
+#                             collapse = "/")
+# 
+# source(input_script.path)
 
 #knitr::opts_knit$set(root.dir = eval_dir)
 
@@ -47,7 +51,7 @@ source(input_script.path)
 #                "disturb_code", "disturb_year")
 
 # set number of digits to round to
-round_dig <- 2
+
 
 ```
 
@@ -56,6 +60,10 @@ Landfire zone: `r params$zone_num`
 Run name: `r params$raster_name` 
 
 Variables to evaluate: `r params$eval_vars`
+
+"Reference" data source: `r params$ref_type`
+
+Path for confusion matrices: `r params$cms_path`
 
 ```{r plot raster}
 # plot raster 
@@ -200,8 +208,7 @@ for(v in 1:length(var_names)){
   #get overall accuracy 
   oa <- cm_overall %>%
     filter(metric == "Accuracy") %>%
-    select(value) %>%
-    as.numeric() 
+    select(value) 
  
   print(glue::glue("
                    Overall accuracy: {round(oa*100,4)}%
@@ -294,11 +301,6 @@ for(v in 1:length(var_names)){
     }
 
   # fit to page
-  
-  # table_cm %<>%
-  #   # fit to page width
-  #   autofit() %>% 
-  #   fit_to_width(7.5)
   
   table_cm <- FitFlextableToPage(ft = table_cm, 
                                  pgwidth = 7)

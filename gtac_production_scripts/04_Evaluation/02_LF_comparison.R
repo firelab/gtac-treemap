@@ -4,7 +4,7 @@
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last updated:
-# 3/19/24
+# 3/28/24
 
 # Goals: 
 # - load preliminary imputation outputs
@@ -15,7 +15,7 @@
 
 # TO DO: 
 # - error on assembleCM on disturb_code with LCMS layer - figure out what's happening 
-# - update when full lookup table with FIA computed values is available
+# - make separate script to compare vs FIA values from RAT or similar - or add option here? 
 # - remove unused levels from concat / diff
 
 ###########################################################################
@@ -44,8 +44,10 @@ source(input_script.path)
 raster_name <- glue::glue('{output_name}_tilesz2000_nT36')
 
 # list layers to export
-layers_export <- c("canopy_cover", "canopy_height", "EVT_GP",
-                   "disturb_code", "disturb_year")
+#layers_export <- c("canopy_cover", "canopy_height", "EVT_GP",
+#                   "disturb_code")
+
+layers_export <- "disturb_code"
 
 #########################################################################
 
@@ -66,7 +68,6 @@ options("scipen"=100, "digits"=8)
 # Load data
 ####################################################################
 
-
 # X - table
 #------------------------------------------#
 xtable <- read.csv(xtable_path)
@@ -86,61 +87,55 @@ target_files <- target_files[target_files %>%
 #read in as vrt
 lf <- terra::vrt(target_files, filename = "lf.vrt", options = "-separate", overwrite = TRUE)
 
+#trim away any NAs on the sides - helps match extent with outputs
+lf %<>% terra::trim()
+
+gc()
+
 #apply names
 names(lf) <- target_files %>%
   str_extract(., "z[0-9][0-9]/([^.])*") %>%
   str_replace("z[0-9][0-9]/", "")
 
-# reclass landfire disturbance code to binary
-lf$disturb_code <- terra::classify(lf$disturb_code, cbind(2, 1))
+# keep landfire code as 1/2 - because output raster values derived from imputation will have 1/2
 
-# # Conditionally load disturbance rasters from another dir
-# #----------------------------------------------------------#
-# 
-# # conditional 
-# if(!is.na(dist_raster_dir)) {
-#   
-#   # list files
-#   dist_files <- list.files(dist_raster_dir, full.names = TRUE, recursive = TRUE)
-#   
-#   # filter files if necessary
-#   dist_files %<>% 
-#     str_subset(pattern = "LFLCMS.tif$" ) %>%
-#     str_subset(pattern = glue::glue('{cur.zone.zero}_disturb'))
-#   
-#   # load files in 
-#   dist <- terra::vrt(dist_files, options = "-separate", 
-#                      filename = glue::glue('{tmp_dir}/dist.tif'),
-#                      overwrite = TRUE)
-#   
-#   # ensure layer names match
-#   names(dist) <- c("disturb_code", "disturb_year")
-#   
-#   # reclass disturbance code
-#   dist$disturb_code <- terra::classify(dist$disturb_code, cbind(2, 1))
-#   
-#   # make sure they're in the right projection 
-#   dist %<>% terra::project(crs(lf)) 
-#   
-#   # make sure layers align
-#   dist %<>% terra::crop(lf) %>%
-#     terra::extend(terra::ext(lf)) %>%
-#     terra::crop(lf) %>%
-#     terra::resample(lf, method = "near") # check this / maybe make align earlier in processing? off by a fraction of a degree
-#   
-#   
-#   gc()
-#   
-#   # combine replace disturbance layers in target data
-#   lf$disturb_code_lcms <- dist$disturb_code
-#   lf$disturb_year_lcms <- dist$disturb_year
-#   
-#   # lf$disturb_code <- dist$disturb_code
-#   # lf$disturb_year <- dist$disturb_year
-#   
-#   rm(dist)
-#   gc()
-# }
+# Conditionally load disturbance rasters from another dir
+#----------------------------------------------------------#
+
+# conditional
+if(!is.na(dist_raster_dir)) {
+
+  # list files
+  dist_files <- list.files(dist_raster_dir, full.names = TRUE, recursive = TRUE)
+
+  # filter files if necessary
+  dist_files %<>%
+    str_subset(pattern = glue::glue("{dist_layer_type}.tif$") ) %>%
+    str_subset(pattern = glue::glue('{cur_zone_zero}_disturb'))
+
+  # load files in
+  dist <- terra::vrt(dist_files, options = "-separate",
+                     filename = glue::glue('{tmp_dir}/dist.tif'),
+                     overwrite = TRUE)
+
+  # ensure layer names match
+  names(dist) <- c("disturb_code", "disturb_year")
+
+  # make sure layers align
+  dist %<>% terra::crop(lf) 
+  
+  #inspect
+  compareGeom(dist, lf)
+
+  gc()
+
+  # combine replace disturbance layers in target data
+  lf$disturb_code <- dist$disturb_code
+  lf$disturb_year <- dist$disturb_year
+
+  rm(dist)
+  gc()
+}
 
 
 # Imputed Raster
@@ -152,11 +147,10 @@ ras <- terra::rast(glue('{assembled_dir}/01_Imputation/{raster_name}.tif'))
 # trim off NA values
 ras <- terra::trim(ras)
 
-# # check projection - reproject to desired proj if it doesn't match
-# if(!identical(crs(ras), crs(prj))){
-#   #project to desired projection
-#   ras %<>% terra::project(prj)
-# }
+# check projection - an inspection
+crs(ras, describe = TRUE)
+#identical(crs(ras), crs(lf))
+compareGeom(ras, lf)
 
 #set name of input column
 names(ras) <- c("value")
@@ -170,7 +164,7 @@ names(ras) <- c("value")
 gc()
 
 #####################################################################
-# Assemble derived values from imputation
+# Prep for assembly
 ####################################################################
 
 # get list of IDs present in ras
@@ -188,41 +182,59 @@ lookup <- left_join(id_list, xtable, by = c("PLOTID" = "ID")) %>%
 # load evt_gp remap table
 evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
 
-# join remap table with lookup table
+# join remapped EVT_GPs with lookup table
 lookup %<>%
   left_join(evt_gp_remap_table, by = "EVT_GP")
 
-# Apply function
-#-----------------------------------------#
-
-#lapply - change to map? for consistency with next step 
-lapply(layers_export, assembleExport, 
-       # additional options for function
-       raster = ras, lookup = lookup, id_field = "PLOTID",
-       export_path = glue::glue('{assembled_dir}/02_Derived_vars/{raster_name}'))
-gc()
-
 ####################################################################
-# Evaluation: Calculate confusion matrices of Imputation vs Landfire 
+# Evaluation: Calculate confusion matrices of Imputation vs Landfire / reference rasters
 ####################################################################
 
+# if exportTF = true: then exports assembled, imputed raster
 
-# apply function to one layer - for testing
+# #apply function to one layer - for testing
 # cm <- assembleCM(layer_field = "EVT_GP", raster = ras, lookup = lookup, id_field = "PLOTID",
-#                  stackin_compare = lf, stackin_compare_name =  "Landfire", 
+#                  stackin_compare = lf, stackin_compare_name =  "Landfire",
 #                  remapEVT_GP = TRUE, EVT_GP_remap_table =  evt_gp_remap_table )
 
 # apply function to all layers
-cms <- #layers_export %>%
-  c("canopy_cover", "canopy_height", "EVT_GP") %>%
-  map(\(x) assembleCM(x, raster = ras, lookup = lookup, id_field = "PLOTID",
-                      stackin_compare = lf, stackin_compare_name =  "Landfire", 
-                      remapEVT_GP = TRUE, EVT_GP_remap_table =  evt_gp_remap_table ))
-#names(cms) <- layers_export
-names(cms) <- c("canopy_cover", "canopy_height", "EVT_GP")
+cms <- layers_export %>%
+  map(\(x) assembleCM(x, 
+                      raster = ras, 
+                      lookup = lookup, 
+                      id_field = "PLOTID",
+                      stackin_compare = lf, 
+                      stackin_compare_name =  "Landfire_LFLCMSDist", 
+                      remapEVT_GP = TRUE, 
+                      EVT_GP_remap_table =  evt_gp_remap_table,
+                      exportTF = TRUE, 
+                      export_path = glue::glue('{assembled_dir}/02_Derived_vars_LF/{raster_name}')
+                      ))
+
+names(cms) <- layers_export
 
 # export as RDS
-write_rds(cms, glue::glue('{eval_dir}/02_LF_Comparison/{output_name}_CMs_derivedVars.RDS'))
+write_rds(cms, glue::glue('{eval_dir}/02_LF_Comparison/{output_name}_CMs_LFComparison.RDS'))
+
+#########################################################
+# Assemble layers- derived from imputed ids matched with X table
+#########################################
+
+#lapply - change to map? for consistency with next step 
+# lapply(layers_export, assembleExport, 
+#        # additional options for function
+#        raster = ras, lookup = lookup, id_field = "PLOTID",
+#        export_path = glue::glue('{assembled_dir}/02_Derived_vars_LF/{raster_name}'))
+
+layers_export %>%
+  map(\(x) assembleExport(x, 
+                          raster = ras, 
+                          lookup = lookup, 
+                          id_field = "PLOTID",
+                          export_path = glue::glue('{assembled_dir}/02_Derived_vars_LF/{raster_name}')
+                          ))
+
+gc()
 
 
 ############################################################
@@ -235,10 +247,25 @@ write_rds(cms, glue::glue('{eval_dir}/02_LF_Comparison/{output_name}_CMs_derived
 # #-------------------------------------------------#
 # lapply(layers_export, assembleConcat, # list to apply over, function to apply
 #        # additional arguments to function
-#        ras = ras, lookup = lookup, id_field = "PLOTID",
-#        stackin_compare = lf, stackin_compare_name = "Landfire",
-#        export_path = glue('{eval_dir}/02_LF_Comparison/{output_name}'), 
-#        remapEVT_GP = TRUE, evt_gp_remap_table)
+#        ras = ras, 
+#        lookup = lookup, 
+#        id_field = "PLOTID",
+#        stackin_compare = lf, 
+#        stackin_compare_name = "Landfire",
+#        export_path = glue('{eval_dir}/02_LF_Comparison/{output_name}'),
+#        remapEVT_GP = TRUE, 
+#        EVT_GP_remap_table = evt_gp_remap_table)
+
+layers_export %>%
+  map(\(x) assembleConcat(x, 
+                          ras = ras, 
+                          lookup = lookup, 
+                          id_field = "PLOTID",
+                          stackin_compare = lf, 
+                          stackin_compare_name = "Landfire",
+                          export_path = glue('{eval_dir}/02_LF_Comparison/{output_name}'),
+                          remapEVT_GP = TRUE, 
+                          EVT_GP_remap_table = evt_gp_remap_table))
 
 ####################################
   
