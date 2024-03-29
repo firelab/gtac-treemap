@@ -7,7 +7,7 @@
 
 ##########################################################
 
-# alternately, is there a remote sqlite instance I can connect to? 
+# alternately, is there a remote sqlite instance I can connect to?
 
 # set home dir
 home_dir <- "//166.2.126.25/TreeMap/"
@@ -30,48 +30,47 @@ states <- c("NV", "CO", "MT")
 # list tables to download
 tables <- c("COND", "PLOT", "TREE")
 
-# sample download url https://apps.fs.usda.gov/fia/datamart/Databases/SQLite_FIADB_CA.zip
-url_base <- 'https://apps.fs.usda.gov/fia/datamart/CSV/'
+# sample url https://apps.fs.usda.gov/fia/datamart/Databases/SQLite_FIADB_CA.zip
+url_base <- "https://apps.fs.usda.gov/fia/datamart/CSV/"
 
 # create export dir
-if(!exists(dir)) {
+if (!exists(dir)) {
   dir.create(dir)
 }
 
 # set longer time to permit download - in seconds
-options(timeout=120)
+options(timeout = 120)
 
 # Download FIA data by state
 ###########################################################
 
-for(j in 1:length(states)){
-  
+for (j in seq_along(states)){
+
   #j = 1 # for testing
-  
+
   state_name <- states[j]
-  
+
   print(paste0("downloading ", state_name))
-  
-  for(k in 1:length(tables)){
-    
+
+  for(k in seq_along(tables)){
+
     #k = 1 # for testing
-    
+
     tbl <- tables[k]
-    
+
     #create url
-    url <- glue('{url_base}{state_name}_{tbl}.csv')
-    
+    url <- glue("{url_base}{state_name}_{tbl}.csv")
+
     # create file name
-    filename <- glue('{dir}{strsplit(url, "/")[[1]][7]}')  
-    
+    filename <- glue('{dir}{strsplit(url, "/")[[1]][7]}')
+
     #what url are you working on? 
     print(url)
-    
+
     #download files
     download.file(url, filename, mode = "wb")
-    
+
   }
-  
-  
-  
+
+
 }
