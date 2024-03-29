@@ -91,6 +91,9 @@ lcms_proj <- glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj')
 # path to projection used for processing landfire rasters
 landfire_proj <- glue::glue('{data_dir}02_Landfire/landfire_crs.prj')
 
+# path to desired projection for end outputs (tm = TreeMap)
+tm_proj <- glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj")
+
 # Paths to specific Landfire rasters - not disturbance
 evc_path <- glue::glue('{landfire_veg_dir}/EVC/LF{landfire_year_veg}_EVC_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVC_{landfire_version_veg}.tif')
 evh_path <- glue::glue('{landfire_veg_dir}/EVH/LF{landfire_year_veg}_EVH_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVH_{landfire_version_veg}.tif')
@@ -277,11 +280,13 @@ if (!file.exists(glue::glue('{target_dir_z}/01_final'))) {
 #-----------------------------------------------------#
 
 # load lcms projections
-lcms_crs <- crs(lcms_proj)
+lcms_crs <- terra::crs(lcms_proj)
 
 #load landfire projection
-landfire_crs <- crs(landfire_proj)
+landfire_crs <- terra::crs(landfire_proj)
 
+# load treemap projection
+tm_crs <- terra::crs(tm_proj)
 
 # Remove unused objects
 #------------------------------------------------#
