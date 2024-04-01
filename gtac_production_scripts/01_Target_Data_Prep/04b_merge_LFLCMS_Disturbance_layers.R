@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 3/26/24
+# Last Updated: 4/1/24
 
 # Output rasters: 
 # - years since most recent disturbance
@@ -81,6 +81,9 @@ landfire_ind_years <- terra::rast(landfire_ind_years_outpath)
 landfire_fire_binary <- terra::rast(landfire_fire_binary_outpath)
 landfire_ind_binary <- terra::rast(landfire_ind_binary_outpath)
 
+# Load EVT_GP layer
+evt_gp <- terra::rast(glue::glue('{target_dir_z}/01_final/EVT_GP.tif'))
+
 #################################################
 # MERGE LCMS and LANDIRE LAYERS
 #################################################
@@ -104,11 +107,11 @@ gc()
 dist_year <- terra::merge(landfire_fire_years, lcms_slowloss_years) %>% # merge fire and slow loss
   terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
   terra::classify(cbind(NA, 99))  %>% # set no data values 
-  terra::mask(zone)
+  terra::mask(evt_gp)
   
 dist_type <- terra::merge(landfire_fire_binary, lcms_slowloss_binary) %>% # merge fire and slow loss
   terra::classify(cbind(NA, 0))   %>% # set no data values 
-  terra::mask(zone)
+  terra::mask(evt_gp)
 
 gc()
 
@@ -135,4 +138,3 @@ writeRaster(dist_type, lcms_disturb_code_outpath,
 #clear unused memory
 gc()
 
-#}

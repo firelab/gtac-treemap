@@ -8,11 +8,11 @@
 # - EVT_GP remap table
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
-# Last Updated: 3/26/24
+# Last Updated: 4/1/24
 
 # Based on "prep_target_rasters_v2.py" by Karin Riley
 
-# TO DO: test topo var prep
+# TO DO: 
 # - test biophys var prep? or is this even necessary 
 # - there's def a way to make this look slicker using functions
 
@@ -31,8 +31,6 @@ input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
                             collapse = "/")
 
 source(input_script.path)
-
-
 
 # Terra options
 # --------------------------------#
@@ -236,13 +234,13 @@ zone_r %<>% terra::project(crs(elev))
 
 # crop, get to desired end projection, mask 
 elev <- terra::crop(elev, zone_r) %>%
-  terra::project(crsevt_gp) %>%
+  terra::project(landfire_crs) %>%
   terra::mask(evt_gp)
 slp <- terra::crop(slp, zone_r) %>%
-  terra::project(evt_gp) %>%
+  terra::project(landfire_crs) %>%
   terra::mask(evt_gp)
 asp <- terra::crop(asp, zone_r) %>%
-  terra::project(evt_gp) %>%
+  terra::project(landfire_crs) %>%
   terra::mask(evt_gp)
 
 # Calculate Northing and Easting from Aspect
@@ -272,85 +270,84 @@ writeRaster(east,
 rm(elev, slp, asp, north, east)
 gc()
 
-## BIOPHYS
-# ###################################################
-#-------------------------------------------------------#
+# ## BIOPHYS
+# # ###################################################
+# #-------------------------------------------------------#
+# 
+# # list layers
+# bio_list <- list.files(biophys_dir_z, full.names = TRUE)
+# 
+# # load layers 
+# biophys <- terra::rast(bio_list)
+# 
+# # inspect
+# identical(crs(biophys[[1]]), landfire_crs)
+# terra::ext(biophys[[1]])
+# 
+# plot(terra::ext(evt_gp))
+# plot(terra::ext(biophys[[1]]), col = "blue", add = TRUE)
+# 
+# bp_crop <- biophys[[1]] %>% terra::crop(evt_gp)
+# terra::ext(bp_crop)
+# 
+# # Mask Biophys layers - to forested px for each zone
+# # -------------------------------------------------------------#
+# 
+# for(i in 1:length(bio_list)) {
+#   
+#   # for testing 
+#   #i = 1
+#   
+#   # load raster
+#   r <- terra::rast(bio_list[[i]])
+#   
+#   # crop and mask
+#   r %<>% terra::crop(evt_gp) %>%
+#     terra::mask(evt_gp)
+#   
+#   # set name for output raster
+#   r_name <- stringr::str_split(bio_list[[i]], "/")[[1]]
+#   r_name <- gsub(".img", "", r_name[length(r_name)])
+#   r_name <- gsub(cur.zone.zero, "", r_name)
+#   r_name <- toupper(r_name)
+# 
+#   # write out 
+#   writeRaster(r, 
+#               glue::glue('{target_dir_z}/01_final/{r_name}.tif'),
+#               overwrite = TRUE)
+#   
+#   gc()
+# }
+# 
+# # remove layers
+# rm(r)
+# gc()
 
-# list layers
-bio_list <- list.files(biophys_dir_z, full.names = TRUE)
+# ## DISTURBANCE
+# # ########################################
+# 
+# # Mask Disturbance layers - to forested px for each zone
+# # -------------------------------------------- #
+# 
+# disturb_code_lf <- terra::rast(lf_disturb_code_outpath) %>%
+#   terra::mask(evt_gp) %>%
+#   writeRaster(lf_disturb_code_outpath, overwrite = TRUE)
+# 
+# disturb_year_lf <- terra::rast(lf_disturb_year_outpath) %>%
+#   terra::mask(evt_gp) %>%
+#   writeRaster(lf_disturb_year_outpath, overwrite = TRUE)
+# 
+# disturb_code_lcms <- terra::rast(lcms_disturb_code_outpath) %>%
+#   terra::mask(evt_gp) %>%
+#   writeRaster(lcms_disturb_code_outpath, overwrite = TRUE)
+# 
+# disturb_year_lcms <- terra::rast(lcms_disturb_year_outpath) %>%
+#   terra::mask(evt_gp) %>%
+#   writeRaster(lcms_disturb_year_outpath, overwrite = TRUE)
+# 
+# 
+# rm(disturb_code_lf, disturb_year_lcms, disturb_year_lf, disturb_code_lcms)
 
-# load layers 
-biophys <- terra::rast(bio_list)
-
-# inspect
-identical(crs(biophys[[1]]), landfire_crs)
-terra::ext(biophys[[1]])
-
-plot(terra::ext(evt_gp))
-plot(terra::ext(biophys[[1]]), col = "blue", add = TRUE)
-
-bp_crop <- biophys[[1]] %>% terra::crop(evt_gp)
-terra::ext(bp_crop)
-
-# Mask Biophys layers - to forested px for each zone
-# -------------------------------------------------------------#
-
-for(i in 1:length(bio_list)) {
-  
-  # for testing 
-  #i = 1
-  
-  # load raster
-  r <- terra::rast(bio_list[[i]])
-  
-  # crop and mask
-  r %<>% terra::crop(evt_gp) %>%
-    terra::mask(evt_gp)
-  
-  # set name for output raster
-  r_name <- stringr::str_split(bio_list[[i]], "/")[[1]]
-  r_name <- gsub(".img", "", r_name[length(r_name)])
-  r_name <- gsub(cur.zone.zero, "", r_name)
-  r_name <- toupper(r_name)
-
-  # write out 
-  writeRaster(r, 
-              glue::glue('{target_dir_z}/01_final/{r_name}.tif'),
-              overwrite = TRUE)
-  
-  gc()
-}
-
-# remove layers
-rm(r)
-gc()
-
-## DISTURBANCE
-# ########################################
-
-# Mask Disturbance layers - to forested px for each zone
-# -------------------------------------------- #
-
-disturb_code_lf <- terra::rast(lf_disturb_code_outpath) %>%
-  terra::mask(evt_gp) %>%
-  writeRaster(lf_disturb_code_outpath, overwrite = TRUE)
-
-disturb_year_lf <- terra::rast(lf_disturb_year_outpath) %>%
-  terra::mask(evt_gp) %>%
-  writeRaster(lf_disturb_year_outpath, overwrite = TRUE)
-
-disturb_code_lcms <- terra::rast(lcms_disturb_code_outpath) %>%
-  terra::mask(evt_gp) %>%
-  writeRaster(lcms_disturb_code_outpath, overwrite = TRUE)
-
-disturb_year_lcms <- terra::rast(lcms_disturb_year_outpath) %>%
-  terra::mask(evt_gp) %>%
-  writeRaster(lcms_disturb_year_outpath, overwrite = TRUE)
-
-
-rm(disturb_code_lf, disturb_year_lcms, disturb_year_lf, disturb_code_lcms)
-
-writeRaster(dis)
 
 print(glue('done with zone {zone_num}!'))
 toc()
