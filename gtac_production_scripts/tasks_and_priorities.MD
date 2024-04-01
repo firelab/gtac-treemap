@@ -23,7 +23,7 @@ Completed tasks are denoted by ~~strikethrough~~.
 	- ~~Make scripts conform to folder organization~~
 	- ~~How to make gc() silent - silent when it runs in a loop~~ 
 	- ~~Try running off local drive - to compare speed~~
-	- ~~Add numbers to reference and target data prep scripts ~~
+	- ~~Add numbers to reference and target data prep scripts~~
 	- ~~At the end of 00_set up imputation, remove objects that don't get used in the future~~
 	- ~~Make sure variable names are consistent across scripts: put in set up script if possible~~
 	- ~~Library for TreeMap functions~~
@@ -68,12 +68,12 @@ Completed tasks are denoted by ~~strikethrough~~.
 - ~~Address multiple records for CNs in reference tables~~
 	- ~~All appear to be coming from WY~~
 - ~~Extract EVC and EVH from FIA db - to give us an option vs. FVS - Rachel Houtman will do comparison~~
-- ~~Calculate end attributes that come from the TREE table: ~~
+- ~~Calculate end attributes that come from the TREE table:~~
 	- ~~Carbon, Live Above Ground~~
 	- ~~DryBio_D~~
 	- ~~DryBio_L~~
 - ~~Automate download of FIA db tables by state~~
-- ~~Perform math on Aspect earlier, outside imputation script - convert to Northing and Easting ~~
+- ~~Perform math on Aspect earlier, outside imputation script - convert to Northing and Easting~~
 	
 
 #### Imputation: 
@@ -81,11 +81,11 @@ Completed tasks are denoted by ~~strikethrough~~.
 - How to check if the yaImpute installed is my version? And install if not
 	- Add devtools installation in treeMapLib file
 - Join x table with new coords from John - importantly, this new file doesn't have coords for all points in the x table
-- ~~Try with dopar ~~
+- ~~Try with dopar~~
 - ~~Try to write out rows within future loop then read back in and see time difference~~
 - ~~Make a plot that shows valid, non-na tiles plotted over raster extent~~
-	- ~~With key for tile number ~~
-- ~~Increase mem fraction for terra in 02_run_imputation ~~
+	- ~~With key for tile number~~
+- ~~Increase mem fraction for terra in 02_run_imputation~~
 - ~~Have a single setup script run for build imputation and run imputation - to make sure names stay the same~~
 	- ~~Make sure inputs and file names etc align with all imputation scripts~~
 - ~~Perform data frame processing with Tidyverse~~
@@ -98,13 +98,13 @@ Completed tasks are denoted by ~~strikethrough~~.
 - ~~Once imputation function is stable, remove it from imputation script -- refer just to Lib~~
 - ~~Source Lib and setup script in imputation steps~~
 - Progress bar on parallelization of imputation
-- ~~Convert to R terra from R raster package - ~~
+- ~~Convert to R terra from R raster package -~~
 - ~~Explore options other than by row to break up imputation - eg tile~~
 - ~~Default / published operation is to treat disturbance code as binary - currently, this is parsed at a couple different instances. Make it parsed one way, once, in build_imputation script~~
-- ~~Remove unused objects. ~~
+- ~~Remove unused objects.~~
 	- ~~Using rm()~~
 	- ~~Vet script for extra / unused objects~~
-- ~~Distinguish legacy comments from important ones ~~
+- ~~Distinguish legacy comments from important ones~~
 	- ~~Remove unused / confusing sections of commented-out code~~
 	- ~~Determine most current version of script - based on commented out sections and comparison with literature~~
 - ~~Rework imputation function so it's more standalone -- adjust the "scope" so that it takes all the arguments it requires~~
@@ -117,8 +117,7 @@ Completed tasks are denoted by ~~strikethrough~~.
 #### Validation
 - 
 - Add calculated FIA vars and carbon attributes to validation 
-	- Test getting these values from raster attribute table 
-	- Need an ID to CN reference!!!
+	- ~~Test getting these values from raster attribute table~~
 	- For OOB: calc RMSE, use original plot CN vs imputed plot CN
 	- For predicted outputs: use original plot CN vs imputed plot CN
 		- can't do landfire comparison 
@@ -133,12 +132,12 @@ Completed tasks are denoted by ~~strikethrough~~.
 - ~~Fix R Markdown confusion matrix rendering~~
 	-~~ output formatted confusion  matrix, scaled appropriately to page~~
 		- ~~Try: https://stackoverflow.com/questions/57175351/flextable-autofit-in-a-rmarkdown-to-word-doc-causes-table-to-go-outside-page-mar~~
-	- ~~Automated highlighting on the diagonal / correct cells ~~
+	- ~~Automated highlighting on the diagonal / correct cells~~
 - ~~Plot raw imputed raster at top of validation report - as a visual cue. Or at least a map with the Landfire zone~~
 - ~~Save validation reports to dedicated directory~~
 - ~~Save validation reports with a specified name~~
 -~~ Rename "map validation" to "landfire agreement"~~
-- ~~Decide what to do with / how to handle model vs map validation outputs - ~~
+- ~~Decide what to do with / how to handle model vs map validation outputs -~~
 	- ~~calculate first, then decide what I want to do with them~~
 - ~~Automated generation of confusion matrices for OOB observations~~
 - ~~Separate out confusion matrix from assembly functions~~
