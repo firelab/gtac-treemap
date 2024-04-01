@@ -38,10 +38,11 @@ Completed tasks are denoted by ~~strikethrough~~.
 
 
 #### Target data:
-- MAKE SURE EXTENTS OF PREPPED TARGET DATA MATCH 
+- MAKE SURE EXTENTS OF PREPPED TARGET DATA MATCH
+	- - holding up imputation on zone 19
 - Test on a different LF zone 
+- Test prep all vars for zone 16 - put these in v2016_GTAC target data folder 
 - Add progress tracking for parallelization 
-- Test script to prep all target layers
 - How to store disturbance data? So many different years; are they really different landfire versions? 
 - Script to download and extract all necessary Landfire data 
 	- Disturbance
@@ -78,16 +79,15 @@ Completed tasks are denoted by ~~strikethrough~~.
 #### Imputation: 
 - Is it necessary to create dummy rows for non-appearing EVGs? 
 - How to check if the yaImpute installed is my version? And install if not
-	○ Add devtools installation in treeMapLib file
+	- Add devtools installation in treeMapLib file
 - Join x table with new coords from John - importantly, this new file doesn't have coords for all points in the x table
 - ~~Try with dopar ~~
 - ~~Try to write out rows within future loop then read back in and see time difference~~
 - ~~Make a plot that shows valid, non-na tiles plotted over raster extent~~
-	○ ~~With key for tile number ~~
+	- ~~With key for tile number ~~
 - ~~Increase mem fraction for terra in 02_run_imputation ~~
-- Have a single setup script run for build imputation and run imputation - to make sure names stay the same
-	○ Make sure inputs and file names etc align with all imputation scripts
-	○ Set up separate variable to name FINAL outputs - after assemblage
+- ~~Have a single setup script run for build imputation and run imputation - to make sure names stay the same~~
+	- ~~Make sure inputs and file names etc align with all imputation scripts~~
 - ~~Perform data frame processing with Tidyverse~~
 	- Tidyverse is definitely an improvement for (Lila's readability. Determine if tidyverse is an improvement for speed? Does it streamline things in memory
 - ~~Loop over tiles~~
@@ -115,16 +115,24 @@ Completed tasks are denoted by ~~strikethrough~~.
 - ~~Remove all  setwd()~~
 
 #### Validation
-- Increase number of decimal points for reporting accuracy and other metrics
+- 
 - Add calculated FIA vars and carbon attributes to validation 
 	- Test getting these values from raster attribute table 
 	- Need an ID to CN reference!!!
 	- For OOB: calc RMSE, use original plot CN vs imputed plot CN
-	- Can only do OOB; can't do landfire comparison 
+	- For predicted outputs: use original plot CN vs imputed plot CN
+		- can't do landfire comparison 
+- Standardize names of Target vs Reference data in eval reports: 
+	- Ground (FIA)
+	- Imputed
+	- Observed (Target)
+	- Observed (Out of Bag)
+
+~~Increase number of decimal points for reporting accuracy and other metrics~~
 - ~~Separate R script to run markdown report generation - more flexibility to change settings etc by using render~~
 - ~~Fix R Markdown confusion matrix rendering~~
 	-~~ output formatted confusion  matrix, scaled appropriately to page~~
-		- Try: https://stackoverflow.com/questions/57175351/flextable-autofit-in-a-rmarkdown-to-word-doc-causes-table-to-go-outside-page-mar
+		- ~~Try: https://stackoverflow.com/questions/57175351/flextable-autofit-in-a-rmarkdown-to-word-doc-causes-table-to-go-outside-page-mar~~
 	- ~~Automated highlighting on the diagonal / correct cells ~~
 - ~~Plot raw imputed raster at top of validation report - as a visual cue. Or at least a map with the Landfire zone~~
 - ~~Save validation reports to dedicated directory~~
