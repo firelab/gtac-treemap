@@ -24,36 +24,10 @@ library(knitr)
 # set chunk options
 knitr::opts_chunk$set(echo = FALSE)
 
-# Set inputs - from input script
-# Id where script is located
-#this.path <- this.path::this.path()
-
-# # get path to input script with settings for imputation
-# spl <- stringr::str_split(this.path, "/")[[1]]
-# input_script.path <- paste( c(spl[c(1:(length(spl)-2))],
-#                               "03_Imputation/00_inputs_for_imp.R" ),
-#                             collapse = "/")
-# 
-# source(input_script.path)
-
-#knitr::opts_knit$set(root.dir = eval_dir)
 
 ```
 
 
-```{r set input parameters, include = FALSE}
-
-# # name of raster to validate
-# raster_name <- glue::glue("2016_GTAC_Test_ntree250_UT_Uintas_rect_tilesz2000_nT36")
-# 
-# # list variables to evaluate
-# var_names <- c("canopy_cover", "canopy_height", "EVT_GP", 
-#                "disturb_code", "disturb_year")
-
-# set number of digits to round to
-
-
-```
 
 Landfire zone: `r params$zone_num`
 
@@ -69,20 +43,10 @@ Path for confusion matrices: `r params$cms_path`
 # plot raster 
 plot(ras, main = glue::glue("Raw Imputation: Zone {params$zone_num}"))
 ```
-
-
-```{r}
-
-# load RDS of cm files
-#cms_all <- readRDS(glue::glue('{eval_dir}/02_LF_Comparison/{output_name}_CMs_derivedVars.RDS'))
-#cms_all <- readRDS(glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
-```
-
-
 ```{r choose single variable to start}
 #choose single variable
 
-#v <- 1
+#v <- 4
 #var_in <- var_names[v]
 ```
 
@@ -112,8 +76,25 @@ for(v in 1:length(var_names)){
     dplyr::select(class, ref, pred) %>%
     dplyr::mutate(class = factor(class))
   
-  
   n_classes <- nrow(freq)
+  
+  # Calculate normalized frequency table 
+  #--------------------------------------------#
+
+  # calc total to use in normalizing
+  total_pred = sum(freq$pred)
+  total_ref = sum(freq$ref)
+  
+  # add normalized frequency
+  freq_norm <- freq %>%
+    mutate(pred = pred/total_pred, 
+           ref = ref/total_ref)
+  
+  # Join normalized frequency table with reference
+  #----------------------------------------------#
+  rat_freq <- rat_freq_all[[var_in]]
+
+  freq_norm$aRAT <- rat_freq$Freq_norm
   
   # Prep CM Classes
   #---------------------------------------------#
@@ -150,7 +131,7 @@ for(v in 1:length(var_names)){
   # Plotting
   ##################################################################################
   
-  # Bar plot: observed vs. predicted for each class 
+  # Bar plot: Raw frequency, observed vs. predicted for each class 
   # ---------------------------------------------------------#
   
   #format frequency table for plotting
@@ -160,21 +141,48 @@ for(v in 1:length(var_names)){
     arrange(dataset, class)
   
   #plot
-  barchart <- freq_t1 %>%
+  barchart1 <- freq_t1 %>%
     ggplot() +
     geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
-    scale_fill_manual(name = "Dataset", labels = c("Imputed", "Reference"),values = c("aquamarine3", "chartreuse4"))+
+    scale_fill_manual(name = "Dataset", labels = c("Imputed", "Observed" ),values = c("aquamarine3", "chartreuse4"))+
     theme_bw() +
-    ggtitle(glue("Frequency of classes for imputed vs. reference data
+    ggtitle(glue("Frequency of classes for imputed vs. observed data
             Zone: z{zone_num} ; Attribute: {var_in}"))
   
   # conditionally flip axis text labeling
   if(var_in == "EVT_GP") {
-    barchart <- barchart + 
+    barchart1 <- barchart1 + 
       theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
   }
   
-  print(barchart)
+  print(barchart1)
+  
+  # Bar plot: Noramlized frequency, observed vs. predicted vs. for each class 
+  # ---------------------------------------------------------#
+  
+  #format frequency table for plotting
+  freq_t2 <- freq_norm %>%
+    pivot_longer(!class, names_to = "dataset") %>%
+    dplyr::rename(frequency = "value") %>%
+    mutate(dataset= factor(dataset)) %>%
+    arrange(dataset, class)
+  
+  #plot
+  barchart2 <- freq_t2 %>%
+    ggplot() +
+    geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
+    scale_fill_manual(name = "Dataset", labels = c("Reference", "Imputed","Observed"),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
+    theme_bw() +
+    ggtitle(glue("Normalized frequency of classes for reference vs. imputed vs. observed data
+            Zone: z{zone_num} ; Attribute: {var_in}"))
+  
+  # conditionally flip axis text labeling
+  if(var_in == "EVT_GP") {
+    barchart2 <- barchart2 + 
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  }
+  
+  print(barchart2)
   
   # Scatterplot: Total obs of class vs. classwise accuracy
   # -----------------------------------------------------------------#

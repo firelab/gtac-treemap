@@ -5,12 +5,10 @@
 
 
 # TO DO:
-# - normalize frequency 
+
 
 ### SETUP AND RUN
 ######################################
-
-
 
 # Specific inputs
 #----------------------------------------------#
@@ -179,12 +177,10 @@ rat_sp_z <- terra::crop(rat_sp, zone)
 # convert to data frame
 rat_z <- data.frame(rat_sp_z)
 
-# calc freq? get ready to bind_rows() to freq table for each var
+# Calc frequency for all vars in RAT
+#------------------------------------------#
 
-#for (i in seq_along(names(rat_z))) {
-
-rfreq <- list()
-rfreq_norm <- list()
+rat_freq_all <- list()
 
 for (i in seq_along(var_names)) {
 
@@ -204,14 +200,14 @@ for (i in seq_along(var_names)) {
   f_out$Freq_norm = f_out$Freq/total
   
   # join with other outputs
-  rfreq = c(rfreq, list(f_out))
+  rat_freq_all = c(rat_freq_all, list(f_out))
   
 }
 
-names(rfreq) <- var_names
+names(rat_freq_all) <- var_names
 
 # inspect
-#rfreq
+#rat_freq_all
 
 # Render report
 #-----------------------------------------------------#
