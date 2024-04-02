@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 3/26/24
+# Last Updated: 4/1/24
 
 # Output rasters: 
 # - years since most recent disturbance
@@ -19,11 +19,11 @@ this.path <- this.path::this.path() # Id where THIS script is located
 
 # get path to input script
 spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
+input_script_path <- paste( c(spl[c(1:(length(spl)-1))],
                               "00_inputs_for_targetdata.R" ),
                             collapse = "/")
 
-source(input_script.path)
+source(input_script_path)
 
 ###################################################
 # LOAD DATA
@@ -78,6 +78,10 @@ landfire_ind_years <- terra::rast(landfire_ind_years_outpath)
 landfire_fire_binary <- terra::rast(landfire_fire_binary_outpath)
 landfire_ind_binary <- terra::rast(landfire_ind_binary_outpath)
 
+# Load EVT_GP layer
+evt_gp <- terra::rast(glue::glue('{target_dir_z}/01_final/EVT_GP.tif'))
+
+
 #####################################################
 # MERGE
 ######################################################
@@ -90,12 +94,12 @@ dist_year <- terra::merge(landfire_fire_years, landfire_ind_years) %>% # merge f
   terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
   terra::classify(cbind(NA,99)) %>% # set no data values 
   terra::project(landfire_crs) %>%
-  terra::mask(zone)
+  terra::mask(evt_gp)
 
 dist_type <- terra::merge(landfire_fire_binary, landfire_ind_binary) %>% # merge fire and slow loss
   terra::classify(cbind(NA, 0)) %>% # set no data values 
   terra::project(landfire_crs) %>%
-  terra::mask(zone)
+  terra::mask(evt_gp)
 
 # #inspect
 # plot(landfire_fire_years)

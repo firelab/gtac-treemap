@@ -30,7 +30,7 @@ aoi_name <- NA
 # Zone list
 #zone_list <- c(16)
 
-zone_num <- 19
+zone_num <- 16
 
 #project name
 project_name <- "2016_GTAC_Test"
@@ -156,11 +156,11 @@ landfire_ind_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_
 lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
 lcms_slowloss_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur.zone.zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
 
-lf_disturb_code_outpath <- glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_code_LF.tif')
-lf_disturb_year_outpath <- glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_year_LF.tif')
+lf_disturb_code_outpath <- glue::glue('{target_dir_z}/01_final/disturb_code_LF.tif')
+lf_disturb_year_outpath <- glue::glue('{target_dir_z}/01_final/disturb_year_LF.tif')
 
-lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_code_LFLCMS.tif')
-lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_year_LFLCMS.tif')
+lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/01_final/disturb_code_LFLCMS.tif')
+lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/01_final/disturb_year_LFLCMS.tif')
 
 # Input parameters for LCMS Disturbance
 #-----------------------------------------------------------#
