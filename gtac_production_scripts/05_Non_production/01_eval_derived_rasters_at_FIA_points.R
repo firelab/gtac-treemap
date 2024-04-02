@@ -2,7 +2,7 @@
 
 # Objective: Compare output rasters - extract values to FIA points 
 
-# Last update: 3/26/24
+# Last update: 04/01/24
 
 
 ########################################################
@@ -43,7 +43,7 @@ rast_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data
 evt_path <- glue::glue("{home_dir}01_Data/02_Landfire/LF_200/EVT/LF2016_EVT_200_CONUS/CSV_Data/LF16_EVT_200.csv")
 
 # path to coords
-coords_path <- "{home_dir}01_Data/04_FIA/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv"
+coords_path <- glue::glue("{home_dir}01_Data/04_FIA/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv")
 
 # crs raster data are in 
 landfire_crs <- terra::crs(glue::glue('{home_dir}/01_Data/02_Landfire/landfire_crs.prj'))
@@ -222,18 +222,53 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   p <-  p_r %>%
     filter(var == var_name) %>%
     ggplot(aes(x=as.factor(value),  fill=dataset)) + 
-    geom_bar(position="dodge") + 
+    geom_bar(position= position_dodge2(preserve = "single")) + # https://stackoverflow.com/questions/38101512/the-same-width-of-the-bars-in-geom-barposition-dodge
     facet_wrap(~disturb_code) + 
     labs(title = glue::glue('Variation in {var_name} by disturbance code, by model')) + 
     xlab(var_name)
   
   print(p)
+  
+  # save
+  ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
+         plot = p,
+         width = 7,
+         height = 4.5)
+  
+  
+  # Normalized plot for categorical variables
+  
+  # Calculate totals for categories
+  categoryTotals <- data.frame(p_r %>%
+                                 filter(var == var_name) %>%
+                                 group_by(value) %>%
+                                 summarise(count = n()))
+  
+  # Calculate counts by dataset and disturbance code for each category
+  countsBy_dataset_DistCode <- data.frame(p_r %>%
+                                   filter(var == var_name) %>%
+                                   group_by(value, dataset, disturb_code) %>%
+                                   summarise(count = n()))
+  
+  # Temporary dataframe merging the categories counts and totals for normalization and  plotting
+  temp_df <- merge(countsBy_dataset_DistCode, categoryTotals, by = c("value"), all.x = TRUE)
+  
+  # Normalization
+  temp_df$normalized_count <- temp_df$count.x/temp_df$count.y
+  
+  p_Norm <-  ggplot(data = temp_df, aes(x=as.factor(value), y=normalized_count, fill = dataset)) + 
+    geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) + 
+    facet_wrap(~disturb_code) + 
+    labs(title = glue::glue('Variation in {var_name} by disturbance code, by model (normalized)')) + 
+    xlab(var_name)
+  
+  print(p_Norm)
+  
 
-# save
-ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
-       plot = p,
-       width = 7,
-       height = 4.5)
+  ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_normalized.png'),
+         plot = p_Norm,
+         width = 7,
+         height = 4.5)
 
 }
 
@@ -301,7 +336,7 @@ p_r_evt %<>%
 ######################################
 p_r_evt %>%
   ggplot(aes(x=EVT_GP, fill=dataset)) + 
-  geom_bar(position="dodge") + 
+  geom_bar(position= position_dodge2(preserve = "single")) + 
   scale_x_discrete(labels = evt_names$EVT_GP_N_short) +
   facet_wrap(~disturb_code) + 
   labs(title = glue::glue('Variation in EVT_GP by disturbance code, by model')) + 
