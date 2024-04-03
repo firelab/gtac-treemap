@@ -3,7 +3,7 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 3/25/24
+# Last updated: 4/1/24
 
 # TO DO:
 # - address inconsistencies in EVT vs Topo Landfire Paths
@@ -166,7 +166,7 @@ lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/01_final/disturb_year_LF
 #-----------------------------------------------------------#
 
 # Set variables
-LCMS_NAvalue<- -32768
+LCMS_NAvalue <- -32768
 
 # set threshold for probability of slow loss from LCMS
 slow_loss_thresh <- 14 # default value for LCMS processing: 14
