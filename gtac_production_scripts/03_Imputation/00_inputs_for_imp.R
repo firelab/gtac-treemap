@@ -10,13 +10,13 @@
 # Identifiers - for outputs 
 #--------------------------------------------------#
 # Project name
-#project_name <- "2016_GTAC_Test"
-project_name <- "2016_GTAC_LCMSDist"
+project_name <- "2016_GTAC_Test"
+#project_name <- "2016_GTAC_LCMSDist"
 
 # Output imputation name
 # describes the run and parameters; zone will be added later
-#output_name <- "2016_Orig_Test_keepinbag_ntree250"
-output_name <- project_name
+#output_name <- "2016_GTAC_Test_GTACTarget_Data_newCoords"
+output_name <- "2016_Orig_Test_keepinbag_ntree250"
 
 # name of output raster / raster to validate
 # will get overwritten in 02_run_imputation 
@@ -69,12 +69,12 @@ target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_ve
 
 # Directory where disturbance layers live
 # If disturbance layers live in the same dir, then NA
-#dist_raster_dir <- NA
-dist_raster_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
+dist_raster_dir <- NA
+#dist_raster_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
 
 # disturbance type - options are "LF" or "LFLCMS".
 # This param only used if !is.na(dist_raster_dir)
-dist_layer_type <- "LFLCMS"
+dist_layer_type <- "LF"
 
 # Directory where EVT_GP remap table is located
 #evt_gp_remap_table_dir <- target_dir
@@ -88,7 +88,6 @@ coords_path <- glue::glue('{home_dir}01_Data/04_FIA/06_Coordinates/select_TREEMA
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
-# UPDATE THIS TO BE FLEX FOR FUTURE RUNS
 output_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/01_Raw_model_outputs/')
 
 #set path for assembled rasters
@@ -138,7 +137,6 @@ if(is.na(aoi_name)) {
 # -----------------------------------------#
 # Set folder paths
 target_dir = glue::glue('{target_dir}/{cur_zone_zero}/')
-dist_raster_dir = glue::glue('{dist_raster_dir}/{cur_zone_zero}/01_final')
 output_dir = glue::glue('{output_dir}/{cur_zone_zero}/')
 assembled_dir = glue::glue('{assembled_dir}/{cur_zone_zero}')
 eval_dir <- glue::glue('{eval_dir}{cur_zone_zero}')
@@ -149,6 +147,9 @@ model_dir = glue::glue('{output_dir}/model/')
 evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/01_final/EVG_remap_table.csv')
 params_path = glue::glue('{output_dir}/params/{cur_zone_zero}_{output_name}_params.txt')
 
+if (!is.na(dist_raster_dir)) {
+  dist_raster_dir = glue::glue('{dist_raster_dir}/{cur_zone_zero}/01_final')
+}
 
 # Model inputs
 #----------------------------------#
@@ -281,20 +282,6 @@ if(!file.exists(glue::glue('{assembled_dir}/03_Derived_vars_FIA/'))){
   dir.create(glue::glue('{assembled_dir}/03_Derived_vars_FIA/'), recursive = TRUE)
 }
 
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/01_OOB_Evaluation'))) {
-  dir.create(glue::glue('{eval_dir}/01_OOB_Evaluation'), recursive = TRUE)
-}
-
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/02_LF_Comparison'))) {
-  dir.create(glue::glue('{eval_dir}/02_LF_Comparison'), recursive = TRUE)
-}
-
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/03_Eval_Reports'))) {
-  dir.create(glue::glue('{eval_dir}/03_Eval_Reports'), recursive = TRUE)
-}
 
 
 # Load crs objects
