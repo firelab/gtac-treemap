@@ -16,24 +16,24 @@ Completed tasks are denoted by ~~strikethrough~~.
 	- Make sure projections align between target, reference, and output data 
 	- Get a CRS explicitly for desired output projection 
 		- Does this need to be an overarching setting? 
-	- Prioritization: Calculate tree cover % for each landfire zone to aid progress tracking 
-	- ~~Handle relative paths in R to call scripts from other scripts - this.path()~~
-	- ~~Add high-level option for selecting target layers-- e.g., different disturb layers~~
-	- ~~Folder organization - structure by project; have all files end up in a folder for the same zone~~
-	- ~~Make scripts conform to folder organization~~
-	- ~~How to make gc() silent - silent when it runs in a loop~~ 
-	- ~~Try running off local drive - to compare speed~~
-	- ~~Add numbers to reference and target data prep scripts~~
-	- ~~At the end of 00_set up imputation, remove objects that don't get used in the future~~
-	- ~~Make sure variable names are consistent across scripts: put in set up script if possible~~
-	- ~~Library for TreeMap functions~~
-		- ~~Evaluation function - compare one raster vs another~~
-		- ~~Assemblage functions~~
-			- ~~Classify based on lookup table~~
-			- ~~Concat based on lookup table~~
-	- ~~Maintainable code structures~~
-	- ~~Turn operations into functions instead of iterating over lists~~
-		- ~~Apply with tidyverse map~~ 
+- Prioritization: Calculate tree cover % for each landfire zone to aid progress tracking 
+- ~~Handle relative paths in R to call scripts from other scripts - this.path()~~
+- ~~Add high-level option for selecting target layers-- e.g., different disturb layers~~
+- ~~Folder organization - structure by project; have all files end up in a folder for the same zone~~
+- ~~Make scripts conform to folder organization~~
+- ~~How to make gc() silent - silent when it runs in a loop~~ 
+- ~~Try running off local drive - to compare speed~~
+- ~~Add numbers to reference and target data prep scripts~~
+- ~~At the end of 00_set up imputation, remove objects that don't get used in the future~~
+- ~~Make sure variable names are consistent across scripts: put in set up script if possible~~
+- ~~Library for TreeMap functions~~
+	- ~~Evaluation function - compare one raster vs another~~
+	- ~~Assemblage functions~~
+		- ~~Classify based on lookup table~~
+		- ~~Concat based on lookup table~~
+- ~~Maintainable code structures~~
+- ~~Turn operations into functions instead of iterating over lists~~
+	- ~~Apply with tidyverse map~~ 
 	
 
 
@@ -61,9 +61,10 @@ Completed tasks are denoted by ~~strikethrough~~.
 
 #### Reference data:
 - 00 control script for reference data prep?
-- Include unabbreviated plot coords in X-table - load from export 
+- combine reference data prepped for all states
+- Include unabbreviated plot coords in X-table - load from most recent coords export 
 - Calculate FIA derivatives alongside reference data prep 
-	- Compare raster attribute table values for FIA vars to what I've calculated
+	- ~~Compare raster attribute table values for FIA vars to what I've calculated~~
 	- Check carbon, biomass, and TPA calculations with John Shaw
 - Appropriate file naming and data storage 
 	- More organization in Reference Data folders 
@@ -117,12 +118,13 @@ Completed tasks are denoted by ~~strikethrough~~.
 - ~~Remove all  setwd()~~
 
 #### Validation
-- 
-- Add calculated FIA vars and carbon attributes to validation 
+- Add calculated FIA vars and carbon attributes to validation - eval script 03
 	- ~~Test getting these values from raster attribute table~~
 	- For OOB: calc RMSE, use original plot CN vs imputed plot CN
-	- For predicted outputs: use original plot CN vs imputed plot CN
+	- For predicted outputs: calc RMSE, use original plot CN vs imputed plot CN
 		- can't do landfire comparison 
+	- Export relevant summary data - table extract, r-squared, etc? and plots
+	- Include these in zonal eval reports
 - ~~Standardize names of Target vs Reference data in eval reports:~~
 	- ~~Ground (FIA)~~
 	- ~~Imputed~~
