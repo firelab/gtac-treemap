@@ -38,6 +38,8 @@ Completed tasks are denoted by ~~strikethrough~~.
 
 
 #### Target data:
+- Control script to run multiple zones in a row 
+- Write out file with parameters used to generate target data
 - MAKE SURE EXTENTS OF PREPPED TARGET DATA MATCH
 	- - holding up imputation on zone 19
 - Test on a different LF zone 
@@ -121,16 +123,16 @@ Completed tasks are denoted by ~~strikethrough~~.
 	- For OOB: calc RMSE, use original plot CN vs imputed plot CN
 	- For predicted outputs: use original plot CN vs imputed plot CN
 		- can't do landfire comparison 
-- Standardize names of Target vs Reference data in eval reports: 
-	- Ground (FIA)
-	- Imputed
-	- Observed (Target)
-	- Observed (Out of Bag)
+- ~~Standardize names of Target vs Reference data in eval reports:~~
+	- ~~Ground (FIA)~~
+	- ~~Imputed~~
+	- ~~Observed (Target)~~
+	- ~~Observed (Out of Bag)~~
 
 ~~Increase number of decimal points for reporting accuracy and other metrics~~
 - ~~Separate R script to run markdown report generation - more flexibility to change settings etc by using render~~
 - ~~Fix R Markdown confusion matrix rendering~~
-	-~~ output formatted confusion  matrix, scaled appropriately to page~~
+	-~~output formatted confusion  matrix, scaled appropriately to page~~
 		- ~~Try: https://stackoverflow.com/questions/57175351/flextable-autofit-in-a-rmarkdown-to-word-doc-causes-table-to-go-outside-page-mar~~
 	- ~~Automated highlighting on the diagonal / correct cells~~
 - ~~Plot raw imputed raster at top of validation report - as a visual cue. Or at least a map with the Landfire zone~~

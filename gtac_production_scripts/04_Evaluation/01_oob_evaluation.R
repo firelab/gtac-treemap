@@ -1,17 +1,24 @@
 # TreeMap Evaluation
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Out-of-bag stats and validation 
+# Out-of-bag stats and validation
 # - Extract model validation stats from yai object
 # - Report out model accuracy for vars
 
-# TO DO: 
+# TO DO:
+# - make use input script 
 
-# Last updated: 3/6/2024
+# Last updated: 4/2/2024
 
 ###########################################################################
 # Set inputs
 ###########################################################################
+
+# list variables to evaluate
+eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
+               "disturb_code", "disturb_year")
+
+eval_vars_cont <- c()
 
 # Standard inputs
 #---------------------------------------------#
@@ -21,11 +28,11 @@ this.path <- this.path::this.path() # Id where THIS script is located
 
 # get path to input script
 spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-2))],
-                              "03_Imputation/00_inputs_for_imp.R" ),
-                            collapse = "/")
+input_script_path <- paste(c(spl[c(1:(length(spl) - 1))],
+                             "00_inputs_for_evaluation.R"),
+                           collapse = "/")
 
-source(input_script.path)
+source(input_script_path)
 
 ############################################################
 
@@ -40,14 +47,14 @@ source(input_script.path)
 
 # Allow for sufficient digits to differentiate plot cn numbers
 
-options("scipen"=100, "digits"=8)
+options("scipen" = 100, "digits" = 8)
 
 
 ####################################################################
 # Load data
 ####################################################################
 
-# Load imputation model 
+# Load imputation model
 # ---------------------------------------------------------- #
 
 #load model
@@ -55,22 +62,28 @@ yai <- readr::read_rds(model_path)
 
 # Load x table
 # ------------------------------------------------------------#
-X.df <- read.csv(xtable_path)
 
-X.df %<>% 
-  mutate(
-    # disturb_code = factor(disturb_code),
-    # disturb_year = factor(disturb_year),
-    # EVT_GP = factor(EVT_GP),
-    # canopy_cover = factor(canopy_cover),
-    # canopy_height = factor(canopy_height),
-    PLOTID = ID)
+# load X_df
+X_df <- read.csv(xtable_path) %>%
+  mutate(PLOTID = ID)
 
-# Load lookup table
-#--------------------------------------------------------------#
-# load lookup table - table with all ref vars, 
-# including those calculated from FIA
-# don't have this YET
+# Load raster attribute table 
+#-------------------------------------------------#
+
+# load rat
+rat <- terra::rast(glue::glue("{rat_path}TreeMap2016.tif"))
+rat <- data.frame(cats(rat))
+
+rat %<>%
+  rename("SDIPCT_RMRS" = SDIPCT_RMR,
+         "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
+  mutate(CN = as.numeric(CN)) %>%
+  select(-Value)
+
+# join with X df  
+rat %<>%
+  right_join(X_df, by = c("CN" = "CN", "tm_id" = "PLOTID")) %>%
+  rename("PLOTID" = tm_id)
 
 
 ######################################################################
@@ -85,30 +98,31 @@ oobs %<>%
   rename("ref_id" = ref,
          "pred_id" = pred)
 
-# list variables to evaluate
-eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP", 
-               "disturb_code", "disturb_year")
 
 
 # make reference and predicted table
 # --------------------------------------------#
-refs <- 
-  left_join(oobs, X.df, 
-                  by = c("ref_id" = "ID")) %>%
-  select(c(PLOTID, ref_id, pred_id, tree_num, inbag_count, all_of(eval_vars))) %>%
-  pivot_longer(!c(PLOTID, ref_id, pred_id, tree_num, inbag_count), names_to = "var", values_to = "ref") %>%
+refs <-
+  left_join(oobs, X_df,
+            by = c("ref_id" = "ID")) %>%
+  select(c(PLOTID, ref_id, pred_id, tree_num, inbag_count,
+           all_of(eval_vars))) %>%
+  pivot_longer(!c(PLOTID, ref_id, pred_id, tree_num, inbag_count),
+               names_to = "var", values_to = "ref") %>%
   mutate(var = factor(var)) %>%
   rename("PLOTID_ref" = PLOTID)
 
-# join oobs with X.df
-preds <- left_join(oobs, X.df,
+# join oobs with X_df
+preds <- left_join(oobs, X_df,
                    by = c("pred_id" = "ID")) %>%
-  select(c(PLOTID, ref_id, pred_id, tree_num, inbag_count, all_of(eval_vars))) %>%
-  pivot_longer(!c(PLOTID, ref_id, pred_id, tree_num, inbag_count), names_to = "var", values_to = "pred") %>%
+  select(c(PLOTID, ref_id, pred_id, tree_num, inbag_count,
+           all_of(eval_vars))) %>%
+  pivot_longer(!c(PLOTID, ref_id, pred_id, tree_num, inbag_count),
+               names_to = "var", values_to = "pred") %>%
   mutate(var = factor(var)) %>%
   rename("PLOTID_pred" = PLOTID)
 
-# join refs and preds - could i just cbind? 
+# join refs and preds - could i just cbind?
 
 # check to make sure cols we expect to be the same are the same
 # identical(refs$tree_num, preds$tree_num)
@@ -119,7 +133,7 @@ preds <- left_join(oobs, X.df,
 # 
 # identical(preds$PLOTID_pred, preds$pred_id)
 
-p_r <- cbind(refs, 
+p_r <- cbind(refs,
              preds %>% select(pred))
 
 
@@ -136,7 +150,7 @@ gc()
 
 cms <- NULL
 
-for(i in eval_vars) {
+for (i in eval_vars) {
   
   var_in <- i
   
@@ -154,12 +168,15 @@ for(i in eval_vars) {
   cm <- list(cm)
   names(cm) <- var_in
   
-  if(is.null(cms)) { cms <- cm } else { 
-    cms <- c(cms, cm) }
-  
+  if (is.null(cms)) {
+    cms <- cm
+  } else {
+    cms <- c(cms, cm)
+  }
+
 }
 
-# save cms as RDS 
+# save cms as RDS
 write_rds(cms, file = 
             glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
 

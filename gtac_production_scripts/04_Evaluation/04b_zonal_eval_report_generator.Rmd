@@ -1,13 +1,12 @@
 ---
 params:
-  eval_vars:
+  eval_type:
   raster_name:
   zone_num:
-  var_names:
+  eval_vars:
   cms_path:
-  ref_type:
 title: "TreeMap Zonal Validation: Zone `r params$zone_num` "
-subtitle: "`r params$raster_name` ; `r params$ref_type`"
+subtitle: "`r params$raster_name` ; `r params$eval_type`"
 output:
   word_document: default
   html_document:
@@ -33,9 +32,7 @@ Landfire zone: `r params$zone_num`
 
 Run name: `r params$raster_name` 
 
-Variables to evaluate: `r params$eval_vars`
-
-"Reference" data source: `r params$ref_type`
+Variables to evaluate: `r params$eval_type`
 
 Path for confusion matrices: `r params$cms_path`
 
@@ -46,16 +43,16 @@ plot(ras, main = glue::glue("Raw Imputation: Zone {params$zone_num}"))
 ```{r choose single variable to start}
 #choose single variable
 
-#v <- 4
-#var_in <- var_names[v]
+#v <- 3
+#var_in <- eval_vars[v]
 ```
 
 
 ```{r format and plot tables for each var, results = 'asis'}
 
-for(v in 1:length(var_names)){
+for(v in 1:length(eval_vars)){
 
-  var_in <- var_names[v]
+  var_in <- eval_vars[v]
 
   print(glue("Variable: {var_in}
              "))
@@ -93,8 +90,17 @@ for(v in 1:length(var_names)){
   # Join normalized frequency table with reference
   #----------------------------------------------#
   rat_freq <- rat_freq_all[[var_in]]
+  
+  #prep rat frequency table
+  rat_freq %<>% 
+    rename(class = !!var_in, 
+           "aRAT" = Freq_norm) %>%
+    select(-Freq)
 
-  freq_norm$aRAT <- rat_freq$Freq_norm
+  # join
+  freq_norm %<>%
+    full_join(rat_freq, by = join_by("class")) %>%
+    arrange(class)
   
   # Prep CM Classes
   #---------------------------------------------#
@@ -144,9 +150,9 @@ for(v in 1:length(var_names)){
   barchart1 <- freq_t1 %>%
     ggplot() +
     geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
-    scale_fill_manual(name = "Dataset", labels = c("Imputed", "Observed" ),values = c("aquamarine3", "chartreuse4"))+
+    scale_fill_manual(name = "Dataset", labels = plot_labels,values = c("aquamarine3", "chartreuse4"))+
     theme_bw() +
-    ggtitle(glue("Frequency of classes for imputed vs. observed data
+    ggtitle(glue("Frequency of classes
             Zone: z{zone_num} ; Attribute: {var_in}"))
   
   # conditionally flip axis text labeling
@@ -157,7 +163,7 @@ for(v in 1:length(var_names)){
   
   print(barchart1)
   
-  # Bar plot: Noramlized frequency, observed vs. predicted vs. for each class 
+  # Bar plot: Normalized frequency, observed vs. predicted vs. for each class 
   # ---------------------------------------------------------#
   
   #format frequency table for plotting
@@ -171,9 +177,9 @@ for(v in 1:length(var_names)){
   barchart2 <- freq_t2 %>%
     ggplot() +
     geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
-    scale_fill_manual(name = "Dataset", labels = c("Reference", "Imputed","Observed"),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
+    scale_fill_manual(name = "Dataset", labels = c("Ground (FIA)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
     theme_bw() +
-    ggtitle(glue("Normalized frequency of classes for reference vs. imputed vs. observed data
+    ggtitle(glue("Normalized frequency of classes
             Zone: z{zone_num} ; Attribute: {var_in}"))
   
   # conditionally flip axis text labeling
@@ -184,6 +190,32 @@ for(v in 1:length(var_names)){
   
   print(barchart2)
   
+  # Scatterplot: N of class in reference data vs. classwise accuracy
+  # -----------------------------------------------------------------#
+  
+  # get accuracy for each class
+  acc <- cm_classes %>%
+    filter(metric == "Balanced Accuracy")
+  
+  n_acc <- X_df %>%
+    select(PLOTID, CN, !!var_in) %>%
+    rename("class" = !!var_in) %>%
+    mutate(class = factor(class)) %>%
+    group_by(class) %>%
+    summarize(n = n()) %>%
+    left_join(acc, by = "class")
+  
+  # plot
+  scatter_plot1 <- n_acc %>%
+    ggplot()+
+    geom_point(aes(x = n, y = value), size = 2) + 
+    theme_bw() +
+    labs(x = "total N of class in reference data", y = "Balanced Accuracy") + 
+    ggtitle(glue("Accuracy vs. n Reference pts per class
+            Zone: z{zone_num} ; Attribute: {var_in}"))
+  
+  print(scatter_plot1)
+  
   # Scatterplot: Total obs of class vs. classwise accuracy
   # -----------------------------------------------------------------#
   
@@ -192,7 +224,7 @@ for(v in 1:length(var_names)){
     filter(metric == "Balanced Accuracy")
   
   # join with total N for each class
-  freq_t2 <- freq %>%
+  freq_acc <- freq %>%
     #select(-X) %>%
     #rename("class" = value) %>%
     group_by(class) %>%
@@ -200,15 +232,16 @@ for(v in 1:length(var_names)){
     left_join(acc, by = "class")
   
   # plot
-  scatter_plot <- freq_t2 %>%
+  scatter_plot2 <- freq_acc %>%
     ggplot()+
     geom_point(aes(x = n, y = value), size = 2) + 
     theme_bw() +
-    labs(x = "total N in class", y = "Balanced Accuracy") + 
-    ggtitle(glue("Accuracy vs. nObs per class
+    labs(x = "total N of class in Imputed observations", y = "Balanced Accuracy") + 
+    ggtitle(glue("Accuracy vs. N Imputed Obs per class
             Zone: z{zone_num} ; Attribute: {var_in}"))
   
-  print(scatter_plot)
+  print(scatter_plot2)
+  
   
   # Prep confusion matrix for display
   # -------------------------------------------------#
@@ -219,7 +252,9 @@ for(v in 1:length(var_names)){
     select(value) 
  
   print(glue::glue("
+                   
                    Overall accuracy: {round(oa*100,4)}%
+                   
                    "))
   
   oa %<>%
@@ -300,7 +335,8 @@ for(v in 1:length(var_names)){
     surround(border = fp_border_default(color = "gray", width = 1), part = "body") %>%
     # add title
     set_caption(glue("Confusion Matrix  
-             Zone: z{zone_num} ; Attribute: {var_in}")) 
+             Zone: z{zone_num} ; Attribute: {var_in},
+             {plot_labels}")) 
 
   # highlight diagonal values
   for (r in 1:(nrow(cm_display)-1)) {
