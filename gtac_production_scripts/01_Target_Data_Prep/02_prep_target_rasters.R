@@ -270,88 +270,64 @@ writeRaster(east,
 rm(elev, slp, asp, north, east)
 gc()
 
-# ## BIOPHYS
-# # ###################################################
-# #-------------------------------------------------------#
-# 
-# # list layers
-# bio_list <- list.files(biophys_dir_z, full.names = TRUE)
-# 
-# # load layers 
-# biophys <- terra::rast(bio_list)
-# 
-# # inspect
-# identical(crs(biophys[[1]]), landfire_crs)
-# terra::ext(biophys[[1]])
-# 
-# plot(terra::ext(evt_gp))
-# plot(terra::ext(biophys[[1]]), col = "blue", add = TRUE)
-# 
-# bp_crop <- biophys[[1]] %>% terra::crop(evt_gp)
-# terra::ext(bp_crop)
-# 
-# # Mask Biophys layers - to forested px for each zone
-# # -------------------------------------------------------------#
-# 
-# for(i in 1:length(bio_list)) {
-#   
-#   # for testing 
-#   #i = 1
-#   
-#   # load raster
-#   r <- terra::rast(bio_list[[i]])
-#   
-#   # crop and mask
-#   r %<>% terra::crop(evt_gp) %>%
-#     terra::mask(evt_gp)
-#   
-#   # set name for output raster
-#   r_name <- stringr::str_split(bio_list[[i]], "/")[[1]]
-#   r_name <- gsub(".img", "", r_name[length(r_name)])
-#   r_name <- gsub(cur.zone.zero, "", r_name)
-#   r_name <- toupper(r_name)
-# 
-#   # write out 
-#   writeRaster(r, 
-#               glue::glue('{target_dir_z}/01_final/{r_name}.tif'),
-#               overwrite = TRUE)
-#   
-#   gc()
-# }
-# 
-# # remove layers
-# rm(r)
-# gc()
+## BIOPHYS
+# ###################################################
+#-------------------------------------------------------#
 
-# ## DISTURBANCE
-# # ########################################
-# 
-# # Mask Disturbance layers - to forested px for each zone
-# # -------------------------------------------- #
-# 
-# disturb_code_lf <- terra::rast(lf_disturb_code_outpath) %>%
-#   terra::mask(evt_gp) %>%
-#   writeRaster(lf_disturb_code_outpath, overwrite = TRUE)
-# 
-# disturb_year_lf <- terra::rast(lf_disturb_year_outpath) %>%
-#   terra::mask(evt_gp) %>%
-#   writeRaster(lf_disturb_year_outpath, overwrite = TRUE)
-# 
-# disturb_code_lcms <- terra::rast(lcms_disturb_code_outpath) %>%
-#   terra::mask(evt_gp) %>%
-#   writeRaster(lcms_disturb_code_outpath, overwrite = TRUE)
-# 
-# disturb_year_lcms <- terra::rast(lcms_disturb_year_outpath) %>%
-#   terra::mask(evt_gp) %>%
-#   writeRaster(lcms_disturb_year_outpath, overwrite = TRUE)
-# 
-# 
-# rm(disturb_code_lf, disturb_year_lcms, disturb_year_lf, disturb_code_lcms)
+# list layers
+bio_list <- list.files(biophys_dir_z, full.names = TRUE)
+
+# load layers
+biophys <- terra::rast(bio_list)
+
+# inspect
+identical(crs(biophys[[1]]), landfire_crs)
+terra::ext(biophys[[1]])
+
+plot(terra::ext(evt_gp))
+plot(terra::ext(biophys[[1]]), col = "blue", add = TRUE)
+
+bp_crop <- biophys[[1]] %>% terra::crop(evt_gp)
+terra::ext(bp_crop)
+
+# Mask Biophys layers - to forested px for each zone
+# -------------------------------------------------------------#
+
+for(i in 1:length(bio_list)) {
+
+  # for testing
+  #i = 1
+
+  # load raster
+  r <- terra::rast(bio_list[[i]])
+
+  # crop and mask
+  r %<>% terra::crop(evt_gp) %>%
+    terra::mask(evt_gp) %>%
+    terra::project(landfire_crs)
+
+  # set name for output raster
+  r_name <- stringr::str_split(bio_list[[i]], "/")[[1]]
+  r_name <- gsub(".img", "", r_name[length(r_name)])
+  r_name <- gsub(cur.zone.zero, "", r_name)
+  r_name <- toupper(r_name)
+
+  # write out
+  writeRaster(r,
+              glue::glue('{target_dir_z}/01_final/{r_name}.tif'),
+              overwrite = TRUE)
+
+  gc()
+}
+
+# remove layers
+rm(r)
+gc()
+
 
 
 print(glue('done with zone {zone_num}!'))
 toc()
 
 
-#}
 
