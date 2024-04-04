@@ -3,7 +3,7 @@
 #   and Karin Riley (karin.riley@usda.gov)
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
-# Last updated: 3/15/2024
+# Last updated: 4/1/2024
 
 # PART 1: 
 # - BUILD x and y tables
@@ -24,11 +24,11 @@ this.path <- this.path::this.path() # Id where THIS script is located
 
 # get path to input script
 spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
+input_script_path <- paste( c(spl[c(1:(length(spl)-1))],
                               "00_inputs_for_imp.R" ),
                             collapse = "/")
 
-source(input_script.path)
+source(input_script_path)
 
 # write out params used, as set in input script
 ####################################
@@ -50,7 +50,9 @@ options("scipen" = 100, "digits" = 8)
 
 # list raster files
 flist_tif <- list.files(path = target_dir, pattern = "*.tif$",
-                        recursive = TRUE, full.names = TRUE)
+                        recursive = FALSE, full.names = TRUE)
+
+# filter to layers of interest
 
 # load raster files as raster stack
 rs2 <- terra::rast(flist_tif[1])
@@ -202,7 +204,7 @@ write.csv(Y_df,
           glue::glue("{output_dir}/xytables/{cur_zone_zero}_{output_name}_Ydf_bin.csv"))
 
 
-# Build the random forests model (X=all predictors, Y=EVG, EVC, EVH)
+# Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code)
 # -----------------------------------------------------------------------#
 set.seed(56789)
 

@@ -1,17 +1,18 @@
-# Merge landfire disturbance layers into disturbance year and disturbance code
+# Merge landfire and lcms disturbance layers into disturbance year and disturbance code
 
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 4/1/24
+# Last Updated: 3/11/24
 
 # Output rasters: 
 # - years since most recent disturbance
 # - type of disturbance 
-# Based on Landfire disturbance only 
+# Based on LCMS slow loss + Landfire fire only 
+
 
 ###############################
-# SET Inputs
+# Set Inputs
 ###############################
 
 # Set inputs - from input script
@@ -19,15 +20,21 @@ this.path <- this.path::this.path() # Id where THIS script is located
 
 # get path to input script
 spl <- stringr::str_split(this.path, "/")[[1]]
-input_script_path <- paste( c(spl[c(1:(length(spl)-1))],
+input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
                               "00_inputs_for_targetdata.R" ),
                             collapse = "/")
 
-source(input_script_path)
+source(input_script.path)
 
 ###################################################
 # LOAD DATA
 ###################################################
+
+# load lcms projections
+lcms_crs <- crs(lcms_proj)
+
+#load landfire projection
+landfire_crs <- crs(landfire_proj)
 
 # load LF zone data
 LF_zones <- vect(lf_zones_path)
@@ -66,60 +73,72 @@ if(is.na(aoi_name)) {
   aoi_name <- ""
 }
 
-# Load input rasters
-#-------------------------------------------#
+################################################
+# LOAD INPUT DATA
+################################################
 
-# bookkeeping
-print("combining Landfire fire and Landfire insect and disease")
+# load lcms rasters
+lcms_slowloss_years <- terra::rast(lcms_slowloss_years_outpath)
+lcms_slowloss_binary <- terra::rast(lcms_slowloss_binary_outpath)
 
-# load input rasters back in - save memory
+# load landfire rasters
 landfire_fire_years <- terra::rast(landfire_fire_years_outpath)
 landfire_ind_years <- terra::rast(landfire_ind_years_outpath)
 landfire_fire_binary <- terra::rast(landfire_fire_binary_outpath)
 landfire_ind_binary <- terra::rast(landfire_ind_binary_outpath)
 
-# Load EVT_GP layer
-evt_gp <- terra::rast(glue::glue('{target_dir_z}/01_final/EVT_GP.tif'))
+#################################################
+# MERGE LCMS and LANDIRE LAYERS
+#################################################
 
+# bookkeeping
+print("combining LCMS slow loss and Landfire fire")
 
-#####################################################
-# MERGE
-######################################################
+# ensure rasters are in the same projection
+lcms_slowloss_binary %<>% terra::project(landfire_crs)
+lcms_slowloss_years %<>% terra::project(landfire_crs)
+landfire_fire_binary %<>% terra::project(landfire_crs)
+landfire_fire_years %<>% terra::project(landfire_crs)
 
-# for existing disturbance layer: 
+gc()
+
+# for existing disturbance layer:
 # fire code: 1
 # slow loss code: 2
 
-dist_year <- terra::merge(landfire_fire_years, landfire_ind_years) %>% # merge fire and slow loss 
-  terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
-  terra::classify(cbind(NA,99)) %>% # set no data values 
-  terra::project(landfire_crs) %>%
-  terra::mask(evt_gp)
 
-dist_type <- terra::merge(landfire_fire_binary, landfire_ind_binary) %>% # merge fire and slow loss
-  terra::classify(cbind(NA, 0)) %>% # set no data values 
-  terra::project(landfire_crs) %>%
-  terra::mask(evt_gp)
+dist_year <- terra::merge(landfire_fire_years, lcms_slowloss_years) %>% # merge fire and slow loss
+  terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
+  terra::classify(cbind(NA, 99)) %>% # set no data values
+  terra::mask(zone) # mask
+
+dist_type <- terra::merge(landfire_fire_binary, lcms_slowloss_binary) %>% # merge fire and slow loss
+  terra::classify(cbind(NA, 0)) %>% # set no data values
+  terra::mask(zone) # mask
+
+gc()
 
 # #inspect
-# plot(landfire_fire_years)
-# plot(dist_year)
-# plot(landfire_fire_binary)
-# plot(dist_type)
+plot(landfire_fire_years)
+plot(lcms_slowloss_years)
+plot(dist_year)
+plot(landfire_fire_binary)
+plot(lcms_slowloss_binary)
+plot(dist_type)
 
 # Export
 # -------------------------------------------------#
 
-
-print("exporting disturbance year and disturbance type!")
-
 #export
-writeRaster(dist_year, lf_disturb_year_outpath,
+writeRaster(dist_year, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_year_LFLCMS.tif'),
+            datatype = "INT1U",
+            overwrite = TRUE)
+writeRaster(dist_type, glue::glue('{target_dir_z}/01_final/{cur.zone.zero}_{aoi_name}disturb_code_LFLCMS.tif'),
             datatype = "INT1U",
             overwrite = TRUE)
 
-writeRaster(dist_type, lf_disturb_code_outpath,
-            datatype = "INT1U",
-            overwrite = TRUE)
 
-rm(dist_year, dist_type)
+#clear unused memory
+gc()
+
+#}
