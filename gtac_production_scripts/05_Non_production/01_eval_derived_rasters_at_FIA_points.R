@@ -28,7 +28,9 @@ eval_vars_cat <- c("canopy_cover", "canopy_height", "EVT_GP",
                    "disturb_year", "disturb_code")
 
 eval_vars_cont <- c("GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
-                    "CANOPYPCT", "CARBON_D", "TPA_DEAD", "TPA_LIVE")
+                    "CANOPYPCT", "CARBON_L", "CARBON_D", 
+                    "CARBON_DOWN_DEAD", "DRYBIO_L", "DRYBIO_D", 
+                    "TPA_DEAD", "TPA_LIVE", "BALIVE")
 
 # path to shapefile or coords of points
 pts_path <- glue::glue("{home_dir}/01_Data/04_FIA/03_FullShp/FIA_US.shp")
@@ -215,7 +217,7 @@ p_r <- bind_rows(r1_ex, r2_ex, refs) %>%
 for(i in 1:(length(eval_vars_cat)-1)) {
   
   # for testing
-  #i = 2
+  i = 1
   
   var_name <- eval_vars_cat[i]
   
@@ -281,7 +283,7 @@ dodge <- position_dodge(width = 0.6)
 for(i in 1:(length(eval_vars_cont))) {
   
   # for testing
-  #i = 3
+  i = 8
   
   var_name <- eval_vars_cont[i]
   
@@ -295,34 +297,40 @@ for(i in 1:(length(eval_vars_cont))) {
   
   print(p)
   
-  # # plot as scatterplot 
-  # p_r2 <- 
-  # p_r %>%
-  #   filter(var == var_name) %>%
-  #   select(-c(var, PLOTID, CN_plot)) %>%
-  #   ungroup() %>%
-  #   pivot_wider(names_from = dataset, values_from = value) %>%
-  #   arrange(ID)
-  #   
-  # p_r2 %>%
-  #   ggplot() + 
-  #   geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) + 
-  #   geom_point(aes(x = Reference, y = LFOrig ), color = "blue", alpha = 0.25) +
-  #   geom_point(aes(x = Reference, y = LCMSDist), color = "green", alpha = 0.25) + 
-  #   facet_wrap(~disturb_code) + 
-  #   labs()
-  #   
-  # # calc r-squared 
-  # 
-  # #lm Reference ~ LCMSDist ; extract r-squared
-  # # for each dataset, and for each disturbance code, and for all disturbance codes together
-  # 
-  # 
-  # # save
-  # ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
-  #        plot = p,
-  #        width = 7, 
-  #        height = 4.5)    
+  # plot as scatterplot
+  p_r2 <-
+  p_r %>%
+    filter(var == var_name) %>%
+    select(-c(var, PLOTID, CN_plot)) %>%
+    ungroup() %>%
+    pivot_wider(names_from = dataset, values_from = value) %>%
+    arrange(ID)
+
+  p_r2 %>%
+    # filter(LFOrig < 200) %>%
+    # filter(LCMSDist < 200) %>%
+    ggplot() +
+    geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) +
+    geom_point(aes(x = Reference, y = LFOrig ), color = "purple", alpha = 0.15) +
+    geom_point(aes(x = Reference, y = LCMSDist), color = "limegreen", alpha = 0.15) +
+    geom_smooth(method = "lm", aes(x = Reference, y = LFOrig ), color = "purple", alpha = 0.15) +
+    geom_smooth(method = "lm", aes(x = Reference, y = LCMSDist), color = "limegreen", alpha = 0.15) +
+    #facet_wrap(~disturb_code) +
+    labs()+ 
+    theme_bw()+ 
+    ggtitle(var_name)
+
+  # calc r-squared
+
+  #lm Reference ~ LCMSDist ; extract r-squared
+  # for each dataset, and for each disturbance code, and for all disturbance codes together
+
+
+  # save
+  ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
+         plot = p,
+         width = 7,
+         height = 4.5)
   
 }
 
