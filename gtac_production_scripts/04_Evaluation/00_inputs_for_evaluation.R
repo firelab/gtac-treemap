@@ -10,16 +10,16 @@
 zone_num <- 16
 
 # Project name
-project_name <- "2016_GTAC_Test"
-#project_name <- "2016_GTAC_LCMSDist"
+# project_name <- "2016_GTAC_Test"
+project_name <- "2016_GTAC_LCMSDist"
 
 # output name - name of raster and CM outputs
-output_name <- "2016_Orig_Test_keepinbag_ntree250"
-#output_name <- "2016_GTAC_LCMSDist"
+# output_name <- "2016_Orig_Test_keepinbag_ntree250"
+output_name <- "2016_GTAC_LCMSDist"
 
 # name of raster to validate
-raster_name <- glue::glue("2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36")
-#raster_name <- glue::glue("2016_GTAC_LCMSDist_tilesz2000_nT36")
+# raster_name <- glue::glue("2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36")
+raster_name <- glue::glue("2016_GTAC_LCMSDist_tilesz2000_nT36")
 
 # model to use - supply specific model to pull into imputation, or NA
 # if NA, uses default model name and path
@@ -81,7 +81,7 @@ cur_zone_zero <- if(zone_num < 10) {
 assembled_dir <- glue::glue("{home_dir}/03_Outputs/99_Projects/{project_name}/02_Assembled_model_outputs/{cur_zone_zero}/")
 
 # Evaluation dir
-eval_dir <- glue::glue("{home_dir}/03_Outputs/99_Projects/{project_name}/03_Evaluation/{cur_zone_zero}")
+eval_dir <- glue::glue("{home_dir}/03_Outputs/99_Projects/{project_name}/03_Evaluation/{cur_zone_zero}/")
 
 # Model inputs
 #----------------------------------#
@@ -135,8 +135,8 @@ if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison'))) {
   dir.create(glue::glue('{eval_dir}/03_FIA_Comparison'), recursive = TRUE)
 }
 
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
-  dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
-}
+# # create eval dir if necessary 
+# if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
+#   dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
+# }
 

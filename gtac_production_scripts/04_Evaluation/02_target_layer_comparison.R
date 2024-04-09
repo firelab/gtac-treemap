@@ -39,13 +39,14 @@ source(input_script_path)
 #----------------------------------------------------------#
 
 # name of raster to validate
+
 raster_name <- glue::glue("{output_name}_tilesz2000_nT36")
 
 # list layers to export
 eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
                    "disturb_code")
 
-#eval_vars <- "disturb_code"
+# eval_vars <- "disturb_code"
 
 #########################################################################
 
@@ -109,8 +110,8 @@ if (!is.na(dist_raster_dir)) {
 
   # filter files if necessary
   dist_files %<>%
-    str_subset(pattern = glue::glue("{dist_layer_type}.tif$")) %>%
-    str_subset(pattern = glue::glue("{cur_zone_zero}_disturb"))
+    str_subset(pattern = glue::glue("{dist_layer_type}.tif$")) #%>%
+    #str_subset(pattern = glue::glue("{cur_zone_zero}_disturb"))
 
   # load files in
   dist <- terra::vrt(dist_files, options = "-separate",
@@ -206,8 +207,8 @@ cms <- eval_vars %>%
                       stackin_compare_name =  "Landfire",
                       remapEVT_GP = TRUE,
                       EVT_GP_remap_table =  evt_gp_remap_table,
-                      exportTF = TRUE,
-                      export_path = glue::glue('{assembled_dir}/02_Derived_vars_LF/{raster_name}')
+                      exportTF = FALSE,
+                      export_path = glue::glue('{tmp_dir}/{raster_name}')
                       ))
 
 names(cms) <- eval_vars

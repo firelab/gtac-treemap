@@ -217,7 +217,7 @@ p_r <- bind_rows(r1_ex, r2_ex, refs) %>%
 for(i in 1:(length(eval_vars_cat)-1)) {
   
   # for testing
-  i = 1
+  #i = 1
   
   var_name <- eval_vars_cat[i]
   
@@ -280,22 +280,24 @@ for(i in 1:(length(eval_vars_cat)-1)) {
 
 dodge <- position_dodge(width = 0.6)
 
+ggObjList <- list()
+
 for(i in 1:(length(eval_vars_cont))) {
   
   # for testing
-  i = 8
+  #i = 8
   
   var_name <- eval_vars_cont[i]
   
-  p <- p_r %>%
-    filter(var == var_name) %>%
-    ggplot(aes(x = disturb_code, y = value, fill = dataset))+
-    geom_violin(position = dodge)+
-    geom_boxplot(width=.1, outlier.colour=NA, position = dodge) + 
-    labs(title = glue::glue('Variation in {var_name} by disturbance code, by model')) + 
-    xlab(var_name)
-  
-  print(p)
+  # p <- p_r %>%
+  #   filter(var == var_name) %>%
+  #   ggplot(aes(x = disturb_code, y = value, fill = dataset))+
+  #   geom_violin(position = dodge)+
+  #   geom_boxplot(width=.1, outlier.colour=NA, position = dodge) + 
+  #   labs(title = glue::glue('Variation in {var_name} by disturbance code, by model')) + 
+  #   xlab(var_name)
+  # 
+  # print(p)
   
   # plot as scatterplot
   p_r2 <-
@@ -305,34 +307,124 @@ for(i in 1:(length(eval_vars_cont))) {
     ungroup() %>%
     pivot_wider(names_from = dataset, values_from = value) %>%
     arrange(ID)
-
-  p_r2 %>%
-    # filter(LFOrig < 200) %>%
-    # filter(LCMSDist < 200) %>%
-    ggplot() +
-    geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) +
-    geom_point(aes(x = Reference, y = LFOrig ), color = "purple", alpha = 0.15) +
-    geom_point(aes(x = Reference, y = LCMSDist), color = "limegreen", alpha = 0.15) +
-    geom_smooth(method = "lm", aes(x = Reference, y = LFOrig ), color = "purple", alpha = 0.15) +
-    geom_smooth(method = "lm", aes(x = Reference, y = LCMSDist), color = "limegreen", alpha = 0.15) +
-    #facet_wrap(~disturb_code) +
-    labs()+ 
-    theme_bw()+ 
-    ggtitle(var_name)
-
-  # calc r-squared
-
-  #lm Reference ~ LCMSDist ; extract r-squared
-  # for each dataset, and for each disturbance code, and for all disturbance codes together
-
-
-  # save
-  ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
-         plot = p,
-         width = 7,
-         height = 4.5)
   
+  # Create linear model
+  lm_LF <- lm(LFOrig ~ Reference, data = p_r2)
+  
+  lm_LCMS <- lm(LCMSDist ~ Reference, data = p_r2)
+  
+  
+  # Method 1 (manual using geom_text())
+  
+  # Parsing the information saved in the model to create the equation to be added to the scatterplot as an expression # https://r-graphics.org/recipe-scatter-fitlines-text
+  eqn_LF <- sprintf(
+    "italic(y) == %.3g + %.3g * italic(x) * ',' * ~~ italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g",
+    coef(lm_LF)[1],
+    coef(lm_LF)[2],
+    summary(lm_LF)$r.squared,  # r-squared 
+    sqrt(mean(lm_LF$residuals^2)) # https://www.statology.org/extract-rmse-from-lm-in-r/
+  )
+  
+  eqn_LCMS <- sprintf(
+    "italic(y) == %.3g + %.3g * italic(x) * ',' * ~~ italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g",
+    coef(lm_LCMS)[1],
+    coef(lm_LCMS)[2],
+    summary(lm_LCMS)$r.squared,  # r-squared 
+    sqrt(mean(lm_LCMS$residuals^2)) # https://www.statology.org/extract-rmse-from-lm-in-r/
+  )
+
+  # Manually set legend colors
+  
+  legendColors <- c("LFOrig" = "purple", 
+                    "LCMSDist" = "darkgreen")
+  
+  
+  p2 <- p_r2 %>%
+          # filter(LFOrig < 200) %>%
+          # filter(LCMSDist < 200) %>%
+          ggplot(aes(x = Reference)) +
+          geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) +
+          geom_point(aes(y = LFOrig, color = "LFOrig"), alpha = 0.25) +
+          geom_point(aes(y = LCMSDist, color = "LCMSDist"), alpha = 0.25) +
+          geom_smooth(method = "lm", formula = y~x,  aes(y = LFOrig, color = "LFOrig"), alpha = 0.15) +
+          geom_smooth(method = "lm", formula = y~x, aes(y = LCMSDist, color = "LCMSDist"), alpha = 0.15) +
+          # facet_wrap(~disturb_code) +
+          scale_color_manual(values = legendColors, breaks = c("LFOrig", "LCMSDist")) +
+          # guides(color = guide_legend(title = "Target data",
+          #                             keylength = 2,
+          #                             keyheight = 2,
+          #                             title.theme = element_text(size = 14),
+          #                             label.theme = element_text(size =12))) +
+          guides(color = "none") + # un-comment to remove plot legend
+          scale_x_continuous(expand = c(0, 0), limits = c(0, NA)) + # starts x-axis from 0 and labels 0
+          scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) + # starts y-axis from 0 and labels 0
+          labs(x = "Reference (Ground_FIA)", 
+               y = "Imputed") + 
+          theme_bw() +
+          theme(axis.title = element_text(size = 12)) +
+        
+          ggtitle(var_name)+ 
+          annotate(geom="text",x = (0.40*max(p_r2$Reference, na.rm = TRUE)), y = (0.96*max(p_r2$LCMSDist, na.rm = TRUE)), label = as.character(eqn_LF), parse = TRUE, color = "purple", size = 3) +
+          annotate(geom="text",x = (0.40*max(p_r2$Reference, na.rm = TRUE)), y = (0.89*max(p_r2$LCMSDist, na.rm = TRUE)), label = as.character(eqn_LCMS), parse = TRUE, color = "darkgreen", size = 3)
+    
+  # print(p2)
+  
+  # save
+  
+  # export_fig_path <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # testing
+  
+  # ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_scatter_eqn_rsq_rmse_labels.png'),
+  #        plot = p2,
+  #        width = 16,
+  #        height = 9)
+  
+  
+  # interactive plot
+  
+  # library(plotly)
+  # library(htmlwidgets)
+  
+  # p_plotly <- p_r2 %>%
+  #   # filter(LFOrig < 200) %>%
+  #   # filter(LCMSDist < 200) %>%
+  #   ggplot(aes(x = Reference)) +
+  #   geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) +
+  #   geom_point(aes(y = LFOrig, color = "LFOrig"), alpha = 0.25) +
+  #   geom_point(aes(y = LCMSDist, color = "LCMSDist"), alpha = 0.25) +
+  #   geom_smooth(method = "lm", formula = y~x,  aes(y = LFOrig, color = "LFOrig"), alpha = 0.15) +
+  #   geom_smooth(method = "lm", formula = y~x, aes(y = LCMSDist, color = "LCMSDist"), alpha = 0.15) +
+  #   # facet_wrap(~disturb_code) +
+  #   scale_color_manual(values = legendColors, breaks = c("LFOrig", "LCMSDist")) +
+  #   # guides(color = "none") + # comment out to remove plot legend
+  #   guides(color = guide_legend(title = "Target data",
+  #                               keylength = 2,
+  #                               keyheight = 2,
+  #                               title.theme = element_text(size = 14),
+  #                               label.theme = element_text(size =12))) +
+  #   # scale_x_continuous(expand = c(0, 0), limits = c(0, NA)) + # starts x-axis from 0 and labels 0
+  #   # scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) + # starts y-axis from 0 and labels 0
+  #   labs(x = "Reference (Ground_FIA)", 
+  #        y = "Imputed") + 
+  #   theme_bw() +
+  #   theme(axis.title = element_text(size = 12)) +
+  #   
+  #   ggtitle(var_name)
+  # 
+  # plotlyObj <- plotly::ggplotly(p_plotly)
+  # 
+  # htmlwidgets::saveWidget(plotlyObj, glue::glue('{export_fig_path}/LFOrig_vs_LCMSDist_vs_Ref_InteractivePlots/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.html'))
+  
+  
+  ggObjList[[i]] <- p2
 }
+
+library(gridExtra)
+p3 <- gridExtra::grid.arrange(grobs = ggObjList, nrow = 3, ncol = 4)
+
+ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_ALL_scatter_eqn_rsq_rmse_labels.png'),
+       plot = p3,
+       width = 16,
+       height = 9)
 
 
 # #############################################

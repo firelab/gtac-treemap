@@ -3,7 +3,7 @@
 # https://landfire.gov/disturbance_grids.php
 
 # Written by Lila Leatherman (Lila.Leatherman@usda.gov)
-# Last Updated: 
+# Last Updated: 04/03/2024 
 
 # TO DO: 
 # - remove zipped files

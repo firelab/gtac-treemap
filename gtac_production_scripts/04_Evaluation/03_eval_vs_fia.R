@@ -159,10 +159,10 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   print(p)
   
   # save
-  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_FIA_{var_name}.png'),
-         plot = p,
-         width = 7,
-         height = 4.5)
+  # ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_FIA_{var_name}.png'),
+  #        plot = p,
+  #        width = 7,
+  #        height = 4.5)
   
   # Normalized plot for categorical variables
   #--------------------
@@ -192,10 +192,10 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   
   print(p_Norm)
   
-  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_normalized.png'),
-         plot = p_Norm,
-         width = 7,
-         height = 4.5)
+  # ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_normalized.png'),
+  #        plot = p_Norm,
+  #        width = 7,
+  #        height = 4.5)
   
 }
 
@@ -207,23 +207,23 @@ dodge <- position_dodge(width = 0.6)
 for(i in 1:(length(eval_vars_cont))) {
   
   # for testing
-  i = 5
+  # i = 5
   
   var_name <- eval_vars_cont[i]
   
   # Violin plots
   #------------------#
   
-  p <- p_r %>%
-    filter(var == var_name) %>%
-    ggplot(aes(x = dataset, y = value, fill = dataset))+
-    geom_violin(position = dodge)+
-    geom_boxplot(width=.1, outlier.colour=NA, position = dodge) + 
-    labs(title = glue::glue('Variation in {var_name} by disturbance code, by model')) + 
-    xlab(var_name)
-  
-  print(p)
-  
+  # p <- p_r %>%
+  #   filter(var == var_name) %>%
+  #   ggplot(aes(x = dataset, y = value, fill = dataset))+
+  #   geom_violin(position = dodge)+
+  #   geom_boxplot(width=.1, outlier.colour=NA, position = dodge) + 
+  #   labs(title = glue::glue('Variation in {var_name} by disturbance code, by model')) + 
+  #   xlab(var_name)
+  # 
+  # print(p)
+  # 
   # Scatterplots
   #-------------------#
   p_r2 <- 
@@ -234,38 +234,80 @@ for(i in 1:(length(eval_vars_cont))) {
     pivot_wider(names_from = dataset, values_from = value) %>%
     arrange(ID)
   
-  lm <- lm(Imputed ~ Ground_FIA, data = p_r2)
-  lm$coefficients
-  sum <- summary(lm)
-  
-  sum$r.squared
+  p_r3 <- p_r2 %>%
+          filter(Ground_FIA < 1000)
+  # Create linear model
+  lm <- lm(Imputed ~ Ground_FIA, data = p_r3)
 
+
+  # Method 1 (manual using geom_text())
   
-  p2 <- p_r2 %>%
-    ggplot() + 
-    geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) + 
-    geom_point(aes(x = Ground_FIA, y = Imputed ), alpha = 0.25) +
+  # Parsing the information saved in the model to create the equation to be added to the scatterplot as an expression # https://r-graphics.org/recipe-scatter-fitlines-text
+  eqn <- sprintf(
+    "italic(y) == %.3g + %.3g * italic(x) * ',' * ~~ italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g",
+    coef(lm)[1],
+    coef(lm)[2],
+    summary(lm)$r.squared,  # r-squared 
+    sqrt(mean(lm$residuals^2)) # https://www.statology.org/extract-rmse-from-lm-in-r/
+  )
+  
+  eqn
+  
+  p2 <- p_r3 %>%
+    ggplot(aes(x = Ground_FIA, y = Imputed)) + 
+    geom_abline(intercept = 0, color = "red", linewidth = 1, linetype = 2) + 
+    geom_point(alpha = 0.25) +
+    geom_smooth(method = "lm", formula = y~x) +
     labs() + 
     theme_bw() + 
     ggtitle(glue::glue("Imputed vs. Ref for {var_name}"))
   
-  print(p2)
+  p3 <- p2 + annotate(geom="text",x = (0.25*max(p_r3$Ground_FIA, na.rm = TRUE)), y = (0.98*max(p_r3$Imputed, na.rm = TRUE)), label = as.character(eqn), parse = TRUE)
   
-  # calc r-squared 
+  print(p3)  
+  
+  
+  
+  # # Method 2 (uses library ggpubr)
+  # library(ggpubr)
+  # p2 <- p_r2 %>%
+  #   ggplot(aes(x = Ground_FIA, y = Imputed)) + 
+  #   geom_abline(intercept = 0, color = "red", linewidth = 1, linetype = 2) + 
+  #   geom_point(alpha = 0.25) +
+  #   geom_smooth(method = "lm", formula = y~x) +
+  #   ggpubr::stat_regline_equation(
+  #     aes(label =  paste(..eq.label.., ..adj.rr.label.., sep = "~~~~")),
+  #     formula = y~x
+  #   ) +
+  #   labs() + 
+  #   theme_bw() + 
+  #   ggtitle(glue::glue("Imputed vs. Ref for {var_name}"))
+  # 
+  # print(p2)
+  
+  # Method 3 (using ggmisc)
+  
+ 
   
   #lm Reference ~ LCMSDist ; extract r-squared
   # for each dataset, and for each disturbance code, and for all disturbance codes together
   
   
-  # save
-  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_violin.png'),
-         plot = p,
-         width = 7, 
-         height = 4.5)    
+  # # save
+  # ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_violin.png'),
+  #        plot = p,
+  #        width = 7, 
+  #        height = 4.5)    
+  
+  # # save
+  # ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_scatter.png'),
+  #        plot = p2,
+  #        width = 7, 
+  #        height = 4.5) 
   
   # save
-  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_scatter.png'),
-         plot = p2,
-         width = 7, 
-         height = 4.5) 
+  # ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_scatter_eqn_rsq_rmse_labels.png'),
+  #        plot = p3,
+  #        width = 7,
+  #        height = 4.5)
 }
