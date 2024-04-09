@@ -3,21 +3,24 @@
 # https://landfire.gov/disturbance_grids.php
 
 # Written by Lila Leatherman (Lila.Leatherman@usda.gov)
-# Last Updated: 04/03/2024 
+# Last Updated: 01/04/2024
 
 # TO DO: 
-# - remove zipped files
-# - copy unzipped folders to next folder up, with the same name 
+# - remove zipped files (DONE)
+# - copy unzipped folders to next folder up, with the same name (no need (?), the unzipped folders were not nested in a folder of the same name -- maybe an update to the `unzip` function (?))
 
 #####################################
 # Set Inputs
 #######################################
 
 # set file destination
-dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Disturbance/"
+#dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Disturbance/"
+
+# For testing
+dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/"
 
 # list years
-years <- 2018:2020
+years <- 2016:2022
 
 
 
@@ -25,8 +28,10 @@ years <- 2018:2020
 # Run
 ################################################
 
+ptm.start <- Sys.time() # processing time (ptm): start
+
 # create directory if necessary 
-if(!file_exists(dir)) {
+if(!file.exists(dir)) {
   dir.create(dir, recursive = TRUE)
 }
 
@@ -40,8 +45,9 @@ if(!file_exists(dir)) {
 # sample download url 2015 "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-LF2020_Dist_220_CONUS.zip&TYPE=landfire"
 url_base_1 <- "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST"
 url_base_2 <- "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-LF"
-url_base_2_2016 <- "_Dist_200_CONUS.zip&TYPE=landfire"
-url_base_2_2020 <- "_Dist_220_CONUS.zip&TYPE=landfire"
+url_base_2_200 <- "_Dist_200_CONUS.zip&TYPE=landfire"
+url_base_2_220 <- "_Dist_220_CONUS.zip&TYPE=landfire"
+url_base_2_230 <- "_Dist_230_CONUS.zip&TYPE=landfire"
 
   for(j in 1:length(years)){
     
@@ -50,6 +56,9 @@ url_base_2_2020 <- "_Dist_220_CONUS.zip&TYPE=landfire"
     year_name <- years[j]
     
     print(paste0("downloading ", year_name))
+    
+    # For every loop, dir resets to main LF directory
+    dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/"
     
     ##
     ##### Set appropriate file name
@@ -60,24 +69,42 @@ url_base_2_2020 <- "_Dist_220_CONUS.zip&TYPE=landfire"
       #create url
       url <- paste0(url_base_1, year_name, ".zip&TYPE=landfire")
       
+      dir <- paste0(dir, "LF_DIST1999/Disturbance/")
+      
       # create file name
       zipfilename <- paste0(dir, "US_DIST", year_name, ".zip")
       
     } else if(year_name >= 2015 & year_name <= 2016) {
       
       #create url
-      url <- paste0(url_base_2, year_name, url_base_2_2016)
+      url <- paste0(url_base_2, year_name, url_base_2_200)
+      
+      dir <- paste0(dir, "LF_200/Disturbance/")
       
       # create file name
-      zipfilename <- paste0(dir, "LF", year_name, gsub("&TYPE=landfire", "", url_base_2_2016))
+      zipfilename <- paste0(dir, "LF", year_name, gsub("&TYPE=landfire", "", url_base_2_200))
       
-    } else if(year_name > 2016) {
+    } else if(year_name > 2016 & year_name <= 2020) {
       
       #create url
-      url <- paste0(url_base_2, year_name, url_base_2_2020)
+      url <- paste0(url_base_2, year_name, url_base_2_220)
+      
+      dir <- paste0(dir, "LF_220/Disturbance/")
       
       # create file name
-      zipfilename <- paste0(dir, "LF", gsub("&TYPE=landfire", "", url_base_2_2020))
+      zipfilename <- paste0(dir, "LF", year_name, gsub("&TYPE=landfire", "", url_base_2_220))
+      
+      
+    } else if(year_name > 2020){
+      
+      #create url
+      url <- paste0(url_base_2, year_name, url_base_2_230)
+      
+      dir <- paste0(dir, "LF_230/Disturbance/")
+      
+      # create file name
+      zipfilename <- paste0(dir, "LF", year_name, gsub("&TYPE=landfire", "", url_base_2_230))
+      
       
     }
     
@@ -86,22 +113,42 @@ url_base_2_2020 <- "_Dist_220_CONUS.zip&TYPE=landfire"
     ##
     
     # create file name for out folder
-    filename <- gsub(".zip", "", zipfilename)
+    # filename <- gsub(".zip", "", zipfilename)
     
-    #what url are you working on? 
+    # create directory if necessary 
+    if(!file.exists(dir)) {
+      dir.create(dir, recursive = TRUE)
+    }
+
+    #what url are you working on?
     print(url)
-    
+
     #download files
+    options(timeout=7200) # set high number for connection timeout (default = 60 s)
+    
+    print("- downloading...")
     download.file(url, zipfilename, mode = "wb")
     
-    print(paste0("extracting ", year_name))
+    print("-- download complete")
     
+
+    print(paste0("- extracting ", year_name, "..."))
+    print(paste0("-- location: ", dir))
+
     #unzip
     unzip(zipfilename, exdir = dir, overwrite = TRUE)
     
+    print("-- extraction complete")
+
     #remove zipped files
+    print(paste0("- removing compressed (.zip) folder: ", gsub(dir, "", zipfilename)))
+    file.remove(zipfilename)
+    print(paste0("-- removed ", gsub(dir, "", zipfilename)))
     
+    message("moving to next year...")
+    print("---------------------------------------------------------------------")
       
   }
-  
 
+message("Process complete!")
+print(Sys.time() - ptm.start)
