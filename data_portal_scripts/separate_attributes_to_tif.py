@@ -1052,7 +1052,7 @@ def gdal_to_numpy_dtype(gdal_dtype):
 
 def prompt_user():
     '''
-    Determines what functions to run in the script. Informs user of defined inputs.
+    Determines which functions to run in the script. Informs user of defined inputs.
 
     Args:
         None.
