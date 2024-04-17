@@ -3,11 +3,20 @@
 # https://landfire.gov/disturbance_grids.php
 
 # Written by Lila Leatherman (Lila.Leatherman@usda.gov)
-# Last Updated: 01/04/2024 (Abhinav Shrestha; abhinav.shrestha@usda.gov)
+# Last Updated: 01/04/2024 (Abhinav Shrestha; abhinav.shrestha@usda.gov; AS)
 
 # TO DO: 
 # - remove zipped files (DONE)
 # - copy unzipped folders to next folder up, with the same name (no need (?), the unzipped folders were not nested in a folder of the same name -- maybe an update to the `unzip` function (?)) (DONE - ?)
+
+# NEW (04/12/2024; AS):
+# - Scripts download data from 1999:2022 (previously 2016:2022). Automatically creates directory for each Landfire version of the dataset. Where:
+# -- 1999-2014: US_DIST<year>
+# -- 2015-2016: LF<year>_Dist_200
+# -- 2017-2020: LF<year>_Dist_220
+# -- 2021-2022: LF<year>_Dist_230
+# - added a repeat-tryCatch loop that allows for multiple download tries if there is a connection or download error from the host or the local machine. This number of download tries is controlled by the `maxDownload_count` variable. 
+# - 
 
 #####################################
 # Set Inputs
@@ -20,7 +29,7 @@
 dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/"
 
 # list years
-years <- 1999:2022
+years <- 2016:2022 # LF-200 version onwards
 
 # set maximum tries to download
 maxDownload_count <- 5
@@ -40,9 +49,10 @@ if(!file.exists(dir)) {
 
 # File name format, by years: 
 # ---------------------------------------#
-# 1999-2014: US_DIST1999
-# 2015-2016: LF2015_Dist_200
-# 2017-2020: LF2020_Dist_220
+# 1999-2014: US_DIST<year>
+# 2015-2016: LF<year>_Dist_200
+# 2017-2020: LF<year>_Dist_220
+# 2021-2022: LF<year>_Dist_230
 
 # sample download url pre 2015 (1999-2014): for 1999 - "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST1999.zip&TYPE=landfire
 # for 2014 - https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST2014.zip&TYPE=landfire
@@ -133,7 +143,7 @@ for(j in 1:length(years)){
     
     print("- downloading...")
     
-    # tryCatch loop to catch connection errors (https://stackoverflow.com/questions/63340463/download-files-until-it-works; https://stackoverflow.com/questions/50624864/skipping-error-files-when-downloading-using-download-file-in-r)
+    # repeat-tryCatch loop to catch connection errors (https://stackoverflow.com/questions/63340463/download-files-until-it-works; https://stackoverflow.com/questions/50624864/skipping-error-files-when-downloading-using-download-file-in-r)
       
     error_count = 0
     downloadcount = 0

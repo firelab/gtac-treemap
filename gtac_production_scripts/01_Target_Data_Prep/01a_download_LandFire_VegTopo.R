@@ -21,16 +21,16 @@
 # For testing
 dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/"
 
-# list years
-years <- 2018:2020
 
 # list years
+years <- c(2001, 2014, 2016, 2020, 2022)
 
-years_datasetDict <- c("2016" = "200",
-                       "2020" = "220", 
-                       "2022" = "230")
+# list years
 
 vegetation_datasets <- c("EVC", "EVT", "EVH")
+
+# set maximum tries to download
+maxDownload_count <- 5
 
 ################################################
 # Run
@@ -45,37 +45,98 @@ if(!file.exists(dir)) {
 
 # File name format, by years: 
 # ---------------------------------------#
-# 1999-2014: US_DIST1999
-# 2015-2016: LF2015_Dist_200
-# 2017-2020: LF2020_Dist_220
+# 2001: US_105_<veg_dataset>
+# 2014: US_140_<veg_dataset>
+# 2016, 2020*, 2022: LF<year>_<veg_dataset>_<LF_dataset_version>
+# - LF_dataset_version (year): 200 (2016), 220 (2020), 230 (2022)
+# - * exception for 2020 EVC and EVH veg datasets which are projected to 2022 and named LF2022. 
+# - * NOT the case for 2022 EVC and EVH datasets that are projected to 2023 but still named LF2022
 
 # sample download url pre 2020 "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST1999.zip&TYPE=landfire
 # sample download url 2015 "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-LF2020_Dist_220_CONUS.zip&TYPE=landfire"
+
 url_base <-  "https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_"
+
+url_base_pre2016 <- ".zip&TYPE=landfire"
+url_base_200 <- "_200_CONUS.zip&TYPE=landfire"
+url_base_220 <- "_220_CONUS.zip&TYPE=landfire" 
+url_base_230 <- "_230_CONUS.zip&TYPE=landfire"
+
 
 for (i in 1:length(vegetation_datasets)){
   
-  print(paste0("Download and extracting data for ", vegetation_datasets[i], " dataset."))
+  veg_dataset <- vegetation_datasets[i]
+  
+  print("======================= === ================================================")
+  print(paste0("Download and extracting ", veg_dataset, " data for years: ", list(years)))
+  print("======================= === ================================================")
+  
   ptm.vegDataStart <- Sys.time()
   
-  for(j in 1:length(years_datasetDict)){
+  for(j in 1:length(years)){
     
     #j = 1
     
-    year_name <- c(names(years_datasetDict))[j]
+    year_name <- years[j]
     
     print(paste0("downloading ", year_name))
+    
+    # For every loop, dir resets to main LF directory
+    dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/"
     
     ##
     ##### Set appropriate file name
     ##
     
-    #create url
-    url <- paste0(url_base, years_datasetDict[[year_name]], "_mosaic-LF", year_name, "_", vegetation_datasets[i], "_", years_datasetDict[[year_name]], "_CONUS.zip&TYPE=landfire")
+    if (year_name >= 2016){
       
-    # create file name
-    zipfilename <- paste0(dir, gsub("https://www.landfire.gov/bulk/downloadfile.php|\\?|FNAME=US_200_mosaic-|&TYPE=landfire", "", url)) # "?" in URLs create issue while using `gsub`. Use "\\" to escape and "|" to pipe different string segments
-    
+      if (year_name == 2016) {
+        
+        url <- paste0(url_base, "200_mosaic-LF", year_name, "_", veg_dataset, url_base_200)
+        
+        dir <- paste0(dir, "LF_200/Vegetation/", veg_dataset, "/")
+        
+        # create file name
+        zipfilename <- paste0(dir, "LF", year_name,"_200_", veg_dataset, ".zip")
+        
+      } else if (year_name == 2020) {
+        
+        url <- paste0(url_base, "220_mosaic-LF2022_", veg_dataset, url_base_220)
+        
+        dir <- paste0(dir, "LF_220/Vegetation/", veg_dataset, "/")
+        
+        # create file name
+        zipfilename <- paste0(dir, "LF", year_name,"_220_", veg_dataset, ".zip")
+        
+      } else if (year_name == 2022) {
+        
+        url <- paste0(url_base, "230_mosaic-LF", year_name, "_", veg_dataset, url_base_230)
+        
+        dir <- paste0(dir, "LF_220/Vegetation/", veg_dataset, "/")
+        
+        # create file name
+        zipfilename <- paste0(dir, "LF", year_name,"_220_", veg_dataset, ".zip")
+        
+      }
+    } else if (year_name == 2001) {
+      
+      url <- paste0(url_base, "105-US_105_", veg_dataset, url_base_pre2016)
+      
+      dir <- paste0(dir, "US_105/Vegetation/", veg_dataset, "/")
+      
+      # create file name
+      zipfilename <- paste0(dir, "US_105_", year_name,"_", veg_dataset, ".zip")
+      
+    } else if (year_name == 2014) {
+      
+      url <- paste0(url_base, "140-US_140_", veg_dataset, url_base_pre2016)
+      
+      dir <- paste0(dir, "US_140/Vegetation/", veg_dataset, "/")
+      
+      # create file name
+      zipfilename <- paste0(dir, "US_105_", year_name,"_", veg_dataset, ".zip")
+      
+    }
       
     
     ##
@@ -85,30 +146,73 @@ for (i in 1:length(vegetation_datasets)){
     # create file name for out folder
     # filename <- gsub(".zip", "", zipfilename)
     
-    #what url are you working on? 
+    # create directory if necessary 
+    if(!file.exists(dir)) {
+      dir.create(dir, recursive = TRUE)
+    }
+    
+    #what url are you working on?
     print(url)
     
     #download files
     options(timeout=7200) # set high number for connection timeout (default = 60 s)
     
-    download.file(url, zipfilename, mode = "wb")
+    print("- downloading...")
     
-    print(paste0("extracting ", year_name))
+    # repeat-tryCatch loop to catch connection errors (https://stackoverflow.com/questions/63340463/download-files-until-it-works; https://stackoverflow.com/questions/50624864/skipping-error-files-when-downloading-using-download-file-in-r)
+    
+    error_count = 0
+    downloadcount = 0
+    
+    repeat{
+      tryCatch({download.file(url, zipfilename, mode = "wb", quite = FALSE)
+        downloadcount <<- downloadcount + 1}, # successful download
+        error = function(e){error_count <<- error_count + 1 # unsuccessful download, add to error count  
+        print("Downloading did not work.")
+        return(e)})
+      if (downloadcount > 0){ 
+        break # stop repeat loop due to successful download
+      }
+      
+      if (error_count == maxDownload_count){
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        print(paste0("Tried downloading ", maxDownload_count, " times. Please check URL, internet connection, and system."))
+        print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+        break # stop repeat loop due to maximum download tries reached
+      }
+      print("Retrying...") # error count still less than max download count, repeat loop to retry
+      Sys.sleep(0.5)
+    }
+    
+    print(paste0("successful download (Y = 1, N = 0): ", downloadcount))
+    print(paste("number of download errors: ", error_count))
+    
+    print("-- download complete")
+    
+    
+    print(paste0("- extracting ", year_name, " ", veg_dataset, "..."))
+    print(paste0("-- location: ", dir))
     
     #unzip
     unzip(zipfilename, exdir = dir, overwrite = TRUE)
     
-    print(paste("Extracted! File name:", gsub(".zip", "", zipfilename)))
+    print("-- extraction complete")
     
     #remove zipped files
-    print("removing compressed (.zip) folder")
+    print(paste0("- removing compressed (.zip) folder: ", gsub(dir, "", zipfilename)))
     file.remove(zipfilename)
+    print(paste0("-- removed ", gsub(dir, "", zipfilename)))
+    
+    message("moving to next year...")
+    print("---------------------------------------------------------------------")  
+    
     
     
   }
   
-  message("Download and extraction complete!")
+  message("Download and extraction complete for ", veg_dataset)
   print(Sys.time()-ptm.vegDataStart)
+  message("Moving to next vegetation data...")
   
 }
 
