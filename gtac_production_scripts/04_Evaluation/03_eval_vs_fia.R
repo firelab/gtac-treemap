@@ -5,7 +5,9 @@
 
 
 # TO DO:
-
+# for continuous scatter plots: add linear best-fit line
+# add RMSE
+# add MAE 
 
 ### SETUP AND RUN
 ######################################
@@ -113,23 +115,30 @@ ras_ex %<>% left_join(X_df,
   mutate(dataset = "Imputed") 
 
 # prep reference values - from "X_df" joined with RAT
-refs <- 
-  ras_ex %>% 
+refs_all <- 
+  # ras_ex %>% 
+  # select(ID, CN_pt) %>%
+  # left_join(X_df, by = c("CN_pt" = "CN")) %>%
+  X_df %>%
+  left_join(rat, by = "CN") %>%
+  select(c(CN, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
+  mutate(dataset = "Ground_FIA")%>%
+  mutate_at(eval_vars_cont, ~na_if(.x , -99))
+
+refs_zone <- 
+  ras_ex %>%
   select(ID, CN_pt) %>%
-  left_join(X_df, by = c("CN_pt" = "CN")) %>%
-  left_join(rat, by = c("CN_pt" = "CN")) %>%
+  left_join(refs_all, by = c("CN_pt" = "CN")) %>%
   mutate(CN_plot = as.numeric(NA)) %>%
-  mutate(PLOTID = as.numeric(NA)) %>%
-  select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
-  mutate(dataset = "Ground_FIA") 
+  mutate(PLOTID = as.numeric(NA))  %>%
+  select(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)), dataset)
 
-
-# join
-p_r <- bind_rows(ras_ex, refs) %>%
+  # join
+p_r <- bind_rows(ras_ex, refs_zone) %>%
   # pivot longer
   pivot_longer(!c(ID, CN_pt, CN_plot, PLOTID, dataset), names_to = "var", values_to = "value") %>%
   mutate(var = factor(var),
-         value = na_if(value, -99.00000),
+         value = na_if(value, -99.0000),
          value = round(value, round_dig)) %>%
   arrange(ID)
 
@@ -159,7 +168,7 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   print(p)
   
   # save
-  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_FIA_{var_name}.png'),
+  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/figs/Imputed_vs_FIA_{var_name}.png'),
          plot = p,
          width = 7,
          height = 4.5)
@@ -192,7 +201,7 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   
   print(p_Norm)
   
-  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_normalized.png'),
+  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/figs/Imputed_vs_ref_{var_name}_normalized.png'),
          plot = p_Norm,
          width = 7,
          height = 4.5)
@@ -207,7 +216,7 @@ dodge <- position_dodge(width = 0.6)
 for(i in 1:(length(eval_vars_cont))) {
   
   # for testing
-  i = 5
+  #i = 5
   
   var_name <- eval_vars_cont[i]
   
@@ -229,7 +238,7 @@ for(i in 1:(length(eval_vars_cont))) {
   p_r2 <- 
     p_r %>%
     filter(var == var_name) %>%
-    select(-c(var, PLOTID, CN_plot)) %>%
+    select(-c(PLOTID, CN_plot)) %>%
     ungroup() %>%
     pivot_wider(names_from = dataset, values_from = value) %>%
     arrange(ID)
@@ -240,11 +249,31 @@ for(i in 1:(length(eval_vars_cont))) {
   
   sum$r.squared
 
-  
+
   p2 <- p_r2 %>%
     ggplot() + 
     geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) + 
-    geom_point(aes(x = Ground_FIA, y = Imputed ), alpha = 0.25) +
+    geom_point(aes(x = Ground_FIA, y = Imputed ), alpha = 0.25) 
+
+  lm <- lm(p_r2$Imputed ~ p_r2$Ground_FIA)  
+    
+  # Parsing the information saved in the model to create the equation to be added to the scatterplot as an expression # https://r-graphics.org/recipe-scatter-fitlines-text
+  eqn <- sprintf(
+    "italic(y) == %.3g + %.3g * italic(x) * ',' * ~~ italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g * ',' ~~ MAE ~ '=' ~  %.4g",
+    coef(lm)[1],
+    coef(lm)[2],
+    summary(lm)$r.squared,  # r-squared 
+    sqrt(mean(lm$residuals^2)), # https://www.statology.org/extract-rmse-from-lm-in-r/
+    mae(na.omit(p_r2$Imputed), predict(lm))
+    )
+  
+  eqn
+  
+  p2 <- p_r2 %>%
+    ggplot(aes(x = Ground_FIA, y = Imputed)) + 
+    geom_abline(intercept = 0, color = "red", linewidth = 1, linetype = 2) + 
+    geom_point(alpha = 0.25) +
+    geom_smooth(method = "lm", formula = y~x) +
     labs() + 
     theme_bw() + 
     ggtitle(glue::glue("Imputed vs. Ref for {var_name}"))
@@ -258,14 +287,31 @@ for(i in 1:(length(eval_vars_cont))) {
   
   
   # save
-  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_violin.png'),
+  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/figs/Imputed_vs_ref_{var_name}_violin.png'),
          plot = p,
          width = 7, 
          height = 4.5)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_scatter.png'),
+  ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/figs/Imputed_vs_ref_{var_name}_scatter.png'),
          plot = p2,
          width = 7, 
          height = 4.5) 
 }
+
+#########################################################
+# Assemble layers- derived from imputed ids matched with X table
+#########################################
+
+eval_vars_cont %>%
+  map(\(x) assembleExport(x, 
+                          raster = ras, 
+                          lookup = refs_all, 
+                          id_field = "PLOTID",
+                          export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}')
+  ))
+
+gc()
+
+
+############################################################
