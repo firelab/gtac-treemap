@@ -25,10 +25,10 @@
 
 #### Vegetation datasets (available years: 2001, 2014, 2016, 2020, 2022):
 
-* Existing vegetation cover (EVC)
-* Existing vegetation height (EVH)
-* Existing vegetation type (EVT)
-* Available? - Y\N (year to which dataset is project to)
+> * Existing vegetation cover (EVC)
+> * Existing vegetation height (EVH)
+> * Existing vegetation type (EVT)
+> * Available? - Y\N (year to which dataset is project to)
 
 
 | Year   | EVC | EVH   | EVT | Dataset name |
