@@ -147,6 +147,8 @@ coords_df <- coords
 # convert coords to spatial 
 coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:4269")
 
+coords_subset <- coords[5500]
+
 # Set buffer width
 buffer_width <- 40
 
@@ -156,8 +158,9 @@ coords_buffer <- terra::buffer(coords, width = buffer_width)
 # Store attributes of FIA plots (polygons) in a data frame for joining later
 coords_buffer_df <- data.frame(coords_buffer)
 
+
 ## For testing
-# coords_bufferSubset <- coords_buffer[5500:6000]
+# coords_bufferSubset <- coords_buffer[5799]
 # coords_bufferSubset_df <- data.frame(coords_bufferSubset)
 
 # Prep data to plot
@@ -172,9 +175,10 @@ coords_buffer_df <- data.frame(coords_buffer)
 # extract  values to points - imputed plot ID at original FIA point
 # -----------------------------------------------#
 
-# Extract r1 values of cell centers (default setting) that fall in polygon to new raster
-# - `ID = TRUE` parameter ensures the index of the polyon is added to the raster (used to join later)
-r1_ex_buffer <- terra::extract(r1, coords_buffer, ID = TRUE, touches = TRUE) 
+# Extract r1 values of cell centers (default setting) that fall in polygon to data.frame
+# - `ID = TRUE` parameter ensures the index of the polygon (coords_buffer) is added to the data.frame (used to join later)
+# - `touches = TRUE` parameter enables extraction from any raster cells that touch the polygon (the boundary of fall within)
+r1_ex_buffer <- terra::extract(r1, coords_bufferSubset, ID = TRUE, touches = TRUE) 
 
 # Add a new attribute `CN_pt` to the extract raster
 r1_ex_buffer$CN_pt <- NA
@@ -183,7 +187,7 @@ for (i in 1:nrow(r1_ex_buffer)){
   
   if (!is.na(r1_ex_buffer$PLOTID[i])) {
     
-  # Join with CN_pt of FIA plot data frame to raster cells using polygon Index (`ID`)  
+  # Add CN_pt of FIA plot from coords_buffer_df to extract data.frame using polygon Index (`ID`)  
   r1_ex_buffer$CN_pt[i] <- coords_buffer_df$PLT_CN[r1_ex_buffer$ID[i]]
   
   }
@@ -194,8 +198,7 @@ r1_ex_buffer <- r1_ex_buffer %>%
 
 
 
-# Extract r2 values of cell centers (default setting) that fall in polygon to new raster
-# - `ID = TRUE` parameter ensures the index of the polyon is added to the raster (used to join later)
+# Extract raster cell values over polygon
 r2_ex_buffer <- terra::extract(r2, coords_buffer, ID = TRUE, touches = TRUE) 
 
 # Add a new attribute `CN_pt` to the extract raster
@@ -223,7 +226,7 @@ r1_ex_buffer %<>% left_join(X.df,
   left_join(rat, by = c("CN" = "CN", "PLOTID" = "tm_id")) %>%
   rename(CN_plot = "CN") %>%
   select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
-  mutate(dataset = r1_name) 
+  mutate(dataset = r1_name) # add name of source dataset in the `dataset` column
 
 
 r2_ex_buffer %<>% left_join(X.df,
@@ -231,7 +234,7 @@ r2_ex_buffer %<>% left_join(X.df,
   left_join(rat, by = c("CN" = "CN", "PLOTID" = "tm_id")) %>%
   rename(CN_plot = "CN") %>%
   select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
-  mutate(dataset = r2_name) 
+  mutate(dataset = r2_name) # add name of source dataset in the `dataset` column
 
 # prep reference values - from "X.df / reference table" 
 
@@ -258,7 +261,7 @@ p_r_buffer <- bind_rows(r1_ex_buffer, r2_ex_buffer, refs_buffer) %>%
   left_join(coords_df %>% select(PLT_CN, MaxOfINVYR), by = c("CN_pt" = "PLT_CN"))
 
 # save as .csv
-write.csv(p_r_buffer, file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS_anyCellTouchingBuffer.csv"), row.names = FALSE)
+# write.csv(p_r_buffer, file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS_anyCellTouchingBuffer.csv"), row.names = FALSE)
 
 # load saved buffer plot csv
 p_r <- data.frame(read.csv(file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS.csv")))
