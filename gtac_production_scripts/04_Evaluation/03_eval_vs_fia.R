@@ -1,3 +1,4 @@
+# eval categorical vars - confusion matrices
 # eval continuous vars - extract imputed id at actual fia id points
 # then calc RMSE
 # plot scatterplots w/ 1:1 line and plot RMSE / r^2 on the plot 
@@ -123,7 +124,7 @@ refs_all <-
   left_join(rat, by = "CN") %>%
   select(c(CN, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
   mutate(dataset = "Ground_FIA")%>%
-  mutate_at(eval_vars_cont, ~na_if(.x , -99))
+  mutate_at(eval_vars_cont, ~ ifelse(.x == -99, 0, .x))
 
 refs_zone <- 
   ras_ex %>%
