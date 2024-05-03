@@ -264,7 +264,7 @@ p_r_buffer <- bind_rows(r1_ex_buffer, r2_ex_buffer, refs_buffer) %>%
 # write.csv(p_r_buffer, file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS_2_noNA.csv"), row.names = FALSE)
 
 # load saved buffer plot csv
-p_r <- data.frame(read.csv(file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS_2_noNA.csv")))
+p_r <- data.frame(read.csv(file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS.csv")))
 
 
 # Initialize the order of factor variables (for plotting)
@@ -279,6 +279,8 @@ barplot_legendCols <- c("Reference" = "#00BA38",
 # Select year to filter with (inclusive)
 filterYear <- 2016
 
+
+### AGREEMENT TEST: Similar to Karin's old code 
 
 p_r_agreementDF <- p_r %>%
                     select(-c(PLOTID, CN_plot)) %>%
@@ -398,14 +400,7 @@ for (var_name in all_vars){
 
 
 
-# p_r %>%
-#   select(-c(PLOTID, CN_plot, var)) %>%
-#   ungroup() %>%
-#   pivot_wider(names_from = dataset, values_from = value, values_fn = length) %>% 
-#   drop_na()
-
-
-# Plot
+# =================================== PLOT ===================================
 #-----------------------------------------------------------#
 # plot as desired
 
