@@ -23,7 +23,7 @@ raster_name <- glue::glue("2016_GTAC_LCMSDist_tilesz2000_nT36")
 
 # model to use - supply specific model to pull into imputation, or NA
 # if NA, uses default model name and path
-model_path <- '//166.2.126.25/TreeMap/03_Outputs/99_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
+model_path <- '//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
 #model_path <- NA
 
 # General inputs
@@ -55,13 +55,13 @@ coords_path <- glue::glue("{home_dir}01_Data/04_FIA/06_Coordinates/select_TREEMA
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
-output_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/01_Raw_model_outputs/')
+output_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
 
 #set path for assembled rasters
-assembled_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/02_Assembled_model_outputs/')
+assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/')
 
 # Evaluation dir
-eval_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/03_Evaluation/')
+eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/')
 
 # crs raster data are in 
 landfire_crs <- terra::crs(glue::glue('{home_dir}/01_Data/02_Landfire/landfire_crs.prj'))
@@ -78,10 +78,10 @@ cur_zone_zero <- if(zone_num < 10) {
   }
 
 #set path for assembled rasters
-assembled_dir <- glue::glue("{home_dir}/03_Outputs/99_Projects/{project_name}/02_Assembled_model_outputs/{cur_zone_zero}/")
+assembled_dir <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/{cur_zone_zero}/")
 
 # Evaluation dir
-eval_dir <- glue::glue("{home_dir}/03_Outputs/99_Projects/{project_name}/03_Evaluation/{cur_zone_zero}/")
+eval_dir <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/{cur_zone_zero}/")
 
 # Model inputs
 #----------------------------------#
@@ -120,20 +120,20 @@ source(lib_path)
 # Create directories
 #----------------------------------------------#
 
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/01_OOB_Evaluation'))) {
-  dir.create(glue::glue('{eval_dir}/01_OOB_Evaluation'), recursive = TRUE)
-}
-
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/02_Target_Layer_Comparison'))) {
-  dir.create(glue::glue('{eval_dir}/02_Target_Layer_Comparison'), recursive = TRUE)
-}
-
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison'))) {
-  dir.create(glue::glue('{eval_dir}/03_FIA_Comparison'), recursive = TRUE)
-}
+# # create eval dir if necessary 
+# if(!file.exists(glue::glue('{eval_dir}/01_OOB_Evaluation'))) {
+#   dir.create(glue::glue('{eval_dir}/01_OOB_Evaluation'), recursive = TRUE)
+# }
+# 
+# # create eval dir if necessary 
+# if(!file.exists(glue::glue('{eval_dir}/02_Target_Layer_Comparison'))) {
+#   dir.create(glue::glue('{eval_dir}/02_Target_Layer_Comparison'), recursive = TRUE)
+# }
+# 
+# # create eval dir if necessary 
+# if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison'))) {
+#   dir.create(glue::glue('{eval_dir}/03_FIA_Comparison'), recursive = TRUE)
+# }
 
 # # create eval dir if necessary 
 # if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {

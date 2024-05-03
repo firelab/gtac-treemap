@@ -216,7 +216,7 @@ p_r <- bind_rows(r1_ex, r2_ex, refs) %>%
 
 # Initialize the order of factor variables (for plotting)
 
-p_r$disturb_code <- factor(p_r$disturb_code, levels = c("None", "Fire", "Slow Loss"))
+# p_r$disturb_code <- factor(p_r$disturb_code, levels = c("None", "Fire", "Slow Loss"))
 
 p_r$dataset <- factor(p_r$dataset, levels = c("Reference", "LFOrig", "LCMSDist"))
 
@@ -233,6 +233,7 @@ filterYear <- 2016
 
 # grouped violin plots by disturbance code
 
+ggObjList <- list()
 
 # PLOT CATEGORICAL VARS
 # ---------------------------------------------------#
@@ -251,9 +252,32 @@ for(i in 1:(length(eval_vars_cat)-1)) {
     facet_wrap(~disturb_code) + 
     labs(title = glue::glue('Variation in {var_name} by disturbance code, by model')) + 
     xlab(var_name) +
-    scale_fill_manual(values = barplot_legendCols, breaks =  c("Reference", "LFOrig", "LCMSDist"))
+    scale_fill_manual(values = barplot_legendCols, breaks =  c("Reference", "LFOrig", "LCMSDist"))+ 
+    theme(legend.position = "none")
   
   print(p)
+  
+  ggObjList[[i]] <- p
+  
+  # distCode_frequencyDF <- p_r %>%
+  #   filter(MaxOfINVYR >= filterYear) %>%
+  #   # filter(var == var_name) %>%
+  #   select(-c(var, PLOTID, CN_plot)) %>%
+  #   group_by(ID, dataset, disturb_code)
+  # 
+  # distCode_frequencyPlot <- ggplot(data = distCode_frequencyDF, aes(x = disturb_code, fill = dataset)) + 
+  #   geom_bar(position = position_dodge2(preserve = "single")) +
+  #   labs(title = glue::glue('Variation in {var_name}'), 
+  #        subtitle = "FIA plot (points)") + 
+  #   xlab(var_name) +
+  #   theme_bw() 
+  # 
+  # distCode_frequencyPlot
+  # 
+  # ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_FIAplots-PointEval_actualCount.png'),
+  #        plot = distCode_frequencyPlot,
+  #        width = 14,
+  #        height = 9)
   
   
 
@@ -267,32 +291,32 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   # Normalized plot for categorical variables
   
   # Calculate totals for datasets
-  datasetTotals_disturbCode <- data.frame(p_r %>%
-                                filter(var == var_name) %>%
-                                group_by(dataset, disturb_code) %>%
-                                summarise(count = n()))
+  # datasetTotals_disturbCode <- data.frame(p_r %>%
+  #                               filter(var == var_name) %>%
+  #                               group_by(dataset, disturb_code) %>%
+  #                               summarise(count = n()))
   
   
   # Calculate counts by dataset and disturbance code for each category
-  countsBy_dataset <- data.frame(p_r %>%
-                                   filter(var == var_name) %>%
-                                   group_by(value, dataset, disturb_code) %>%
-                                   summarise(count = n()))
+  # countsBy_dataset <- data.frame(p_r %>%
+  #                                  filter(var == var_name) %>%
+  #                                  group_by(value, dataset, disturb_code) %>%
+  #                                  summarise(count = n()))
   
  
   # Temporary dataframe merging the categories counts and totals for normalization and  plotting
-  temp_df <- merge(countsBy_dataset, datasetTotals_disturbCode, by = c("disturb_code", "dataset"), all.x = TRUE)
-  
-  # Normalization
-  temp_df$normalized_count <- temp_df$count.x/temp_df$count.y
-  
-  p_Norm <-  ggplot(data = temp_df, aes(x=as.factor(value), y=normalized_count, fill = dataset)) + 
-    geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) + 
-    facet_wrap(~disturb_code) + 
-    labs(title = glue::glue('Variation in {var_name} by disturbance code, by model (normalized)')) + 
-    xlab(var_name)
-  
-  print(p_Norm)
+  # temp_df <- merge(countsBy_dataset, datasetTotals_disturbCode, by = c("disturb_code", "dataset"), all.x = TRUE)
+  # 
+  # # Normalization
+  # temp_df$normalized_count <- temp_df$count.x/temp_df$count.y
+  # 
+  # p_Norm <-  ggplot(data = temp_df, aes(x=as.factor(value), y=normalized_count, fill = dataset)) + 
+  #   geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) + 
+  #   facet_wrap(~disturb_code) + 
+  #   labs(title = glue::glue('Variation in {var_name} by disturbance code, by model (normalized)')) + 
+  #   xlab(var_name)
+  # 
+  # print(p_Norm)
   
   
   # ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_normalized.png'),
@@ -301,6 +325,15 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   #        height = 4.5)
 
 }
+
+p1_2 <- gridExtra::grid.arrange(grobs = ggObjList, nrow = 2, ncol = 2)
+# 
+ggsave(glue::glue("{export_fig_path}/FIABufferPlotEval/cell_centriod_withinBuffer/Barplots_categorical_vars/{r1_name}_vs_{r2_name}_vs_ref_ALL_VARS_POINTS.png"),
+       plot = p1_2,
+       width = 24,
+       height = 13.5)
+
+
 
 
 # PLOT CONTINUOUS VARS

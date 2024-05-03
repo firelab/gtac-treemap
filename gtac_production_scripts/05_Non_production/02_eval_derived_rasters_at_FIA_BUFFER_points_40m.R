@@ -178,7 +178,7 @@ coords_buffer_df <- data.frame(coords_buffer)
 # Extract r1 values of cell centers (default setting) that fall in polygon to data.frame
 # - `ID = TRUE` parameter ensures the index of the polygon (coords_buffer) is added to the data.frame (used to join later)
 # - `touches = TRUE` parameter enables extraction from any raster cells that touch the polygon (the boundary of fall within)
-r1_ex_buffer <- terra::extract(r1, coords_bufferSubset, ID = TRUE, touches = TRUE) 
+r1_ex_buffer <- terra::extract(r1, coords_buffer, ID = TRUE) 
 
 # Add a new attribute `CN_pt` to the extract raster
 r1_ex_buffer$CN_pt <- NA
@@ -199,7 +199,7 @@ r1_ex_buffer <- r1_ex_buffer %>%
 
 
 # Extract raster cell values over polygon
-r2_ex_buffer <- terra::extract(r2, coords_buffer, ID = TRUE, touches = TRUE) 
+r2_ex_buffer <- terra::extract(r2, coords_buffer, ID = TRUE) 
 
 # Add a new attribute `CN_pt` to the extract raster
 r2_ex_buffer$CN_pt <- NA
@@ -254,17 +254,17 @@ p_r_buffer <- bind_rows(r1_ex_buffer, r2_ex_buffer, refs_buffer) %>%
   # pivot longer
   pivot_longer(!c(ID, CN_pt, CN_plot, PLOTID, dataset, disturb_code), names_to = "var", values_to = "value") %>%
   mutate(var = factor(var),
-         value = na_if(value, -99.00000), # update NA values from RAT
+         # value = na_if(value, -99.00000), # update NA values from RAT
          disturb_code = factor(disturb_code, 
                                labels = c("None", "Fire", "Slow Loss"))) %>%
   group_by(disturb_code) %>% 
   left_join(coords_df %>% select(PLT_CN, MaxOfINVYR), by = c("CN_pt" = "PLT_CN"))
 
 # save as .csv
-# write.csv(p_r_buffer, file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS_anyCellTouchingBuffer.csv"), row.names = FALSE)
+# write.csv(p_r_buffer, file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS_2_noNA.csv"), row.names = FALSE)
 
 # load saved buffer plot csv
-p_r <- data.frame(read.csv(file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS.csv")))
+p_r <- data.frame(read.csv(file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS_2_noNA.csv")))
 
 
 # Initialize the order of factor variables (for plotting)
@@ -279,6 +279,132 @@ barplot_legendCols <- c("Reference" = "#00BA38",
 # Select year to filter with (inclusive)
 filterYear <- 2016
 
+
+p_r_agreementDF <- p_r %>%
+                    select(-c(PLOTID, CN_plot)) %>%
+                    ungroup() %>%
+                    pivot_wider(names_from = dataset, values_from = value, values_fn = list) %>% # aggregate to list of all values
+                    arrange(ID) %>% 
+                    drop_na()
+
+
+p_r_agreementDF$Agreement_LF <- NA
+p_r_agreementDF$Agreement_LCMS <- NA
+
+
+cont_evalTH_perc <- 0.1
+
+
+for (i in (1:nrow(p_r_agreementDF))){
+  
+   if (p_r_agreementDF$var[i] %in% eval_vars_cat){
+     
+     # NA sieve
+     if (is.na((mean(p_r_agreementDF$Reference[[i]])))) {
+       next
+       
+     } else {
+          
+          # Check agreement with LF
+          if (mean(p_r_agreementDF$Reference[[i]]) %in% p_r_agreementDF$LFOrig[[i]]) {
+            
+            p_r_agreementDF$Agreement_LF[i] <- 1 # Agreement
+            
+          } else {
+            
+            p_r_agreementDF$Agreement_LF[i] <- 0 # No agreement
+            
+          }
+          
+          # Check agreement with LCMS
+          if (mean(p_r_agreementDF$Reference[[i]]) %in% p_r_agreementDF$LCMSDist[[i]]) {
+            
+            p_r_agreementDF$Agreement_LCMS[i] <- 1 # Agreement
+            
+          } else {
+            
+            p_r_agreementDF$Agreement_LCMS[i] <- 0 # No agreement
+            
+        }
+      }
+  }
+  
+  if (p_r_agreementDF$var[i] %in% eval_vars_cont){
+    
+    # NA sieve
+    if (is.na((mean(p_r_agreementDF$Reference[[i]])))) {
+      next
+      
+    } else {
+    
+      # Thresholds for checking agreement in continuous variable
+      contVar_lowLim <- (p_r_agreementDF$Reference[[i]][1] - (cont_evalTH_perc*p_r_agreementDF$Reference[[i]][1]))
+      contVar_upLim <- (p_r_agreementDF$Reference[[i]][1] + (cont_evalTH_perc*p_r_agreementDF$Reference[[i]][1]))
+      
+      # Check agreement with LF
+      if (any(c(na.omit(p_r_agreementDF$LFOrig[[i]])) >= contVar_lowLim & c(na.omit(p_r_agreementDF$LFOrig[[i]])) <= contVar_upLim)) {
+        
+        p_r_agreementDF$Agreement_LF[i] <- 1 # Agreement
+        
+      } else {
+        
+        p_r_agreementDF$Agreement_LF[i] <- 0 # No agreement
+        
+      }
+      
+      # Check agreement with LCMS
+      if (any(c(na.omit(p_r_agreementDF$LCMSDist[[i]])) >= contVar_lowLim & c(na.omit(p_r_agreementDF$LCMSDist[[i]])) <= contVar_upLim)) {
+        
+        p_r_agreementDF$Agreement_LCMS[i] <- 1 # Agreement
+        
+      } else {
+        
+        p_r_agreementDF$Agreement_LCMS[i] <- 0 # No agreement
+        
+      }
+    }
+  }
+  
+  
+}
+
+# Intialize data frame:
+agreementSummary_df <- data.frame(Variable = as.character(),
+                                  agreement_LF = as.numeric(), 
+                                  agreement_LCMS = as.numeric())
+
+all_vars <- c(eval_vars_cat, eval_vars_cont)
+all_vars <- all_vars[-(which(all_vars == "disturb_code"))]
+
+for (var_name in all_vars){
+  
+  summaryTable_temp_df <- p_r_agreementDF %>% 
+                              filter(MaxOfINVYR >= filterYear) %>%
+                              filter(var == var_name) %>%
+                              drop_na()
+  
+  total <- nrow(summaryTable_temp_df)
+  
+  LF_agreement_num <- sum(summaryTable_temp_df$Agreement_LF, na.rm = TRUE)
+  LCMS_agreement_num <- sum(summaryTable_temp_df$Agreement_LCMS, na.rm = TRUE)
+  
+  agreementSummary_df <- rbind(agreementSummary_df, data.frame(Variable = var_name,
+                                                               agreement_LF = (LF_agreement_num/total)*100, 
+                                                               agreement_LCMS = as.numeric(LCMS_agreement_num/total)*100))
+  
+}
+
+  
+
+
+
+# p_r %>%
+#   select(-c(PLOTID, CN_plot, var)) %>%
+#   ungroup() %>%
+#   pivot_wider(names_from = dataset, values_from = value, values_fn = length) %>% 
+#   drop_na()
+
+
 # Plot
 #-----------------------------------------------------------#
 # plot as desired
@@ -290,7 +416,9 @@ filterYear <- 2016
 # PLOT CATEGORICAL VARS
 # ---------------------------------------------------#
 
-for(i in 1:(length(eval_vars_cat)-1)) {
+ggObjList <- list()
+
+for(i in 1:(length(eval_vars_cat)) {
   
   # for testing
   # i = 1
@@ -300,12 +428,32 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   # FIA Buffer plots eval: modal value for categorical variable
   p_r_mode <- p_r %>%
     filter(MaxOfINVYR >= filterYear) %>%
-    filter(var == var_name) %>%
+    # filter(var == var_name) %>%
     select(-c(var, PLOTID, CN_plot)) %>%
     group_by(ID, dataset, disturb_code) %>%
     reframe(Modal_value = modeest::mlv(value, method = "mfv")) %>%  # aggregate to modal value
     ungroup()
   
+  
+  distCode_frequencyDF <- p_r %>%
+                          filter(MaxOfINVYR >= filterYear) %>%
+                          # filter(var == var_name) %>%
+                          select(-c(var, PLOTID, CN_plot)) %>%
+                          group_by(ID, dataset, disturb_code)
+  
+        distCode_frequencyPlot <- ggplot(data = distCode_frequencyDF, aes(x = disturb_code, fill = dataset)) + 
+        geom_bar(position = position_dodge2(preserve = "single")) +
+        labs(title = glue::glue('Variation in {var_name}'), 
+             subtitle = "FIA buffer plot (40 m)") + 
+        xlab(var_name) +
+        theme_bw() 
+  
+  # ggsave(glue::glue('{export_fig_path}/FIABufferPlotEval/cell_centriod_withinBuffer/Barplots_categorical_vars/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_FIABufferPlotEval_actualCount.png'),
+  #        plot = distCode_frequencyPlot,
+  #        width = 14,
+  #        height = 9)
+  # 
+    
   
 
   p <- p_r_mode  %>% 
@@ -313,27 +461,38 @@ for(i in 1:(length(eval_vars_cat)-1)) {
     geom_bar(position= position_dodge2(preserve = "single")) + # https://stackoverflow.com/questions/38101512/the-same-width-of-the-bars-in-geom-barposition-dodge
     facet_wrap(~disturb_code) + 
     labs(title = glue::glue('Variation in {var_name} by disturbance code (Modal count)'),
-         subtitle = "FIA buffer plot evaluation (40 m radius): any cell touching buffer") +
+         # subtitle = "FIA buffer plot evaluation (40 m radius): any cell touching buffer"
+         ) +
     xlab(var_name) +
     theme(plot.title = element_text(size = 14),
-          plot.subtitle = element_text(size = 10), 
+          # plot.subtitle = element_text(size = 10), 
           axis.title = element_text(size = 12), 
-          axis.text =  element_text(size = 12)) +
+          axis.text =  element_text(size = 8)) +
     scale_fill_manual(name = "Dataset", 
                       values = barplot_legendCols, 
-                      breaks =  c("Reference", "LFOrig", "LCMSDist"))
+                      breaks =  c("Reference", "LFOrig", "LCMSDist")) + 
+    theme(legend.position = "none")
   
   print(p)
   
+  # ggObjList[[i]] <- p
+  
   # save
-  ggsave(glue::glue('{export_fig_path}/FIABufferPlotEval/anyCell_touchingBuffer/Barplots_categorical_vars/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_FIABufferPlotEval_anyCellTouchingBuffer.png'),
-         plot = p,
-         width = 14,
-         height = 9)
+  # ggsave(glue::glue('{export_fig_path}/FIABufferPlotEval/anyCell_touchingBuffer/Barplots_categorical_vars/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_FIABufferPlotEval_anyCellTouchingBuffer.png'),
+  #        plot = p,
+  #        width = 14,
+  #        height = 9)
 
 
 }
 
+
+# p1_2 <- gridExtra::grid.arrange(grobs = ggObjList, nrow = 2, ncol = 2)
+# 
+# ggsave(glue::glue("{export_fig_path}/FIABufferPlotEval/cell_centriod_withinBuffer/Barplots_categorical_vars/{r1_name}_vs_{r2_name}_vs_ref_ALL_VARS.png"),
+#        plot = p1_2,
+#        width = 24,
+#        height = 13.5)
 
 # PLOT CONTINUOUS VARS
 # ---------------------------------------------------#
@@ -342,12 +501,12 @@ dodge <- position_dodge(width = 0.6)
 
 ggObjList <- list()
 
-text_size <- 6 # 5 for indvidual plots 3 for all plots in grid
+text_size <- 4 # 5 for indvidual plots 3 for all plots in grid
 percent_x_textPos <- 0.50 # 0.4 for individual plots
-percent_y_textPos1 <- 0.96 # 0.96 for individual plots
-percent_y_textPos2 <- 0.89 # 0.96 for individual plots
-textBoxFill_ratioX <- 0.40
-textBoxFill_ratioY <- 0.03
+percent_y_textPos1 <- 0.99 # 0.96 for individual plots
+percent_y_textPos2 <- 0.78 # 0.96 for individual plots
+textBoxFill_ratioX <- 0.30
+textBoxFill_ratioY <- 0.04
 
 for(i in 1:(length(eval_vars_cont))) {
   
@@ -356,20 +515,24 @@ for(i in 1:(length(eval_vars_cont))) {
   
   var_name <- eval_vars_cont[i]
   
-  low_lim <- quantile((p_r %>% filter(var == var_name))$value, probs = 0.20, na.rm = TRUE)[[1]] # 20th quantile/percentile
-  up_lim <- quantile((p_r %>% filter(var == var_name))$value, probs = 0.80, na.rm = TRUE)[[1]] # 80th quantile/percentile
+  # Change NA values to 0 for continuous data 
+  p_r1 <- p_r %>% 
+        filter(var == var_name) %>% 
+        mutate(value = ifelse(is.na(value), 0, value))
+  
+  low_lim <- quantile((p_r1 %>% filter(var == var_name))$value, probs = 0.10, na.rm = TRUE)[[1]] # 20th quantile/percentile
+  up_lim <- quantile((p_r1 %>% filter(var == var_name))$value, probs = 0.90, na.rm = TRUE)[[1]] # 80th quantile/percentile
   
   # plot as scatterplot
-  p_r2 <-
-  p_r %>%
-    # filter(MaxOfINVYR >= filterYear) %>%
-    filter(var == var_name) %>%
-    filter(value >= low_lim & value <= up_lim) %>%
-    select(-c(var, PLOTID, CN_plot)) %>%
-    ungroup() %>%
-    pivot_wider(names_from = dataset, values_from = value, values_fn = ~ mean(.x, na.rm = TRUE)) %>% # aggregate to mean value
-    arrange(ID) %>% 
-    drop_na()
+  p_r2 <- p_r1 %>%
+            filter(MaxOfINVYR >= filterYear) %>%
+            filter(var == var_name) %>%
+            filter(value >= low_lim & value <= up_lim) %>%
+            select(-c(var, PLOTID, CN_plot)) %>%
+            ungroup() %>%
+            pivot_wider(names_from = dataset, values_from = value, values_fn = ~ mean(.x, na.rm = TRUE)) %>% # aggregate to mean value
+            arrange(ID) %>% 
+            drop_na()
   
   
 
@@ -433,56 +596,55 @@ for(i in 1:(length(eval_vars_cont))) {
           geom_smooth(method = "lm", formula = y~x, aes(y = LCMSDist, color = "LCMSDist"), alpha = 0.15) +
           # facet_wrap(~disturb_code) +
           scale_color_manual(values = legendColors, breaks = c("LFOrig", "LCMSDist")) +
-          # guides(color = guide_legend(title = "Target data",
-          #                             keylength = 2,
-          #                             keyheight = 2,
-          #                             title.theme = element_text(size = 14),
-          #                             label.theme = element_text(size =12))) +
+          guides(color = guide_legend(title = "Dataset",
+                                      keylength = 2,
+                                      keyheight = 2,
+                                      title.theme = element_text(size = 14),
+                                      label.theme = element_text(size =12))) +
           guides(color = "none") + # un-comment to remove plot legend
           scale_x_continuous(expand = c(0, 0), limits = c(low_lim, up_lim)) + # starts x-axis from 0 and labels 0
           scale_y_continuous(expand = c(0, 0), limits = c(low_lim, up_lim)) + # starts y-axis from 0 and labels 0
           labs(x = "Reference (Ground_FIA)", 
                y = "Imputed") + 
           theme_bw() +
-          ggtitle(glue::glue("{var_name}: FIA buffer plot (40 m radius) evaluation, any cell touching buffer")) +
-          # ggtitle(glue::glue("{var_name}")) +
+          # ggtitle(glue::glue("{var_name}: FIA buffer plot (40 m radius) evaluation")) +
+          ggtitle(glue::glue("{var_name}")) +
           theme(axis.title = element_text(size = 16),
-                plot.title = element_text(size = 18)) 
-  # +
-          # annotate(geom="rect",
-          #          xmin = ((low_lim + up_lim)/2) - ((up_lim - low_lim)*textBoxFill_ratioX),
-          #          xmax = ((low_lim + up_lim)/2) + ((up_lim - low_lim)*textBoxFill_ratioX),
-          #          ymin = (percent_y_textPos1*max(p_r2$LCMSDist, na.rm = TRUE)) - ((up_lim - low_lim)*textBoxFill_ratioY),
-          #          ymax = (percent_y_textPos1*max(p_r2$LCMSDist, na.rm = TRUE)) + ((up_lim - low_lim)*textBoxFill_ratioY),
-          #          fill = "beige") +
-          # annotate(geom="text", 
-          #          x = (low_lim + up_lim)/2,
-          #          y = (percent_y_textPos1*max(p_r2$LCMSDist, na.rm = TRUE)),
-          #          label = as.character(eqn_LF),
-          #          parse = TRUE,
-          #          color = "purple",
-          #          size = text_size) +
-          # annotate(geom="rect",
-          #          xmin = (low_lim + up_lim)/2 - ((up_lim - low_lim)*textBoxFill_ratioX),
-          #          xmax = (low_lim + up_lim)/2 + ((up_lim - low_lim)*textBoxFill_ratioX),
-          #          ymin = (percent_y_textPos2*max(p_r2$LCMSDist, na.rm = TRUE)) - ((up_lim - low_lim)*textBoxFill_ratioY),
-          #          ymax = (percent_y_textPos2*max(p_r2$LCMSDist, na.rm = TRUE)) + ((up_lim - low_lim)*textBoxFill_ratioY),
-          #          fill = "cadetblue1") +
-          # annotate(geom="text", 
-          #          x = (low_lim + up_lim)/2,
-          #          y = (percent_y_textPos2*max(p_r2$LCMSDist, na.rm = TRUE)),
-          #          label = as.character(eqn_LCMS),
-          #          parse = TRUE,
-          #          color = "darkgreen",
-          #          size = text_size)
+                plot.title = element_text(size = 18)) +
+  annotate(geom="rect",
+           xmin = ((low_lim + up_lim)/2) - ((up_lim - low_lim)*textBoxFill_ratioX),
+           xmax = ((low_lim + up_lim)/2) + ((up_lim - low_lim)*textBoxFill_ratioX),
+           ymin = (percent_y_textPos1*max(p_r2$LCMSDist, na.rm = TRUE)) - ((up_lim - low_lim)*textBoxFill_ratioY),
+           ymax = (percent_y_textPos1*max(p_r2$LCMSDist, na.rm = TRUE)) + ((up_lim - low_lim)*textBoxFill_ratioY),
+           fill = "beige") +
+  annotate(geom="text",
+           x = (low_lim + up_lim)/2,
+           y = (percent_y_textPos1*max(p_r2$LCMSDist, na.rm = TRUE)),
+           label = as.character(eqn_LF),
+           parse = TRUE,
+           color = "purple",
+           size = text_size) +
+  annotate(geom="rect",
+           xmin = (low_lim + up_lim)/2 - ((up_lim - low_lim)*textBoxFill_ratioX),
+           xmax = (low_lim + up_lim)/2 + ((up_lim - low_lim)*textBoxFill_ratioX),
+           ymin = (percent_y_textPos2*max(p_r2$LCMSDist, na.rm = TRUE)) - ((up_lim - low_lim)*textBoxFill_ratioY),
+           ymax = (percent_y_textPos2*max(p_r2$LCMSDist, na.rm = TRUE)) + ((up_lim - low_lim)*textBoxFill_ratioY),
+           fill = "cadetblue1") +
+  annotate(geom="text",
+           x = (low_lim + up_lim)/2,
+           y = (percent_y_textPos2*max(p_r2$LCMSDist, na.rm = TRUE)),
+           label = as.character(eqn_LCMS),
+           parse = TRUE,
+           color = "darkgreen",
+           size = text_size)
     
   # print(p2)
   
   # save
   
   # export_fig_path <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # testing
-  
-  # ggsave(glue::glue('{export_fig_path}/FIABufferPlotEval/anyCell_touchingBuffer/Scatterplots_continuous_vars/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_FIABufferPlotEval_anyCellTouchingBuffer.png'),
+  # 
+  # ggsave(glue::glue('{export_fig_path}/FIABufferPlotEval/cell_centriod_withinBuffer/Scatterplots_continuous_vars/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_FIABufferPlotEval.png'),
   #        plot = p2,
   #        width = 16,
   #        height = 9)
@@ -531,9 +693,11 @@ library(gridExtra)
 p3 <- gridExtra::grid.arrange(grobs = ggObjList, nrow = 3, ncol = 4)
 
 # Export 
-# ggsave(glue::glue("{export_fig_path}/FIABufferPlotEval/anyCell_touchingBuffer/Scatterplots_continuous_vars/{r1_name}_vs_{r2_name}_vs_ref_ALL_VARS_anyCellTouchingBuffer.png"),
-#        plot = p3,
-#        width = 24,
-#        height = 13.5)
+
+export_fig_path <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # testing
+ggsave(glue::glue("{export_fig_path}/FIABufferPlotEval/cell_centriod_withinBuffer/Scatterplots_continuous_vars/{r1_name}_vs_{r2_name}_vs_ref_ALL_VARS.png"),
+       plot = p3,
+       width = 24,
+       height = 13.5)
 
 
