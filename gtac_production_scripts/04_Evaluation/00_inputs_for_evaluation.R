@@ -21,14 +21,17 @@ output_name <- "2016_Orig_Test_keepinbag_ntree250"
 raster_name <- glue::glue("2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36")
 #raster_name <- glue::glue("2016_GTAC_LCMSDist_tilesz2000_nT36")
 
-# model to use - supply specific model to pull into imputation, or NA
-# if NA, uses default model name and path
-model_path <- '//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
-#model_path <- NA
-
 #home_dir
 home_dir <- "//166.2.126.25/TreeMap/"
 
+# model to use - supply specific model to pull into imputation, or NA
+# if NA, uses default model name and path
+model_path <- '{home_dir}03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
+#model_path <- NA
+
+# Path to X table used to make model
+#xtable_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v2016_RMRS/X_table_all_singlecondition.txt")
+xtable_path <- glue::glue("{home_dir}03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/xytables/z16_2016_Orig_Test_keepinbag_ntree250_Xdf_bin.csv")
 
 # Directory where disturbance layers live
 # If disturbance layers live in the same dir, then NA
@@ -38,13 +41,13 @@ dist_raster_dir <- NA
 # disturbance type - options are "LF" or "LFLCMS".
 # This param only used if !is.na(dist_raster_dir)
 dist_layer_type <- "LF"
+#dist_layer_type <- "LCMS"
 
 # target data version to use
 target_data_version <- "v2016_RMRS"
 
 # reference data version to use
 ref_data_version <- "v2016_RMRS"
-
 
 # General inputs
 #--------------------------------------------------#
@@ -55,16 +58,12 @@ round_dig <- 4
 # set location of raster attribute table
 rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
 
-# Path to X table
-xtable_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v2016_RMRS/X_table_all_singlecondition.txt")
-
 # set path to landfire vector data
 lf_zones_path <- glue::glue("{home_dir}01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp")
 
 # Directory where EVT_GP remap table is located
 #evt_gp_remap_table_dir <- target_dir
 evt_gp_remap_table_dir <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/')
-
 
 # path to evt_gp metadata
 evt_path <- glue::glue("{home_dir}01_Data/02_Landfire/LF_200/EVT/LF2016_EVT_200_CONUS/CSV_Data/LF16_EVT_200.csv")
