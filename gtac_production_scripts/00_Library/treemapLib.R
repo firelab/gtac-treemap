@@ -11,7 +11,8 @@
 
 # packages required
 list.of.packages <- c("this.path", "terra", "tidyverse", "magrittr", 
-                      "glue", "tictoc", "caret", "yaImpute", "randomForest", "this.path")
+                      "glue", "tictoc", "caret", "yaImpute", "randomForest", 
+                      "Metrics")
 
 #check for packages and install if needed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
