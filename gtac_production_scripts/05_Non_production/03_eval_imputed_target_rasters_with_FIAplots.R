@@ -1,7 +1,11 @@
+# Written by Abhinav Shrestha (abhinav.shrestha@usda.gov)
+
+# Objective: Compare output rasters - extract values to 40 m buffered FIA plots (polygons)
+
+# Last update: 05/06/2024
+
+
 startTime <- Sys.time()
-
-home_dir <- "//166.2.126.25/TreeMap"
-
 #################################################################
 # Load required packages
 #################################################################
@@ -18,10 +22,20 @@ if(length(new.packages) > 0) install.packages(new.packages)
 vapply(list.of.packages, library, logical(1L),
        character.only = TRUE, logical.return = TRUE)
 
+########################################################
+# Setup
+########################################################
+
+home_dir <- "//166.2.126.25/TreeMap"
+
 projectsDir <- "03_Outputs/07_Projects"
+
 zone_num <- 16
+
 zone_name <- glue::glue("z{zone_num}")
+
 evalDir <- glue::glue("03_Evaluation/{zone_name}/02_Target_Layer_Comparison")
+
 tempDir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir"
 
 project_name <- "2016_GTAC_Test"
@@ -36,7 +50,7 @@ assembled_dir <- glue::glue('{home_dir}/{projectsDir}/{project_name}/02_Assemble
 
 target_vars <- c("canopy_cover", "canopy_height", "EVT_GP", "disturb_code")
 
-impute_vars <- c("canopy_cover", "canopy_height", "EVT_GP", "disturb_code", "CANOPYPCT", "CARBON_D", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", "TPA_DEAD", "TPA_LIVE")
+impute_vars <- c("canopy_cover", "canopy_height", "EVT_GP", "disturb_code", "CANOPYPCT", "CARBON_D", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", "TPA_DEAD", "TPA_LIVE", "")
 
 for (i in 5:length(impute_vars)){
   
@@ -126,6 +140,7 @@ for (i in 5:length(impute_vars)){
     
     # ----- LANDFIRE RASTERS -----
     
+    t1 <- Sys.time()
     # Raster to df for LF imputed raster
     LFOrig_imputed_df <- data.frame(LFOrig_imputed)
     names(LFOrig_imputed_df) <- "Var"
@@ -138,6 +153,25 @@ for (i in 5:length(impute_vars)){
     names(LFOrig_imputed_freqTable) <- c(ImpVar, "Frequency")
     LFOrig_imputed_freqTable$dataset <- "imputed_LF"
     LFOrig_imputed_freqTable$Freq_norm <- LFOrig_imputed_freqTable$Frequency/sum(LFOrig_imputed_freqTable$Frequency)
+    Sys.time() - t1
+    
+    
+    
+    ### NEW CODE TO CHANGE TO --- WIP
+    t2 <- Sys.time()
+    # Change raster values of -99 to NA
+    LFOrig_imputed_NAs <- terra::subst(LFOrig_imputed, -99, NA)
+    rm(LFOrig_imputed)
+    
+    # Calc freq tables
+    LFOrig_imputed_freqTable_Terra <- terra::freq(LFOrig_imputed_NAs)
+    LFOrig_imputed_freqTable_Terra <- LFOrig_imputed_freqTable_Terra[, -1] # remove the "layer" column -- useful for multidimentional rasters.
+    names(LFOrig_imputed_freqTable_Terra) <- c(ImpVar, "Frequency")
+    LFOrig_imputed_freqTable_Terra$dataset <- "imputed_LF"
+    LFOrig_imputed_freqTable_Terra$Freq_norm <- LFOrig_imputed_freqTable_Terra$Frequency/sum(LFOrig_imputed_freqTable_Terra$Frequency)
+    
+    
+    
     
     # Raster to df for LF target raster
     LFOrig_target_df <- data.frame(LFOrig_target)
@@ -434,6 +468,9 @@ for (i in 5:length(impute_vars)){
     names(X_df_subset) <- ImpVar
     X_df_subset$dataset <- "FIA"
     
+    # Change all -99 values to 0 (for continuous variables)
+    X_df_subset$SDIPCT_RMRS[X_df_subset$SDIPCT_RMRS == -99] <- NA
+
        # Convert rasters to DF and compute frequency tables
     
     # Raster to df
@@ -455,7 +492,7 @@ for (i in 5:length(impute_vars)){
     merge_df <- rbind(X_df_subset, LFOrig_imputed_df, LCMSDist_imputed_df)
     
     # Change all -99 values to 0 (for continuous variables)
-    merge_df[[ImpVar]][merge_df[[ImpVar]] == -99] <- 0
+    merge_df[[ImpVar]][merge_df[[ImpVar]] == -99] <- NA
     
     merge_df$dataset <- factor(merge_df$dataset, levels = c("FIA", "imputed_LF", "target_LF", "imputed_LCMS", "target_LCMS"))
   

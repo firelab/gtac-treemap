@@ -500,7 +500,7 @@ text_size <- 4 # 5 for indvidual plots 3 for all plots in grid
 percent_x_textPos <- 0.50 # 0.4 for individual plots
 percent_y_textPos1 <- 0.99 # 0.96 for individual plots
 percent_y_textPos2 <- 0.78 # 0.96 for individual plots
-textBoxFill_ratioX <- 0.30
+textBoxFill_ratioX <- 0.25
 textBoxFill_ratioY <- 0.04
 
 for(i in 1:(length(eval_vars_cont))) {
@@ -512,7 +512,7 @@ for(i in 1:(length(eval_vars_cont))) {
   
   # Change NA values to 0 for continuous data 
   p_r1 <- p_r %>% 
-        filter(var == var_name) %>% 
+        # filter(var == var_name) %>% 
         mutate(value = ifelse(is.na(value), 0, value))
   
   low_lim <- quantile((p_r1 %>% filter(var == var_name))$value, probs = 0.10, na.rm = TRUE)[[1]] # 20th quantile/percentile
@@ -529,6 +529,106 @@ for(i in 1:(length(eval_vars_cont))) {
             arrange(ID) %>% 
             drop_na()
   
+  TPA_deaddf <- p_r1 %>%
+    filter(MaxOfINVYR >= filterYear) %>%
+    filter(var == "TPA_DEAD") %>%
+    filter(value >= quantile(value, probs = 0.20, na.rm = TRUE)[[1]] & value <=quantile(value, probs = 0.80, na.rm = TRUE)[[1]]) %>% 
+    select(-c(var, PLOTID, CN_plot)) %>%
+    ungroup() %>%
+    pivot_wider(names_from = dataset, values_from = value, values_fn = ~ mean(.x, na.rm = TRUE)) %>% # aggregate to mean value
+    arrange(ID) %>% 
+    drop_na() %>% 
+    rename(LFOrig_TPAD = LFOrig, LCMSDist_TPAD = LCMSDist, Reference_TPAD = Reference)
+  
+  TPA_livedf <- p_r1 %>%
+    filter(MaxOfINVYR >= filterYear) %>%
+    filter(var == "TPA_LIVE") %>%
+    filter(value >= quantile(value, probs = 0.20, na.rm = TRUE)[[1]] & value <=quantile(value, probs = 0.80, na.rm = TRUE)[[1]]) %>% 
+    select(-c(var, PLOTID, CN_plot)) %>%
+    ungroup() %>%
+    pivot_wider(names_from = dataset, values_from = value, values_fn = ~ mean(.x, na.rm = TRUE)) %>% # aggregate to mean value
+    arrange(ID) %>% 
+    drop_na() %>% 
+    rename(LFOrig_TPAL = LFOrig, LCMSDist_TPAL = LCMSDist, Reference_TPAL = Reference)
+  
+  
+  merge_df <- TPA_deaddf %>% 
+                left_join(TPA_livedf, by = c("ID", "CN_pt"))
+  
+  
+  merge_df$LF_TPA_D2L <- merge_df$LFOrig_TPAD/merge_df$LFOrig_TPAL
+  merge_df$LCMS_TPA_D2L <- merge_df$LCMSDist_TPAD/merge_df$LCMSDist_TPAL
+  merge_df$Ref_TPA_D2L <- merge_df$Reference_TPAD/merge_df$Reference_TPAL
+  
+  # Create linear model
+  lm_LF <- lm(LF_TPA_D2L ~ Ref_TPA_D2L, data = merge_df)
+  
+  lm_LCMS <- lm(LCMS_TPA_D2L ~ Ref_TPA_D2L, data = merge_df)
+  
+  eqn_LF <- sprintf(
+    "italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g * ',' ~~ MAE ~ '=' ~  %.3g",
+    summary(lm_LF)$r.squared,  # r-squared 
+    sqrt(mean(lm_LF$residuals^2)), # https://www.statology.org/extract-rmse-from-lm-in-r/
+    mean(abs(lm_LF$residuals)) # mean absolute error (MAE)
+  )
+  
+  eqn_LCMS <- sprintf(
+    "italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g * ',' ~~ MAE ~ '=' ~  %.3g",
+    summary(lm_LCMS)$r.squared,  # r-squared 
+    sqrt(mean(lm_LCMS$residuals^2)), # https://www.statology.org/extract-rmse-from-lm-in-r/
+    mean(abs(lm_LCMS$residuals)) # mean absolute error (MAE)
+  )
+  
+  merge_df %>%
+    ggplot(aes(x = Ref_TPA_D2L)) +
+    geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) +
+    geom_point(aes(y = LF_TPA_D2L, color = "LFOrig"), alpha = 0.25) +
+    geom_point(aes(y = LCMS_TPA_D2L, color = "LCMS_TPA_D2L"), alpha = 0.25) +
+    geom_smooth(method = "lm", formula = y~x,  aes(y = LF_TPA_D2L, color = "LFOrig"), alpha = 0.15) +
+    geom_smooth(method = "lm", formula = y~x, aes(y = LCMS_TPA_D2L, color = "LCMS_TPA_D2L"), alpha = 0.15) +
+    # facet_wrap(~disturb_code) +
+    scale_color_manual(values = legendColors, breaks = c("LFOrig", "LCMS_TPA_D2L")) +
+    guides(color = guide_legend(title = "Dataset",
+                                keylength = 2,
+                                keyheight = 2,
+                                title.theme = element_text(size = 14),
+                                label.theme = element_text(size =12))) +
+    # guides(color = "none") + # un-comment to remove plot legend
+    scale_x_continuous(expand = c(0, 0), limits = c(low_lim, up_lim)) + # starts x-axis from 0 and labels 0
+    # scale_y_continuous(expand = c(0, 0), limits = c(low_lim, up_lim)) + # starts y-axis from 0 and labels 0
+    labs(x = "TPA_DEAD:TPA_LIVE (Reference)", 
+         y = "TPA_DEAD:TPA_LIVE (Imputed)") + 
+    theme_bw() +
+    # ggtitle(glue::glue("{var_name}: FIA buffer plot (40 m radius) evaluation")) +
+    ggtitle(glue::glue("TPA dead to live ratio")) +
+    theme(axis.title = element_text(size = 16),
+          plot.title = element_text(size = 18)) +
+    # annotate(geom="rect",
+    #          xmin = ((low_lim + up_lim)/2) - ((up_lim - low_lim)*textBoxFill_ratioX),
+    #          xmax = ((low_lim + up_lim)/2) + ((up_lim - low_lim)*textBoxFill_ratioX),
+    #          ymin = (percent_y_textPos1*max(merge_df$LCMS_TPA_D2L, na.rm = TRUE)) - ((up_lim - low_lim)*textBoxFill_ratioY),
+    #          ymax = (percent_y_textPos1*max(merge_df$LCMS_TPA_D2L, na.rm = TRUE)) + ((up_lim - low_lim)*textBoxFill_ratioY),
+    #          fill = "beige") +
+    annotate(geom="text",
+             x = (max(merge_df$Ref_TPA_D2L))/2,
+             y = (percent_y_textPos1*max(merge_df$LCMS_TPA_D2L, na.rm = TRUE)),
+             label = as.character(eqn_LF),
+             parse = TRUE,
+             color = "purple",
+             size = text_size) +
+    # annotate(geom="rect",
+    #          xmin = (low_lim + up_lim)/2 - ((up_lim - low_lim)*textBoxFill_ratioX),
+    #          xmax = (low_lim + up_lim)/2 + ((up_lim - low_lim)*textBoxFill_ratioX),
+    #          ymin = (percent_y_textPos2*max(merge_df$LCMS_TPA_D2L, na.rm = TRUE)) - ((up_lim - low_lim)*textBoxFill_ratioY),
+    #          ymax = (percent_y_textPos2*max(merge_df$LCMS_TPA_D2L, na.rm = TRUE)) + ((up_lim - low_lim)*textBoxFill_ratioY),
+    #          fill = "cadetblue1") +
+    annotate(geom="text",
+             x = (max(merge_df$Ref_TPA_D2L))/2,
+             y = (percent_y_textPos2*max(merge_df$LCMS_TPA_D2L, na.rm = TRUE)),
+             label = as.character(eqn_LCMS),
+             parse = TRUE,
+             color = "darkgreen",
+             size = text_size)
   
 
   # Create linear model
