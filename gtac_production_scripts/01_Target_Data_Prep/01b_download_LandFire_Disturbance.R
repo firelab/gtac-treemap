@@ -5,25 +5,20 @@
 # Written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # Last Updated: 01/04/2024 (Abhinav Shrestha; abhinav.shrestha@usda.gov; AS)
 
-# TO DO: 
-# - remove zipped files (DONE)
-# - copy unzipped folders to next folder up, with the same name (no need (?), the unzipped folders were not nested in a folder of the same name -- maybe an update to the `unzip` function (?)) (DONE - ?)
-
-# NEW (04/12/2024; AS):
+# NEW (05/08/2024; AS):
 # - Scripts download data from 1999:2022 (previously 2016:2022). Automatically creates directory for each Landfire version of the dataset. Where:
 # -- 1999-2014: US_DIST<year>
 # -- 2015-2016: LF<year>_Dist_200
 # -- 2017-2020: LF<year>_Dist_220
 # -- 2021-2022: LF<year>_Dist_230
 # - added a repeat-tryCatch loop that allows for multiple download tries if there is a connection or download error from the host or the local machine. This number of download tries is controlled by the `maxDownload_count` variable. 
-# - 
 
 #####################################
 # Set Inputs
 #######################################
 
 # set file destination
-#dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Disturbance/"
+#dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/"
 
 # For testing
 dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/"
@@ -34,15 +29,13 @@ years <- 2016:2022 # LF-200 version onwards
 # set maximum tries to download
 maxDownload_count <- 5
 
-
-
 ################################################
 # Run
 ################################################
 
 ptm.start <- Sys.time() # processing time (ptm): start
 
-# create directory if necessary 
+# create "02_Landfire" directory if necessary 
 if(!file.exists(dir)) {
   dir.create(dir, recursive = TRUE)
 }
@@ -56,10 +49,10 @@ if(!file.exists(dir)) {
 
 # sample download url pre 2015 (1999-2014): for 1999 - "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST1999.zip&TYPE=landfire
 # for 2014 - https://www.landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST2014.zip&TYPE=landfire
-
 # sample download url 2015 "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-LF2020_Dist_220_CONUS.zip&TYPE=landfire"
-url_base_1 <- "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST"
-url_base_2 <- "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-LF"
+
+url_base_1 <- "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-US_DIST" # 2019-2014
+url_base_2 <- "https://landfire.gov/bulk/downloadfile.php?FNAME=US_Disturbance-LF" # 2014-present
 url_base_2_200 <- "_Dist_200_CONUS.zip&TYPE=landfire"
 url_base_2_220 <- "_Dist_220_CONUS.zip&TYPE=landfire"
 url_base_2_230 <- "_Dist_230_CONUS.zip&TYPE=landfire"
@@ -72,11 +65,15 @@ for(j in 1:length(years)){
   
   print(paste0("downloading ", year_name))
   
-  # For every loop, dir resets to main LF directory
-  dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/"
+  # For every loop, dir resets to main LF directory "02_Landfire"
+  
+  # dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/" # for testing
+  dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/"
+  
   
   ##
-  ##### Set appropriate file name
+  ##### Set appropriate directory according to dataset
+  ##### Set appropriate file name according to year and LF dataset
   ##
   
   if(year_name < 2015){
@@ -168,7 +165,8 @@ for(j in 1:length(years)){
       Sys.sleep(0.5)
     }
     
-    print(error_count, downloadcount)
+    print(paste0("successful download (Y = 1, N = 0): ", downloadcount))
+    print(paste("number of download errors: ", error_count))
     
     print("-- download complete")
     

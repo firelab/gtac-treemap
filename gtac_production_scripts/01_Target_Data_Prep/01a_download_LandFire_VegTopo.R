@@ -7,7 +7,9 @@
 
 
 
-# This script downloads and organizes Landfire Veg (EVC, EVT, EVH) and Topographic (SLOPE_D, ELEV, Asp) layers
+# This script downloads and organizes Landfire"
+# - vegation (EVC, EVT, EVH) data sets
+# - topographic (SLOPE_D, ELEV, Asp) data sets
 
 
 
@@ -16,10 +18,10 @@
 #######################################
 
 # set file destination
-#dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_220/Disturbance/"
+dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/"
 
 # For testing
-dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/"
+# dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/"
 
 
 # list years
@@ -63,6 +65,10 @@ url_base_220 <- "_220_CONUS.zip&TYPE=landfire"
 url_base_230 <- "_230_CONUS.zip&TYPE=landfire"
 
 
+message("***********************************************************************")
+message("        Landfire vegetation datasets (EVC, EVT, EVH) download          ")
+message("***********************************************************************")
+
 ptm_VegStart <- Sys.time()
 
 for (i in 1:length(vegetation_datasets)){
@@ -70,21 +76,23 @@ for (i in 1:length(vegetation_datasets)){
   veg_dataset <- vegetation_datasets[i]
   
   print("======================= === ================================================")
-  print(paste0("Download and extracting ", veg_dataset, " data for years: ", list(years)))
+  print(paste0("Download and extracting ", veg_dataset, " data for years: ", paste(years, collapse = ", ")))
   print("======================= === ================================================")
   
   ptm.vegDataStart <- Sys.time()
   
   for(j in 1:length(years)){
     
-    #j = 1
+    # j = 1
     
     year_name <- years[j]
     
     print(paste0("downloading ", year_name))
     
     # For every loop, dir resets to main LF directory
-    dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/"
+    dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/"
+    
+    # dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/" # for testing
     
     ##
     ##### Set appropriate file name
@@ -99,7 +107,7 @@ for (i in 1:length(vegetation_datasets)){
         dir <- paste0(dir, "LF_200/Vegetation/", veg_dataset, "/")
         
         # create file name
-        zipfilename <- paste0(dir, "LF", year_name,"_200_", veg_dataset, ".zip")
+        zipfilename <- paste0(dir, "LF", year_name, "_", veg_dataset, "_200_CONUS.zip")
         
       } else if (year_name == 2020) {
         
@@ -108,16 +116,16 @@ for (i in 1:length(vegetation_datasets)){
         dir <- paste0(dir, "LF_220/Vegetation/", veg_dataset, "/")
         
         # create file name
-        zipfilename <- paste0(dir, "LF", year_name,"_220_", veg_dataset, ".zip")
+        zipfilename <- paste0(dir, "LF", year_name, "_", veg_dataset, "_220_CONUS.zip")
         
       } else if (year_name == 2022) {
         
         url <- paste0(url_base, "230_mosaic-LF", year_name, "_", veg_dataset, url_base_230)
         
-        dir <- paste0(dir, "LF_220/Vegetation/", veg_dataset, "/")
+        dir <- paste0(dir, "LF_230/Vegetation/", veg_dataset, "/")
         
         # create file name
-        zipfilename <- paste0(dir, "LF", year_name,"_220_", veg_dataset, ".zip")
+        zipfilename <- paste0(dir, "LF", year_name, "_", veg_dataset, "_230_CONUS.zip")
         
       }
     } else if (year_name == 2001) {
@@ -127,7 +135,7 @@ for (i in 1:length(vegetation_datasets)){
       dir <- paste0(dir, "US_105/Vegetation/", veg_dataset, "/")
       
       # create file name
-      zipfilename <- paste0(dir, "US_105_", year_name,"_", veg_dataset, ".zip")
+      zipfilename <- paste0(dir, "LF", year_name,"_", veg_dataset, "_105_CONUS.zip")
       
     } else if (year_name == 2014) {
       
@@ -136,7 +144,7 @@ for (i in 1:length(vegetation_datasets)){
       dir <- paste0(dir, "US_140/Vegetation/", veg_dataset, "/")
       
       # create file name
-      zipfilename <- paste0(dir, "US_105_", year_name,"_", veg_dataset, ".zip")
+      zipfilename <- paste0(dir, "LF", year_name,"_", veg_dataset, "_140_CONUS.zip")
       
     }
       
@@ -147,35 +155,35 @@ for (i in 1:length(vegetation_datasets)){
     
     # create file name for out folder
     # filename <- gsub(".zip", "", zipfilename)
-    
-    # create directory if necessary 
+
+    # create directory if necessary
     if(!file.exists(dir)) {
       dir.create(dir, recursive = TRUE)
     }
-    
+
     #what url are you working on?
     print(url)
-    
+
     #download files
     options(timeout=7200) # set high number for connection timeout (default = 60 s)
-    
+
     print("- downloading...")
-    
+
     # repeat-tryCatch loop to catch connection errors (https://stackoverflow.com/questions/63340463/download-files-until-it-works; https://stackoverflow.com/questions/50624864/skipping-error-files-when-downloading-using-download-file-in-r)
-    
+
     error_count = 0
     downloadcount = 0
-    
+
     repeat{
       tryCatch({download.file(url, zipfilename, mode = "wb", quite = FALSE)
         downloadcount <<- downloadcount + 1}, # successful download
-        error = function(e){error_count <<- error_count + 1 # unsuccessful download, add to error count  
+        error = function(e){error_count <<- error_count + 1 # unsuccessful download, add to error count
         print("Downloading did not work.")
         return(e)})
-      if (downloadcount > 0){ 
+      if (downloadcount > 0){
         break # stop repeat loop due to successful download
       }
-      
+
       if (error_count == maxDownload_count){
         print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
         print(paste0("Tried downloading ", maxDownload_count, " times. Please check URL, internet connection, and system."))
@@ -185,28 +193,28 @@ for (i in 1:length(vegetation_datasets)){
       print("Retrying...") # error count still less than max download count, repeat loop to retry
       Sys.sleep(0.5)
     }
-    
+
     print(paste0("successful download (Y = 1, N = 0): ", downloadcount))
     print(paste("number of download errors: ", error_count))
-    
+
     print("-- download complete")
-    
-    
+
+
     print(paste0("- extracting ", year_name, " ", veg_dataset, "..."))
     print(paste0("-- location: ", dir))
-    
+
     #unzip
     unzip(zipfilename, exdir = dir, overwrite = TRUE)
-    
+
     print("-- extraction complete")
-    
+
     #remove zipped files
     print(paste0("- removing compressed (.zip) folder: ", gsub(dir, "", zipfilename)))
     file.remove(zipfilename)
     print(paste0("-- removed ", gsub(dir, "", zipfilename)))
-    
+
     message("moving to next year...")
-    print("---------------------------------------------------------------------")  
+    print("---------------------------------------------------------------------")
     
     
     
@@ -220,6 +228,12 @@ for (i in 1:length(vegetation_datasets)){
 
 message("Total time taken for Vegetation datasets download:")
 print(Sys.time() - ptm_VegStart)
+
+
+
+message("***********************************************************************")
+message("      Landfire Topography datasets (Asp, Elev, SlpD) download          ")
+message("***********************************************************************")
 
 
 ptm_TopoStart <- Sys.time()
@@ -239,12 +253,14 @@ for (year_name in years_topo){
     
     ptm_topoTypeStart <- Sys.time()
     
-    print("======================= === ================================================")
+    print("======================= ==== ================================================")
     print(paste0("Download and extracting ", topo_type, " data for years: ", list(years_topo)))
-    print("======================= === ================================================")
+    print("======================= ==== ================================================")
     
     # For every loop, dir resets to main LF directory
-    dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/"
+    dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/"
+    
+    # dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/" # for testing
     
     ##
     ##### Set appropriate file name
@@ -257,7 +273,7 @@ for (year_name in years_topo){
         dir <- paste0(dir, "LF_220/Topo/", topo_type, "/")
         
         # create file name
-        zipfilename <- paste0(dir, "LF", year_name,"_220_", topo_type, ".zip")
+        zipfilename <- paste0(dir, "LF", year_name,"_", topo_type, "_220_CONUS.zip")
         
       }
     
@@ -268,24 +284,24 @@ for (year_name in years_topo){
       # create file name for out folder
       # filename <- gsub(".zip", "", zipfilename)
       
-      # create directory if necessary 
+      # create directory if necessary
       if(!file.exists(dir)) {
         dir.create(dir, recursive = TRUE)
       }
-      
+
       #what url are you working on?
       print(url)
-      
+
       #download files
       options(timeout=7200) # set high number for connection timeout (default = 60 s)
-      
+
       print("- downloading...")
-      
+
       # repeat-tryCatch loop to catch connection errors (https://stackoverflow.com/questions/63340463/download-files-until-it-works; https://stackoverflow.com/questions/50624864/skipping-error-files-when-downloading-using-download-file-in-r)
-      
+
       error_count = 0
       downloadcount = 0
-      
+
       repeat{
         tryCatch({download.file(url, zipfilename, mode = "wb", quite = FALSE)
           downloadcount <<- downloadcount + 1}, # successful download
@@ -305,21 +321,21 @@ for (year_name in years_topo){
         print("Retrying...") # error count still less than max download count, repeat loop to retry
         Sys.sleep(0.5)
       }
-      
+
       print(paste0("successful download (Y = 1, N = 0): ", downloadcount))
       print(paste("number of download errors: ", error_count))
-      
+
       print("-- download complete")
-      
-      
+
+
       print(paste0("- extracting ", year_name, " ", topo_type, "..."))
       print(paste0("-- location: ", dir))
-      
+
       #unzip
       unzip(zipfilename, exdir = dir, overwrite = TRUE)
-      
+
       print("-- extraction complete")
-      
+
       #remove zipped files
       print(paste0("- removing compressed (.zip) folder: ", gsub(dir, "", zipfilename)))
       file.remove(zipfilename)
