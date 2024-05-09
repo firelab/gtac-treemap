@@ -20,8 +20,8 @@ eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP", "disturb_code")
 
 # Eval report for OOB or derived vars
 # options: "OOB" or "TargetLayerComparison" 
-#eval_type <- "TargetLayerComparison"
-eval_type <- "OOB" 
+eval_type <- "TargetLayerComparison"
+# eval_type <- "OOB" 
 
 
 # Standard inputs
