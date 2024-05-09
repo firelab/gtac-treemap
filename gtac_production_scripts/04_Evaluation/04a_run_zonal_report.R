@@ -5,7 +5,7 @@
 
 
 # TO DO:
-
+# add continuous vars to report - from plots already made 
 
 ### SETUP AND RUN
 ######################################
@@ -116,37 +116,46 @@ zone_name <- glue::glue("LFz{zone_num}_{gsub(' ', '', zone$ZONE_NAME)}")
 
 # load X_df
 X_df <- read.csv(xtable_path) %>%
-rename(PLOTID = ID)
+rename(PLOTID = X)
+
+# Reclass EVT_GP
+#-------------------------------------------#
+
+#load evt_gp remap table
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
+
+# join to reclass 
+X_df %<>%
+  rename(EVT_GP_remap = EVT_GP) %>%
+  left_join(evt_gp_remap_table, by = c("EVT_GP_remap"))
 
 # Load raster attribute table and points
 #-------------------------------------------------#
 
 # load rat
 rat <- terra::rast(glue::glue("{rat_path}TreeMap2016.tif"))
-rat <- data.frame(cats(rat))
-
-rat %<>%
+rat <- data.frame(cats(rat)) %>%
   rename("SDIPCT_RMRS" = SDIPCT_RMR,
-         "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
-  mutate(CN = as.numeric(CN)) 
+         "CARBON_DOWN_DEAD" = CARBON_DWN)
 
-# join with X df  
+# identify eval_vars_cont that are not from RMRS - we handle NAs differently
+eval_vars_cont_RMRS <- str_subset(names(rat), "RMRS")
+eval_vars_cont_nonRMRS <- str_subset(names(rat %>% select(where(is.numeric))), "RMRS", negate = TRUE)
+
+# prep rat table
+rat %<>%
+  mutate(CN = as.numeric(CN)) %>%
+  mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = 3))) %>%
+  mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
+  mutate(across(any_of(eval_vars_cont_RMRS), ~ na_if(.x, -99))) %>%
+  select(-Value) %>%
+  mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE)
+
+# join with X df  - limit to plots in X df
 rat %<>%
   right_join(X_df, by = c("CN" = "CN", "tm_id" = "PLOTID")) 
 
-# convert to spatial points
-rat_sp <- terra::vect(rat, geom = c("ACTUAL_LON", "ACTUAL_LAT"),
-                      crs = "epsg:4326") %>%
-  terra::project(crs(ras))
 
-# crop to points within zone 16?
-rat_sp_z <- terra::crop(rat_sp, zone)
-
-# convert to data frame
-rat_z <- data.frame(rat_sp_z)
-
-# remove actual rat tif - not needed
-rm(rat)
 
 # Calc frequency for all vars in RAT
 #------------------------------------------#
@@ -159,7 +168,7 @@ for (i in seq_along(eval_vars)) {
   var = eval_vars[i]
 
 # get frequency table
-  f_out <- rat_z %>%
+  f_out <- rat %>%
     select(all_of(var)) %>%
     table() %>%
     data.frame() 
@@ -175,7 +184,7 @@ for (i in seq_along(eval_vars)) {
 names(rat_freq_all) <- eval_vars
 
 # inspect
-#rat_freq_all
+rat_freq_all
 
 # Render report
 #-----------------------------------------------------#

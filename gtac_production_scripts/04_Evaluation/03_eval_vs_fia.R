@@ -1,3 +1,4 @@
+# eval categorical vars - confusion matrices
 # eval continuous vars - extract imputed id at actual fia id points
 # then calc RMSE
 # plot scatterplots w/ 1:1 line and plot RMSE / r^2 on the plot 
@@ -5,7 +6,10 @@
 
 
 # TO DO:
-
+# replace violin plots with binned density histogram 
+# for continuous scatter plots: add linear best-fit line
+# add RMSE
+# add MAE 
 
 ### SETUP AND RUN
 ######################################
@@ -19,7 +23,8 @@ eval_vars_cat <- c("canopy_cover", "canopy_height", "EVT_GP",
                    "disturb_code")
 
 eval_vars_cont <- c("GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
-                    "CANOPYPCT", "CARBON_D", "TPA_DEAD", "TPA_LIVE")
+                    "CANOPYPCT", "CARBON_D", "TPA_DEAD", "TPA_LIVE",
+                    "TPA_DEAD_LIVE_RATIO")
 
 eval_vars <- c(eval_vars_cat, eval_vars_cont)
 
@@ -45,9 +50,9 @@ source(input_script_path)
 ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{raster_name}.tif"))
 names(ras) <- "PLOTID"
 
-# load X_df
+# load X_df - reference data used to build model
 X_df <- read.csv(xtable_path) %>%
-  rename(PLOTID = ID)
+  rename(PLOTID = X)
 
 # load evt dat
 evt_dat <- read.csv(evt_path) 
@@ -60,11 +65,20 @@ coords <- read.csv(coords_path)
 rat <- terra::rast(glue::glue('{rat_path}TreeMap2016.tif'))
 rat <- data.frame(cats(rat))
 
+# identify eval_vars_cont that are not from RMRS - we handle NAs differently
+eval_vars_cont_RMRS <- str_subset(eval_vars_cont, "RMRS")
+eval_vars_cont_nonRMRS <- str_subset(eval_vars_cont, "RMRS", negate = TRUE)
+
+# prep rat table
 rat %<>% 
   rename("SDIPCT_RMRS" = SDIPCT_RMR,
          "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
   mutate(CN = as.numeric(CN)) %>%
-  select(-Value)
+  mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = 3))) %>%
+  mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
+  mutate(across(any_of(eval_vars_cont_RMRS), ~ na_if(.x, -99))) %>%
+  select(-Value) %>%
+  mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE)
 
 # prep evt data
 #------------------------------------------------------#
@@ -113,25 +127,29 @@ ras_ex %<>% left_join(X_df,
   mutate(dataset = "Imputed") 
 
 # prep reference values - from "X_df" joined with RAT
-refs <- 
-  ras_ex %>% 
+refs_all <- 
+  X_df %>%
+  left_join(rat, by = "CN") %>%
+  select(c(CN, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
+  mutate(dataset = "Ground_FIA")
+ 
+refs_zone <- 
+  ras_ex %>%
   select(ID, CN_pt) %>%
-  left_join(X_df, by = c("CN_pt" = "CN")) %>%
-  left_join(rat, by = c("CN_pt" = "CN")) %>%
+  left_join(refs_all, by = c("CN_pt" = "CN")) %>%
+  mutate(dataset = factor(dataset)) %>%
   mutate(CN_plot = as.numeric(NA)) %>%
-  mutate(PLOTID = as.numeric(NA)) %>%
-  select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
-  mutate(dataset = "Ground_FIA") 
+  mutate(PLOTID = as.numeric(NA))  %>%
+  select(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)), dataset)
 
-
-# join
-p_r <- bind_rows(ras_ex, refs) %>%
+  # join
+p_r <- bind_rows(ras_ex, refs_zone) %>%
   # pivot longer
   pivot_longer(!c(ID, CN_pt, CN_plot, PLOTID, dataset), names_to = "var", values_to = "value") %>%
   mutate(var = factor(var),
-         value = na_if(value, -99.00000),
          value = round(value, round_dig)) %>%
-  arrange(ID)
+  arrange(ID) %>%
+  filter(!is.na(dataset))
 
 
 
@@ -159,6 +177,7 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   print(p)
   
   # save
+
   # ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_FIA_{var_name}.png'),
   #        plot = p,
   #        width = 7,
@@ -188,10 +207,12 @@ for(i in 1:(length(eval_vars_cat)-1)) {
   p_Norm <-  ggplot(data = temp_df, aes(x=as.factor(value), y=normalized_count, fill = dataset)) + 
     geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) + 
     labs(title = glue::glue('Variation in {var_name} by model (normalized)')) + 
-    xlab(var_name)
+    xlab(var_name) + 
+    theme_bw()
   
   print(p_Norm)
   
+
   # ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_normalized.png'),
   #        plot = p_Norm,
   #        width = 7,
@@ -207,7 +228,8 @@ dodge <- position_dodge(width = 0.6)
 for(i in 1:(length(eval_vars_cont))) {
   
   # for testing
-  # i = 5
+  #i = 5
+
   
   var_name <- eval_vars_cont[i]
   
@@ -229,7 +251,7 @@ for(i in 1:(length(eval_vars_cont))) {
   p_r2 <- 
     p_r %>%
     filter(var == var_name) %>%
-    select(-c(var, PLOTID, CN_plot)) %>%
+    select(-c(PLOTID, CN_plot)) %>%
     ungroup() %>%
     pivot_wider(names_from = dataset, values_from = value) %>%
     arrange(ID)
@@ -238,6 +260,7 @@ for(i in 1:(length(eval_vars_cont))) {
           filter(Ground_FIA < 1000)
   # Create linear model
   lm <- lm(Imputed ~ Ground_FIA, data = p_r3)
+
 
 
   # Method 1 (manual using geom_text())
@@ -254,6 +277,7 @@ for(i in 1:(length(eval_vars_cont))) {
   eqn
   
   p2 <- p_r3 %>%
+
     ggplot(aes(x = Ground_FIA, y = Imputed)) + 
     geom_abline(intercept = 0, color = "red", linewidth = 1, linetype = 2) + 
     geom_point(alpha = 0.25) +
@@ -293,6 +317,8 @@ for(i in 1:(length(eval_vars_cont))) {
   # for each dataset, and for each disturbance code, and for all disturbance codes together
   
   
+
+
   # # save
   # ggsave(glue::glue('{eval_dir}/03_FIA_Comparison/Imputed_vs_ref_{var_name}_violin.png'),
   #        plot = p,
@@ -310,4 +336,23 @@ for(i in 1:(length(eval_vars_cont))) {
   #        plot = p3,
   #        width = 7,
   #        height = 4.5)
+
 }
+
+#########################################################
+# Assemble layers- derived from imputed ids matched with X table
+#########################################
+
+#eval_vars_cont %>%
+eval_vars_cont_RMRS %>%
+  map(\(x) assembleExport(x, 
+                          raster = ras, 
+                          lookup = refs_all, 
+                          id_field = "PLOTID",
+                          export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}')
+  ))
+
+gc()
+
+
+############################################################

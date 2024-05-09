@@ -4,7 +4,7 @@
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last updated:
-# 3/28/24
+# 4/18/24
 
 # Goals: 
 # - load preliminary imputation outputs
@@ -29,8 +29,8 @@ thispath <- this.path::this.path()
 
 # get path to input script with settings for imputation
 spl <- stringr::str_split(thispath, "/")[[1]]
-input_script_path <- paste(c(spl[c(1:(length(spl) - 2))],
-                             "03_Imputation/00_inputs_for_imp.R"),
+input_script_path <- paste(c(spl[c(1:(length(spl) - 1))],
+                             "00_inputs_for_evaluation.R"),
                           collapse = "/")
 
 source(input_script_path)
@@ -83,7 +83,7 @@ target_files <- target_files[target_files %>%
     str_detect(eval_vars %>% paste(., collapse = "|"))]
 
 #read in as vrt
-lf <- terra::vrt(target_files, filename = "lf.vrt", 
+lf <- terra::vrt(target_files, filename = glue::glue("{tmp_dir}/lf.vrt"), 
                  options = "-separate", overwrite = TRUE)
 
 #apply names
@@ -207,8 +207,9 @@ cms <- eval_vars %>%
                       stackin_compare_name =  "Landfire",
                       remapEVT_GP = TRUE,
                       EVT_GP_remap_table =  evt_gp_remap_table,
-                      exportTF = FALSE,
-                      export_path = glue::glue('{tmp_dir}/{raster_name}')
+                      exportTF = TRUE,
+                      export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}')
+
                       ))
 
 names(cms) <- eval_vars
@@ -224,14 +225,14 @@ write_rds(cms, glue::glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}_C
 # lapply(eval_vars, assembleExport, 
 #        # additional options for function
 #        raster = ras, lookup = lookup, id_field = "PLOTID",
-#        export_path = glue::glue('{assembled_dir}/02_Derived_vars_LF/{raster_name}'))
+#        export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}'))
 
 eval_vars %>%
   map(\(x) assembleExport(x, 
                           raster = ras, 
                           lookup = lookup, 
                           id_field = "PLOTID",
-                          export_path = glue::glue('{assembled_dir}/02_Derived_vars_LF/{raster_name}')
+                          export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}')
                           ))
 
 gc()

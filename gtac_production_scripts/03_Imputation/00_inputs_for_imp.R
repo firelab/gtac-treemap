@@ -46,7 +46,7 @@ ref_data_version <- "v2016_RMRS"
 
 # model to use - supply specific model to pull into imputation, or NA
 # if NA, uses default model name and path
-#model_path <- '//166.2.126.25/TreeMap/03_Outputs/99_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
+#model_path <- '//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
 model_path <- NA
 
 #home_dir
@@ -89,13 +89,13 @@ coords_path <- glue::glue('{home_dir}01_Data/04_FIA/06_Coordinates/select_TREEMA
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
-output_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/01_Raw_model_outputs/')
+output_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
 
 #set path for assembled rasters
-assembled_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/02_Assembled_model_outputs/')
+assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/')
 
 # Evaluation dir
-eval_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/03_Evaluation/')
+eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/')
 
 # Params path
 params_path <- glue::glue('{output_dir}/params/')
@@ -275,13 +275,8 @@ if(!file.exists(glue::glue('{assembled_dir}/01_Imputation/'))){
 }
 
 # create assembled dir if necessary
-if(!file.exists(glue::glue('{assembled_dir}/02_Derived_vars_LF/'))){
-  dir.create(glue::glue('{assembled_dir}/02_Derived_vars_LF/'), recursive = TRUE)
-}
-
-# create assembled dir if necessary
-if(!file.exists(glue::glue('{assembled_dir}/03_Derived_vars_FIA/'))){
-  dir.create(glue::glue('{assembled_dir}/03_Derived_vars_FIA/'), recursive = TRUE)
+if(!file.exists(glue::glue('{assembled_dir}/02_Assembled_vars/'))){
+  dir.create(glue::glue('{assembled_dir}/02_Assembled_vars/'), recursive = TRUE)
 }
 
 
