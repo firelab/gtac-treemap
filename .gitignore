@@ -119,6 +119,8 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
+
+
 # mkdocs documentation
 /site
 
@@ -129,3 +131,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# History files
+.Rhistory
+.Rapp.history

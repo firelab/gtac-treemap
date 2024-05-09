@@ -21,9 +21,9 @@ r2_path <- glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_A
 r2_name <- "LCMSDist"
 
 # path to save output figures
-# export_fig_path <- glue::glue("{home_dir}03_Outputs/99_Projects/2016_GTAC_LCMSDist/03_Evaluation/z16/04_Model_Comparison/")
+export_fig_path <- glue::glue("{home_dir}03_Outputs/07_Projects/2016_GTAC_LCMSDist/03_Evaluation/z16/04_Model_Comparison/")
 
-export_fig_path <- glue::glue("C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/")
+# export_fig_path <- glue::glue("C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/") # for testing
 
 # list variables to evaluate
 eval_vars_cat <- c("canopy_cover", "canopy_height", "EVT_GP", 
@@ -260,6 +260,11 @@ p_r_buffer <- bind_rows(r1_ex_buffer, r2_ex_buffer, refs_buffer) %>%
   group_by(disturb_code) %>% 
   left_join(coords_df %>% select(PLT_CN, MaxOfINVYR), by = c("CN_pt" = "PLT_CN"))
 
+
+## EXPORT buffer extraction data as a .csv
+# - buffer extractions takes substantial compu
+
+
 # save as .csv
 # write.csv(p_r_buffer, file.path(export_fig_path, "FIA_BufferPlots_LF_LCMS_2_noNA.csv"), row.names = FALSE)
 
@@ -278,125 +283,6 @@ barplot_legendCols <- c("Reference" = "#00BA38",
 
 # Select year to filter with (inclusive)
 filterYear <- 2016
-
-
-### AGREEMENT TEST: Similar to Karin's old code 
-
-p_r_agreementDF <- p_r %>%
-                    select(-c(PLOTID, CN_plot)) %>%
-                    ungroup() %>%
-                    pivot_wider(names_from = dataset, values_from = value, values_fn = list) %>% # aggregate to list of all values
-                    arrange(ID) %>% 
-                    drop_na()
-
-
-p_r_agreementDF$Agreement_LF <- NA
-p_r_agreementDF$Agreement_LCMS <- NA
-
-
-cont_evalTH_perc <- 0.1
-
-
-for (i in (1:nrow(p_r_agreementDF))){
-  
-   if (p_r_agreementDF$var[i] %in% eval_vars_cat){
-     
-     # NA sieve
-     if (is.na((mean(p_r_agreementDF$Reference[[i]])))) {
-       next
-       
-     } else {
-          
-          # Check agreement with LF
-          if (mean(p_r_agreementDF$Reference[[i]]) %in% p_r_agreementDF$LFOrig[[i]]) {
-            
-            p_r_agreementDF$Agreement_LF[i] <- 1 # Agreement
-            
-          } else {
-            
-            p_r_agreementDF$Agreement_LF[i] <- 0 # No agreement
-            
-          }
-          
-          # Check agreement with LCMS
-          if (mean(p_r_agreementDF$Reference[[i]]) %in% p_r_agreementDF$LCMSDist[[i]]) {
-            
-            p_r_agreementDF$Agreement_LCMS[i] <- 1 # Agreement
-            
-          } else {
-            
-            p_r_agreementDF$Agreement_LCMS[i] <- 0 # No agreement
-            
-        }
-      }
-  }
-  
-  if (p_r_agreementDF$var[i] %in% eval_vars_cont){
-    
-    # NA sieve
-    if (is.na((mean(p_r_agreementDF$Reference[[i]])))) {
-      next
-      
-    } else {
-    
-      # Thresholds for checking agreement in continuous variable
-      contVar_lowLim <- (p_r_agreementDF$Reference[[i]][1] - (cont_evalTH_perc*p_r_agreementDF$Reference[[i]][1]))
-      contVar_upLim <- (p_r_agreementDF$Reference[[i]][1] + (cont_evalTH_perc*p_r_agreementDF$Reference[[i]][1]))
-      
-      # Check agreement with LF
-      if (any(c(na.omit(p_r_agreementDF$LFOrig[[i]])) >= contVar_lowLim & c(na.omit(p_r_agreementDF$LFOrig[[i]])) <= contVar_upLim)) {
-        
-        p_r_agreementDF$Agreement_LF[i] <- 1 # Agreement
-        
-      } else {
-        
-        p_r_agreementDF$Agreement_LF[i] <- 0 # No agreement
-        
-      }
-      
-      # Check agreement with LCMS
-      if (any(c(na.omit(p_r_agreementDF$LCMSDist[[i]])) >= contVar_lowLim & c(na.omit(p_r_agreementDF$LCMSDist[[i]])) <= contVar_upLim)) {
-        
-        p_r_agreementDF$Agreement_LCMS[i] <- 1 # Agreement
-        
-      } else {
-        
-        p_r_agreementDF$Agreement_LCMS[i] <- 0 # No agreement
-        
-      }
-    }
-  }
-  
-  
-}
-
-# Intialize data frame:
-agreementSummary_df <- data.frame(Variable = as.character(),
-                                  agreement_LF = as.numeric(), 
-                                  agreement_LCMS = as.numeric())
-
-all_vars <- c(eval_vars_cat, eval_vars_cont)
-all_vars <- all_vars[-(which(all_vars == "disturb_code"))]
-
-for (var_name in all_vars){
-  
-  summaryTable_temp_df <- p_r_agreementDF %>% 
-                              filter(MaxOfINVYR >= filterYear) %>%
-                              filter(var == var_name) %>%
-                              drop_na()
-  
-  total <- nrow(summaryTable_temp_df)
-  
-  LF_agreement_num <- sum(summaryTable_temp_df$Agreement_LF, na.rm = TRUE)
-  LCMS_agreement_num <- sum(summaryTable_temp_df$Agreement_LCMS, na.rm = TRUE)
-  
-  agreementSummary_df <- rbind(agreementSummary_df, data.frame(Variable = var_name,
-                                                               agreement_LF = (LF_agreement_num/total)*100, 
-                                                               agreement_LCMS = as.numeric(LCMS_agreement_num/total)*100))
-  
-}
-
-  
 
 
 
@@ -794,5 +680,122 @@ ggsave(glue::glue("{export_fig_path}/FIABufferPlotEval/cell_centriod_withinBuffe
        plot = p3,
        width = 24,
        height = 13.5)
+
+
+### AGREEMENT TEST: Similar to Karin's old code 
+
+p_r_agreementDF <- p_r %>%
+  select(-c(PLOTID, CN_plot)) %>%
+  ungroup() %>%
+  pivot_wider(names_from = dataset, values_from = value, values_fn = list) %>% # aggregate to list of all values
+  arrange(ID) %>% 
+  drop_na()
+
+
+p_r_agreementDF$Agreement_LF <- NA
+p_r_agreementDF$Agreement_LCMS <- NA
+
+
+cont_evalTH_perc <- 0.1
+
+
+for (i in (1:nrow(p_r_agreementDF))){
+  
+  if (p_r_agreementDF$var[i] %in% eval_vars_cat){
+    
+    # NA sieve
+    if (is.na((mean(p_r_agreementDF$Reference[[i]])))) {
+      next
+      
+    } else {
+      
+      # Check agreement with LF
+      if (mean(p_r_agreementDF$Reference[[i]]) %in% p_r_agreementDF$LFOrig[[i]]) {
+        
+        p_r_agreementDF$Agreement_LF[i] <- 1 # Agreement
+        
+      } else {
+        
+        p_r_agreementDF$Agreement_LF[i] <- 0 # No agreement
+        
+      }
+      
+      # Check agreement with LCMS
+      if (mean(p_r_agreementDF$Reference[[i]]) %in% p_r_agreementDF$LCMSDist[[i]]) {
+        
+        p_r_agreementDF$Agreement_LCMS[i] <- 1 # Agreement
+        
+      } else {
+        
+        p_r_agreementDF$Agreement_LCMS[i] <- 0 # No agreement
+        
+      }
+    }
+  }
+  
+  if (p_r_agreementDF$var[i] %in% eval_vars_cont){
+    
+    # NA sieve
+    if (is.na((mean(p_r_agreementDF$Reference[[i]])))) {
+      next
+      
+    } else {
+      
+      # Thresholds for checking agreement in continuous variable
+      contVar_lowLim <- (p_r_agreementDF$Reference[[i]][1] - (cont_evalTH_perc*p_r_agreementDF$Reference[[i]][1]))
+      contVar_upLim <- (p_r_agreementDF$Reference[[i]][1] + (cont_evalTH_perc*p_r_agreementDF$Reference[[i]][1]))
+      
+      # Check agreement with LF
+      if (any(c(na.omit(p_r_agreementDF$LFOrig[[i]])) >= contVar_lowLim & c(na.omit(p_r_agreementDF$LFOrig[[i]])) <= contVar_upLim)) {
+        
+        p_r_agreementDF$Agreement_LF[i] <- 1 # Agreement
+        
+      } else {
+        
+        p_r_agreementDF$Agreement_LF[i] <- 0 # No agreement
+        
+      }
+      
+      # Check agreement with LCMS
+      if (any(c(na.omit(p_r_agreementDF$LCMSDist[[i]])) >= contVar_lowLim & c(na.omit(p_r_agreementDF$LCMSDist[[i]])) <= contVar_upLim)) {
+        
+        p_r_agreementDF$Agreement_LCMS[i] <- 1 # Agreement
+        
+      } else {
+        
+        p_r_agreementDF$Agreement_LCMS[i] <- 0 # No agreement
+        
+      }
+    }
+  }
+  
+  
+}
+
+# Intialize data frame:
+agreementSummary_df <- data.frame(Variable = as.character(),
+                                  agreement_LF = as.numeric(), 
+                                  agreement_LCMS = as.numeric())
+
+all_vars <- c(eval_vars_cat, eval_vars_cont)
+all_vars <- all_vars[-(which(all_vars == "disturb_code"))]
+
+for (var_name in all_vars){
+  
+  summaryTable_temp_df <- p_r_agreementDF %>% 
+    filter(MaxOfINVYR >= filterYear) %>%
+    filter(var == var_name) %>%
+    drop_na()
+  
+  total <- nrow(summaryTable_temp_df)
+  
+  LF_agreement_num <- sum(summaryTable_temp_df$Agreement_LF, na.rm = TRUE)
+  LCMS_agreement_num <- sum(summaryTable_temp_df$Agreement_LCMS, na.rm = TRUE)
+  
+  agreementSummary_df <- rbind(agreementSummary_df, data.frame(Variable = var_name,
+                                                               agreement_LF = (LF_agreement_num/total)*100, 
+                                                               agreement_LCMS = as.numeric(LCMS_agreement_num/total)*100))
+  
+}
 
 
