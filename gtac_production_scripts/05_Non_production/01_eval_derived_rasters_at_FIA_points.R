@@ -13,15 +13,17 @@
 home_dir <- "//166.2.126.25/TreeMap/"
 
 # path to first raster to compare
-r1_path <- glue::glue("{home_dir}/03_Outputs/99_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/01_Imputation/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36.tif")
+r1_path <- glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/01_Imputation/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36.tif")
 r1_name <- "LFOrig"
 
 # path to second raster to compare
-r2_path <- glue::glue("{home_dir}/03_Outputs/99_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/01_Imputation/2016_GTAC_LCMSDist_tilesz2000_nT36.tif")
+r2_path <- glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/01_Imputation/2016_GTAC_LCMSDist_tilesz2000_nT36.tif")
 r2_name <- "LCMSDist"
 
 # path to save output figures
-export_fig_path <- glue::glue("{home_dir}03_Outputs/99_Projects/2016_GTAC_LCMSDist/03_Evaluation/z16/04_Model_Comparison/")
+# export_fig_path <- glue::glue("{home_dir}03_Outputs/99_Projects/2016_GTAC_LCMSDist/03_Evaluation/z16/04_Model_Comparison/")
+
+export_fig_path <- glue::glue("C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/")
 
 # list variables to evaluate
 eval_vars_cat <- c("canopy_cover", "canopy_height", "EVT_GP", 
@@ -63,6 +65,7 @@ library(terra)
 library(tidyverse)
 library(magrittr)
 library(ggplot2)
+library(modeest)
 
 # Other options
 # --------------------------------#
@@ -87,7 +90,7 @@ r2 <- terra::rast(r2_path)
 names(r2) <- "PLOTID"
 
 # load shp / pts to extract to 
-pts <- terra::vect(pts_path)
+# pts <- terra::vect(pts_path)
 
 # load x.df
 X.df <- read.csv(xtable_path) %>%
@@ -124,11 +127,13 @@ evt_dat %<>%
 # Prep pts
 #----------------------------------#
 
-# project pts 
-pts %<>% terra::project(r1)
+# OLD CODE -- NOT NEEDED (?)
 
-# convert to data frame
-pts_df <- data.frame(pts)
+# project pts 
+# pts %<>% terra::project(r1)
+# 
+# # convert to data frame
+# pts_df <- data.frame(pts)
 
 # Prep coords data
 #----------------------------------------------------------------#
@@ -142,7 +147,6 @@ coords_df <- coords
 # convert coords to spatial 
 coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:4269")
 
-
 # Prep data to plot
 #----------------------------------------------------------#
 
@@ -154,6 +158,7 @@ coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:
 
 # extract  values to points - imputed plot ID at original FIA point
 # -----------------------------------------------#
+
 r1_ex <- terra::extract(r1, coords) %>%
   cbind(coords_df$PLT_CN) %>% # bind with CNs to identify plots
   rename("CN_pt" = `coords_df$PLT_CN`) %>%
@@ -167,12 +172,14 @@ r2_ex <- terra::extract(r2, coords) %>%
 
 # join extracts with x table and RAT - join ri_ex$PLOTID to RAT$tm_id
 # to get values of the imputed plot
+
 r1_ex %<>% left_join(X.df,
                    by = c("PLOTID" = "PLOTID")) %>%
   left_join(rat, by = c("CN" = "CN", "PLOTID" = "tm_id")) %>%
   rename(CN_plot = "CN") %>%
   select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
   mutate(dataset = r1_name) 
+
 
 r2_ex %<>% left_join(X.df,
                   by = c("PLOTID" = "PLOTID")) %>%
@@ -181,7 +188,9 @@ r2_ex %<>% left_join(X.df,
   select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
   mutate(dataset = r2_name) 
 
+
 # prep reference values - from "X.df / reference table" 
+
 refs <- 
   r1_ex %>% 
   select(ID, CN_pt) %>%
@@ -192,6 +201,7 @@ refs <-
   select(c(ID, CN_pt, CN_plot, PLOTID, any_of(c(eval_vars_cat, eval_vars_cont)))) %>%
   mutate(dataset = "Reference") 
 
+
 # join
 p_r <- bind_rows(r1_ex, r2_ex, refs) %>%
   # pivot longer
@@ -200,8 +210,21 @@ p_r <- bind_rows(r1_ex, r2_ex, refs) %>%
          value = na_if(value, -99.00000), # update NA values from RAT
          disturb_code = factor(disturb_code, 
                                labels = c("None", "Fire", "Slow Loss"))) %>%
-  group_by(disturb_code)
+  group_by(disturb_code) %>% 
+  left_join(coords_df %>% select(PLT_CN, MaxOfINVYR), by = c("CN_pt" = "PLT_CN"))
 
+
+# Initialize the order of factor variables (for plotting)
+
+# p_r$disturb_code <- factor(p_r$disturb_code, levels = c("None", "Fire", "Slow Loss"))
+
+p_r$dataset <- factor(p_r$dataset, levels = c("Reference", "LFOrig", "LCMSDist"))
+
+barplot_legendCols <- c("Reference" = "#00BA38",
+                        "LFOrig" = "#F8766D", 
+                        "LCMSDist" = "#619CFF")
+
+filterYear <- 2016
 
 # Plot
 #-----------------------------------------------------------#
@@ -210,6 +233,7 @@ p_r <- bind_rows(r1_ex, r2_ex, refs) %>%
 
 # grouped violin plots by disturbance code
 
+ggObjList <- list()
 
 # PLOT CATEGORICAL VARS
 # ---------------------------------------------------#
@@ -217,62 +241,99 @@ p_r <- bind_rows(r1_ex, r2_ex, refs) %>%
 for(i in 1:(length(eval_vars_cat)-1)) {
   
   # for testing
-  i = 1
+  # i = 1
   
   var_name <- eval_vars_cat[i]
-  
+
   p <-  p_r %>%
     filter(var == var_name) %>%
     ggplot(aes(x=as.factor(value),  fill=dataset)) + 
     geom_bar(position= position_dodge2(preserve = "single")) + # https://stackoverflow.com/questions/38101512/the-same-width-of-the-bars-in-geom-barposition-dodge
     facet_wrap(~disturb_code) + 
     labs(title = glue::glue('Variation in {var_name} by disturbance code, by model')) + 
-    xlab(var_name)
+    xlab(var_name) +
+    scale_fill_manual(values = barplot_legendCols, breaks =  c("Reference", "LFOrig", "LCMSDist"))+ 
+    theme(legend.position = "none")
   
   print(p)
   
-  # save
-  ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
-         plot = p,
-         width = 7,
-         height = 4.5)
+  ggObjList[[i]] <- p
   
+  # distCode_frequencyDF <- p_r %>%
+  #   filter(MaxOfINVYR >= filterYear) %>%
+  #   # filter(var == var_name) %>%
+  #   select(-c(var, PLOTID, CN_plot)) %>%
+  #   group_by(ID, dataset, disturb_code)
+  # 
+  # distCode_frequencyPlot <- ggplot(data = distCode_frequencyDF, aes(x = disturb_code, fill = dataset)) + 
+  #   geom_bar(position = position_dodge2(preserve = "single")) +
+  #   labs(title = glue::glue('Variation in {var_name}'), 
+  #        subtitle = "FIA plot (points)") + 
+  #   xlab(var_name) +
+  #   theme_bw() 
+  # 
+  # distCode_frequencyPlot
+  # 
+  # ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_FIAplots-PointEval_actualCount.png'),
+  #        plot = distCode_frequencyPlot,
+  #        width = 14,
+  #        height = 9)
+  
+  
+
+  # save
+  # ggsave(glue::glue('{export_fig_path}/FIABufferPlotEval/Barplots_categorical_vars/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_FIABufferPlotEval.png'),
+  #        plot = p,
+  #        width = 14,
+  #        height = 9)
+
   
   # Normalized plot for categorical variables
   
   # Calculate totals for datasets
-  datasetTotals_disturbCode <- data.frame(p_r %>%
-                                filter(var == var_name) %>%
-                                group_by(dataset, disturb_code) %>%
-                                summarise(count = n()))
+  # datasetTotals_disturbCode <- data.frame(p_r %>%
+  #                               filter(var == var_name) %>%
+  #                               group_by(dataset, disturb_code) %>%
+  #                               summarise(count = n()))
+  
   
   # Calculate counts by dataset and disturbance code for each category
-  countsBy_dataset <- data.frame(p_r %>%
-                                   filter(var == var_name) %>%
-                                   group_by(value, dataset, disturb_code) %>%
-                                   summarise(count = n()))
+  # countsBy_dataset <- data.frame(p_r %>%
+  #                                  filter(var == var_name) %>%
+  #                                  group_by(value, dataset, disturb_code) %>%
+  #                                  summarise(count = n()))
   
+ 
   # Temporary dataframe merging the categories counts and totals for normalization and  plotting
-  temp_df <- merge(countsBy_dataset, datasetTotals, by = c("disturb_code", "dataset"), all.x = TRUE)
+  # temp_df <- merge(countsBy_dataset, datasetTotals_disturbCode, by = c("disturb_code", "dataset"), all.x = TRUE)
+  # 
+  # # Normalization
+  # temp_df$normalized_count <- temp_df$count.x/temp_df$count.y
+  # 
+  # p_Norm <-  ggplot(data = temp_df, aes(x=as.factor(value), y=normalized_count, fill = dataset)) + 
+  #   geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) + 
+  #   facet_wrap(~disturb_code) + 
+  #   labs(title = glue::glue('Variation in {var_name} by disturbance code, by model (normalized)')) + 
+  #   xlab(var_name)
+  # 
+  # print(p_Norm)
   
-  # Normalization
-  temp_df$normalized_count <- temp_df$count.x/temp_df$count.y
   
-  p_Norm <-  ggplot(data = temp_df, aes(x=as.factor(value), y=normalized_count, fill = dataset)) + 
-    geom_bar(stat = "identity", position = position_dodge2(preserve = "single")) + 
-    facet_wrap(~disturb_code) + 
-    labs(title = glue::glue('Variation in {var_name} by disturbance code, by model (normalized)')) + 
-    xlab(var_name)
-  
-  print(p_Norm)
-  
-
-  ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_normalized.png'),
-         plot = p_Norm,
-         width = 7,
-         height = 4.5)
+  # ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}_normalized.png'),
+  #        plot = p_Norm,
+  #        width = 7,
+  #        height = 4.5)
 
 }
+
+p1_2 <- gridExtra::grid.arrange(grobs = ggObjList, nrow = 2, ncol = 2)
+# 
+ggsave(glue::glue("{export_fig_path}/FIABufferPlotEval/cell_centriod_withinBuffer/Barplots_categorical_vars/{r1_name}_vs_{r2_name}_vs_ref_ALL_VARS_POINTS.png"),
+       plot = p1_2,
+       width = 24,
+       height = 13.5)
+
+
 
 
 # PLOT CONTINUOUS VARS
@@ -280,12 +341,22 @@ for(i in 1:(length(eval_vars_cat)-1)) {
 
 dodge <- position_dodge(width = 0.6)
 
+ggObjList <- list()
+
+text_size <- 6 # 5 for indvidual plots 3 for all plots in grid
+percent_x_textPos <- 0.50 # 0.4 for individual plots
+percent_y_textPos1 <- 0.96 # 0.96 for individual plots
+percent_y_textPos2 <- 0.89 # 0.96 for individual plots
+textBoxFill_ratioX <- 0.40
+textBoxFill_ratioY <- 0.03
+
 for(i in 1:(length(eval_vars_cont))) {
   
   # for testing
-  i = 8
+  # i = 8
   
   var_name <- eval_vars_cont[i]
+  
   
   p <- p_r %>%
     filter(var == var_name) %>%
@@ -297,42 +368,180 @@ for(i in 1:(length(eval_vars_cont))) {
   
   print(p)
   
+  low_lim <- quantile((p_r %>% filter(var == var_name))$value, probs = 0.20, na.rm = TRUE)[[1]] # 20th quantile/percentile
+  up_lim <- quantile((p_r %>% filter(var == var_name))$value, probs = 0.80, na.rm = TRUE)[[1]] # 80th quantile/percentile
+  
   # plot as scatterplot
   p_r2 <-
-  p_r %>%
+    p_r %>%
     filter(var == var_name) %>%
     select(-c(var, PLOTID, CN_plot)) %>%
     ungroup() %>%
     pivot_wider(names_from = dataset, values_from = value) %>%
     arrange(ID)
-
-  p_r2 %>%
-    # filter(LFOrig < 200) %>%
-    # filter(LCMSDist < 200) %>%
-    ggplot() +
-    geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) +
-    geom_point(aes(x = Reference, y = LFOrig ), color = "purple", alpha = 0.15) +
-    geom_point(aes(x = Reference, y = LCMSDist), color = "limegreen", alpha = 0.15) +
-    geom_smooth(method = "lm", aes(x = Reference, y = LFOrig ), color = "purple", alpha = 0.15) +
-    geom_smooth(method = "lm", aes(x = Reference, y = LCMSDist), color = "limegreen", alpha = 0.15) +
-    #facet_wrap(~disturb_code) +
-    labs()+ 
-    theme_bw()+ 
-    ggtitle(var_name)
-
-  # calc r-squared
-
-  #lm Reference ~ LCMSDist ; extract r-squared
-  # for each dataset, and for each disturbance code, and for all disturbance codes together
-
-
-  # save
-  ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
-         plot = p,
-         width = 7,
-         height = 4.5)
   
+  
+  # Create linear model
+  lm_LF <- lm(LFOrig ~ Reference, data = p_r2)
+  
+  lm_LCMS <- lm(LCMSDist ~ Reference, data = p_r2)
+  
+  
+  # Manual annotation using `annotate()`
+  
+  # Annotate with equation of linear model, r-squared (r-sq), root mean square error (RMSE)
+  # Parsing the information saved in the model to create the equation to be added to the scatterplot as an expression # https://r-graphics.org/recipe-scatter-fitlines-text
+  
+  # eqn_LF <- sprintf(
+  #   "italic(y) == %.3g + %.3g * italic(x) * ',' * ~~ italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g * ',' ~~ MAE ~ '=' ~  %.3g",
+  #   coef(lm_LF)[1],
+  #   coef(lm_LF)[2],
+  #   summary(lm_LF)$r.squared,  # r-squared 
+  #   sqrt(mean(lm_LF$residuals^2)), # https://www.statology.org/extract-rmse-from-lm-in-r/
+  #   mean(abs(lm_LF$residuals)) # mean absolute error (MAE)
+  # )
+  # 
+  # eqn_LCMS <- sprintf(
+  #   "italic(y) == %.3g + %.3g * italic(x) * ',' * ~~ italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g * ',' ~~ MAE ~ '=' ~  %.3g",
+  #   coef(lm_LCMS)[1],
+  #   coef(lm_LCMS)[2],
+  #   summary(lm_LCMS)$r.squared,  # r-squared 
+  #   sqrt(mean(lm_LCMS$residuals^2)), # https://www.statology.org/extract-rmse-from-lm-in-r/
+  #   mean(abs(lm_LCMS$residuals)) # mean absolute error (MAE)
+  # )
+  
+  # Annotate with r-squared (r-sq), root mean square error (RMSE), mean absolute error (MAE)  
+  # Parsing the information saved in the model to create the equation to be added to the scatterplot as an expression # https://r-graphics.org/recipe-scatter-fitlines-text
+  eqn_LF <- sprintf(
+    "italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g * ',' ~~ MAE ~ '=' ~  %.3g",
+    summary(lm_LF)$r.squared,  # r-squared 
+    sqrt(mean(lm_LF$residuals^2)), # https://www.statology.org/extract-rmse-from-lm-in-r/
+    mean(abs(lm_LF$residuals)) # mean absolute error (MAE)
+  )
+  
+  eqn_LCMS <- sprintf(
+    "italic(r)^2 ~ '=' ~ %.2g * ',' ~~ RMSE ~ '=' ~  %.3g * ',' ~~ MAE ~ '=' ~  %.3g",
+    summary(lm_LCMS)$r.squared,  # r-squared 
+    sqrt(mean(lm_LCMS$residuals^2)), # https://www.statology.org/extract-rmse-from-lm-in-r/
+    mean(abs(lm_LCMS$residuals)) # mean absolute error (MAE)
+  )
+
+  # Manually set legend colors
+  
+  legendColors <- c("LFOrig" = "purple", 
+                    "LCMSDist" = "darkgreen")
+  
+
+  p2 <- p_r2 %>%
+          # filter(LFOrig < 200) %>%
+          # filter(LCMSDist < 200) %>%
+          ggplot(aes(x = Reference)) +
+          geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) +
+          geom_point(aes(y = LFOrig, color = "LFOrig"), alpha = 0.25) +
+          geom_point(aes(y = LCMSDist, color = "LCMSDist"), alpha = 0.25) +
+          geom_smooth(method = "lm", formula = y~x,  aes(y = LFOrig, color = "LFOrig"), alpha = 0.15) +
+          geom_smooth(method = "lm", formula = y~x, aes(y = LCMSDist, color = "LCMSDist"), alpha = 0.15) +
+          # facet_wrap(~disturb_code) +
+          scale_color_manual(values = legendColors, breaks = c("LFOrig", "LCMSDist")) +
+          # guides(color = guide_legend(title = "Target data",
+          #                             keylength = 2,
+          #                             keyheight = 2,
+          #                             title.theme = element_text(size = 14),
+          #                             label.theme = element_text(size =12))) +
+          guides(color = "none") + # un-comment to remove plot legend
+          scale_x_continuous(expand = c(0, 0), limits = c(low_lim, up_lim)) + # starts x-axis from 0 and labels 0
+          scale_y_continuous(expand = c(0, 0), limits = c(low_lim, up_lim)) + # starts y-axis from 0 and labels 0
+          labs(x = "Reference (Ground_FIA)", 
+               y = "Imputed") + 
+          theme_bw() +
+          ggtitle(glue::glue("{var_name}")) +
+          theme(axis.title = element_text(size = 16),
+                plot.title = element_text(size = 18)) +
+          annotate(geom="rect", 
+                   xmin = ((low_lim + up_lim)/2) - ((up_lim - low_lim)*textBoxFill_ratioX), 
+                   xmax = ((low_lim + up_lim)/2) + ((up_lim - low_lim)*textBoxFill_ratioX), 
+                   ymin = (percent_y_textPos1*max(p_r2$LCMSDist, na.rm = TRUE)) - ((up_lim - low_lim)*textBoxFill_ratioY),
+                   ymax = (percent_y_textPos1*max(p_r2$LCMSDist, na.rm = TRUE)) + ((up_lim - low_lim)*textBoxFill_ratioY),
+                   fill = "beige") +
+          annotate(geom="text", 
+                   x = (low_lim + up_lim)/2,
+                   y = (percent_y_textPos1*max(p_r2$LCMSDist, na.rm = TRUE)),
+                   label = as.character(eqn_LF),
+                   parse = TRUE,
+                   color = "purple",
+                   size = text_size) +
+          annotate(geom="rect",
+                   xmin = (low_lim + up_lim)/2 - ((up_lim - low_lim)*textBoxFill_ratioX),
+                   xmax = (low_lim + up_lim)/2 + ((up_lim - low_lim)*textBoxFill_ratioX),
+                   ymin = (percent_y_textPos2*max(p_r2$LCMSDist, na.rm = TRUE)) - ((up_lim - low_lim)*textBoxFill_ratioY),
+                   ymax = (percent_y_textPos2*max(p_r2$LCMSDist, na.rm = TRUE)) + ((up_lim - low_lim)*textBoxFill_ratioY),
+                   fill = "cadetblue1") +
+          annotate(geom="text", 
+                   x = (low_lim + up_lim)/2,
+                   y = (percent_y_textPos2*max(p_r2$LCMSDist, na.rm = TRUE)),
+                   label = as.character(eqn_LCMS),
+                   parse = TRUE,
+                   color = "darkgreen",
+                   size = text_size)
+    
+  # print(p2)
+  
+  # save
+  
+  # export_fig_path <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # testing
+  
+  # ggsave(glue::glue('{export_fig_path}/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.png'),
+  #        plot = p2,
+  #        width = 16,
+  #        height = 9)
+  # 
+  
+  # interactive plot
+  
+  # library(plotly)
+  # library(htmlwidgets)
+  
+  # p_plotly <- p_r2 %>%
+  #   # filter(LFOrig < 200) %>%
+  #   # filter(LCMSDist < 200) %>%
+  #   ggplot(aes(x = Reference)) +
+  #   geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) +
+  #   geom_point(aes(y = LFOrig, color = "LFOrig"), alpha = 0.25) +
+  #   geom_point(aes(y = LCMSDist, color = "LCMSDist"), alpha = 0.25) +
+  #   geom_smooth(method = "lm", formula = y~x,  aes(y = LFOrig, color = "LFOrig"), alpha = 0.15) +
+  #   geom_smooth(method = "lm", formula = y~x, aes(y = LCMSDist, color = "LCMSDist"), alpha = 0.15) +
+  #   # facet_wrap(~disturb_code) +
+  #   scale_color_manual(values = legendColors, breaks = c("LFOrig", "LCMSDist")) +
+  #   # guides(color = "none") + # comment out to remove plot legend
+  #   guides(color = guide_legend(title = "Target data",
+  #                               keylength = 2,
+  #                               keyheight = 2,
+  #                               title.theme = element_text(size = 14),
+  #                               label.theme = element_text(size =12))) +
+  #   # scale_x_continuous(expand = c(0, 0), limits = c(0, NA)) + # starts x-axis from 0 and labels 0
+  #   # scale_y_continuous(expand = c(0, 0), limits = c(0, NA)) + # starts y-axis from 0 and labels 0
+  #   labs(x = "Reference (Ground_FIA)", 
+  #        y = "Imputed") + 
+  #   theme_bw() +
+  #   theme(axis.title = element_text(size = 12)) +
+  #   
+  #   ggtitle(var_name)
+  # 
+  # plotlyObj <- plotly::ggplotly(p_plotly)
+  # 
+  # htmlwidgets::saveWidget(plotlyObj, glue::glue('{export_fig_path}/LFOrig_vs_LCMSDist_vs_Ref_InteractivePlots/{r1_name}_vs_{r2_name}_vs_ref_{var_name}.html'))
+  
+  
+  ggObjList[[i]] <- p2
 }
+
+library(gridExtra)
+p3 <- gridExtra::grid.arrange(grobs = ggObjList, nrow = 3, ncol = 4)
+# 
+ggsave(glue::glue("{export_fig_path}/FIABufferPlotEval/Scatterplots_continuous_vars/{r1_name}_vs_{r2_name}_vs_ref_ALL_VARS_1.png"),
+       plot = p3,
+       width = 24,
+       height = 13.5)
 
 
 # #############################################

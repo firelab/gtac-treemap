@@ -51,6 +51,9 @@ plot(ras, main = glue::glue("Raw Imputation: Zone {params$zone_num}"))
 ```{r format and plot tables for each var, results = 'asis'}
 
 for(v in 1:length(eval_vars)){
+  
+  # for testing 
+  v = 4
 
   var_in <- eval_vars[v]
 
