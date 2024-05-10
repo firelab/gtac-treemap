@@ -93,6 +93,8 @@ get_OOBs_yai <- function(yai) {
   pred_ref_oob <- left_join(tNodes, inbagc, by = c("ref", "tree_num")) %>%
     dplyr::select(tree_num, ref, pred, inbag_count)
   
+  gc() #
+  
   return(pred_ref_oob)
 
 }
