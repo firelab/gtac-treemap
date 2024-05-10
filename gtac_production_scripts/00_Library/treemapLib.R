@@ -211,6 +211,10 @@ eval_cm_function <- function(t, noDataVal) {
 
 assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
   
+  require(tictoc)
+  
+  tic()
+  
   print(glue('assembleExport: {layer_field}'))
   lt <- cbind(lookup[id_field], lookup[layer_field])
   #print(head(lt))
@@ -219,6 +223,7 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
               glue('{export_path}_{layer_field}.tif'),
               overwrite = TRUE)
   rm(rout)
+  toc()
   gc()
   
 }
