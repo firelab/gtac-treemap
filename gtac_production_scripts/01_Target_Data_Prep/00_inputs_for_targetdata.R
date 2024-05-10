@@ -75,7 +75,7 @@ landfire_year_topo <- 2020
 
 # set path to landfire rasters 
 #landfire_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version}/')
-landfire_veg_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_veg}/')
+landfire_veg_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_veg}/Vegetation/')
 landfire_topo_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_topo}/Topo/')
 landfire_disturbance_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_disturbance}/Disturbance/')
 
