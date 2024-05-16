@@ -8,6 +8,8 @@
 # TO DO:
 # - add continuous vars 
 
+# TALK MORE ABOUT OOB EVALUATION SO WE UNDERSTAND IT
+
 # Last updated: 4/19/2024
 
 ###########################################################################
