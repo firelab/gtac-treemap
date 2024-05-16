@@ -101,9 +101,9 @@ library(magrittr)
 options("scipen"=100, "digits"=8)
 
 # Create directory
-if(!file.exists(glue::glue('{ref_path}/01_ByState/'))) {
-  dir.create(glue::glue('{ref_path}/01_ByState/'), recursive = TRUE)
-}
+# if(!file.exists(glue::glue('{ref_path}/01_ByState/'))) {
+#   dir.create(glue::glue('{ref_path}/01_ByState/'), recursive = TRUE)
+# }
 
 
 # Run - by state
