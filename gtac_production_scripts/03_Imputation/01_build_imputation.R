@@ -102,7 +102,7 @@ allplot %<>%
 #   nrow()
 
 
-# Obtain plot coordinates
+# Obtain backup plot coordinates
 #----------------------------------------------------------#
 # NOTE: this is currently a stand-in. the allplot table has abbreviated records of the lat and long 
 # (to 2 decimal places)
@@ -198,10 +198,14 @@ rownames(Y_df) <- plot_df$ID
 # Export X and Y tables
 # ------------------------------------------------------#
 
-write.csv(X_df,
-          glue::glue("{output_dir}/xytables/{cur_zone_zero}_{output_name}_Xdf_bin.csv"))
-write.csv(Y_df,
-          glue::glue("{output_dir}/xytables/{cur_zone_zero}_{output_name}_Ydf_bin.csv"))
+#include CN in export so tables can be joined back 
+X_df %>%
+  mutate(CN = plot_df$CN) %>%
+  write.csv(., glue::glue("{output_dir}/xytables/{cur_zone_zero}_{output_name}_Xdf_bin.csv"))
+
+Y_df %>%
+  mutate(CN = plot_df$CN) %>%
+  write.csv(., glue::glue("{output_dir}/xytables/{cur_zone_zero}_{output_name}_Ydf_bin.csv"))
 
 
 # Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code)

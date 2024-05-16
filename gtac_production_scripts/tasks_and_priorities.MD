@@ -7,7 +7,7 @@ Completed tasks are denoted by ~~strikethrough~~.
 ### ASK IAN: 
 
 #### General: 
-- Provide the option to load in existing parameter set? 
+- Provide the option to load in existing parameter set for imputation and evaluation
 - Estimate total time required for each zone- for data prep, imputation, validation, etc. 
 - tryCatch for listing new packages and installing if needed
 - Script organization - two numbers, one for each stage - eg 02_00_inputs_for_imp 
@@ -16,7 +16,11 @@ Completed tasks are denoted by ~~strikethrough~~.
 	- Make sure projections align between target, reference, and output data 
 	- Get a CRS explicitly for desired output projection 
 		- Does this need to be an overarching setting? 
-- Prioritization: Calculate tree cover % for each landfire zone to aid progress tracking 
+- Prioritization: 
+	- ~~Calculate tree cover % for each landfire zone to aid progress tracking~~
+	- ~~Calculate overlap with Wildfire Crisis Strategy Landscapes~~
+	- Combine tree cover % and overlap with WCS to prioritize zones
+	- Any other priority requests? 
 - ~~Handle relative paths in R to call scripts from other scripts - this.path()~~
 - ~~Add high-level option for selecting target layers-- e.g., different disturb layers~~
 - ~~Folder organization - structure by project; have all files end up in a folder for the same zone~~
@@ -41,9 +45,8 @@ Completed tasks are denoted by ~~strikethrough~~.
 - Control script to run multiple zones in a row 
 - Write out file with parameters used to generate target data
 - MAKE SURE EXTENTS OF PREPPED TARGET DATA MATCH
-	- - holding up imputation on zone 19
+	- holding up imputation on zone 19
 - Test on a different LF zone 
-- Test prep all vars for zone 16 - put these in v2016_GTAC target data folder 
 - Add progress tracking for parallelization 
 - How to store disturbance data? So many different years; are they really different landfire versions? 
 - Script to download and extract all necessary Landfire data 
@@ -53,6 +56,7 @@ Completed tasks are denoted by ~~strikethrough~~.
 	- EVH
 - Script to download / access LCMS Raw Probability rasters - Python / CMD 
 - Script to download Landfire Biophys layers - stored on FigShare
+- ~~Test prep all vars for zone 16 - put these in v2016_GTAC target data folder~~
 - ~~Combine LCMS / Landfire disturbance prep scripts into analagous process~~
 - ~~Chunk target data prep into tiles for disturbance - and parallelize~~
 - ~~Make target data prep script more flexible to handle varied path names~~
@@ -92,7 +96,7 @@ Completed tasks are denoted by ~~strikethrough~~.
 - ~~Have a single setup script run for build imputation and run imputation - to make sure names stay the same~~
 	- ~~Make sure inputs and file names etc align with all imputation scripts~~
 - ~~Perform data frame processing with Tidyverse~~
-	- Tidyverse is definitely an improvement for (Lila's readability. Determine if tidyverse is an improvement for speed? Does it streamline things in memory
+	- Tidyverse is definitely an improvement for (Lila's) readability. Determine if tidyverse is an improvement for speed? Does it streamline things in memory?
 - ~~Loop over tiles~~
 - ~~Make imputation function run on data frame, rather than raster~~
 - ~~Make imputation take northing and easting instead of ASPECT~~
@@ -118,11 +122,15 @@ Completed tasks are denoted by ~~strikethrough~~.
 - ~~Remove all  setwd()~~
 
 #### Validation
-- Add calculated FIA vars and carbon attributes to validation - eval script 03
+- Add calculated FIA vars and carbon attributes to eval reports
 	- ~~Test getting these values from raster attribute table~~
-	- For OOB: calc RMSE, use original plot CN vs imputed plot CN
-	- For predicted outputs: calc RMSE, use original plot CN vs imputed plot CN
-		- can't do landfire comparison 
+	- For OOB: 
+		- scatterplots: calc RMSE, use original plot CN vs imputed plot CN
+		- bar chart: bins with freq by original vs imputed
+	- For predicted outputs (vs FIA): 
+		- scatterplot: calc RMSE, use original plot CN vs imputed plot CN
+		- bar chart: bins with freq by original vs imputed
+		- can't do landfire comparison for continuous vars
 	- Export relevant summary data - table extract, r-squared, etc? and plots
 	- Include these in zonal eval reports
 - ~~Standardize names of Target vs Reference data in eval reports:~~

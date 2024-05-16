@@ -11,7 +11,8 @@
 
 # packages required
 list.of.packages <- c("this.path", "terra", "tidyverse", "magrittr", 
-                      "glue", "tictoc", "caret", "yaImpute", "randomForest", "this.path")
+                      "glue", "tictoc", "caret", "yaImpute", "randomForest", 
+                      "Metrics")
 
 #check for packages and install if needed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -210,6 +211,10 @@ eval_cm_function <- function(t, noDataVal) {
 
 assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
   
+  require(tictoc)
+  
+  tic()
+  
   print(glue('assembleExport: {layer_field}'))
   lt <- cbind(lookup[id_field], lookup[layer_field])
   #print(head(lt))
@@ -218,6 +223,7 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
               glue('{export_path}_{layer_field}.tif'),
               overwrite = TRUE)
   rm(rout)
+  toc()
   gc()
   
 }
