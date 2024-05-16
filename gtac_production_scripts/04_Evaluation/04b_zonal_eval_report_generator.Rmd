@@ -52,12 +52,11 @@ plot(ras, main = glue::glue("Raw Imputation: Zone {params$zone_num}"))
 
 for(v in 1:length(eval_vars)){
   
-  # for testing 
-  v = 4
-
   var_in <- eval_vars[v]
 
-  print(glue("Variable: {var_in}
+  cat("\n\n\\pagebreak\n")
+  print(glue("**Variable: {var_in}**
+  
              "))
 
   ##### LOOP OVER EACH VAR
