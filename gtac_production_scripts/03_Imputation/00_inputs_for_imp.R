@@ -11,16 +11,16 @@
 #--------------------------------------------------#
 # Project name
 # project_name <- "2016_GTAC_Test"
-project_name <- "2020_Production_Test"
+project_name <- "2016_GTAC_LCMSDist"
 
 # Output imputation name
 # describes the run and parameters; zone will be added later
-output_name <- "2020_Prod_test"
+output_name <- "2016_GTAC_LCMSDist"
 # output_name <- "2016_Orig_Test_keepinbag_ntree250"
 
 # name of output raster / raster to validate
 # will get overwritten in 02_run_imputation 
-#raster_name <- glue::glue('{output_name}_tilesz2000_nT36')
+raster_name <- glue::glue('{output_name}_tilesz2000_nT36')
 
 # Test application settings
 #-----------------------------------------#
@@ -70,12 +70,12 @@ target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_ve
 
 # Directory where disturbance layers live
 # If disturbance layers live in the same dir, then NA
-dist_raster_dir <- NA
-#dist_raster_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
+# dist_raster_dir <- NA
+dist_raster_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
 
 # disturbance type - options are "LF" or "LFLCMS".
 # This param only used if !is.na(dist_raster_dir)
-#dist_layer_type <- "LFLCMS"
+dist_layer_type <- "LFLCMS"
 
 # Directory where EVT_GP remap table is located
 #evt_gp_remap_table_dir <- target_dir

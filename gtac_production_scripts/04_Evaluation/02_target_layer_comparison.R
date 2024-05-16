@@ -43,10 +43,10 @@ source(input_script_path)
 raster_name <- glue::glue("{output_name}_tilesz2000_nT36")
 
 # list layers to export
-#eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
-                   #"disturb_code")
+eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
+                   "disturb_code")
 
-eval_vars <- "disturb_code"
+# eval_vars <- "disturb_code"
 
 #########################################################################
 
@@ -54,7 +54,7 @@ eval_vars <- "disturb_code"
 # --------------------------------#
 
 #increase memory fraction available
-terraOptions(memfrac = 0.5)
+terraOptions(memfrac = 0.8)
 
 # Other options
 # --------------------------------#
