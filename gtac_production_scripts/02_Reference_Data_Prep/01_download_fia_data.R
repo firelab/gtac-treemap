@@ -18,9 +18,6 @@ home_dir <- "//166.2.126.25/TreeMap/"
 # set file destination - will be created if it does not eists
 dir <- glue::glue("{home_dir}TreeMap/01_Data/04_FIA/05_FIA_DataMart/CSV/")
 
-# For testing:
-# dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/04_FIA/05_FIA_DataMart/CSV/"
-
 
 # list states - lower 48 states by abbreviation
 
