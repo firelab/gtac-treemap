@@ -133,5 +133,6 @@ dmypy.json
 .pyre/
 
 # History files
+*.Rhistory
 .Rhistory
 .Rapp.history
