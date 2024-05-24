@@ -1,13 +1,15 @@
 # Set up
 setwd(this.path::here())
 
+data_dir <- "//166.2.126.25/TreeMap/01_Data/"
+
 library(terra)
 
 # Hawaii ----
 
 # Load annual rasters  --
-tmax_files<- list.files("./daymet_hawaii_annual/tmax/", full.names = T)
-tmin_files<- list.files("./daymet_hawaii_annual/tmin/", full.names = T)
+tmax_files<- list.files(paste0(data_dir,"07_Daymet/daymet_hawaii_annual/tmax/"), full.names = T)
+tmin_files<- list.files(paste0(data_dir,"07_Daymet/daymet_hawaii_annual/tmin/"), full.names = T)
 
 
 for (i in seq_along(tmax_files)){
@@ -32,7 +34,7 @@ stack<- rast(mget(paste0("vpd_",seq_along(tmax_files))))
 stack_mean<- mean(stack, na.rm=T)
 
 # Then save it with the correct name
-writeRaster(stack_mean, paste0("./daymet_hawaii_normal/vpd_normal_1981to2010.tif"))
+writeRaster(stack_mean, paste0(data_dir,"07_Daymet/daymet_hawaii_normal/vpd_normal_1981to2010.tif"))
 
 
 
@@ -42,8 +44,8 @@ writeRaster(stack_mean, paste0("./daymet_hawaii_normal/vpd_normal_1981to2010.tif
 rm(list=ls())
 
 # Load annual rasters  --
-tmax_files<- list.files("./daymet_north_america_annual/tmax/", full.names = T)
-tmin_files<- list.files("./daymet_north_america_annual/tmin/", full.names = T)
+tmax_files<- list.files(paste0(data_dir,"07_Daymet/daymet_north_america_annual/tmax/"), full.names = T)
+tmin_files<- list.files(paste0(data_dir,"07_Daymet/daymet_north_america_annual/tmin/"), full.names = T)
 
 
 for (i in seq_along(tmax_files)){
@@ -68,5 +70,5 @@ stack<- rast(mget(paste0("vpd_",seq_along(tmax_files))))
 stack_mean<- mean(stack, na.rm=T)
 
 # Then save it with the correct name
-writeRaster(stack_mean, paste0("./daymet_north_america_normal/vpd_normal_1981to2010.tif"))
+writeRaster(stack_mean, paste0(data_dir,"07_Daymet/daymet_north_america_normal/vpd_normal_1981to2010.tif"))
 

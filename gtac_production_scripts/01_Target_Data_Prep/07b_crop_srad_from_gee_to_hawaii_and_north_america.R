@@ -1,17 +1,19 @@
 # Setup
 setwd(this.path::here())
 
+data_dir <- "//166.2.126.25/TreeMap/01_Data/"
+
 library(daymetr)  
 library(terra)
 
 #
 # Read in rasters
-north_america_ras<- rast("./daymet_north_america_normal/prcp_normal_1981to2010.tif")
-hawaii_ras<- rast("./daymet_hawaii_normal/prcp_normal_1981to2010.tif")
+north_america_ras<- rast(paste0(data_dir,"07_Daymet/daymet_north_america_normal/prcp_normal_1981to2010.tif"))
+hawaii_ras<- rast(paste0(data_dir,"07_Daymet/daymet_hawaii_normal/prcp_normal_1981to2010.tif"))
 
 ##
 
-srad_from_gee<- rast("./daymet_srad_normal_from_GEE/srad_normal_1981to2010.tif")
+srad_from_gee<- rast(paste0(data_dir,"07_Daymet/srad_normal_from_gee.tif"))
 
 
 # First crop srad by a reprojected extent ----
@@ -44,6 +46,6 @@ srad_hawaii<- terra::mask(terra::crop(srad_from_gee_hawaii, hawaii_ras), hawaii_
 
 
 # Save
-writeRaster(srad_north_america, "./daymet_north_america_normal/srad_normal_1981to2010.tif")
-writeRaster(srad_hawaii, "./daymet_hawaii_normal/srad_normal_1981to2010.tif")
+writeRaster(srad_north_america, paste0(data_dir,"07_Daymet/daymet_north_america_normal/srad_normal_1981to2010.tif"))
+writeRaster(srad_hawaii, paste0(data_dir,"07_Daymet/daymet_hawaii_normal/srad_normal_1981to2010.tif"))
 
