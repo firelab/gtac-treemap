@@ -31,7 +31,7 @@ RDS_toDocx <- function(paramsObj, exportDocName=NULL, outDir){
   
   # Add title for table in empty word doc
   params_doc <- officer::body_add_par(params_doc, 
-                                      value = glue::glue("{project_name}, {cur_zone_zero} paramerters"), 
+                                      value = glue::glue("{project_name}, {cur_zone_zero} parameters"), 
                                       style = "Normal")
   
   # Custom function to autofit table to word doc
