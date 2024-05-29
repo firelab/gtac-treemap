@@ -19,12 +19,19 @@ RDS_toDocx <- function(paramsObj, exportDocName=NULL, outDir){
   
     
   # Convert params object to data.frame
-  params_df <- as.data.frame(paramsObj)
+  params_df <- data.frame(paramsObj) %>% 
+                rename(Parameter = param, 
+                       Value = value)
+  
   
   # Convert df to flextable and autofit contents
-  params_df_toConvert <- params_df %>% 
-    flextable::regulartable() %>% 
-    flextable::autofit()
+  params_df_toConvert <- flextable::flextable(data = params_df) %>%
+                          flextable::font(fontname = "Arial", i = 1) %>% 
+                          flextable::bold(i = 1, j = NULL, bold = TRUE, part = "header") %>% 
+                          flextable::width(j = 1, width = 0.25, unit= "in") %>% 
+                          flextable::font(fontname = "Consolas", j = 1) 
+                          # flextable::autofit()
+
   
   # Create empty word doc
   params_doc <- officer::read_docx()
@@ -32,12 +39,13 @@ RDS_toDocx <- function(paramsObj, exportDocName=NULL, outDir){
   # Add title for table in empty word doc
   params_doc <- officer::body_add_par(params_doc, 
                                       value = glue::glue("{project_name}, {cur_zone_zero} parameters"), 
-                                      style = "Normal")
+                                      style = "Normal") %>% 
+                officer::body_add_par(value = "\n")
   
   # Custom function to autofit table to word doc
   FitFlextableToPage <- function(ft, pgwidth = 6){
     
-    ft_out <- ft %>% autofit()
+    ft_out <- ft 
     
     ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
     return(ft_out)
@@ -51,9 +59,9 @@ RDS_toDocx <- function(paramsObj, exportDocName=NULL, outDir){
   
   # Export
   params_doc %>% 
-    flextable::body_add_flextable(FitFlextableToPage(params_df_toConvert)) %>% 
-    print(target = glue::glue("{out_dir}/{exportDoc_name}"))  
-  
+    flextable::body_add_flextable(FitFlextableToPage(params_df_toConvert)) %>%
+    print(target = glue::glue("{out_dir}/{exportDoc_name}"))
+
   
 }
 
@@ -63,10 +71,10 @@ library(docstring)
 
 # EXAMPLE:
 
-# params_RDS_path <- "//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/params/z16_2016_Orig_Test_params.RDS"
-# load(params_RDS_path)
-# 
-# out_dir <- "YOUR-PATH-HERE" # change this
-# 
-# RDS_toDocx(paramsObj = params_out,
-#                outDir = out_dir)
+params_RDS_path <- "//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/params/z16_2016_Orig_Test_params.RDS"
+load(params_RDS_path)
+
+out_dir <- "your-path-here" # change this
+
+RDS_toDocx(paramsObj = params_out,
+               outDir = out_dir)
