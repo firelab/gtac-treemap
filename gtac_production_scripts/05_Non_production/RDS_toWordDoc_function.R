@@ -13,11 +13,19 @@ RDS_toDocx <- function(paramsObj, exportDocName=NULL, outDir){
   # inspo: https://datafortress.github.io/en/2018/06/word-tables-with-r/ 
   
   # Required libraries
-  library(tidyverse)
-  library(flextable)
-  library(officer)
+  list.of.packages <- c("tidyverse",   
+                        "flextable",
+                        "officer")
+
+  #check for packages and install if needed
+  new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+  if(length(new.packages) > 0) install.packages(new.packages)
+
+  # load all packages
+  vapply(list.of.packages, library, logical(1L),
+        character.only = TRUE, logical.return = TRUE)
+
   
-    
   # Convert params object to data.frame
   params_df <- data.frame(paramsObj) %>% 
                 rename(Parameter = param, 
@@ -74,7 +82,7 @@ library(docstring)
 # params_RDS_path <- "//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/params/z16_2016_Orig_Test_params.RDS"
 # load(params_RDS_path)
 # 
-# out_dir <- "your-path-here" # change this
+# out_dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # change this
 # 
 # RDS_toDocx(paramsObj = params_out,
 #                outDir = out_dir)
