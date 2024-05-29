@@ -20,10 +20,7 @@
 # set file destination
 dir <- glue::glue("{data_dir}02_Landfire") # `00_inputs_for_targetdata.R` required to run
 
-# dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/" # in case `00_inputs_for_targetdata.R` was not run
-
-# For testing
-# dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/"
+# dir <- "your-data-path-here" # for testing
 
 # list years
 years <- 2016:2022 # LF-200 version onwards
@@ -70,9 +67,7 @@ for(j in 1:length(years)){
   # For every loop, dir resets to main LF directory "02_Landfire"
   
   dir <- glue::glue("{data_dir}02_Landfire") #`00_inputs_for_targetdata.R` required to run
-  # dir <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/" # in case `00_inputs_for_targetdata.R` was not run
-  
-  # dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/02_Landfire/" # for testing
+  # dir <- "your-data-path-here" # for testing
   
   ##
   ##### Set appropriate directory according to dataset

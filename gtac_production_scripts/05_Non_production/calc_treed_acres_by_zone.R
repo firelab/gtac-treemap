@@ -9,18 +9,28 @@ library(magrittr)
 #-------------------------------#
 
 # home dir
-#home_dir <- "D:/LilaLeatherman/01_TreeMap/"
-home_dir <- "//166.2.126.25/TreeMap/"
+# Initialize home dir
+#-----------------------------------------------#
+# Id where THIS script is located
+this.path <- this.path::this.path()
+
+# get path to input script
+spl <- stringr::str_split(this.path, "/")[[1]]
+setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "00_Library/setup_dirs.R" ),
+                            collapse = "/")
+
+source(setup_dirs.path)
 
 # data directory - where source data are located
-#data_dir <- glue::glue('{home_dir}/01_Data/')
-data_dir <- "//166.2.126.25/TreeMap/01_Data/"
+data_dir <- glue::glue('{home_dir}/01_Data/')
+
 
 landfire_version_veg <- 200
 landfire_year_veg <- 2016
 
 # export path
-area_export_path <- glue::glue("//166.2.126.25/TreeMap/01_Data/02_Landfire/metadata/forest_area_by_zone_{landfire_year_veg}.csv")
+area_export_path <- glue::glue("{home_dir}/01_Data/02_Landfire/metadata/forest_area_by_zone_{landfire_year_veg}.csv")
 
 # set path to landfire rasters 
 landfire_veg_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_veg}/')

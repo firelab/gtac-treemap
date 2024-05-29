@@ -9,8 +9,18 @@
 # Setup
 ########################################################
 
-# home_dir
-home_dir <- "//166.2.126.25/TreeMap/"
+# Initialize home dir
+#-----------------------------------------------#
+# Id where THIS script is located
+this.path <- this.path::this.path()
+
+# get path to input script
+spl <- stringr::str_split(this.path, "/")[[1]]
+setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "00_Library/setup_dirs.R" ),
+                            collapse = "/")
+
+source(setup_dirs.path)
 
 # path to first raster to compare
 r1_path <- glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/01_Imputation/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36.tif")
@@ -35,7 +45,7 @@ eval_vars_cont <- c("GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
                     "TPA_DEAD", "TPA_LIVE", "BALIVE")
 
 # path to shapefile or coords of points
-pts_path <- glue::glue("{home_dir}/01_Data/04_FIA/03_FullShp/FIA_US.shp")
+pts_path <- glue::glue("{FIA_dir}/03_FullShp/FIA_US.shp")
 
 # path to xtable or similar 
 xtable_path <- glue::glue("{home_dir}/03_Outputs/06_Reference_Data/v2016_RMRS/X_table_all_singlecondition.txt")
@@ -47,7 +57,7 @@ rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/
 evt_path <- glue::glue("{home_dir}01_Data/02_Landfire/LF_200/EVT/LF2016_EVT_200_CONUS/CSV_Data/LF16_EVT_200.csv")
 
 # path to coords
-coords_path <- glue::glue("{home_dir}01_Data/04_FIA/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv")
+coords_path <- glue::glue("{FIA_dir}/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv")
 
 # crs raster data are in 
 landfire_crs <- terra::crs(glue::glue('{home_dir}/01_Data/02_Landfire/landfire_crs.prj'))

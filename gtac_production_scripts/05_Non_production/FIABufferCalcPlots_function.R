@@ -19,14 +19,28 @@ FIABufferCalcPlots <- function(df, plotVARs, filterYear=2016, facetDistCode=F) {
   facetDistCode <- facetDistCode
   
   
-  # Housekeeping 
+  # Housekeeping
+
+  # Required libraries
+  list.of.packages <- c("terra",   
+                        "tidyverse",
+                        "magrittr", 
+                        "ggplot2", 
+                        "modeest")
+
+  #check for packages and install if needed
+  new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+  if(length(new.packages) > 0) install.packages(new.packages)
+
+  # load all packages
+  vapply(list.of.packages, library, logical(1L),
+        character.only = TRUE, logical.return = TRUE)
+
   
-  # load libraries
-  library(terra)
-  library(tidyverse)
-  library(magrittr)
-  library(ggplot2)
-  library(modeest)
+  # Convert params object to data.frame
+  params_df <- data.frame(paramsObj) %>% 
+                rename(Parameter = param, 
+                       Value = value) 
   
   # Allow for sufficient digits to differentiate plot cn numbers
   options("scipen"=100, "digits"=8)
