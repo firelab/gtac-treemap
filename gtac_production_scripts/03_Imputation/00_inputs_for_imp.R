@@ -22,6 +22,20 @@ output_name <- "2016_GTAC_LCMSDist"
 # will get overwritten in 02_run_imputation 
 raster_name <- glue::glue('{output_name}_tilesz2000_nT36')
 
+# Initialize home dir
+#-----------------------------------------------#
+# Id where THIS script is located
+this.path <- this.path::this.path()
+
+# get path to input script
+spl <- stringr::str_split(this.path, "/")[[1]]
+setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "00_Library/setup_dirs.R" ),
+                            collapse = "/")
+
+source(setup_dirs.path)
+
+
 # Test application settings
 #-----------------------------------------#
 
@@ -46,11 +60,8 @@ ref_data_version <- "v2016_RMRS"
 
 # model to use - supply specific model to pull into imputation, or NA
 # if NA, uses default model name and path
-#model_path <- '//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS'
+#model_path <- glue::glue('{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS')
 model_path <- NA
-
-#home_dir
-home_dir <- "//166.2.126.25/TreeMap/"
 
 # output crs - desired crs for output products
 #options include: "lcms_crs", "landfire_crs", "tm16_crs"
@@ -59,8 +70,8 @@ output_crs_name <- "tm16_crs"
 # Constructed inputs - less likely to change
 #-----------------------------------------------------------------#
 
-# data dir
-data_dir <- "//166.2.126.25/TreeMap/01_Data/"
+# data directory - where source data are located
+data_dir <- glue::glue('{home_dir}/01_Data/')
 
 # Path to X table
 xtable_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/{ref_data_version}/X_table_all_singlecondition.txt")
