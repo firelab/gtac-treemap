@@ -26,7 +26,18 @@ vapply(list.of.packages, library, logical(1L),
 # Setup
 ########################################################
 
-home_dir <- "//166.2.126.25/TreeMap"
+# Initialize home dir
+#-----------------------------------------------#
+# Id where THIS script is located
+this.path <- this.path::this.path()
+
+# get path to input script
+spl <- stringr::str_split(this.path, "/")[[1]]
+setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "00_Library/setup_dirs.R" ),
+                            collapse = "/")
+
+source(setup_dirs.path)
 
 projectsDir <- "03_Outputs/07_Projects"
 
@@ -71,20 +82,20 @@ for (i in 5:length(impute_vars)){
     
     # Load imputed rasters
     
-    LFOrig_imputed <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
+    LFOrig_imputed <- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
     
-    LCMSDist_imputed<- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
+    LCMSDist_imputed<- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
      
     
     
     # Load target rasters
     
     if (TargVar == "disturb_code"){
-      LFOrig_target  <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}_LF.tif"))
-      LCMSDist_target <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}_LFLCMS.tif"))
+      LFOrig_target  <- terra::rast(glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}_LF.tif"))
+      LCMSDist_target <- terra::rast(glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}_LFLCMS.tif"))
     } else {
-      LFOrig_target  <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}.tif"))
-      LCMSDist_target <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}.tif"))
+      LFOrig_target  <- terra::rast(glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}.tif"))
+      LCMSDist_target <- terra::rast(glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}.tif"))
     }
     
     
@@ -113,7 +124,7 @@ for (i in 5:length(impute_vars)){
     
     if(ImpVar == "EVT_GP"){
       
-      evt_gp_remap_table_path <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
+      evt_gp_remap_table_path <- "{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
       
       # load evt_gp remap table
       evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
@@ -179,7 +190,7 @@ for (i in 5:length(impute_vars)){
     
     if(ImpVar == "EVT_GP"){
       
-      # evt_gp_remap_table_path <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
+      # evt_gp_remap_table_path <- "{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
       # 
       # # load evt_gp remap table
       # evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
@@ -230,7 +241,7 @@ for (i in 5:length(impute_vars)){
     
     if(ImpVar == "EVT_GP"){
       
-      # evt_gp_remap_table_path <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
+      # evt_gp_remap_table_path <- "{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
       # 
       # # load evt_gp remap table
       # evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
@@ -415,9 +426,9 @@ for (i in 5:length(impute_vars)){
     
     # Load imputed rasters
     
-    LFOrig_imputed <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
+    LFOrig_imputed <- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
     
-    LCMSDist_imputed<- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
+    LCMSDist_imputed<- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
     
     
     if (!exists(x = "refs")){
