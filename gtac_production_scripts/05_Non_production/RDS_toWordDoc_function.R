@@ -71,10 +71,10 @@ library(docstring)
 
 # EXAMPLE:
 
-params_RDS_path <- "//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/params/z16_2016_Orig_Test_params.RDS"
-load(params_RDS_path)
-
-out_dir <- "your-path-here" # change this
-
-RDS_toDocx(paramsObj = params_out,
-               outDir = out_dir)
+# params_RDS_path <- "//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/params/z16_2016_Orig_Test_params.RDS"
+# load(params_RDS_path)
+# 
+# out_dir <- "your-path-here" # change this
+# 
+# RDS_toDocx(paramsObj = params_out,
+#                outDir = out_dir)
