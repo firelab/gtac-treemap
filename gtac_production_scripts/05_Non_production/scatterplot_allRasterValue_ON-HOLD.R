@@ -1,6 +1,17 @@
 startTime <- Sys.time()
 
-home_dir <- "//166.2.126.25/TreeMap"
+# Initialize home dir
+#-----------------------------------------------#
+# Id where THIS script is located
+this.path <- this.path::this.path()
+
+# get path to input script
+spl <- stringr::str_split(this.path, "/")[[1]]
+setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "00_Library/setup_dirs.R" ),
+                            collapse = "/")
+
+source(setup_dirs.path)
 
 #################################################################
 # Load required packages
@@ -46,9 +57,9 @@ for (i in 5:length(impute_vars)){
   
     # Load imputed rasters
     
-    LFOrig_imputed <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
+    LFOrig_imputed <- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
     
-    LCMSDist_imputed<- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
+    LCMSDist_imputed<- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
     
     
     # Convert rasters to df and compute frequency tables

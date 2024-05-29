@@ -21,8 +21,18 @@ output_name <- "2016_GTAC_LCMSDist"
 # raster_name <- glue::glue("2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36")
 raster_name <- glue::glue("2016_GTAC_LCMSDist_tilesz2000_nT36")
 
-#home_dir
-home_dir <- "//166.2.126.25/TreeMap/"
+# Initialize home dir
+#-----------------------------------------------#
+# Id where THIS script is located
+this.path <- this.path::this.path()
+
+# get path to input script
+spl <- stringr::str_split(this.path, "/")[[1]]
+setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "00_Library/setup_dirs.R" ),
+                            collapse = "/")
+
+source(setup_dirs.path)
 
 # model to use - supply specific model to pull into imputation, or NA
 # if NA, uses default model name and path
@@ -83,7 +93,8 @@ target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_ve
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
-output_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
+# output_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
+output_dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # for testing
 
 #set path for assembled rasters
 assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/')
@@ -95,7 +106,7 @@ eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Eval
 landfire_crs <- terra::crs(glue::glue('{home_dir}/01_Data/02_Landfire/landfire_crs.prj'))
 
 # set tmp directory
-tmp_dir <- "D:/tmp/"
+tmp_dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir"
 
 # Prep constructed paths
 #----------------------------------------------#
@@ -157,27 +168,25 @@ lib_path <- paste(c(spl1[c(1:(length(spl1) - 2))],
 
 source(lib_path)
 
-# Create directories
-#----------------------------------------------#
-
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/'))) {
-  dir.create(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/'), recursive = TRUE)
-}
-
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/02_Target_Layer_Comparison'))) {
-  dir.create(glue::glue('{eval_dir}/02_Target_Layer_Comparison'), recursive = TRUE)
-}
-
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'))) {
-  dir.create(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'), recursive = TRUE)
-}
-
-# create eval dir if necessary 
-if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
-  dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
-}
-
-
+# # Create directories
+# #----------------------------------------------#
+# 
+# # create eval dir if necessary 
+# if(!file.exists(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/'))) {
+#   dir.create(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/'), recursive = TRUE)
+# }
+# 
+# # create eval dir if necessary 
+# if(!file.exists(glue::glue('{eval_dir}/02_Target_Layer_Comparison'))) {
+#   dir.create(glue::glue('{eval_dir}/02_Target_Layer_Comparison'), recursive = TRUE)
+# }
+# 
+# # create eval dir if necessary 
+# if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'))) {
+#   dir.create(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'), recursive = TRUE)
+# }
+# 
+# # create eval dir if necessary 
+# if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
+#   dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
+# }
