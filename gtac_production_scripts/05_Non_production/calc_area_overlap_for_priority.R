@@ -9,14 +9,27 @@ library(terra)
 library(magrittr)
 library(sf)
 
+# Initialize home dir
+#-----------------------------------------------#
+# Id where THIS script is located
+this.path <- this.path::this.path()
+
+# get path to input script
+spl <- stringr::str_split(this.path, "/")[[1]]
+setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "00_Library/setup_dirs.R" ),
+                            collapse = "/")
+
+source(setup_dirs.path)
+
 # set inputs
 #---------------------------#
 
-lf_zone_path <- "//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp"
+lf_zone_path <- glue::glue("{home_dir}/01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp")
 
-priority_zone_path <- "//166.2.126.25/TreeMap/01_Data/06_WCS/WCSLandscapePerims/Wildfire_Crisis_Strategy_Landscapes_(Feature_Layer).shp"
+priority_zone_path <- glue::glue("{home_dir}/01_Data/06_WCS/WCSLandscapePerims/Wildfire_Crisis_Strategy_Landscapes_(Feature_Layer).shp")
 
-export_dir <- "//166.2.126.25/TreeMap/03_Outputs/07_Projects/2022_Production/00_Prioritization/"
+export_dir <- glue::glue("{home_dir}/03_Outputs/07_Projects/2022_Production/00_Prioritization/")
 
 # Load data
 #------------------------------#

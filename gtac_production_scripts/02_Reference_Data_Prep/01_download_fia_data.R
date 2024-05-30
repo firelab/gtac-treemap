@@ -11,13 +11,24 @@ ptm_Start <- Sys.time() # processing time (ptm) calc start point
 
 # alternately, is there a remote sqlite instance I can connect to?
 
-# set home dir
-# home_dir <- "//166.2.126.25/TreeMap/"
+# home dir
+# Id where script is located
+this.path <- this.path::this.path()
+
+# get path to input script
+spl <- stringr::str_split(this.path, "/")[[1]]
+setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "00_Library/setup_dirs.R" ),
+                            collapse = "/")
+
+source(setup_dirs.path)
+
+# data directory - where source data are located
+data_dir <- glue::glue('{home_dir}/01_Data/')
 
 
 # set file destination - will be created if it does not eists
-# dir <- glue::glue("{home_dir}TreeMap/01_Data/04_FIA/05_FIA_DataMart/CSV/")
-dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir/04_FIA/05_FIA_DataMart/CSV/"
+dir <- glue::glue("{home_dir}TreeMap/01_Data/04_FIA/05_FIA_DataMart/CSV/")
 
 
 # list states - lower 48 states by abbreviation
@@ -128,7 +139,3 @@ for (j in seq_along(states)){
 
 print("Done with downloading all FIA data.")
 print(Sys.time()-ptm_Start)
-
-
-# [1] "Done with downloading all FIA data."
-# Time difference of 7.25926 hours

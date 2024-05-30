@@ -2,7 +2,7 @@
 
 # Objective: Compare output rasters - extract values to 40 m buffered FIA plots (polygons)
 
-# Last update: 05/20/2024
+# Last update: 05/06/2024
 
 
 startTime <- Sys.time()
@@ -82,20 +82,20 @@ for (i in 5:length(impute_vars)){
     
     # Load imputed rasters
     
-    LFOrig_imputed <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
+    LFOrig_imputed <- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
     
-    # LCMSDist_imputed<- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
+    LCMSDist_imputed<- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
      
     
     
     # Load target rasters
     
     if (TargVar == "disturb_code"){
-      LFOrig_target  <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}_LF.tif"))
-      LCMSDist_target <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}_LFLCMS.tif"))
+      LFOrig_target  <- terra::rast(glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}_LF.tif"))
+      LCMSDist_target <- terra::rast(glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}_LFLCMS.tif"))
     } else {
-      LFOrig_target  <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}.tif"))
-      LCMSDist_target <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}.tif"))
+      LFOrig_target  <- terra::rast(glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}.tif"))
+      LCMSDist_target <- terra::rast(glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/{TargVar}.tif"))
     }
     
     
@@ -124,7 +124,7 @@ for (i in 5:length(impute_vars)){
     
     if(ImpVar == "EVT_GP"){
       
-      evt_gp_remap_table_path <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
+      evt_gp_remap_table_path <- "{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
       
       # load evt_gp remap table
       evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
@@ -151,22 +151,25 @@ for (i in 5:length(impute_vars)){
     
     # ----- LANDFIRE RASTERS -----
     
+    t1 <- Sys.time()
+    # Raster to df for LF imputed raster
+    LFOrig_imputed_df <- data.frame(LFOrig_imputed)
+    names(LFOrig_imputed_df) <- "Var"
+    # Change all -99 values to NA (for categorical variables)
+    LFOrig_imputed_df <- LFOrig_imputed_df %>% 
+                            mutate(Var = ifelse(Var == -99, NA, Var))
     
-    # # Raster to df for LF imputed raster
-    # LFOrig_imputed_df <- data.frame(LFOrig_imputed)
-    # names(LFOrig_imputed_df) <- "Var"
-    # # Change all -99 values to NA (for categorical variables)
-    # LFOrig_imputed_df <- LFOrig_imputed_df %>% 
-    #                         mutate(Var = ifelse(Var == -99, NA, Var))
-    # 
-    # # Calc freq tables
-    # LFOrig_imputed_freqTable <- as.data.frame(table(LFOrig_imputed_df$Var))
-    # names(LFOrig_imputed_freqTable) <- c(ImpVar, "Frequency")
-    # LFOrig_imputed_freqTable$dataset <- "imputed_LF"
-    # LFOrig_imputed_freqTable$Freq_norm <- LFOrig_imputed_freqTable$Frequency/sum(LFOrig_imputed_freqTable$Frequency)
+    # Calc freq tables
+    LFOrig_imputed_freqTable <- as.data.frame(table(LFOrig_imputed_df$Var))
+    names(LFOrig_imputed_freqTable) <- c(ImpVar, "Frequency")
+    LFOrig_imputed_freqTable$dataset <- "imputed_LF"
+    LFOrig_imputed_freqTable$Freq_norm <- LFOrig_imputed_freqTable$Frequency/sum(LFOrig_imputed_freqTable$Frequency)
+    Sys.time() - t1
     
     
-    ### NEW 
+    
+    ### NEW CODE TO CHANGE TO --- WIP
+    t2 <- Sys.time()
     # Change raster values of -99 to NA
     LFOrig_imputed_NAs <- terra::subst(LFOrig_imputed, -99, NA)
     rm(LFOrig_imputed)
@@ -178,8 +181,8 @@ for (i in 5:length(impute_vars)){
     LFOrig_imputed_freqTable_Terra$dataset <- "imputed_LF"
     LFOrig_imputed_freqTable_Terra$Freq_norm <- LFOrig_imputed_freqTable_Terra$Frequency/sum(LFOrig_imputed_freqTable_Terra$Frequency)
     
-    head(LFOrig_imputed_freqTable)
-    head(LFOrig_imputed_freqTable_Terra)
+    
+    
     
     # Raster to df for LF target raster
     LFOrig_target_df <- data.frame(LFOrig_target)
@@ -187,7 +190,7 @@ for (i in 5:length(impute_vars)){
     
     if(ImpVar == "EVT_GP"){
       
-      # evt_gp_remap_table_path <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
+      # evt_gp_remap_table_path <- "{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
       # 
       # # load evt_gp remap table
       # evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
@@ -238,7 +241,7 @@ for (i in 5:length(impute_vars)){
     
     if(ImpVar == "EVT_GP"){
       
-      # evt_gp_remap_table_path <- "//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
+      # evt_gp_remap_table_path <- "{home_dir}/03_Outputs/05_Target_Rasters/v2016_GTAC/z16/01_final/EVG_remap_table.csv"
       # 
       # # load evt_gp remap table
       # evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
@@ -423,9 +426,9 @@ for (i in 5:length(impute_vars)){
     
     # Load imputed rasters
     
-    LFOrig_imputed <- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
+    LFOrig_imputed <- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36_{ImpVar}.tif"))
     
-    LCMSDist_imputed<- terra::rast(glue::glue("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
+    LCMSDist_imputed<- terra::rast(glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_LCMSDist/02_Assembled_model_outputs/z16/02_Assembled_vars/2016_GTAC_LCMSDist_tilesz2000_nT36_{ImpVar}.tif"))
     
     
     if (!exists(x = "refs")){
