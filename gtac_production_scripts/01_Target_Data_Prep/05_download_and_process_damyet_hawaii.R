@@ -53,6 +53,6 @@ for (i in params_to_download){
   mean<- terra::mean(rast(tile.list), na.rm=T)
   
   # And save out
-  writeRaster(mean, paste0(data_dir,"07_Daymet/daymet_hawaii_annual/",i,"_normal_1981to2010.tif"))
+  writeRaster(mean, paste0(data_dir,"07_Daymet/daymet_hawaii_normal/",i,"_normal_1981to2010.tif"))
   
 }

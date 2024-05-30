@@ -14,7 +14,7 @@ tmin_files<- list.files(paste0(data_dir,"07_Daymet/daymet_hawaii_annual/tmin/"),
 
 for (i in seq_along(tmax_files)){
   
-  # Load the min and max raster and convert to kelvin
+  # Load the min and max raster for a year and convert to kelvin
   max<- rast(tmax_files[i]) + 273.15
   min<- rast(tmin_files[i]) + 273.15
   
