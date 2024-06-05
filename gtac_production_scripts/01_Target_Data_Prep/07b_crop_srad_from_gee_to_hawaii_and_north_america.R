@@ -21,13 +21,13 @@ library(daymetr)
 library(terra)
 
 #
-# Read in rasters
+# Read in template rasters for cropping
 north_america_ras<- rast(paste0(data_dir,"07_Daymet/daymet_north_america_normal/prcp_normal_1981to2010.tif"))
 hawaii_ras<- rast(paste0(data_dir,"07_Daymet/daymet_hawaii_normal/prcp_normal_1981to2010.tif"))
 
 ##
 
-srad_from_gee<- rast(paste0(data_dir,"07_Daymet/srad_normal_from_gee.tif"))
+srad_from_gee<- rast(paste0(data_dir,"07_Daymet/srad_normal_from_GEE/srad_normal_1981to2010.tif"))
 
 
 # First crop srad by a reprojected extent ----
