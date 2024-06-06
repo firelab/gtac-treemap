@@ -30,11 +30,6 @@ input_script_path <- paste( c(spl[c(1:(length(spl)-1))],
 
 source(input_script_path)
 
-# write out params used, as set in input script
-####################################
-# write.csv(params_out, params_path,
-#           row.names = FALSE)
-
 
 # Other options
 # --------------------------------#
