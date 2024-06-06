@@ -104,7 +104,7 @@ if(is.na(aoi_name)) {
 #-----------------------------------------------------#
 
 # list landfire files 
-landfire_files <- list.files(landfire_disturbance_dir, pattern = '.tif$', full.names = TRUE, recursive = TRUE)
+landfire_files <- list.files(glue::glue('{landfire_dir}/Disturbance'), pattern = '.tif$', full.names = TRUE, recursive = TRUE)
 
 # filter files to only files we're interested in 
 landfire_files %<>% 
@@ -297,7 +297,6 @@ f <- foreach(i = 1:length(tiles),
     #terra::classify(cbind(no.class.val.ind, NA)) %>% # reclass to include only insect and disease
     #terra::classify(cbind(seq(1,1133,1), 2)) # reclass to binary indicator for each year - i&d dist code = 2
     terra::classify(cbind(nums, rcl_ind))
-  
   landfire_ind_years_tile <- 
     terra::app(landfire_ind_years_tile, which.max.hightie) %>% # get most recent year
     terra::classify(cbind(c(seq(1:length(year_list))), year_list)) # reclassify index values to years
