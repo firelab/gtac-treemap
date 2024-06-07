@@ -1,17 +1,13 @@
 ### This script is used to set inputs for all steps in the imputation process
 ## To ensure that all scripts refer to the same input and output products
 
-# Last updated: 3/28/2024
+# Written by: Lila Leatherman (lila.leatherman@usda.gov)
+
+# Last updated: 5/16/24
 
 ###########################################################################
 # Set inputs
 ###########################################################################
-
-# Identifiers - for outputs 
-#--------------------------------------------------#
-# Project name
-# project_name <- "2016_GTAC_Test"
-project_name <- "2016_GTAC_LCMSDist"
 
 # Output imputation name
 # describes the run and parameters; zone will be added later
@@ -135,10 +131,6 @@ cur_zone <- glue::glue('z{zone_num}')
 cur_zone_zero <- if(zone_num < 10) {
   glue::glue('z0{zone_num}') } else {
     cur_zone
-  }
-
-if(!is.na(aoi_name)) {
-  output_name <- glue::glue('{output_name}_{aoi_name}')
 }
 
 if(is.na(aoi_name)) {
@@ -158,7 +150,7 @@ tile_dir <- glue::glue('{output_dir}raster/tiles/')
 model_dir = glue::glue('{output_dir}/model/')
 
 evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/01_final/EVG_remap_table.csv')
-params_path = glue::glue('{output_dir}/params/{cur_zone_zero}_{output_name}_params.txt')
+params_dir = glue::glue('{output_dir}/params/')
 
 if (!is.na(dist_raster_dir)) {
   dist_raster_dir = glue::glue('{dist_raster_dir}/{cur_zone_zero}/01_final')
@@ -334,4 +326,14 @@ params_out <- data.frame(
   rename(value = ".",
          param = "rowname") %>%
   select(param, value)
+
+# write out params used, as set in input script
+####################################
+# write.csv(params_out, params_path,
+#           row.names = FALSE)
+
+
+# Make RDS of input parameters used
+#---------------------------------------------------------#
+save(list = ls(), file = glue::glue('{params_dir}/{cur_zone_zero}_{output_name}_params.RDS'))
 
