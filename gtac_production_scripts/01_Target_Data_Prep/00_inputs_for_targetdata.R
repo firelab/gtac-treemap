@@ -88,7 +88,7 @@ landfire_year_topo <- 2020
 #landfire_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version}/')
 landfire_veg_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_veg}/Vegetation/')
 landfire_topo_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_topo}/Topo/')
-landfire_disturbance_dir_1999_2014 <- glue::glue('{data_dir}02_Landfire/LF_USDIST_1999-2014/')
+landfire_disturbance_dir_1999_2014 <- glue::glue('{data_dir}02_Landfire/LF_USDIST/')
 landfire_disturbance_dir_2015_2020 <- glue::glue('{data_dir}02_Landfire/LF_220/Disturbance/')
 landfire_disturbance_dir_2021_2022 <- glue::glue('{data_dir}02_Landfire/LF_230/Disturbance/')
 #landfire_disturbance_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_disturbance}/Disturbance/')
