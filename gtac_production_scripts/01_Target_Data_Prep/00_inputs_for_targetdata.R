@@ -3,7 +3,7 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 4/1/24
+# Last updated: 6/12/24
 
 # TO DO:
 # - address inconsistencies in EVT vs Topo Landfire Paths
@@ -59,13 +59,15 @@ year_list <- seq(start_year, end_year, 1)
 # Id where THIS script is located
 this.path <- this.path::this.path()
 
-# get path to input script
+# get path to library
 spl <- stringr::str_split(this.path, "/")[[1]]
-setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
-                              "00_Library/setup_dirs.R" ),
+lib.path <- paste( c(spl[c(1:(length(spl)-2))],
+                              "00_Library/treeMapLib.R" ),
                             collapse = "/")
 
-source(setup_dirs.path)
+
+source(lib.path)
+
 
 
 # data directory - where source data are located
@@ -74,10 +76,10 @@ data_dir <- glue::glue('{home_dir}/01_Data/')
 # set landfire version 
 landfire_version_veg <- 200
 landfire_year_veg <- 2016
-landfire_version_disturbance <- 220
-landfire_year_disturbance <- 2020
 landfire_version_topo <- 220
 landfire_year_topo <- 2020
+#landfire_version_disturbance <- 220
+#landfire_year_disturbance <- 2020
 
 # Constructed Inputs (less likely to change)
 #----------------------------------------------------------#
@@ -86,7 +88,10 @@ landfire_year_topo <- 2020
 #landfire_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version}/')
 landfire_veg_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_veg}/Vegetation/')
 landfire_topo_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_topo}/Topo/')
-landfire_disturbance_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_disturbance}/Disturbance/')
+landfire_disturbance_dir_1999_2014 <- glue::glue('{data_dir}02_Landfire/LF_USDIST_1999-2014/')
+landfire_disturbance_dir_2015_2020 <- glue::glue('{data_dir}02_Landfire/LF_220/Disturbance/')
+landfire_disturbance_dir_2021_2022 <- glue::glue('{data_dir}02_Landfire/LF_230/Disturbance/')
+#landfire_disturbance_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_disturbance}/Disturbance/')
 
 # set path to landfire vector data
 lf_zones_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')

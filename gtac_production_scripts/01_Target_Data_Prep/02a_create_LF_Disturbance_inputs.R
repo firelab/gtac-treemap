@@ -3,7 +3,8 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 3/13/24
+# Last Updated: 6/12/24
+
 
 # Output rasters: 
 # - landfire fire years 
@@ -56,10 +57,10 @@ source(input_script.path)
 ###################################################
 
 # load lcms projections
-lcms_crs <- crs(lcms_proj)
+#lcms_crs <- crs(lcms_proj)
 
 #load landfire projection
-landfire_crs <- crs(landfire_proj)
+landfire_crs <- terra::crs(landfire_proj)
 
 # Load zone
 #----------------------------------------#
@@ -104,13 +105,18 @@ if(is.na(aoi_name)) {
 #-----------------------------------------------------#
 
 # list landfire files 
-landfire_files <- list.files(landfire_disturbance_dir, pattern = '.tif$', full.names = TRUE, recursive = TRUE)
+landfire_files_1999_2014 <- list.files(landfire_disturbance_dir_1999_2014, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
+landfire_files_2015_2020 <- list.files(landfire_disturbance_dir_2015_2020, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
+landfire_files_2021_2022 <- list.files(landfire_disturbance_dir_2021_2022, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
+
+# join all
+landfire_files = c(landfire_files_1999_2014,
+                   landfire_files_2015_2020,
+                   landfire_files_2021_2022)
 
 # filter files to only files we're interested in 
 landfire_files %<>% 
-  str_subset(pattern = "test", negate = TRUE) %>% # remove files in test folder
-  str_subset(pattern = "mostRecent", negate = TRUE) %>% # remove files named "mostRecent"
-  str_subset(pattern = "Reclass", negate = TRUE)  %>% # remove files with "Reclass"
+  str_subset(pattern = "HDst", negate = TRUE)  %>% # remove historic disturbance
   cbind(str_extract(., "[1-2][0,9][0-9][0-9]")) %>% # bind with year
   as.data.frame() %>%
   dplyr::rename("year" = "V2",
