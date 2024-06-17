@@ -10,20 +10,27 @@
 #################################################################
 
 # packages required
-list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", "magrittr", 
-                       "tictoc", "caret", "yaImpute", "randomForest", 
+list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
+                      "magrittr", "tictoc", "caret", "yaImpute", "randomForest", 
                       "Metrics", "foreach", "doParallel")
 
 # #check for packages and install if needed
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages) > 0) install.packages(new.packages)
+new.packages <- tryCatch(
+  
+  # try to get list of packages installed
+  {suppressWarnings(list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]) }, 
+  
+  error= function(cond) {
+    message("Can't access list of packages")
+    message("Here's the original error message:")
+    message(conditionMessage(cond))
+    
+    # return value in case of error:
+    NA
+  }
 
-# load all packages
-vapply(list.of.packages, library, logical(1L),
-       character.only = TRUE, logical.return = TRUE)
-
-#check for packages and install if needed
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+  )
+  
 if(length(new.packages) > 0) install.packages(new.packages)
 
 # load all packages
