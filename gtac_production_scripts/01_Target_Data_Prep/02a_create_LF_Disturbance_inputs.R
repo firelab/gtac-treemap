@@ -1,9 +1,10 @@
 # Create disturbance layer inputs - based on Landfire only
 
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
-# Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
+# Based on script "rmrs_production_scripts/00_USDA_TreeMap_2014/reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 3/13/24
+# Last Updated: 6/17/24
+
 
 # Output rasters: 
 # - landfire fire years 
@@ -18,18 +19,14 @@
 
 # breakup factor - how many tiles to break the area into? as a factor of area px 
 # 1 = 1 tile, 5 = many tiles
-break.up <- 5
+break.up <- 10
 
-# Set inputs - from input script
-this.path <- this.path::this.path() # Id where THIS script is located
 
-# get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
-                              "00_inputs_for_targetdata.R" ),
-                            collapse = "/")
+# get path to inputs script
+this_dir <- this.path::this.dir()
+inputs_script <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
-source(input_script.path)
+source(inputs_script)
 
 # Parallelization settings
 #--------------------------------------#
@@ -59,7 +56,7 @@ source(input_script.path)
 lcms_crs <- crs(lcms_proj)
 
 #load landfire projection
-landfire_crs <- crs(landfire_proj)
+landfire_crs <- terra::crs(landfire_proj)
 
 # Load zone
 #----------------------------------------#
@@ -100,17 +97,22 @@ if(is.na(aoi_name)) {
   aoi_name <- ""
 }
 
-# Load Landfire data
+# Load Landfire disturbance data
 #-----------------------------------------------------#
 
 # list landfire files 
-landfire_files <- list.files(landfire_disturbance_dir, pattern = '.tif$', full.names = TRUE, recursive = TRUE)
+landfire_files_1999_2014 <- list.files(landfire_disturbance_dir_1999_2014, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
+landfire_files_2015_2020 <- list.files(landfire_disturbance_dir_2015_2020, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
+landfire_files_2021_2022 <- list.files(landfire_disturbance_dir_2021_2022, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
+
+# join all
+landfire_files = c(landfire_files_1999_2014,
+                   landfire_files_2015_2020,
+                   landfire_files_2021_2022)
 
 # filter files to only files we're interested in 
 landfire_files %<>% 
-  str_subset(pattern = "test", negate = TRUE) %>% # remove files in test folder
-  str_subset(pattern = "mostRecent", negate = TRUE) %>% # remove files named "mostRecent"
-  str_subset(pattern = "Reclass", negate = TRUE)  %>% # remove files with "Reclass"
+  str_subset(pattern = "HDst", negate = TRUE)  %>% # remove historic disturbance
   cbind(str_extract(., "[1-2][0,9][0-9][0-9]")) %>% # bind with year
   as.data.frame() %>%
   dplyr::rename("year" = "V2",
@@ -233,7 +235,7 @@ tic()
 # foreach loop dopar over tiles
 f <- foreach(i = 1:length(tiles),
              .packages= c("tidyverse", "terra", "doParallel", "foreach")
-) %do% {
+) %dopar% {
   
   # for testing
   #i = 1

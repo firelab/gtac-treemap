@@ -3,7 +3,7 @@
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 # Redcastle Resources and USFS Geospatial Technology and Applications Center (GTAC)
 
-# Last updated: 3/13/24
+# Last updated: 6/17/24
 
 # Input rasters: 
 # - Annual raw probability of slowloss, fast loss, and gain from LCMS
@@ -21,18 +21,13 @@
 
 # breakup factor - how many tiles to break the area into? as a factor of area px 
 # 1 = 1 tile, 5 = many tiles
-break.up <- 4
+break.up <- 5
 
-# Set inputs - from input script
-this.path <- this.path::this.path() # Id where THIS script is located
+# get path to inputs script
+this_dir <- this.path::this.dir()
+input_script_path <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
-# get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
-                              "00_inputs_for_targetdata.R" ),
-                            collapse = "/")
-
-source(input_script.path)
+source(input_script_path)
 
 # Parallelization settings
 #--------------------------------------#
@@ -70,259 +65,248 @@ landfire_crs <- crs(landfire_proj)
 LF_zones <- vect(lf_zones_path)
 
 ###################################################
-# LOOP OVER ZONES
+# WORK ON ZONE
 ##################################################
 
 tic()
-# #for (z in zone_list) {
-#   
-#   #for testing
-#   z = 16
-#   
-#   zone_num <- z
-#   
-#   # status update
-#   print(glue("working on zone {zone_num}"))
-   
-  # Prep zone
-  #-----------------------------------------#
+# Prep zone
+#-----------------------------------------#
 
-  # select single LF zone
-  zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
+# select single LF zone
+zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
 
-  #project
-  zone %<>%
-    terra::project(lcms_crs)
+#project
+zone %<>%
+  terra::project(lcms_crs)
 
-  # get name of zone
-  zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
-  
- 
-  # Optional subset
-  #---------------------------------------#
+# get name of zone
+zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
 
-  if (!is.na(aoi_path)) {
-    # load aoi subset - utah uintas only
-    aoi <- vect(aoi_path) %>%
-      project(lcms_crs)
 
-    # reassign
-    zone <- aoi
-    zone_name <- aoi_name
-    print("using input shapefile as AOI")
-  } else{
-    print("using landfire zone as AOI")
-  }
+# Optional subset
+#---------------------------------------#
 
-  # Final zone prep
-  #---------------------------------------------#
+if (!is.na(aoi_path)) {
+  # load aoi subset - utah uintas only
+  aoi <- vect(aoi_path) %>%
+    project(lcms_crs)
+
+  # reassign
+  zone <- aoi
+  zone_name <- aoi_name
+  print("using input shapefile as AOI")
+} else{
+  print("using landfire zone as AOI")
+}
+
+# Final zone prep
+#---------------------------------------------#
+
+# set aoi_name field if it doesn't already exist via aoi subset
+if(is.na(aoi_name)) {
+  aoi_name <- ""
+}
+
+# rasterize zone
+zone_r <- terra::rast(terra::ext(zone), crs = lcms_crs, resolution = 30)
+zone_r <- terra::rasterize(zone, zone_r)
+
+#####################################################
+# PREP LCMS SLOW LOSS
+####################################################
+
+# Make tiles
+#----------------------------------------------------#
+
+# bookkeeping
+print("preparing LCMS slow loss")
+
+# how big is the zone? 
+# maybe: if zone > size, then tile
+expanse <- terra::expanse(zone, unit = "km")
+
+# break up raster into multiple sections to speed up processing
+h <- base::ceiling(ncol(zone_r)/break.up)
+v <- base::ceiling(nrow(zone_r)/break.up)
+
+# aggregate - template for making tiles to divvy up zone
+agg <- terra::aggregate(zone_r, fact = c(h,v), na.rm = TRUE)
+agg[] <- 1:ncell(agg)
+
+# inspect zones
+plot(agg, alpha = 0.5)
+plot(zone, add = TRUE)
+
+# subset the raster and create temporary files
+# tiles with only NA values are omitted
+# the function returns file names for the temporary files
+tiles <- zone_r %>%
+  terra::makeTiles(agg, paste0(tempfile(), '_.tif'), na.rm = TRUE)
+
+# Convert raw probability layers into change layers
+# Loop over tiles, and within tiles, loop over years
+#---------------------------------------------------------------#
+
+# foreach loop dopar over tiles
+f <- foreach(i = 1:length(tiles),
+             .packages= c("tidyverse", "terra", "doParallel", "foreach")
+) %dopar% {
   
-  # set aoi_name field if it doesn't already exist via aoi subset
-  if(is.na(aoi_name)) {
-    aoi_name <- ""
-  }
+  # for testing
+  #i = 1
   
-  # rasterize zone
-  zone_r <- terra::rast(terra::ext(zone), crs = lcms_crs, resolution = 30)
-  zone_r <- terra::rasterize(zone, zone_r)
+  fn <- tiles[i]
   
-  #####################################################
-  # PREP LCMS SLOW LOSS
-  ####################################################
+  # read raster tile into memory
+  tile_r <- terra::rast(fn) %>%
+    terra::trim()
   
-  # Make tiles
-  #----------------------------------------------------#
-  
-  # bookkeeping
-  print("preparing LCMS slow loss")
-  
-  # how big is the zone? 
-  # maybe: if zone > size, then tile
-  expanse <- terra::expanse(zone, unit = "km")
-  
-  # break up raster into multiple sections to speed up processing
-  h <- base::ceiling(ncol(zone_r)/break.up)
-  v <- base::ceiling(nrow(zone_r)/break.up)
-  
-  # aggregate - template for making tiles to divvy up zone
-  agg <- terra::aggregate(zone_r, fact = c(h,v), na.rm = TRUE)
-  agg[] <- 1:ncell(agg)
-  
-  # inspect zones
-  plot(agg, alpha = 0.5)
-  plot(zone, add = TRUE)
-  
-  # subset the raster and create temporary files
-  # tiles with only NA values are omitted
-  # the function returns file names for the temporary files
-  tiles <- zone_r %>%
-    terra::makeTiles(agg, paste0(tempfile(), '_.tif'), na.rm = TRUE)
-  
-  # Convert raw probability layers into change layers
-  # Loop over tiles, and within tiles, loop over years
-  #---------------------------------------------------------------#
-  
-  # foreach loop dopar over tiles
-  f <- foreach(i = 1:length(tiles),
-               .packages= c("tidyverse", "terra", "doParallel", "foreach")
-  ) %dopar% {
+  # foreach loop do over years
+  slowloss_tile <- foreach(j = 1:length(year_list),
+               .combine = 'c',
+               .packages = c("tidyverse", "terra")
+  ) %do% {
     
+  
     # for testing
-    #i = 1
+    #j = 1
+  
+    year <- year_list[j]
     
-    fn <- tiles[i]
-    
-    # read raster tile into memory
-    tile_r <- terra::rast(fn) %>%
-      terra::trim()
-    
-    # foreach loop do over years
-    slowloss_tile <- foreach(j = 1:length(year_list),
-                 .combine = 'c',
-                 .packages = c("tidyverse", "terra")
-    ) %do% {
-      
-    
-      # for testing
-      #j = 1
-    
-      year <- year_list[j]
-      
-      # bookkeeping
-      #print(glue("working on {year}"))
-    
-      # list raw probability tile layers for a given year
-      year_files <- list.files(lcms_dir, pattern = paste0(year, '.+.tif$'), full.names = TRUE)
+    # bookkeeping
+    #print(glue("working on {year}"))
+  
+    # list raw probability tile layers for a given year
+    year_files <- list.files(lcms_dir, pattern = paste0(year, '.+.tif$'), full.names = TRUE)
 
-      # prep raw probability files
-      raw_prob <- lapply(year_files, terra::rast) %>%
-        sprc() %>% # convert to packed raster collection
-        terra::crop(tile_r) %>% # crop to zone
-        terra::mosaic() # mosaic
-      
-      # make sure extents align for masking
-      tile_r %<>% terra::crop(raw_prob) %>%
-        terra::resample(raw_prob)  
-      
-      # finish prepping raw probability files 
-      raw_prob %<>% terra::mask(tile_r) %>% # mask 
-        terra::classify(cbind(LCMS_NAvalue, NA)) # update NA values
-      
-      gc()
-      
-      # add layer names for clarity
-      # names(raw_prob) <- c( "FastLoss_Raw_Prob", "SlowLoss_Raw_Prob", "Gain_Raw_Prob")
-      
-      
-      # #inspect
-      # rbind(freq(raw_prob[[1]], value = NA),
-      #       freq(raw_prob[[1]]))
-      # plot(raw_prob)
-
-      # prepare non-processing area mask
-      NPArea_mask <-
-        raw_prob %>%
-        min()
+    # prep raw probability files
+    raw_prob <- lapply(year_files, terra::rast) %>%
+      sprc() %>% # convert to packed raster collection
+      terra::crop(tile_r) %>% # crop to zone
+      terra::mosaic() # mosaic
     
-      # reclassify classes: values below threshold go to NA
-      for(k in 1:3) {
-        
-        raw_prob[[k]] <- terra::classify(raw_prob[[k]], cbind(seq(1, LCMS_change_thresholds[k], 1), NA))
-        
-        gc()
-      }
-      
-      # get highest probability class
-      maxProbClass <-
-        raw_prob %>%
-        which.max() %>% # get index of highest value that exceeds threshold
-        terra::classify(cbind(c(1,3), NA)) %>% # reclass to only slow loss - value = 2
-        mask(NPArea_mask) # mask with NP area mask
+    # make sure extents align for masking
+    tile_r %<>% terra::crop(raw_prob) %>%
+      terra::resample(raw_prob)  
     
-      # name to year 
-      names(maxProbClass) <- year
-      
-      #inspect
-      # maxProbClass
-      # rbind(freq(maxProbClass),
-      #            freq(maxProbClass, value = NA))
-      # plot(maxProbClass)
-    
-      #remove unused files
-      rm(raw_prob, NPArea_mask)
-      
-      # clear memory
-      gc()
-      
-      # return to do loop
-      maxProbClass
-    
-    } # end foreach do over years
-    
-    # Get most recent year of slow loss
-    #-----------------------------------------------#
-    
-    # get most recent year of slow loss
-    slowloss_tile <- 
-      terra::app(slowloss_tile, which.max.hightie)     %>% # identify year with maximum value; ties go to highest index
-      terra::classify(cbind(c(seq(1:length(year_list))), year_list)) %>% # reclassify index values to years
-      terra::project(landfire_crs) # reproject to desired crs
-      
-    # write out single tile as tmp file (then read all in later as .vrt)
-    terra::writeRaster(slowloss_tile,
-            filename = paste0(tmp_dir, "/lcms/slowloss_years_tile", i, ".tif"),
-            datatype = "INT2U",
-            overwrite = TRUE)
+    # finish prepping raw probability files 
+    raw_prob %<>% terra::mask(tile_r) %>% # mask 
+      terra::classify(cbind(LCMS_NAvalue, NA)) # update NA values
     
     gc()
-  
-    } # end foreach over tiles
     
-  stopCluster(cl)
-  
-  # Assemble LCMS slow loss
-  # -----------------------------------#
-  
-  # List year files
-  lcms_files <- list.files(path = glue::glue('{tmp_dir}/lcms/'), 
-                           full.names = TRUE)
-  
-  # Read in as vrt
-  lcms_slowloss_years <- terra::vrt(lcms_files,  glue('{tmp_dir}/lcms_slowloss.vrt'), overwrite = TRUE)
-  
-  #inspect
-  #lcms_slowloss_years
-  #plot(lcms_slowloss_years)
+    # add layer names for clarity
+    # names(raw_prob) <- c( "FastLoss_Raw_Prob", "SlowLoss_Raw_Prob", "Gain_Raw_Prob")
+    
+    
+    # #inspect
+    # rbind(freq(raw_prob[[1]], value = NA),
+    #       freq(raw_prob[[1]]))
+    # plot(raw_prob)
 
+    # prepare non-processing area mask
+    NPArea_mask <-
+      raw_prob %>%
+      min()
   
-  # convert to binary indicator of slow loss
-  # slow loss value for input to TreeMap disturbance layer = 2
-  lcms_slowloss_binary <-
-    lcms_slowloss_years %>%
-    terra::classify(cbind(year_list, 2))
+    # reclassify classes: values below threshold go to NA
+    for(k in 1:3) {
+      
+      raw_prob[[k]] <- terra::classify(raw_prob[[k]], cbind(seq(1, LCMS_change_thresholds[k], 1), NA))
+      
+      gc()
+    }
+    
+    # get highest probability class
+    maxProbClass <-
+      raw_prob %>%
+      which.max() %>% # get index of highest value that exceeds threshold
+      terra::classify(cbind(c(1,3), NA)) %>% # reclass to only slow loss - value = 2
+      mask(NPArea_mask) # mask with NP area mask
+  
+    # name to year 
+    names(maxProbClass) <- year
+    
+    #inspect
+    # maxProbClass
+    # rbind(freq(maxProbClass),
+    #            freq(maxProbClass, value = NA))
+    # plot(maxProbClass)
+  
+    #remove unused files
+    rm(raw_prob, NPArea_mask)
+    
+    # clear memory
+    gc()
+    
+    # return to do loop
+    maxProbClass
+  
+  } # end foreach do over years
+  
+  # Get most recent year of slow loss
+  #-----------------------------------------------#
+  
+  # get most recent year of slow loss
+  slowloss_tile <- 
+    terra::app(slowloss_tile, which.max.hightie)     %>% # identify year with maximum value; ties go to highest index
+    terra::classify(cbind(c(seq(1:length(year_list))), year_list)) %>% # reclassify index values to years
+    terra::project(landfire_crs) # reproject to desired crs
+    
+  # write out single tile as tmp file (then read all in later as .vrt)
+  terra::writeRaster(slowloss_tile,
+          filename = paste0(tmp_dir, "/lcms/slowloss_years_tile", i, ".tif"),
+          datatype = "INT2U",
+          overwrite = TRUE)
   
   gc()
-  
-  # inspect
-  # lcms_slowloss
-  # freq(lcms_slowloss)
-  plot(lcms_slowloss_years)
-  plot(lcms_slowloss_binary)
-  
-  # Export
-  #----------------------------#
-  
-  writeRaster(lcms_slowloss_years, 
-              lcms_slowloss_years_outpath, 
-              datatype = "INT2U",
-              overwrite = TRUE)
-  
-  writeRaster(lcms_slowloss_binary, 
-              lcms_slowloss_binary_outpath, 
-              datatype = "INT2U",
-              overwrite = TRUE)
 
-  #}
+  } # end foreach over tiles
+  
+stopCluster(cl)
+
+# Assemble LCMS slow loss
+# -----------------------------------#
+
+# List year files
+lcms_files <- list.files(path = glue::glue('{tmp_dir}/lcms/'), 
+                         full.names = TRUE)
+
+# Read in as vrt
+lcms_slowloss_years <- terra::vrt(lcms_files,  glue('{tmp_dir}/lcms_slowloss.vrt'), overwrite = TRUE)
+
+#inspect
+#lcms_slowloss_years
+#plot(lcms_slowloss_years)
+
+
+# convert to binary indicator of slow loss
+# slow loss value for input to TreeMap disturbance layer = 2
+lcms_slowloss_binary <-
+  lcms_slowloss_years %>%
+  terra::classify(cbind(year_list, 2))
+
+gc()
+
+# inspect
+# lcms_slowloss
+# freq(lcms_slowloss)
+plot(lcms_slowloss_years)
+plot(lcms_slowloss_binary)
+
+# Export
+#----------------------------#
+
+writeRaster(lcms_slowloss_years, 
+            lcms_slowloss_years_outpath, 
+            datatype = "INT2U",
+            overwrite = TRUE)
+
+writeRaster(lcms_slowloss_binary, 
+            lcms_slowloss_binary_outpath, 
+            datatype = "INT2U",
+            overwrite = TRUE)
+
 
 
 

@@ -2,6 +2,8 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
+# Last updated: 5/10/2024
+
 ##################################################
 
 # Set inputs
@@ -70,7 +72,7 @@ state_name <- states[i]
 
 # Load calculated data
 #-------------------------------------------#
-ref_dat <- read.csv(glue::glue('{ref_path}/01_ByState/{state_name}_{start_year}_{end_year}_attributes.csv'))
+ref_dat <- read.csv(glue::glue('{ref_path}/v2016_GTAC/01_ByState/{state_name}_{start_year}_{end_year}_attributes.csv'))
 ref_dat %<>%
   select(-c(PLOT, LAT, LON, ELEV, SLOPE, ASPECT, NORTHING, EASTING)) 
 
@@ -114,12 +116,14 @@ fields_val <- c(#"FORTYPCD",   "FLDTYPCD",   "STDSZCD",    "FLDSZCD",
 refs <- t %>%
   filter(CN %in% ref_dat$PLT_CN) %>%
   select(-c(ForTypName, FldTypName)) %>%
+  select(CN, all_of(fields_val)) %>%
   pivot_longer(any_of(fields_val), names_to = "var", values_to = "ref") %>%
                  mutate(var = factor(var))
 
 
 preds <- ref_dat %>%
   filter(PLT_CN %in% t$CN) %>% 
+  select(PLT_CN, fields_val) %>%
   pivot_longer(any_of(fields_val), names_to = "var", values_to = "pred") %>%
   mutate(var = factor(var))
 
@@ -135,8 +139,8 @@ p_r %>%
   ggplot() +
   geom_abline(intercept = 0, color = "red", linewidth = 0.5 ) + 
   geom_point(aes(x = ref, y = pred), alpha = 0.1) + 
-  facet_wrap(~var, scales = "free")
-  #labs(title = fields_val[i])
+  facet_wrap(~var, scales = "free")+
+  labs(x = "RAT values", y = "GTAC values")
 
 print(p)
 
@@ -148,3 +152,10 @@ p_r %>%
   map(\(df) lm(pred~ref, data = df)) %>%
   map(summary) %>%
   map_dbl("r.squared")
+
+# calculate N of each var
+p_r %>%
+  drop_na() %>%
+  group_by(var) %>%
+  summarize(n())
+

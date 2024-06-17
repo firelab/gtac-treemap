@@ -1,3 +1,6 @@
+# Setup Dirs file
+setup_dirs.R
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
