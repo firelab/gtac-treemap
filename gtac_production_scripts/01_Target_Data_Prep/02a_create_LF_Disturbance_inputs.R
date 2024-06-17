@@ -1,9 +1,9 @@
 # Create disturbance layer inputs - based on Landfire only
 
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
-# Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
+# Based on script "rmrs_production_scripts/00_USDA_TreeMap_2014/reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 6/12/24
+# Last Updated: 6/17/24
 
 
 # Output rasters: 
@@ -21,16 +21,12 @@
 # 1 = 1 tile, 5 = many tiles
 break.up <- 5
 
-# Set inputs - from input script
-this.path <- this.path::this.path() # Id where THIS script is located
 
-# get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
-                              "00_inputs_for_targetdata.R" ),
-                            collapse = "/")
+# get path to inputs script
+this_dir <- this.path::this.dir()
+inputs_script <- glue::glue('{this_dir}/00b_setup_targetdata.R')
 
-source(input_script.path)
+source(inputs_script)
 
 # Parallelization settings
 #--------------------------------------#
@@ -57,7 +53,7 @@ source(input_script.path)
 ###################################################
 
 # load lcms projections
-#lcms_crs <- crs(lcms_proj)
+lcms_crs <- crs(lcms_proj)
 
 #load landfire projection
 landfire_crs <- terra::crs(landfire_proj)
@@ -101,7 +97,7 @@ if(is.na(aoi_name)) {
   aoi_name <- ""
 }
 
-# Load Landfire data
+# Load Landfire disturbance data
 #-----------------------------------------------------#
 
 # list landfire files 
@@ -239,7 +235,7 @@ tic()
 # foreach loop dopar over tiles
 f <- foreach(i = 1:length(tiles),
              .packages= c("tidyverse", "terra", "doParallel", "foreach")
-) %do% {
+) %dopar% {
   
   # for testing
   #i = 1
