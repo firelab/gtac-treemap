@@ -12,7 +12,15 @@
 # packages required
 list.of.packages <- c("this.path", "terra", "tidyverse", "magrittr", 
                       "glue", "tictoc", "caret", "yaImpute", "randomForest", 
-                      "Metrics")
+                      "Metrics", "foreach", "doParallel")
+
+# #check for packages and install if needed
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages) > 0) install.packages(new.packages)
+
+# load all packages
+vapply(list.of.packages, library, logical(1L),
+       character.only = TRUE, logical.return = TRUE)
 
 #check for packages and install if needed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -27,22 +35,18 @@ vapply(list.of.packages, library, logical(1L),
 ###########################
 
 # Id where script is located
-thispath <- this.path::this.path()
-
-spl1 <- str_split(thispath, "/")[[1]]
-spl1 <- c(spl1[c(1:length(spl1)-1)])
-
-script.path <- paste(spl1, collapse = "/")
+this_path <- this.path::this.path()
+this_dir <- this.path::this.dir()
 
 # List other scripts in library
-snames <- list.files(script.path, full.names = TRUE, pattern = ".R$")
-snames <- snames[snames != thispath]
+snames <- list.files(this_dir, full.names = TRUE, pattern = ".R$")
+snames <- snames[snames != this_path]
 
 # source other scripts in library
 lapply(snames, source)
 
 # remove unused objects
-rm(spl1, thispath, script.path, snames )
+rm(this_path, this_dir, snames )
 
 ###########################
 # Dictionaries
@@ -423,5 +427,3 @@ FitFlextableToPage <- function(ft, pgwidth){
 }
 
 
-# Remove unused objects
-###################################################
