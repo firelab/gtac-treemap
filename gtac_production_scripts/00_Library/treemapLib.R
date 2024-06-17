@@ -10,8 +10,8 @@
 #################################################################
 
 # packages required
-list.of.packages <- c("this.path", "terra", "tidyverse", "magrittr", 
-                      "glue", "tictoc", "caret", "yaImpute", "randomForest", 
+list.of.packages <- c("glue", "this.path", "terra", "tidyverse", "magrittr", 
+                       "tictoc", "caret", "yaImpute", "randomForest", 
                       "Metrics", "foreach", "doParallel")
 
 # #check for packages and install if needed
@@ -30,6 +30,9 @@ if(length(new.packages) > 0) install.packages(new.packages)
 vapply(list.of.packages, library, logical(1L),
        character.only = TRUE, logical.return = TRUE)
 
+# remove unused objects
+rm(list.of.packages, new.packages)
+
 ###########################
 # Run other scripts in this folder
 ###########################
@@ -46,7 +49,7 @@ snames <- snames[snames != this_path]
 lapply(snames, source)
 
 # remove unused objects
-rm(this_path, this_dir, snames )
+rm(this_path, this_dir, snames)
 
 ###########################
 # Dictionaries
