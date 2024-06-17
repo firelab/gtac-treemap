@@ -138,3 +138,6 @@ writeRaster(dist_type, lcms_disturb_code_outpath,
 #clear unused memory
 gc()
 
+
+file.remove(landfire_fire_years_outpath, landfire_fire_binary_outpath, 
+            lcms_slowloss_years_outpath, lcms_slowloss_binary_outpath)

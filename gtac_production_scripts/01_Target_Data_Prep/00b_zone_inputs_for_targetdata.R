@@ -53,7 +53,7 @@ if(!is.na(target_prep_params_path)) {
   
   } else {
     
-    inputs_for_target_data <- glue::glue('{this_dir}/{00a_inputs_for_target_data.R')
+    inputs_for_target_data <- glue::glue('{this_dir}/{00a_project_inputs_for_target_data.R')
     
     source(inputs_for_target_data)
     
@@ -148,20 +148,20 @@ if(is.na(aoi_name)) {
 # Export data paths
 #---------------------------------------------------------------#
 # create output file names
-landfire_fire_years_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_Fire_Years.tif')
-landfire_fire_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_Fire_Binary.tif')
+landfire_fire_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_Fire_Years.tif')
+landfire_fire_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_Fire_Binary.tif')
 
-landfire_ind_years_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_InsectDisease_Years.tif')
-landfire_ind_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_InsectDisease_Binary.tif')
+landfire_ind_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_InsectDisease_Years.tif')
+landfire_ind_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_InsectDisease_Binary.tif')
 
-lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
-lcms_slowloss_binary_outpath <- glue::glue('{target_dir_z}/00_prelim_dist/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
+lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
+lcms_slowloss_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
 
-lf_disturb_code_outpath <- glue::glue('{target_dir_z}/01_final/disturb_code_LF.tif')
-lf_disturb_year_outpath <- glue::glue('{target_dir_z}/01_final/disturb_year_LF.tif')
+lf_disturb_code_outpath <- glue::glue('{target_dir_z}/disturb_code_LF.tif')
+lf_disturb_year_outpath <- glue::glue('{target_dir_z}/disturb_year_LF.tif')
 
-lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/01_final/disturb_code_LFLCMS.tif')
-lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/01_final/disturb_year_LFLCMS.tif')
+lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/disturb_code_LFLCMS.tif')
+lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/disturb_year_LFLCMS.tif')
 
 # Load crs objects
 #-----------------------------------------------------#
@@ -202,7 +202,7 @@ if (!file.exists(glue::glue('{tmp_dir}/lf/'))) {
 #empty temp dir
 do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRUE)))
 
-# set temp directory - helps save space with R terra
+# set temp directory - allows you to inspect files in progress more easily
 write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
 
 
@@ -218,23 +218,23 @@ if(!file.exists(target_dir_z)) {
   dir.create(target_dir_z, recursive = TRUE)
   }
 
-# target dir
-if (!file.exists(glue::glue('{target_dir_z}/00_prelim_dist'))) {
-  dir.create(glue::glue('{target_dir_z}/00_prelim_dist'), recursive = TRUE)
-}
-
-# target dir
-if (!file.exists(glue::glue('{target_dir_z}/01_final'))) {
-  dir.create(glue::glue('{target_dir_z}/01_final'), recursive = TRUE)
-}    
+# # target dir
+# if (!file.exists(glue::glue('{target_dir_z}/00_prelim_dist'))) {
+#   dir.create(glue::glue('{target_dir_z}/00_prelim_dist'), recursive = TRUE)
+# }
+# 
+# # target dir
+# if (!file.exists(glue::glue('{target_dir_z}/01_final'))) {
+#   dir.create(glue::glue('{target_dir_z}/01_final'), recursive = TRUE)
+# }    
 
 
 # Remove unused objects
 #------------------------------------------------#
-rm(input_script.path, list.of.packages)
+
 
 
 # Make RDS of input parameters used
 #---------------------------------------------------------#
-save(list = ls(), file = glue::glue('{target_dir}/{cur_zone_zero}/{cur_zone_zero}_env.RDS'))
+save(list = ls(), file = glue::glue('{target_dir_z}/{cur_zone_zero}_env.RDS'))
 

@@ -3,7 +3,7 @@
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 # Redcastle Resources and USFS Geospatial Technology and Applications Center (GTAC)
 
-# Last updated: 3/13/24
+# Last updated: 6/17/24
 
 # Input rasters: 
 # - Annual raw probability of slowloss, fast loss, and gain from LCMS
@@ -21,13 +21,13 @@
 
 # breakup factor - how many tiles to break the area into? as a factor of area px 
 # 1 = 1 tile, 5 = many tiles
-break.up <- 4
+break.up <- 5
 
 # get path to inputs script
 this_dir <- this.path::this.dir()
-inputs_script <- glue::glue('{this_dir}/00b_setup_targetdata.R')
+input_script_path <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
-source(inputs_script)
+source(input_script_path)
 
 # Parallelization settings
 #--------------------------------------#

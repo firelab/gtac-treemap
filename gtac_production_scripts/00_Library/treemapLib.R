@@ -3,14 +3,14 @@
 # Author: Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last Updated:
-# 3/28/2024
+# 6/17/2024
 
 #################################################################
 # Load required packages
 #################################################################
 
 # packages required
-list.of.packages <- c("glue", "this.path", "terra", "tidyverse", "magrittr", 
+list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", "magrittr", 
                        "tictoc", "caret", "yaImpute", "randomForest", 
                       "Metrics", "foreach", "doParallel")
 

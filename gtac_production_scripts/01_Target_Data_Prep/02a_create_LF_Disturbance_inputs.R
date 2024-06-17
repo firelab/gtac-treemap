@@ -19,12 +19,12 @@
 
 # breakup factor - how many tiles to break the area into? as a factor of area px 
 # 1 = 1 tile, 5 = many tiles
-break.up <- 5
+break.up <- 10
 
 
 # get path to inputs script
 this_dir <- this.path::this.dir()
-inputs_script <- glue::glue('{this_dir}/00b_setup_targetdata.R')
+inputs_script <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
 source(inputs_script)
 
