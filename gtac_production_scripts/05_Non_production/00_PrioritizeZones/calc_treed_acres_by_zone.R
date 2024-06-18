@@ -8,19 +8,12 @@ library(magrittr)
 # set inputs
 #-------------------------------#
 
-# home dir
 # Initialize home dir
 #-----------------------------------------------#
-# Id where THIS script is located
-this.path <- this.path::this.path()
 
-# get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-setup_dirs.path <- paste( c(spl[c(1:(length(spl)-2))],
-                              "00_Library/setup_dirs.R" ),
-                            collapse = "/")
-
-source(setup_dirs.path)
+this_proj <- this.path::this.proj()
+lib_path <- glue::glue("{this_proj}/gtac_production_scripts/00_Library/setup_dirs.R" )
+source(lib_path)
 
 # data directory - where source data are located
 data_dir <- glue::glue('{home_dir}/01_Data/')
