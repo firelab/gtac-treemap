@@ -11,8 +11,12 @@
 
 # packages required
 list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
-                      "magrittr", "tictoc", "caret", "yaImpute", "randomForest", 
-                      "Metrics", "foreach", "doParallel")
+                      "magrittr", "tictoc", "caret", "randomForest", 
+                      "Metrics", "foreach", "doParallel", "yaImpute")
+
+# Install dev version of yaImpute - to make sure we get the option to retain OOB obs
+message("Installing dev version of yaImpute package")
+devtools::install_github("https://github.com/jeffreyevans/yaImpute")
 
 # #check for packages and install if needed
 new.packages <- tryCatch(

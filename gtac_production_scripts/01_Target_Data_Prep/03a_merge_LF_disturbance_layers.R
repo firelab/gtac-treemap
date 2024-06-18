@@ -122,6 +122,6 @@ writeRaster(dist_type, lf_disturb_code_outpath,
 rm(dist_year, dist_type)
 gc()
 
-file.remove(landfire_fire_years_outpath, landfire_fire_binary_outpath, 
-            landfire_ind_years_outpath, landfire_ind_binary_outpath)
+# file.remove(landfire_fire_years_outpath, landfire_fire_binary_outpath, 
+#             landfire_ind_years_outpath, landfire_ind_binary_outpath)
 
