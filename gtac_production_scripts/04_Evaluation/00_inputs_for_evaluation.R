@@ -10,16 +10,16 @@
 zone_num <- 16
 
 # Project name
-# project_name <- "2016_GTAC_Test"
-project_name <- "2016_GTAC_LCMSDist"
+project_name <- "2016_GTAC_Test"
+# project_name <- "2016_GTAC_LCMSDist"
 
 # output name - name of raster and CM outputs
-# output_name <- "2016_Orig_Test_keepinbag_ntree250"
-output_name <- "2016_GTAC_LCMSDist"
+output_Name <- "2016_Orig_Test_keepinbag_ntree250"
+# output_Name <- "2016_GTAC_LCMSDist"
 
 # name of raster to validate
-# raster_name <- glue::glue("2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36")
-raster_name <- glue::glue("2016_GTAC_LCMSDist_tilesz2000_nT36")
+raster_name <- glue::glue("2016_Orig_Test_keepinbag_ntree250_tilesz2000_nT36")
+# raster_name <- glue::glue("2016_GTAC_LCMSDist_tilesz2000_nT36")
 
 # Initialize home dir
 #-----------------------------------------------#
@@ -94,7 +94,7 @@ target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_ve
 # set path to save output rasters
 # this directory will be created if it does not already exist
 # output_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
-output_dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # for testing
+tmp_output_dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # for testing
 
 #set path for assembled rasters
 assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/')
@@ -131,7 +131,7 @@ if (!is.na(dist_raster_dir)) {
   dist_raster_dir = glue::glue('{dist_raster_dir}/{cur_zone_zero}/01_final')
 }
 
-evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/01_final/EVG_remap_table.csv')
+evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/EVG_remap_table.csv')
 
 
 # Model inputs
@@ -167,6 +167,7 @@ lib_path <- paste(c(spl1[c(1:(length(spl1) - 2))],
                   collapse = "/")
 
 source(lib_path)
+
 
 # # Create directories
 # #----------------------------------------------#
