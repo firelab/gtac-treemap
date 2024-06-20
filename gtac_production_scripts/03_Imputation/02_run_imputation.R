@@ -1,8 +1,10 @@
 # TreeMap Imputation
-# Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # Original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
+# original script: "rmrs_production_scripts/2016_updated_production_scripts/yai-treemap commented.R"
 
-# Last updated: 3/19/2024
+# Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
+
+# Last updated: 6/18/2024
 
 # PART 2: 
 # - Run imputation over input area / target rasters
@@ -17,45 +19,15 @@
 # Set inputs
 ###########################################################################
 
-# Number of cores
-# --------------------------#
-ncores <- 27
-
-# Tiling settings
-# ---------------------------------------#
-# set dimensions of tile - value is the length of one side
-tile_size <- 2000
-
-# # select tiles to run
-# # if NA, defaults to all tiles in list
-which_tiles <- NA
-
-# Standard inputs
-#---------------------------------------------#
-
 # Set inputs - from input script
-this.path <- this.path::this.path() # Id where THIS script is located
+#--------------------------------------------#
 
-# get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste(c(spl[c(1:(length(spl) - 1))],
-                             "00_inputs_for_imp.R"),
-                            collapse = "/")
+this_dir <- this.path::this.dir()
 
-source(input_script.path)
-
-# write out params used, as set in input script
-write.table(as.data.frame(params_out),
-            glue::glue('{output_dir}/params/{cur_zone_zero}_{output_name}_params.txt'),
-            row.names = FALSE)
+inputs_for_imputation<- glue::glue('{this_dir}/00b_zonal_inputs_for_imp.R')
+source(inputs_for_imputation)
 
 ############################################################
-
-# Terra options
-# --------------------------------#
-
-#increase memory fraction available
-terraOptions(memfrac = 0.8)
 
 # Other options
 # --------------------------------#
@@ -65,8 +37,20 @@ terraOptions(memfrac = 0.8)
 
 #options("scipen"=100, "digits"=8)
 
+# Tiling settings
+# ---------------------------------------#
+# set dimensions of tile - value is the length of one side
+tile_size <- 100
+
+# # select tiles to run
+# # if NA, defaults to all tiles in list
+which_tiles <- NA
+
 # Parallelization settings
 #--------------------------------------#
+
+# Number of cores
+ncores <- 27
 
 # set up dopar
 cl <- makeCluster(ncores)
@@ -87,77 +71,27 @@ clusterCall(cl, function() {
 # ---------------------------------------------------------- #
 
 #load model
-yai_treelist_bin <- readr::read_rds(model_path)
+yai <- readr::read_rds(model_path)
 
 
 # Load target rasters
 # --------------------------------------------------------------------#
 
-# list target raster files
-flist.tif <- list.files(path = target_dir, pattern = "*.tif$", 
-                        recursive = TRUE, full.names = TRUE)
 
-# load raster files as terra raster
-rs2 <- terra::rast(flist.tif)
+# list raster files
+flist_tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
 
-# get raster layer names
-layer_names <- flist.tif %>%
-  str_extract(., "z[0-9][0-9]/([^.])*") %>%
-  str_replace("z[0-9][0-9]/", "")
+# filter to target rasters of interest
+flist_tif <- filter_disturbance_rasters(flist_tif, dist_layer_type) # custom function
 
-#add names to raster list
-names(rs2) <- layer_names
+# remove aspect - could make this conditional based on whether or not northing and easting are present in file list
+flist_tif %<>%
+  str_subset("ASPECT", negate = TRUE)
 
-# Conditionally load disturbance rasters from another dir
-#----------------------------------------------------------#
 
-# conditional
-if (!is.na(dist_raster_dir)) {
-  
-  print("loading disturbance rasters to test")
+# load rasters using custom function
+rs2 <- load_target_rasters(flist_tif)
 
- # list files
-  dist_files <- list.files(dist_raster_dir, full.names = TRUE, recursive = TRUE)
-  
-  # filter files if necessary
-  dist_files %<>% 
-    str_subset(pattern = glue::glue('{dist_layer_type}.tif$') ) %>%
-    str_subset(pattern = glue::glue('{cur_zone_zero}_disturb'))
-  
-  # load files in
-  dist <- terra::vrt(dist_files, options = "-separate", 
-                     filename = glue::glue('{tmp_dir}/dist.tif'),
-                     overwrite = TRUE)
-  
-  # ensure layer names match
-  names(dist) <- c("disturb_code", "disturb_year")
-  
-  # reclass disturbance code
-  dist$disturb_code <- terra::classify(dist$disturb_code, cbind(2, 1))
-  
-  # make sure they're in the same projection
-  if (!identical(crs(dist), crs(rs2))) {
-    dist %<>% terra::project(crs(rs2))
-  }
-  
-  # make sure layers align
-  dist %<>% terra::crop(rs2) %>%
-    terra::extend(terra::ext(rs2)) %>%
-    terra::crop(rs2) %>%
-    terra::resample(rs2, method = "near") # check this / maybe make align earlier in processing? off by a fraction of a degree
-  
-  
-  gc()
-  
-  # combine replace disturbance layers in target data
-  rs2$disturb_code <- dist$disturb_code
-  rs2$disturb_year <- dist$disturb_year
-  
-  rm(dist)
-  
-  gc()
-  
-}
 
 # FOR TESTING: Conditionally crop to aoi
 #---------------------------------------------------#
@@ -165,8 +99,11 @@ if (!is.na(aoi_path)) {
   
   print("using input shapefile as AOI")
   
+  # get desired crs
+  lf_crs <- terra::crs(rs2)
+  
   # crop and mask
-  aoi <- terra::vect(aoi_path) %>% terra::project(lf.crs)
+  aoi <- terra::vect(aoi_path) %>% terra::project(lf_crs)
   rs2 <- terra::crop(rs2, aoi, mask = TRUE)
   
   gc()
@@ -193,7 +130,7 @@ row2 <- tile_size
 # ----------------------------------------------------------
 
 # aggregate - template for making tiles
-# get values so i can see which tiles are retained vs NA
+# get values so i can see which tiles overlap the zone
 agg <- terra::aggregate(rs2[[1]], fact = tile_size,
                         fun = "median", na.rm = TRUE)
 
@@ -209,7 +146,7 @@ gc()
 
 # Inspect tiles
 #--------------------------------------------#
-# prepare tiles for visualization
+# prepare tiles for plotting
 p <- terra::init(agg, "cell") %>%
   terra::mask(agg) %>%
   terra::as.polygons(values  = TRUE)
@@ -219,10 +156,12 @@ p$cell <- seq(1:nrow(p))
 
 # plot tiles
 plot(rs2[[2]], legend = FALSE)
-plot(p, "cell", alpha = 0.25, add=TRUE)
+plot(p, "cell", alpha = 0.25, add=TRUE, main = glue::glue("Tiles for imputation over zone {zone_num}"))
 
 # Select tiles to run
 #--------------------------------------------#
+
+n_tiles <- length(tiles)
 
 # if which_tiles is NA, default to all tiles
 if(is.na(which_tiles[1])) {
@@ -234,7 +173,7 @@ if(is.na(which_tiles[1])) {
 # APPLY Imputation OVER TILES
 #------------------------------------------#
 
-print(glue::glue("running over tiles {min(which_tiles)}
+print(glue::glue("Total tiles: {n_tiles}. Running over tiles {min(which_tiles)}
                  to {max(which_tiles)}!"))
 
 for(j in which_tiles) {
@@ -243,7 +182,7 @@ for(j in which_tiles) {
   tic()
   
   # for test 
-  #j <- 2
+  #j <- 3
   
   # select tile to run
   fn <- tiles[j]
@@ -261,11 +200,11 @@ for(j in which_tiles) {
   # Prep raster inputs
   #--------------------------------------------#
   
-  # Calculate northing and easting from aspect
-  ras$NORTHING <- terra::app(ras$ASPECT, function(i) cos((pi / 180) * i))
-  names(ras$NORTHING) <- "NORTHING"
-  ras$EASTING <- terra::app(ras$ASPECT, function(i) sin((pi / 180) * i))
-  names(ras$EASTING) <- "EASTING"
+  # # Calculate northing and easting from aspect
+  # ras$NORTHING <- terra::app(ras$ASPECT, function(i) cos((pi / 180) * i))
+  # names(ras$NORTHING) <- "NORTHING"
+  # ras$EASTING <- terra::app(ras$ASPECT, function(i) sin((pi / 180) * i))
+  # names(ras$EASTING) <- "EASTING"
   
   gc()
   
@@ -281,7 +220,7 @@ for(j in which_tiles) {
   names(ras$POINT_Y) <- "POINT_Y"
   
   # remove aspect
-  ras$ASPECT <- NULL
+  #ras$ASPECT <- NULL
   
   gc()
   
@@ -296,8 +235,8 @@ for(j in which_tiles) {
   #----------------------------#
 
   f <- foreach(i = 1:nrow_r,
-    .packages = c("tidyverse", "yaImpute", "glue")
-    #.export = c("mat", "impute.row", "yai_treelist_bin")
+    .packages = c("tidyverse", "yaImpute", "glue"),
+    .export = c("mat", "impute.row", "yai", "tmp_dir" )
   ) %dopar% {
 
     # # for testing
@@ -309,8 +248,8 @@ for(j in which_tiles) {
                     mat[(ncol_r * (i - 1) + 1):(ncol_r * i), ])
     
     # impute on row of data - input is named row of data + yai
-    row <- impute.row(dat = d,
-                      yai = yai_treelist_bin, test = FALSE)
+    row <- impute_row(dat = d,
+                      yai = yai, test = FALSE)
     
     # label for row - to keep rows in order
     i_out <- if (i < 10) { glue::glue("000{i}")
@@ -320,8 +259,7 @@ for(j in which_tiles) {
     }
     
     saveRDS(row,
-      paste0(tmp_dir, "/rows/row", i_out, ".RDS") # glue doesn't work in parallel
-    )
+      glue::glue("{tmp_dir}/rows/row{i_out}.RDS")) 
    
    } # end do par
              
@@ -357,9 +295,7 @@ for(j in which_tiles) {
 
   # export
   terra::writeRaster(tile_out,
-              # glue doesn't work for file names within future loop
-              glue::glue('{output_dir}raster/tiles/{output_name}_tilesz{tile_size}_nT{length(tiles)}_tile{j}.tif'),
-              #paste0(output_dir,'raster/tiles/',output_name,'_tilesz',tile_size,'_nT',length(tiles),'_tile',j,'.tif'),
+              glue::glue('{output_dir}/raster/tiles/{output_name}_tile{j}.tif'),
               datatype = "INT4U",
               overwrite = TRUE)
 
@@ -369,7 +305,7 @@ for(j in which_tiles) {
   # delete rows from tmp dir - fresh start for next tile
   do.call(unlink, list(rlist))
 
-  print(glue::glue("done with tile {j} !"))
+  print(glue::glue("done with tile {j} of {n_tiles}!"))
   toc() # report time elapsed
 
 }

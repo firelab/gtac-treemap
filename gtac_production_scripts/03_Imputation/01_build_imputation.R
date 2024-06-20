@@ -1,9 +1,10 @@
 # TreeMap Imputation
-# Original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
+# Based on original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
 #   and Karin Riley (karin.riley@usda.gov)
+# original script: "rmrs_production_scripts/2016_updated_production_scripts/yai-treemap commented.R"
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
-# Last updated: 4/1/2024
+# Last updated: 6/20/2024
 
 # PART 1: 
 # - BUILD x and y tables
@@ -11,26 +12,18 @@
 # - Build model for a zone
 # - Save model validation
 
-# TO DO: 
-# - replace coords here (currently  buffered from FIA db) with full coords
-
-
 ##################################################
 # Set inputs
 ###################################################
 
 # Set inputs - from input script
-this.path <- this.path::this.path() # Id where THIS script is located
+#--------------------------------------------#
 
-# get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script_path <- paste( c(spl[c(1:(length(spl)-1))],
-                              "00_inputs_for_imp.R" ),
-                            collapse = "/")
+this_dir <- this.path::this.dir()
 
-source(input_script_path)
-
-
+inputs_for_imputation<- glue::glue('{this_dir}/00b_zonal_inputs_for_imp.R')
+source(inputs_for_imputation)
+  
 # Other options
 # --------------------------------#
 
@@ -45,19 +38,21 @@ options("scipen" = 100, "digits" = 8)
 
 # list raster files
 flist_tif <- list.files(path = target_dir, pattern = "*.tif$",
-                        recursive = FALSE, full.names = TRUE)
+                        recursive = TRUE, full.names = TRUE)
 
 # filter to layers of interest
+#inspect
+#flist_tif
 
-# load raster files as raster stack
-rs2 <- terra::rast(flist_tif[1])
+# load raster files
+rs2 <- terra::rast(flist_tif[5])
 
 # get raster names 
-raster_names <- flist_tif[1] %>%
+raster_names <- flist_tif[5] %>%
   str_extract(., "z[0-9][0-9]/([^.])*") %>%
   str_replace("z[0-9][0-9]/", "")
 
-#add names to raster list
+#add name to raster 
 names(rs2) <- raster_names
 
 # Load X table
@@ -169,6 +164,8 @@ plot_df %<>%
   mutate(disturb_code = ifelse(disturb_code > 0, 1, disturb_code),
          disturb_code = factor(disturb_code))
 
+
+
 # Create X table - orig (aka training table)
 # ---------------------------------------------------------#
 
@@ -196,11 +193,11 @@ rownames(Y_df) <- plot_df$ID
 #include CN in export so tables can be joined back 
 X_df %>%
   mutate(CN = plot_df$CN) %>%
-  write.csv(., glue::glue("{output_dir}/xytables/{cur_zone_zero}_{output_name}_Xdf_bin.csv"))
+  write.csv(., glue::glue("{output_dir}/xytables/{output_name}_Xdf_bin.csv"))
 
 Y_df %>%
   mutate(CN = plot_df$CN) %>%
-  write.csv(., glue::glue("{output_dir}/xytables/{cur_zone_zero}_{output_name}_Ydf_bin.csv"))
+  write.csv(., glue::glue("{output_dir}/xytables/{output_name}_Ydf_bin.csv"))
 
 
 # Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code)
@@ -208,28 +205,59 @@ Y_df %>%
 set.seed(56789)
 
 tic()
-yai_treelist_bin <- yai(X_df, Y_df,
+yai_treelist_bin <- yaImpute::yai(X_df, Y_df,
                         method = "randomForest",
-                        ntree = 250)
+                        ntree = 250,
+                        oob = TRUE # this option only available in the dev version of yaImpute found here: https://github.com/jeffreyevans/yaImpute
+                        )
 toc()
 
 # Export model
 write_rds(yai_treelist_bin, model_path)
 
 
-# Report model accuracy for Y variables (EVC, EVH, EVG)
+# Report model accuracy for Response variables (EVC, EVH, EVG, disturb code)
 # ------------------------------------------------------------------------#
 
 #RF summary
 RF_sum <- yaiRFsummary(yai_treelist_bin)
 
-# Confusion matrices
-cm_EVC <- yai_treelist_bin$ranForest$canopy_cover$confusion
-cm_EVH <- yai_treelist_bin$ranForest$canopy_height$confusion
-cm_EVT_GP <- yai_treelist_bin$ranForest$EVT_GP$confusion
-cm_DC <- yai_treelist_bin$ranForest$disturb_code$confusion
+# for var in response variables, get a full suite of cms 
+# and then combine into a list RDS that I can plot the same way I do the others
+response_vars <- names(Y_df)
 
-# variable importance
+cms_list <- NULL
+
+for (i in seq_along(response_vars)) {
+  
+  # for testing
+  #i = 4
+  
+  var = response_vars[i]
+  
+  # get random forest model
+  rf_in <- yai_treelist_bin$ranForest[var]
+  
+  # get predicted and ref table from RF model and X table
+  p_r<- get_pr_RF(rf_in, X_df)
+  
+  # get confusion matrices desired
+  cm <- eval_cm_function(p_r)
+  
+  # append to a list to write out
+  cms_list <- c(cms_list, cm)
+  
+}
+
+# name 
+names(cms_list) <- response_vars
+
+saveRDS(cms_list, file = glue::glue("{output_dir}/model_eval/{output_name}_CMs_ResponseVariables.RDS"))
+
+
+#########################
+
+# Get variable importance
 varImp <- data.frame(RF_sum$scaledImportance)
 
 # process variable importance table for plotting
@@ -252,14 +280,7 @@ p <- varImp %>%
 # export to file
 ggsave(glue::glue("{output_dir}/model_eval/{output_name}_varImp.png"),
        width = 7, height = 5)
-write.csv(cm_EVC,
-          glue::glue("{output_dir}/model_eval/{output_name}_CM_canopyCover.csv"))
-write.csv(cm_EVH,
-          glue::glue("{output_dir}/model_eval/{output_name}_CM_canopyHeight.csv"))
-write.csv(cm_EVT_GP,
-          glue::glue("{output_dir}/model_eval/{output_name}_CM_EVT_Group.csv"))
-write.csv(cm_DC,
-          glue::glue("{output_dir}/model_eval/{output_name}_CM_DisturbanceCode.csv"))
+
 
 # clear unused memory
 gc()

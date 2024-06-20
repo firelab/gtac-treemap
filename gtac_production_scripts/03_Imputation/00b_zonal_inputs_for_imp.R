@@ -5,6 +5,8 @@
 
 # Last updated: 6/17/24
 
+# TO DO: what target data params can i pull in from target data RDS? 
+
 ###########################################################################
 # Set user inputs
 ###########################################################################
@@ -14,7 +16,7 @@ zone = 19
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_project_inputs_for_imp.R
 # path is relative to script location
-imputation_params_path <- "/params/2016_GTAC_Test_imputation_inputs.RDS"
+imputation_params_path <- "/params/2016_GTAC_LCMSDist_imputation_inputs.RDS"
 
 # model to use - supply path specific model to pull into imputation, or NA
 # path should be relative to home directory
@@ -69,23 +71,21 @@ source(lib_path)
 data_dir <- glue::glue('{home_dir}/01_Data/')
 
 # Path to X table
-xtable_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/{ref_data_version}/X_table_all_singlecondition.txt")
+xtable_path <- glue::glue("{home_dir}/{xtable_path}")
 
 # Directory where target rasters live
 target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/")
 
-# Directory where disturbance layers live
-# If disturbance layers live in the same dir, then NA
-dist_raster_dir <- NA
+# Directory where disturbance layers live 
+dist_raster_dir <- target_dir 
 #dist_raster_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
 
-
 # Directory where EVT_GP remap table is located
-#evt_gp_remap_table_dir <- target_dir
-evt_gp_remap_table_dir <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/')
+evt_gp_remap_table_dir <- target_dir
+#evt_gp_remap_table_dir <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/')
 
 # Plot coordinates
-coords_path <- glue::glue('{home_dir}01_Data/04_FIA/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv')
+coords_path <- glue::glue('{FIA_dir}/{coords_path}')
 
 # Paths for exporting data
 #--------------------------------------#
@@ -143,8 +143,12 @@ if(is.na(aoi_name)) {
 }
 
 
-# Update dirs with zone
+# Update names and dirs with zone
 # -----------------------------------------#
+
+output_name <- glue::glue("{cur_zone_zero}_{output_name}")  
+
+
 target_dir = glue::glue('{target_dir}/{cur_zone_zero}/')
 output_dir = glue::glue('{output_dir}/{cur_zone_zero}/')
 assembled_dir = glue::glue('{assembled_dir}/{cur_zone_zero}')
@@ -153,7 +157,7 @@ eval_dir <- glue::glue('{eval_dir}{cur_zone_zero}')
 tile_dir <- glue::glue('{output_dir}raster/tiles/')
 model_dir = glue::glue('{output_dir}/model/')
 
-evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/01_final/EVG_remap_table.csv')
+evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/EVG_remap_table.csv')
 params_dir = glue::glue('{output_dir}/params/')
 
 if (!is.na(dist_raster_dir)) {
@@ -169,10 +173,11 @@ if(is.na(model_path)) {
   
   # Path where model is located
   # This path will be used for export and import
-  model_path <- glue::glue('{output_dir}/model/{cur_zone_zero}_{model_path1}.RDS')
+  model_path <- glue::glue('{output_dir}/model/{model_path1}.RDS')
+  
+  rm(model_path1)
   
 }
-
 
 # Set up temp directory 
 #----------------------------------#
@@ -185,8 +190,7 @@ if (!file.exists(tmp_dir)){
 write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
 
 #empty temp dir
-do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRUE)))
-#rmdir(tmp_dir, recursive = FALSE)
+#do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRUE)))
 
 # create tmp dir folder for rows
 if (!file.exists(glue::glue('{tmp_dir}/rows/'))) {
@@ -246,10 +250,10 @@ if(!file.exists(glue::glue('{assembled_dir}/02_Assembled_vars/'))){
 
 # Remove unused objects
 #------------------------------------------------#
-rm(model_path1)
+
 
 
 # Make RDS of input parameters used
 #---------------------------------------------------------#
-save(list = ls(), file = glue::glue('{params_dir}/{cur_zone_zero}_{output_name}_env.RDS'))
+save(list = ls(), file = glue::glue('{params_dir}/{output_name}_env.RDS'))
 
