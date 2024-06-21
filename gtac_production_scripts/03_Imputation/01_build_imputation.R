@@ -193,11 +193,11 @@ rownames(Y_df) <- plot_df$ID
 #include CN in export so tables can be joined back 
 X_df %>%
   mutate(CN = plot_df$CN) %>%
-  write.csv(., glue::glue("{output_dir}/xytables/{output_name}_Xdf_bin.csv"))
+  write.csv(., glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv"))
 
 Y_df %>%
   mutate(CN = plot_df$CN) %>%
-  write.csv(., glue::glue("{output_dir}/xytables/{output_name}_Ydf_bin.csv"))
+  write.csv(., glue::glue("{raw_outputs_dir}/xytables/{output_name}_Ydf_bin.csv"))
 
 
 # Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code)
@@ -252,7 +252,7 @@ for (i in seq_along(response_vars)) {
 # name 
 names(cms_list) <- response_vars
 
-saveRDS(cms_list, file = glue::glue("{output_dir}/model_eval/{output_name}_CMs_ResponseVariables.RDS"))
+saveRDS(cms_list, file = glue::glue("{raw_outputs_dir}/model_eval/{output_name}_CMs_ResponseVariables.RDS"))
 
 
 #########################
@@ -278,7 +278,7 @@ p <- varImp %>%
 
 
 # export to file
-ggsave(glue::glue("{output_dir}/model_eval/{output_name}_varImp.png"),
+ggsave(glue::glue("{raw_outputs_dir}/model_eval/{output_name}_varImp.png"),
        width = 7, height = 5)
 
 

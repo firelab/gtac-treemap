@@ -40,7 +40,7 @@ source(inputs_for_imputation)
 # Tiling settings
 # ---------------------------------------#
 # set dimensions of tile - value is the length of one side
-tile_size <- 100
+tile_size <- 2000
 
 # # select tiles to run
 # # if NA, defaults to all tiles in list
@@ -295,7 +295,7 @@ for(j in which_tiles) {
 
   # export
   terra::writeRaster(tile_out,
-              glue::glue('{output_dir}/raster/tiles/{output_name}_tile{j}.tif'),
+              glue::glue('{raw_outputs_dir}/raster/tiles/{output_name}_tile{j}.tif'),
               datatype = "INT4U",
               overwrite = TRUE)
 

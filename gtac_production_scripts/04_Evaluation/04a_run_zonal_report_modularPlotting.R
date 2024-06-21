@@ -2,27 +2,11 @@
 # Written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # Updated by Abhinav Shrestha (abhinav.shrestha@usda.gov)
 
-# Last updated: 06/18/2024
+# Last updated: 06/21/2024
 
 
 # TODO:
 # add continuous vars to report - from plots already made 
-
-### SETUP AND RUN
-######################################
-
-ptm <- Sys.time()
-
-# packages required
-list.of.packages <- c("terra", "tidyverse", "magrittr", "glue", "tictoc", "foreach", "doParallel", "this.path", "stringr", "stringi")
-
-# #check for packages and install if needed
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages) > 0) install.packages(new.packages)
-
-# load all packages
-vapply(list.of.packages, library, logical(1L),
-       character.only = TRUE, logical.return = TRUE)
 
 
 #==========================================================#
@@ -84,12 +68,9 @@ exportDir <- "path-to-export" # Set path to export plots to. Required ONLY if `s
 
 report_format <- "word_document" # options: pdf_document, word_document, html_document
 
-document_formatExtentionDict <- c("pdf_document" = ".pdf", 
+document_formatExtensionDict <- c("pdf_document" = ".pdf", 
                                   "word_document" = ".docx", 
                                   "html_document" = ".html")
-
-
-
 
 #-------------------------------------------#
 #                                           #
@@ -97,23 +78,14 @@ document_formatExtentionDict <- c("pdf_document" = ".pdf",
 #                 ~~~~~~~~~~~~~~~~~~~~~~    #
 #-------------------------------------------#
 
-# Set inputs - from input script
-this.path <- this.path::this.path() # Id where THIS script is located
 
-# get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script_path <- paste(c(spl[c(1:(length(spl) - 1))],
-                             "00_inputs_for_evaluation.R"),
-                           collapse = "/")
+# Set inputs - from input script used for imputation
+#-----------------------------------------------------#
 
-source(input_script_path)
+this_dir <- this.path::this.dir()
 
-# get path to evaluation plotting function library
-evalPlotFunctions_lib_path <- paste(c(spl[c(1:(length(spl) - 1))],
-                             "evalPlottingFunctionLib.R"),
-                           collapse = "/")
-
-source(evalPlotFunctions_lib_path)
+inputs_for_evaluation <- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
+source(inputs_for_evaluation)
 
 # Other settings
 #------------------------------------------#
@@ -132,15 +104,13 @@ options("scipen" = 100, "digits" = 8)
 # Prep constructed paths
 #------------------------------------------#
 
+this_dir <- this.path::this.dir()
+
 # get path to rmd
-rmd_path <- paste(c(spl[c(1:(length(spl) - 1))],
-                    "04b_zonal_eval_report_generator_modularPloting.Rmd"),
-                  collapse = "/")
+rmd_path <- glue::glue("{this_dir}/04b_zonal_eval_report_generator_modularPloting.Rmd")
 
 # set dir for temporary outputs - needs to be a place w/ write permissions for R (network drives aren't allowed)
-tmpout_dir <- paste(c(spl[c(1:(length(spl) - 1))],
-                      "tmp/"),
-                    collapse = "/")
+tmpout_dir <- tmp_dir
 
 plot_labels <- c("Imputed", "Observed")
 
@@ -167,14 +137,14 @@ if (exists("ras")){
     
     # ras exists but not the same as previous one
     # load raw imputation output raster
-    ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{raster_name}.tif"))
-    raster_nameCompare <- raster_name
+    ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}.tif"))
+    raster_nameCompare <- output_name
   }
 } else {
   
   # load raw imputation output raster
-  ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{raster_name}.tif"))
-  raster_nameCompare <- raster_name
+  ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}.tif"))
+  raster_nameCompare <- output_name
   
 }
 
@@ -186,12 +156,12 @@ if (exists("ras")){
 
 if(eval_type == "OOB") {
   
-  cms_path <- glue::glue("{eval_dir}/01_OOB_Evaluation/{output_Name}_CMs_{eval_type}.RDS")
+  cms_path <- glue::glue("{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_{eval_type}.RDS")
   plot_labels <- c("Imputed", "Observed (Out-of-bag)")
 
 } else if(eval_type == "TargetLayerComparison") {
   
-  cms_path <- glue::glue("{eval_dir}/02_Target_Layer_Comparison/{output_Name}_CMs_{eval_type}.RDS")
+  cms_path <- glue::glue("{eval_dir}/02_Target_Layer_Comparison/{output_name}_CMs_{eval_type}.RDS")
   plot_labels <- c("Imputed", "Observed (Target Layers)")
 }
 
@@ -340,10 +310,10 @@ names(rat_freq_all) <- eval_vars
 
 rmarkdown::render(rmd_path,
                   output_format = report_format,
-                  output_file = glue::glue("{cur_zone_zero}_{output_Name}_eval_report_{eval_type}"),
+                  output_file = glue::glue("{output_name}_eval_report_{eval_type}"),
                   output_dir = tmpout_dir,
                   #build df of params to share with rmd
-                  params = list(raster_name = raster_name,
+                  params = list(raster_name = output_name,
                                 zone_num = zone_num,
                                 eval_type = eval_type,
                                 eval_vars= eval_vars,
@@ -354,22 +324,23 @@ rmarkdown::render(rmd_path,
 #------------------------------------------#
 #
 
-fileExtenstion <- document_formatExtentionDict[[report_format]]
+fileExtension <- document_formatExtensionDict[[report_format]]
 
 message("\n\nCopying rendered report from tmp directory to output directory...")
 
 message(glue::glue("-- Output directory: {tmpout_dir}\n\n"))
 
 # move report from tmpout dir to desired out dir
-file.copy(from=glue::glue("{tmpout_dir}/{cur_zone_zero}_{output_Name}_eval_report_{eval_type}{fileExtenstion}"),
-          to= glue::glue("{tmp_output_dir}/"), # CHANGE HERE glue::glue("{eval_dir}/04_Eval_Reports/")
+file.copy(from=glue::glue("{tmpout_dir}/{output_name}_eval_report_{eval_type}{fileExtension}"),
+          #to= glue::glue("{tmp_output_dir}/"), 
+          to = glue::glue("{eval_dir}/04_Eval_Reports/"),
           overwrite = TRUE, recursive = FALSE,
           copy.mode = TRUE)
 
 message("Copied report, removing file from tmp directory...")
 
 # remove file from tmp location
-file.remove(glue::glue("{tmpout_dir}/{cur_zone_zero}_{output_Name}_eval_report_{eval_type}{fileExtenstion}"))
+file.remove(glue::glue("{tmpout_dir}/{output_name}_eval_report_{eval_type}{fileExtension}"))
 message("Render complete!")
 
 Sys.time() - ptm

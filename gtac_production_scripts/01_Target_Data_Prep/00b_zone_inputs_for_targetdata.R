@@ -15,7 +15,7 @@
 # Set user inputs
 ###########################################################################
 
-zone = 19
+zone = 10
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_inputs_for_target_data.R
 # path is relative to script location

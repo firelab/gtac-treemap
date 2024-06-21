@@ -36,9 +36,6 @@ source(inputs_for_imputation)
 # Specific inputs
 #----------------------------------------------------------#
 
-# how many digits to round stats to 
-round_dig = 4
-
 # list layers to export
 eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
                    "disturb_code")

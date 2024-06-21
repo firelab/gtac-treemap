@@ -59,13 +59,18 @@ if (!exists("pltObj")) {
 if (include_paramTable == "Y"){
 
     # TODO: un-comment when rest of the data is this structure, no only .RDS file available for `2016_GTAC_Test` project
-  # params_RDS_path <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/z{zone_num}/params/z{zone_num}_{project_name}_params.RDS")
-   
-  params_RDS_path <- glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z{zone_num}/params/z{zone_num}_2016_Orig_Test_params.RDS")
+  #params_RDS_path <- glue::glue('{params_dir}/{output_name}_paramsTable.RDS')
   
-  load(params_RDS_path)
+  params_csv_path <- glue::glue('{params_dir}/{output_name}_paramsTable.csv')
   
-  param_table <- RDS_toTable(params_out)
+  #params_RDS_path <- glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z{zone_num}/params/z{zone_num}_2016_Orig_Test_params.RDS")
+  
+  #load(params_RDS_path)
+  
+  param_table <- read.csv(params_csv_path)
+  
+  #param_table <- RDS_toTable(params_RDS_path)
+  param_table <- paramsCSV_toFlexTable(param_table)
   
   cat("\n\n\\pagebreak\n")
   cat("Run paramters:")

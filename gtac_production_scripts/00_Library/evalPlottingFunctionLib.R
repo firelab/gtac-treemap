@@ -197,6 +197,17 @@ plot_scatter_obsVClassAcc <- function(df, var_in, zone_num, save_Plot, exportDir
     
 }
 
+# Report Rendering
+########################################################
+
+FitFlextableToPage <- function(ft, pgwidth){
+  
+  ft_out <- ft %>% autofit()
+  
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+
 # ----------------------------------------------------------------------------------------
 
 RDS_toTable <- function(paramsObj){
@@ -236,14 +247,6 @@ RDS_toTable <- function(paramsObj){
   #                                     style = "Normal") %>% 
   #               officer::body_add_par(value = "\n")
   
-  # Custom function to autofit table to word doc
-  FitFlextableToPage <- function(ft, pgwidth = 6){
-    
-    ft_out <- ft 
-    
-    ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
-    return(ft_out)
-  }
   
   # if (is.null(exportDocName)){
   #   exportDoc_name <- glue::glue("{project_name}_{cur_zone_zero}_PARAMS.docx")
@@ -252,7 +255,60 @@ RDS_toTable <- function(paramsObj){
   # }
   
   # Export
-  param_table <- FitFlextableToPage(params_df_toConvert)
+  param_table <- FitFlextableToPage(params_df_toConvert, pgwidth = 6)
+  
+  return(param_table)
+  
+}
+
+#---------------------------------------------------------------------------#
+
+paramsCSV_toFlexTable <- function(csv){
+  #' Convert params variables loaded via CSV to a Word document table
+  #'
+  #' @param paramsObj Object containing parameters loaded via CSV. The default name is `params_out` when using `load(RDS-path)`. Required column names are "param" and "value".
+  #'
+  #' @return
+  #' @export Flextable (formatted)
+  #'
+  #' @examples
+  
+  # inspo: https://datafortress.github.io/en/2018/06/word-tables-with-r/ 
+  
+  # Convert params object to data.frame
+  params_df <- data.frame(csv) %>% 
+    dplyr::rename(Parameter = param, 
+                  Value = value)
+  
+  
+  # Convert df to flextable and autofit contents
+  params_df_toConvert <- flextable::flextable(data = params_df) %>%
+    flextable::font(fontname = "Cambria", i = 1, j = NULL) %>% 
+    flextable::bold(i = 1, j = NULL, bold = TRUE, part = "header") %>% 
+    flextable::width(j = 1, width = 0.25, unit= "in") %>% 
+    flextable::font(fontname = "Consolas", j = 1) %>% 
+    flextable::font(fontname = "Calibri", j = 2)
+  # flextable::autofit()
+  
+  
+  # # Create empty word doc
+  # params_doc <- officer::read_docx()
+  # 
+  # # Add title for table in empty word doc
+  # params_doc <- officer::body_add_par(params_doc, 
+  #                                     value = glue::glue("{project_name}, {cur_zone_zero} parameters"), 
+  #                                     style = "Normal") %>% 
+  #               officer::body_add_par(value = "\n")
+  
+  
+  # if (is.null(exportDocName)){
+  #   exportDoc_name <- glue::glue("{project_name}_{cur_zone_zero}_PARAMS.docx")
+  # } else {
+  #   exportDoc_name <- exportDocName
+  # }
+  
+  # Export
+  param_table <- FitFlextableToPage(params_df_toConvert, pgwidth = 6)
   
   return(param_table)
   

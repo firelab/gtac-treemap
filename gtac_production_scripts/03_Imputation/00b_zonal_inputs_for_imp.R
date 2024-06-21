@@ -3,7 +3,7 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 6/17/24
+# Last updated: 6/21/24
 
 # TO DO: what target data params can i pull in from target data RDS? 
 
@@ -66,9 +66,11 @@ source(lib_path)
 
 # Build constructed inputs - less likely to change
 #-----------------------------------------------------------------#
-
 # data directory - where source data are located
 data_dir <- glue::glue('{home_dir}/01_Data/')
+
+# set path to landfire vector data
+lf_zones_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
 
 # Path to X table
 xtable_path <- glue::glue("{home_dir}/{xtable_path}")
@@ -92,7 +94,7 @@ coords_path <- glue::glue('{FIA_dir}/{coords_path}')
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
-output_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
+raw_outputs_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
 
 #set path for assembled rasters
 assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/')
@@ -100,8 +102,6 @@ assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02
 # Evaluation dir
 eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/')
 
-# Params path
-params_path <- glue::glue('{output_dir}/params/')
 
 # CRS paths
 #----------------------------------------------------#
@@ -148,17 +148,17 @@ if(is.na(aoi_name)) {
 
 output_name <- glue::glue("{cur_zone_zero}_{output_name}")  
 
-
 target_dir = glue::glue('{target_dir}/{cur_zone_zero}/')
-output_dir = glue::glue('{output_dir}/{cur_zone_zero}/')
+raw_outputs_dir = glue::glue('{raw_outputs_dir}/{cur_zone_zero}/')
+params_dir <- glue::glue('{raw_outputs_dir}/params/')
 assembled_dir = glue::glue('{assembled_dir}/{cur_zone_zero}')
 eval_dir <- glue::glue('{eval_dir}{cur_zone_zero}')
 
-tile_dir <- glue::glue('{output_dir}raster/tiles/')
-model_dir = glue::glue('{output_dir}/model/')
+tile_dir <- glue::glue('{raw_outputs_dir}raster/tiles/')
+model_dir = glue::glue('{raw_outputs_dir}/model/')
 
 evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/EVG_remap_table.csv')
-params_dir = glue::glue('{output_dir}/params/')
+params_dir = glue::glue('{raw_outputs_dir}/params/')
 
 if (!is.na(dist_raster_dir)) {
   dist_raster_dir = glue::glue('{dist_raster_dir}/{cur_zone_zero}/')
@@ -173,59 +173,40 @@ if(is.na(model_path)) {
   
   # Path where model is located
   # This path will be used for export and import
-  model_path <- glue::glue('{output_dir}/model/{model_path1}.RDS')
+  model_path <- glue::glue('{raw_outputs_dir}/model/{model_path1}.RDS')
   
   rm(model_path1)
   
 }
 
-# Set up temp directory 
-#----------------------------------#
 
-# check if tmp directory exists ; create it if it doesn't
-if (!file.exists(tmp_dir)){
-  dir.create(tmp_dir) }
-
-# set temp directory - helps save space with R terra
-write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
-
-#empty temp dir
-#do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRUE)))
-
-# create tmp dir folder for rows
-if (!file.exists(glue::glue('{tmp_dir}/rows/'))) {
-  dir.create(glue::glue('{tmp_dir}/rows/'))
-}
-                                                       
-#remove unused memory
-gc()
 
 # Create all directories
 # ----------------------------------#
 
 # output dir
-if (!file.exists(output_dir)) {
-  dir.create(output_dir, recursive = TRUE)
+if (!file.exists(raw_outputs_dir)) {
+  dir.create(raw_outputs_dir, recursive = TRUE)
 }
 
 #create output directory
-if(!file.exists(glue('{output_dir}/xytables'))){
-  dir.create(glue('{output_dir}/xytables'))
+if(!file.exists(glue('{raw_outputs_dir}/xytables'))){
+  dir.create(glue('{raw_outputs_dir}/xytables'))
 }
 
 #create output directory
-if(!file.exists(glue('{output_dir}/model'))){
-  dir.create(glue('{output_dir}/model'))
+if(!file.exists(glue('{raw_outputs_dir}/model'))){
+  dir.create(glue('{raw_outputs_dir}/model'))
 }
 
 #create output directory
-if(!file.exists(glue('{output_dir}/model_eval'))){
-  dir.create(glue('{output_dir}/model_eval'))
+if(!file.exists(glue('{raw_outputs_dir}/model_eval'))){
+  dir.create(glue('{raw_outputs_dir}/model_eval'))
 }
 
 #create output directory
-if(!file.exists(glue('{output_dir}/params'))){
-  dir.create(glue('{output_dir}/params'))
+if(!file.exists(glue('{raw_outputs_dir}/params'))){
+  dir.create(glue('{raw_outputs_dir}/params'))
 }
 
 # tile_dir
@@ -248,10 +229,56 @@ if(!file.exists(glue::glue('{assembled_dir}/02_Assembled_vars/'))){
   dir.create(glue::glue('{assembled_dir}/02_Assembled_vars/'), recursive = TRUE)
 }
 
+
+# Set up temp directory 
+#----------------------------------#
+
+# check if tmp directory exists ; create it if it doesn't
+if (!file.exists(tmp_dir)){
+  dir.create(tmp_dir) }
+
+# set temp directory - helps save space with R terra
+write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
+
+#empty temp dir
+#do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRUE)))
+
+# create tmp dir folder for rows
+if (!file.exists(glue::glue('{tmp_dir}/rows/'))) {
+  dir.create(glue::glue('{tmp_dir}/rows/'))
+}
+
+#remove unused memory
+gc()
+
+
 # Remove unused objects
 #------------------------------------------------#
+params_out <- data.frame(
+  project_name,
+  output_name,
+  cur_zone_zero,
+  aoi_name,
+  target_data_version,
+  ref_data_version,
+  dist_raster_dir,
+  model_path,
+  xtable_path,
+  output_crs_name, 
+  output_crs
+  ) %>%
+    bind_rows() %>%
+    t() %>%
+    data.frame() %>%
+    rownames_to_column() %>%
+    rename(value = ".",
+           param = "rowname") %>%
+    select(param, value)
 
-
+# write out params used as table
+####################################
+write.csv(params_out, 
+          glue::glue('{params_dir}/{output_name}_paramsTable.csv'))
 
 # Make RDS of input parameters used
 #---------------------------------------------------------#

@@ -12,7 +12,8 @@
 # packages required
 list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
                       "magrittr", "tictoc", "caret", "randomForest", 
-                      "Metrics", "foreach", "doParallel", "yaImpute", "docstring")
+                      "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
+                      "stringr", "stringi")
 
 # Install dev version of yaImpute - to make sure we get the option to retain OOB obs
 message("Installing dev version of yaImpute package")
@@ -562,15 +563,5 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   
 }
 
-# Report Rendering
-########################################################
-
-FitFlextableToPage <- function(ft, pgwidth){
-  
-  ft_out <- ft %>% autofit()
-  
-  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
-  return(ft_out)
-}
 
 
