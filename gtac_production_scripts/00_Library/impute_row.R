@@ -1,7 +1,7 @@
 # Function to make new imputation predictions given a raster input
 # This function is applied on a DATA FRAME (representing one row of raster) INSTEAD OF RASTER
 
-impute.row <- function(dat, yai, test)  { 
+impute_row <- function(dat, yai, test)  { 
   
   require(yaImpute)
   require(dplyr)
@@ -113,7 +113,7 @@ impute.row <- function(dat, yai, test)  {
     
     # Option for TESTING  - skip imputation
     if(test == TRUE){
-      # test output - simple extract the same size ans format as impute.row
+      # test output - simple extract the same size and format as impute.row
       test.out.tmp <- as.numeric(unlist(extract.currow[2]))
       test.out <- impute.out
       test.out[valid.cols] <- test.out.tmp

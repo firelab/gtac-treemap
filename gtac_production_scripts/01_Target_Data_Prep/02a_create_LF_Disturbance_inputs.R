@@ -21,7 +21,6 @@
 # 1 = 1 tile, 5 = many tiles
 break.up <- 10
 
-
 # get path to inputs script
 this_dir <- this.path::this.dir()
 inputs_script <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
@@ -31,21 +30,21 @@ source(inputs_script)
 # Parallelization settings
 #--------------------------------------#
 
-# # set number of cores used for parallelization
-# ncores <- 5
-# 
-# # set up dopar
-# cl <- makeCluster(ncores, outfile = glue::glue("{tmp_dir}/cl_report.txt"))
-# registerDoParallel(cl)
-# #registerDoSEQ() # option to register sequentially - for testing
-# 
-# # load packages to each cluster
-# clusterCall(cl, function(){
-#   library(tidyverse);
-#   library(magrittr);
-#   #library(glue);
-#   library(terra)
-# })
+# set number of cores used for parallelization
+ncores <- 5
+
+# set up dopar
+cl <- makeCluster(ncores, outfile = glue::glue("{tmp_dir}/cl_report.txt"))
+registerDoParallel(cl)
+#registerDoSEQ() # option to register sequentially - for testing
+
+# load packages to each cluster
+clusterCall(cl, function(){
+  library(tidyverse);
+  library(magrittr);
+  #library(glue);
+  library(terra)
+})
 
 
 ###################################################

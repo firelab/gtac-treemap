@@ -307,6 +307,5 @@ writeRaster(lcms_slowloss_binary,
             datatype = "INT2U",
             overwrite = TRUE)
 
-
-
+gc()
 
