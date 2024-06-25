@@ -1,8 +1,20 @@
-### Function to get out-of-bag predictions and counts for all trees in a yai model
-# returns the row name, or index, of an input reference that is the nearest neighbor
-# for eachreference prediction for each tree
+# Function to get out-of-bag cn predictions from a given yai object
+# returns a list of reference (ref) IDs, predicted (pred) IDs, tree number (1-ntrees in mode),
+# and the # of times that ref was included in-bag
+# so, where inbag_count = 0, that was an out-of-bag observation for that tree
+
+library(docstring)
 
 get_OOBs_yai <- function(yai) {
+  
+  #' Get out-of-bag observations from a yai-impute Random Forest model
+  #'
+  #' @param yai model created by the `yaImpute` function, using the Dev option oob = TRUE
+  #'
+  #' @return table of predicted vs observed
+  #' @export
+  #'
+  #' @examples 
   
   require(yaImpute)
   require(tidyverse)
