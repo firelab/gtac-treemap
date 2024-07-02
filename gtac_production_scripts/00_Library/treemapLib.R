@@ -91,6 +91,18 @@ rm(this_path, this_dir, snames)
 # make 'notin' function
 `%notin%` <- Negate('%in%')
 
+# make a mode function
+mode <- function(x, na.rm){
+  
+  if(missing(na.rm)) {
+    na.rm = FALSE
+  }
+  
+  if(na.rm == TRUE) {
+    x <- x[!is.na(x)]
+  }
+  which.max(tabulate(x))
+}
 
 # which.max analog
 # in the case of a tie, returns the index with the highest value
@@ -219,22 +231,44 @@ get_pr_RF <- function(rf_in, X_df) {
   p_r <- full_join(preds_df, refs_df, by = c("ID")) %>%
     select(-ID)
   
-  # if values are not unique, make a key
+  # if values are not identical, make a key
   
   if(!identical(sort(unique(p_r$pred)), sort(unique(p_r$ref)))) {
     
     # make a key for pred to ref
+    #--------------------------------#
+    
+    # get reference vars
+    key_r <- p_r %>%
+      select(ref) %>%
+      rename(key_r = ref) %>%
+      distinct() %>%
+      arrange(key_r)
+    
+    # get pred vars
     key_p <- p_r %>%
       select(pred) %>%
       rename(key_p = pred) %>%
       distinct() %>%
       arrange(key_p)
     
-    key_r <- p_r %>%
-      select(ref) %>%
-      rename(key_r = ref) %>%
-      distinct() %>%
-      arrange(key_r)
+    # make sure preds are a factor if ref is a factor
+    if(is.factor(key_r$key_r)) {
+      p_r$pred <- factor(p_r$pred, levels = levels(key_r$key_r))
+      key_p$key_p <- factor(key_p$key_p, levels = levels(key_r$key_r))
+    }
+    
+    # make sure pred vars are the same length as ref vars
+    if(nrow(key_p) != nrow(key_r)) {
+
+      diff = abs(nrow(key_p) - nrow(key_r))
+      
+      # add an NA for each missing 
+      for(i in 1:diff){
+        key_p = rbind(key_p, 'NA')
+      }
+      
+    }
     
     key <- cbind(key_p, key_r)
     

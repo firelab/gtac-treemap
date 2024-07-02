@@ -141,6 +141,10 @@ evc %<>% terra::crop(zone, mask = TRUE) %>%
   terra::classify(evc_forest_codes_mat, right = NA) %>% # reclassify EVC: subset to only forested pixels
   terra::project(landfire_crs)
 
+# convert zone vector to raster - to help match extents
+zone_r <- terra::rasterize(zone, evt) %>%
+  terra::project(landfire_crs)
+
 ## crop to zone again - this time by raster
 evc %<>% terra::crop(zone_r, mask = TRUE)
 evt %<>% terra::crop(zone_r, mask = TRUE)
@@ -273,8 +277,8 @@ gc()
 
 # # re-load evt_gp as mask
 # evt_gp <- terra::rast(glue::glue('{target_dir_z}/EVT_GP.tif'))
-# 
-# # convert zone vector to raster - to help match extents 
+ 
+# # convert zone vector to raster - to help match extents
 # zone_r <- terra::rasterize(zone, evt_gp) %>%
 #   terra::project(landfire_crs)
 

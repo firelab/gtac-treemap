@@ -231,7 +231,7 @@ cms_list <- NULL
 for (i in seq_along(response_vars)) {
   
   # for testing
-  #i = 4
+  #i = 3
   
   var = response_vars[i]
   

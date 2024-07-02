@@ -236,7 +236,7 @@ for(j in which_tiles) {
 
   f <- foreach(i = 1:nrow_r,
     .packages = c("tidyverse", "yaImpute", "glue"),
-    .export = c("mat", "impute.row", "yai", "tmp_dir" )
+    .export = c("mat", "impute_row", "yai", "tmp_dir" )
   ) %dopar% {
 
     # # for testing

@@ -128,7 +128,7 @@ impute_row <- function(dat, yai, test)  {
       rownames(X.df.temp) <- paste0("T- ", rownames.all)
       
       ### Perform imputation
-      # take object from formed random forests model and use X.df.temp dataframe to make predictions
+      # take object from already-made yaImpute model and use X.df.temp dataframe to make predictions
       temp.newtargs <- yaImpute::newtargets(yai, newdata = X.df.temp)
       
       #### Get outputs of interest

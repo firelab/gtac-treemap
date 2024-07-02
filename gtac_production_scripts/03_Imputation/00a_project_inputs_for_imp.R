@@ -10,11 +10,11 @@
 ###########################################################################
 
 # Project name - name for overarching folders
-project_name <- "2016_GTAC_LCMSDist" 
+project_name <- "2016_GTAC_Test" 
 
 # name for products - includes params here if desired
 #e.g., #output_name <- "2016_GTAC_LCMSDist"
-output_name <- "2016_GTAC_LCMSDist"  
+output_name <- "2016_GTAC_Test"  
 
 # target data version to use
 target_data_version <- "v2016_GTAC"
@@ -23,7 +23,7 @@ target_data_version <- "v2016_GTAC"
 ref_data_version <- "v2016_RMRS"
 
 # disturbance type - options are "LF" or "LFLCMS"
-dist_layer_type <- "LFLCMS"
+dist_layer_type <- "LF"
 
 # # output crs - desired crs for output products
 # #options include: "lcms_crs", "landfire_crs", "tm16_crs"
