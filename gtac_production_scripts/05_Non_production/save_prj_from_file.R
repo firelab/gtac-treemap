@@ -49,15 +49,11 @@ for (i in seq_along(LF_versions)) {
   lf_crs <- terra::crs(lf_ras)
   
   # make new dir for CRS if it does not exist
+  # and save CRS
   if(!exists(glue::glue("{home_dir}/01_Data/02_Landfire/{version_i}/CRS"))){
     dir.create(glue::glue("{home_dir}/01_Data/02_Landfire/{version_i}/CRS"))
-  }
-  
-  # save crs
-  if(!exists(glue::glue("{home_dir}/01_Data/02_Landfire/{version_i}/CRS/{version_i}_crs.prj"))) {
     write(lf_crs, file = glue::glue("{home_dir}/01_Data/02_Landfire/{version_i}/CRS/{version_i}_crs.prj"))
   }
-  
   
 }
 
@@ -66,8 +62,11 @@ for (i in seq_along(LF_versions)) {
 
 # Load and compare CRS
 
+lf1999 <- terra::rast("//166.2.126.25/TreeMap//01_Data/02_Landfire/LF_USDIST/US_DIST1999/Tif/us_dist1999.tif")
+lf1999_crs <- terra::crs(lf1999)
+
 # path to existing crs
-target_16_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/landfire_crs.prj"))
+lf_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/landfire_crs.prj"))
 
 # treemap raster to use as reference
 tm16 <- terra::rast(glue::glue("{home_dir}/01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif"))
@@ -98,21 +97,24 @@ lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF
 # inspect
 #----------------------------------#
 
-terra::crs(target_16_crs, describe = TRUE)
+terra::crs(lf1999_crs, describe = TRUE)
+terra::crs(lf_crs, describe = TRUE)
 terra::crs(tm16_crs, describe = TRUE)
 terra::crs(target_crs, describe = TRUE)
 terra::crs(lf200_crs, describe = TRUE)
 terra::crs(lf220_crs, describe = TRUE)
 terra::crs(lf230_crs, describe = TRUE)
 
-identical(target_16_crs, target_crs)
-identical(target_16_crs, tm16_crs)
-identical(target_16_crs, tm16_crs)
-identical(target_16_crs, lf200_crs)
-identical(target_16_crs, lf220_crs)
-identical(target_16_crs,lf230_crs)
+identical(lf1999_crs, lf_crs)
+identical(lf_crs, target_crs)
+identical(lf_crs, tm16_crs)
+identical(lf_crs, tm16_crs)
+identical(lf_crs, lf200_crs)
+identical(lf_crs, lf220_crs)
+identical(lf_crs,lf230_crs)
 
 
+identical(lf1999_crs, lf200_crs)
 identical(lf200_crs, lf220_crs)
 identical(lf220_crs, lf230_crs)
 
