@@ -4,7 +4,7 @@
 
 # Written by Lila Leatherman (Lila.leatherman@usda.gov)
 
-# Last Updated: 2/21/2024
+# Last Updated: 5/10/2024
 
 #######################################################
 
@@ -196,7 +196,9 @@ for(i in 1:length(states)) {
                   DRYBIO_AG, DRYBIO_BG, 
                   DRYBIO_BOLE,  DRYBIO_STUMP,  
                   TPA_UNADJ, STATUSCD, DIA, STANDING_DEAD_CD, VOLBFNET, VOLCFNET,
-                  TREECLCD) 
+                  TREECLCD) %>%
+    # replace nas with 0
+    replace(is.na(.), 0)
     
   
   # join with raw vars table

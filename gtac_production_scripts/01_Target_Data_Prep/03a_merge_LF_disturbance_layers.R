@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 6/6/24
+# Last Updated: 6/17/24
 
 # Output rasters: 
 # - years since most recent disturbance
@@ -15,13 +15,10 @@
 ###############################
 
 # Set inputs - from input script
-this.path <- this.path::this.path() # Id where THIS script is located
+this_dir <- this.path::this.dir() # Id where THIS script is located
 
 # get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script_path <- paste( c(spl[c(1:(length(spl)-1))],
-                              "00_inputs_for_targetdata.R" ),
-                            collapse = "/")
+input_script_path <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
 source(input_script_path)
 
@@ -123,3 +120,8 @@ writeRaster(dist_type, lf_disturb_code_outpath,
             overwrite = TRUE)
 
 rm(dist_year, dist_type)
+gc()
+
+file.remove(landfire_fire_years_outpath, landfire_fire_binary_outpath, 
+            landfire_ind_years_outpath, landfire_ind_binary_outpath)
+

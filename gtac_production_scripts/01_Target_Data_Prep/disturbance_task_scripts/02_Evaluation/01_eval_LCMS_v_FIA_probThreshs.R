@@ -8,6 +8,8 @@
 
 #v3: vary thresholds used for determining change type in LCMS
 
+# Updated: 6/12/2024
+
 ############################
 # USER INPUTS
 ############################
@@ -42,7 +44,7 @@ gainThresh = 10
 home_dir <- ("//166.2.126.25/TreeMap/")
 
 # set tmp directory
-tmp_dir <- "E:/tmp"
+tmp_dir <- "D:/tmp"
 
 # path to 2016 treemap data
 treemap_path <- paste0(home_dir, "01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
@@ -52,10 +54,10 @@ lcms_dir <- '//166.2.126.25/TreeMap/01_Data/05_LCMS/01_Threshold_Testing/'
 lcms_dir_rawprob <- paste0(lcms_dir, "01_Raw/02_Raw_Probabilities/")
 
 # path to FIA data
-fia_path <- paste0(home_dir, "01_Data/04_FIA/SlowFast_StatVars_ActualLL.csv")
+fia_path <- paste0(home_dir, "01_Data/04_FIA/04_LCMS_SlowLoss_Validation/SlowFast_StatVars_ActualLL.csv")
 
 #set path to save evaluation data
-eval_dir <- paste0(home_dir, "01_Data/05_LCMS/01_Threshold_Testing/05_Evaluation/")
+eval_dir <- paste0(home_dir, "03_Outputs/07_Projects/Disturbance_Task/01_Evaluation/")
 
 # aoi path - if different from landfire zone
 # supply path, or NA
