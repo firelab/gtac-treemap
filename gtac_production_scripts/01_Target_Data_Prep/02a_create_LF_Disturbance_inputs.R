@@ -28,7 +28,7 @@ ncores <- 5
 this_dir <- this.path::this.dir()
 inputs_script <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
-source(inputs_script)
+# source(inputs_script) # un-comment to run independently from the control script
 
 
 ###################################################
@@ -77,6 +77,7 @@ if(is.na(aoi_name)) {
 # Load Landfire disturbance data
 #-----------------------------------------------------#
 
+message("Loading all landfire data")
 # list landfire files 
 landfire_files_1999_2014 <- list.files(landfire_disturbance_dir_1999_2014, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
 landfire_files_2015_2020 <- list.files(landfire_disturbance_dir_2015_2020, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
@@ -91,7 +92,7 @@ landfire_files = c(landfire_files_1999_2014,
 landfire_files %<>% 
   str_subset(pattern = "HDst", negate = TRUE)  %>% # remove historic disturbance
   cbind(str_extract(., "[1-2][0,9][0-9][0-9]")) %>% # bind with year
-  as.data.frame() %>%
+  as.data.frame() %>% # convert the list to a data.frame
   dplyr::rename("year" = "V2",
                 "path" = ".") %>%
   dplyr::mutate(year = as.numeric(year)) %>%
@@ -101,6 +102,7 @@ landfire_files %<>%
 #inspect
 #landfire_files
 
+message("Loading landfire data as VRT")
 # load all landfire files as vrt
 landfire_dist <- vrt(landfire_files$path, glue::glue('{tmp_dir}/landfire_dist.vrt'), options = '-separate', overwrite = TRUE)
 
@@ -122,6 +124,7 @@ gc()
 
 ##### Change codes to reclassify
 #--------------------------------------------------#
+message("Reclassifying Landfire codes...")
 
 # field info in metadata: https://apps.fs.usda.gov/fsgisx01/rest/services/RDW_Landfire/US_Disturbance_v200/ImageServer/info/metadata
 # for landfire: classes of change are denoted by middle digit
@@ -206,6 +209,7 @@ gc()
 
 # Loop over tiles
 #---------------------------------------------------------------#
+message("Converting raw probability layers in change layers")
 
 # set up dopar
 cl <- makeCluster(ncores, outfile = glue::glue("{tmp_dir}/cl_report.txt"))
@@ -250,11 +254,14 @@ f <- foreach(i = 1:length(tiles),
   gc()
   
   # Export
-  #--------------------------------------------------------------------------#
-  writeRaster(landfire_fire_years_tile, 
-              filename = paste0(tmp_dir, "/lf/fire_years_tile", i, ".tif"),
-              datatype = "INT2U",
-              overwrite = TRUE)
+
+  #---------------------------------------#
+  # write these files out
+  #writeRaster(landfire_fire_years, landfire_fire_years_outpath,
+  #            overwrite = TRUE)
+  #writeRaster(landfire_fire_binary, landfire_fire_binary_outpath,
+  #            overwrite = TRUE)
+
   
   # remove unused files
   gc()
@@ -325,7 +332,7 @@ lf_ind_binary <-
 
 # Export
 #-------------------------------------------------#
-
+message("Exporting LF fire years and binary raster...")
 # write these files out
 writeRaster(lf_fire_years, landfire_fire_years_outpath,
             datatype = "INT2U",
@@ -334,6 +341,7 @@ writeRaster(lf_fire_binary, landfire_fire_binary_outpath,
             datatype = "INT1U",
             overwrite = TRUE)
 
+message("Exporting LF insect-disease years and binary raster....")
 # write these files out
 writeRaster(lf_ind_years, landfire_ind_years_outpath,
             datatype = "INT2U",
@@ -341,5 +349,3 @@ writeRaster(lf_ind_years, landfire_ind_years_outpath,
 writeRaster(lf_ind_binary, landfire_ind_binary_outpath,
             datatype = "INT1U",
             overwrite = TRUE)
-
-

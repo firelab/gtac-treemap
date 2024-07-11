@@ -23,7 +23,7 @@ dir <- glue::glue("{data_dir}02_Landfire") # `00_inputs_for_targetdata.R` requir
 # dir <- "your-data-path-here" # for testing
 
 # list years
-years <- 2016:2022 # LF-200 version onwards
+years <- start_year:end_year # LF-200 version onwards
 
 # set maximum tries to download
 maxDownload_count <- 5
