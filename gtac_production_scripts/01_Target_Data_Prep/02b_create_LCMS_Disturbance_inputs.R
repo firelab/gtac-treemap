@@ -23,46 +23,15 @@
 # 1 = 1 tile, 5 = many tiles
 break.up <- 5
 
+# set number of cores used for parallelization
+ncores <- 5
+
 # get path to inputs script
 this_dir <- this.path::this.dir()
 input_script_path <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
 source(input_script_path)
 
-# Parallelization settings
-#--------------------------------------#
-
-# set number of cores used for parallelization
-ncores <- 5
-
-# set up dopar
-cl <- makeCluster(ncores, outfile = glue::glue("{tmp_dir}/cl_report.txt"))
-registerDoParallel(cl)
-#registerDoSEQ() # option to register sequentially - for testing
-
-# load packages to each cluster
-clusterCall(cl, function(){
-  library(tidyverse);
-  library(magrittr);
-  #library(glue);
-  library(terra);
-  library(doParallel);
-  library(foreach)
-  })
-
-
-###################################################
-# LOAD DATA
-###################################################
-
-# load lcms projections
-lcms_crs <- crs(lcms_proj)
-
-#load landfire projection
-landfire_crs <- crs(landfire_proj)
-
-# load LF zone data
-LF_zones <- vect(lf_zones_path)
 
 ###################################################
 # WORK ON ZONE
@@ -142,6 +111,24 @@ plot(zone, add = TRUE)
 # the function returns file names for the temporary files
 tiles <- zone_r %>%
   terra::makeTiles(agg, paste0(tempfile(), '_.tif'), na.rm = TRUE)
+
+# Parallelization settings
+#--------------------------------------#
+
+# set up dopar
+cl <- makeCluster(ncores, outfile = glue::glue("{tmp_dir}/cl_report.txt"))
+registerDoParallel(cl)
+#registerDoSEQ() # option to register sequentially - for testing
+
+# load packages to each cluster
+clusterCall(cl, function(){
+  library(tidyverse);
+  library(magrittr);
+  #library(glue);
+  library(terra);
+  library(doParallel);
+  library(foreach)
+})
 
 # Convert raw probability layers into change layers
 # Loop over tiles, and within tiles, loop over years
@@ -251,7 +238,7 @@ f <- foreach(i = 1:length(tiles),
   slowloss_tile <- 
     terra::app(slowloss_tile, which.max.hightie)     %>% # identify year with maximum value; ties go to highest index
     terra::classify(cbind(c(seq(1:length(year_list))), year_list)) %>% # reclassify index values to years
-    terra::project(landfire_crs) # reproject to desired crs
+    terra::project(lf_output_crs) # reproject to desired crs
     
   # write out single tile as tmp file (then read all in later as .vrt)
   terra::writeRaster(slowloss_tile,

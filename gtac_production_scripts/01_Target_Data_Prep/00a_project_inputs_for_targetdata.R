@@ -3,10 +3,10 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 6/17/24
+# Last updated: 7/2/24
 
 # TO DO:
-# - add a switch for LCMS+LF disturbance vs LF only disturbance? 
+# - add a switch for LF only disturbance vs LCMS+LF disturbance ? 
 
 ###########################################################################
 # Set inputs
@@ -18,6 +18,7 @@
 year <- year_input
 
 #project name
+
 project_name <- glue::glue("{year}_Production")
 # project_name <- "DistLayerPrep_GTAC_test" #for testing
 
@@ -50,6 +51,7 @@ LFveg_yearDict <- list("2020" = 220,
 
 landfire_year_veg <- year
 landfire_version_veg <- LFveg_yearDict[[as.character(landfire_year_veg)]]
+
 
 # Make RDS of input parameters used
 #---------------------------------------------------------#

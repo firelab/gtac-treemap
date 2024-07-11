@@ -3,7 +3,7 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 6/17/24
+# Last updated: 7/2/24
 
 # TO DO:
 # - address inconsistencies in EVT vs Topo Landfire Paths
@@ -20,6 +20,7 @@ zone = zone_input
 # path to an RDS file containing parameters, or NA - NA runs 00a_inputs_for_target_data.R
 # path is relative to script location
 target_prep_params_path <- glue::glue("/params/{target_data_version}_target_data_inputs.RDS")
+
 
 # Inputs for testing
 #-----------------------------------------------#
@@ -92,15 +93,6 @@ lf_zones_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refr
 # set dir to lcms raw probability rasters
 lcms_dir <- glue::glue('{data_dir}05_LCMS/01_Threshold_Testing/01_Raw/02_Raw_Probabilities/')
 
-# set projection used for processing lcms rasters
-lcms_proj <- glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj')
-
-# path to projection used for processing landfire rasters
-landfire_proj <- glue::glue('{data_dir}02_Landfire/landfire_crs.prj')
-
-# path to desired projection for end outputs (tm = TreeMap)
-tm_proj <- glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj")
-
 # Paths to specific Landfire rasters - not disturbance
 evc_path <- glue::glue('{landfire_veg_dir}/EVC/LF{landfire_year_veg}_EVC_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVC_{landfire_version_veg}.tif')
 evh_path <- glue::glue('{landfire_veg_dir}/EVH/LF{landfire_year_veg}_EVH_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVH_{landfire_version_veg}.tif')
@@ -114,20 +106,29 @@ asp_path <- glue::glue('{landfire_topo_dir}/Asp/LF{landfire_year_topo}_Asp_{land
 # set dir for input biophys rasters
 biophys_dir <- glue::glue('{data_dir}02_Landfire/BioPhys/')
 
-# Input parameters for LCMS Disturbance
-#-----------------------------------------------------------#
+# Load various crs
+#--------------------------------#
+# load lcms projections
+lcms_crs <- terra::crs(glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj'))
 
-# Set variables
-LCMS_NAvalue <- -32768
+# load treemap projection
+tm16_crs <- terra::crs(glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj"))
 
-# set threshold for probability of slow loss from LCMS
-slow_loss_thresh <- 14 # default value for LCMS processing: 14
+# lf200
+lf200_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_200/CRS/LF_200_crs.prj"))
 
-# set probability thresholds for change
-LCMS_change_thresholds <- c(29, # fast loss; default = 29
-                            slow_loss_thresh, # slow loss; default = 14
-                            20 # gain; default = 20
-)
+# lf220
+lf220_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_220/CRS/LF_220_crs.prj"))
+
+# lf230
+lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
+
+# determine which CRS will actually be used - 
+#   - specifically, used to project zone for cropping
+#   - used to define projection for all historic landfire disturbance
+
+# load output crs
+lf_output_crs <- eval(parse(text = lf_crs_version))
 
 # Export data directories
 #----------------------------------------------------#
@@ -182,6 +183,7 @@ landfire_fire_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_yea
 landfire_ind_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_InsectDisease_Years.tif')
 landfire_ind_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_InsectDisease_Binary.tif')
 
+
 lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
 lcms_slowloss_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
 
@@ -191,18 +193,30 @@ lf_disturb_year_outpath <- glue::glue('{target_dir_z_final}/{end_year}_{cur_zone
 lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/{end_year}_{cur_zone_zero}_disturb_code_LFLCMS.tif')
 lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/{end_year}_{cur_zone_zero}_disturb_year_LFLCMS.tif')
 
-# Load crs objects
-#-----------------------------------------------------#
 
-# load lcms projections
-lcms_crs <- terra::crs(lcms_proj)
+# Input parameters for LCMS Disturbance
+#-----------------------------------------------------------#
 
-#load landfire projection
-landfire_crs <- terra::crs(landfire_proj)
 
-# load treemap projection
-tm_crs <- terra::crs(tm_proj)
+# Set variables
+LCMS_NAvalue <- -32768
 
+# set threshold for probability of slow loss from LCMS
+slow_loss_thresh <- 14 # default value for LCMS processing: 14
+
+# set probability thresholds for change
+LCMS_change_thresholds <- c(29, # fast loss; default = 29
+                            slow_loss_thresh, # slow loss; default = 14
+                            20 # gain; default = 20
+)
+
+# LCMS file paths
+#---------------------------------------------------------------#
+lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
+lcms_slowloss_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
+
+lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/disturb_code_LFLCMS.tif')
+lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/disturb_year_LFLCMS.tif')
 
 # Temp directories 
 #----------------------------------#
@@ -269,7 +283,7 @@ if(!file.exists(glue::glue('{target_dir_z}/params/'))) {
 
 # Remove unused objects
 #------------------------------------------------#
-
+rm(list.of.packages, new.packages)
 
 
 # Make RDS of input parameters used

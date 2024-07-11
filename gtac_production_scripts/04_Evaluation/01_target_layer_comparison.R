@@ -28,9 +28,10 @@
 #-----------------------------------------------------#
 
 this_proj <- this.path::this.proj()
+this_dir <- this.path::this.dir()
 
-inputs_for_imputation<- glue::glue('{this_proj}/gtac_production_scripts/03_Imputation/00b_zonal_inputs_for_imp.R')
-source(inputs_for_imputation)
+inputs_for_evaluation<- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
+source(inputs_for_evaluation)
 
 
 # Specific inputs
@@ -68,6 +69,7 @@ plot(ras)
 # X - table
 #------------------------------------------#
 xtable <- read.csv(xtable_path)
+
 
 # Target rasters
 #---------------------------------------#
@@ -115,7 +117,7 @@ names(id_list) <- "PLOTID"
 
 # join list of ids with x table
 # create lookup table that only has IDs present in zone
-lookup <- left_join(id_list, xtable, by = c("PLOTID" = "ID")) %>%
+lookup <- left_join(id_list, xtable, by = c("PLOTID" = "X")) %>%
   select(PLOTID, CN, all_of(eval_vars)) %>%
   mutate(across(where(is.numeric), ~na_if(., NA)))
 

@@ -3,7 +3,7 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 6/21/24
+# Last updated: 7/2/24
 
 # TO DO: what target data params can i pull in from target data RDS? 
 
@@ -16,7 +16,7 @@ zone = 19
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_project_inputs_for_imp.R
 # path is relative to script location
-imputation_params_path <- "/params/2016_GTAC_LCMSDist_imputation_inputs.RDS"
+imputation_params_path <- "/params/2016_GTAC_Test_imputation_inputs.RDS"
 
 # model to use - supply path specific model to pull into imputation, or NA
 # path should be relative to home directory
@@ -50,7 +50,7 @@ if(!is.na(imputation_params_path)) {
   
 } else {
   
-  inputs_for_imputation<- glue::glue('{this_dir}/{00a_project_inputs_for_imputation.R')
+  inputs_for_imputation<- glue::glue('{this_dir}/00a_project_inputs_for_imputation.R')
   source(inputs_imputation)
   
 }
@@ -103,25 +103,23 @@ assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02
 eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/')
 
 
-# CRS paths
+# Load CRS
 #----------------------------------------------------#
-# set projection used for processing lcms rasters
-lcms_proj <- glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj')
-
-# path to projection used for processing landfire rasters
-landfire_proj <- glue::glue('{data_dir}02_Landfire/landfire_crs.prj')
-
-# path to desired projection for end outputs (tm = TreeMap)
-tm16_proj <- glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj")
 
 # load lcms projections
-lcms_crs <- terra::crs(lcms_proj)
-
-#load landfire projection
-landfire_crs <- terra::crs(landfire_proj)
+lcms_crs <- terra::crs(glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj'))
 
 # load treemap projection
-tm16_crs <- terra::crs(tm16_proj)
+tm16_crs <- terra::crs(glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj"))
+
+# lf200
+lf200_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_200/CRS/LF_200_crs.prj"))
+
+# lf220
+lf220_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_220/CRS/LF_220_crs.prj"))
+
+# lf230
+lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
 
 # load output crs
 output_crs <- eval(parse(text = output_crs_name))

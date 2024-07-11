@@ -26,7 +26,7 @@ ref_data_version <- "v2016_RMRS"
 dist_layer_type <- "LF"
 
 # # output crs - desired crs for output products
-# #options include: "lcms_crs", "landfire_crs", "tm16_crs"
+# #options include: "lcms_crs", "lf200_crs", "lf220_crs", "lf230_crs", "tm16_crs"
 output_crs_name <- "tm16_crs"
 
 #set tmp directory
