@@ -15,35 +15,45 @@
 # General inputs - specific to each project
 #-----------------------------------------------#
 
+year <- year_input
+
 #project name
-project_name <- "2016_GTAC_Test"
+project_name <- glue::glue("{year}_Production")
+# project_name <- "DistLayerPrep_GTAC_test" #for testing
+
 
 # target data version
-target_data_version <- "v2016_GTAC"
+target_data_version <- glue::glue("v{year}_GTAC")
 
 # set year range
 start_year <- 1999
-end_year <- 2016
+end_year <- year
 
 # set current modeling year (for years since disturbance)
-model_year <- end_year
+model_year <- as.integer(end_year)
 
 #build year list
 year_list <- seq(start_year, end_year, 1)
 
-# set tmp directory
-tmp_dir <- "D:/tmp"
+# SET a 'tmp' directory to hold temporary files
+# tmp_dir <- "D:/tmp" # directory specified in "setup_dirs.R" script
 
-# set landfire version 
-landfire_version_veg <- 200
-landfire_year_veg <- 2016
+# set landfire version
+
+# TOPO
 landfire_version_topo <- 220
 landfire_year_topo <- 2020
+
+# VEG
+LFveg_yearDict <- list("2020" = 220, 
+                        "2022" = 230)
+
+landfire_year_veg <- year
+landfire_version_veg <- LFveg_yearDict[[as.character(landfire_year_veg)]]
 
 # Make RDS of input parameters used
 #---------------------------------------------------------#
 
-# Export to scripts folder for easy access 
+# Export to scripts folder for easy access
 # over-writes by default
 save(list = ls(), file = glue::glue('{this.path::this.dir()}/params/{target_data_version}_target_data_inputs.RDS'))
-

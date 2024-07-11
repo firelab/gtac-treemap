@@ -20,7 +20,7 @@ this_dir <- this.path::this.dir() # Id where THIS script is located
 # get path to input script
 input_script_path <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
-source(input_script_path)
+# source(input_script_path) # un-comment to run independently from the control script
 
 ###################################################
 # LOAD DATA

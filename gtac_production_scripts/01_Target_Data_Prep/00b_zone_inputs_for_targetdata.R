@@ -15,11 +15,11 @@
 # Set user inputs
 ###########################################################################
 
-zone = 10
+zone = zone_input 
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_inputs_for_target_data.R
 # path is relative to script location
-target_prep_params_path <- "/params/v2016_GTAC_target_data_inputs.RDS"
+target_prep_params_path <- glue::glue("/params/{target_data_version}_target_data_inputs.RDS")
 
 # Inputs for testing
 #-----------------------------------------------#
@@ -54,22 +54,26 @@ this_dir <- this.path::this.dir()
 
 if(!is.na(target_prep_params_path)) {
   # load params
-  
+
   params_script_path <- glue::glue('{this_dir}/{target_prep_params_path}')
-  
-  load(params_script_path)
-  
+
+  # load(params_script_path) # un-comment to run independently from the control script
+
   } else {
-    
+
     inputs_for_target_data <- glue::glue('{this_dir}/{00a_project_inputs_for_target_data.R')
-    
-    source(inputs_for_target_data)
-    
+
+    # source(inputs_for_target_data)
+
 }
 
 
 # Build constructed inputs (less likely to change)
 #----------------------------------------------------------#
+
+# load home, FIA, and tmp dirs 
+setdirs_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/setup_dirs.R')
+source(setdirs_path)
 
 # data directory - where source data are located
 data_dir <- glue::glue('{home_dir}/01_Data/')
@@ -129,7 +133,7 @@ LCMS_change_thresholds <- c(29, # fast loss; default = 29
 #----------------------------------------------------#
 
 # where version-specific inputs and outputs will live
-project_dir <- glue::glue('{home_dir}/03_Outputs/99_Projects/{project_name}/')
+project_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/')
 
 # Directory where target data lives
 target_dir <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/")
@@ -158,6 +162,7 @@ cur_zone_zero <- if(zone_num < 10) {
 
 # Set folder paths
 target_dir_z = glue::glue('{target_dir}/{cur_zone_zero}/')
+target_dir_z_final = glue::glue("{target_dir_z}/{cur_zone_zero}_final_pre_mask")
 
 # update biophys path - biophys layers stored by zone
 biophys_dir_z <- glue::glue('{biophys_dir}/{cur_zone_zero}/')
@@ -180,11 +185,11 @@ landfire_ind_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year
 lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
 lcms_slowloss_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
 
-lf_disturb_code_outpath <- glue::glue('{target_dir_z}/disturb_code_LF.tif')
-lf_disturb_year_outpath <- glue::glue('{target_dir_z}/disturb_year_LF.tif')
+lf_disturb_code_outpath <- glue::glue('{target_dir_z_final}/{end_year}_{cur_zone_zero}_disturb_code_LF.tif')
+lf_disturb_year_outpath <- glue::glue('{target_dir_z_final}/{end_year}_{cur_zone_zero}_disturb_year_LF.tif')
 
-lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/disturb_code_LFLCMS.tif')
-lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/disturb_year_LFLCMS.tif')
+lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/{end_year}_{cur_zone_zero}_disturb_code_LFLCMS.tif')
+lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/{end_year}_{cur_zone_zero}_disturb_year_LFLCMS.tif')
 
 # Load crs objects
 #-----------------------------------------------------#
@@ -203,18 +208,20 @@ tm_crs <- terra::crs(tm_proj)
 #----------------------------------#
 
 # check if tmp directory exists 
+
+print("Checking for temporary directory...")
 if (file.exists(tmp_dir)){
-  
+  message(paste0("Temporary directory exists: ", tmp_dir))
 } else {
   # create a new sub directory inside the main path
   dir.create(tmp_dir, recursive = TRUE)
-  
+  message(paste0("Creating temporary directory: ", tmp_dir))
 }
 
 # create tmp dir folder for LCMS tiles
-if (!file.exists(glue::glue('{tmp_dir}/lcms/'))) {
-  dir.create(glue::glue('{tmp_dir}/lcms/'))
-}
+# if (!file.exists(glue::glue('{tmp_dir}/lcms/'))) {
+#   dir.create(glue::glue('{tmp_dir}/lcms/'))
+# }
 
 # create tmp dir folder for LF tiles
 if (!file.exists(glue::glue('{tmp_dir}/lf/'))) {
@@ -239,7 +246,11 @@ if (!file.exists(target_dir)) {
 
 if(!file.exists(target_dir_z)) {
   dir.create(target_dir_z, recursive = TRUE)
-  }
+}
+
+if(!file.exists(target_dir_z_final)) {
+  dir.create(target_dir_z_final, recursive = TRUE)
+}
 
 if(!file.exists(glue::glue('{target_dir_z}/params/'))) {
   dir.create(glue::glue('{target_dir_z}/params/'), recursive = TRUE)

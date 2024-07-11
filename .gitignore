@@ -139,3 +139,4 @@ dmypy.json
 *.Rhistory
 .Rhistory
 .Rapp.history
+gtac_production_scripts/00_Library/setup_dirs.R
