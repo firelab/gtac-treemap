@@ -8,11 +8,11 @@ lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib
 source(lib_path)
 
 
-yai <- readRDS("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS")
+yai <- readRDS("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_yai_treelist_bin.RDS")
 
-xtable <- read.csv("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/xytables/z16_2016_Orig_Test_keepinbag_ntree250_Xdf_bin.csv")
+xtable <- read.csv("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/xytables/z16_2016_GTAC_Test_Xdf_bin.csv")
 
-oobs_default <- get_OOBs_yai(yai)
+#oobs_default <- get_OOBs_yai(yai)
 
 # Function to get out-of-bag cn predictions from a given yai object
 # returns a list of reference (ref) IDs, predicted (pred) IDs, tree number (1-ntrees in mode),
@@ -43,13 +43,14 @@ oobs_default <- get_OOBs_yai(yai)
   yall=na.omit(as.data.frame(yai$yRefs))
   refs=intersect(rownames(yall),rownames(xall))
   xRefs=xall[refs,,drop=FALSE]
+  xRefs$ID <- as.numeric(row.names(xRefs))   # set attributes of xRefs to be able to join later
   
   oob_preds <- NULL
   
   
   # Get a) terminal node predictions and b) out-of-bag counts from each RF model and return c) mode of imputed id for each reference for each tree, based on OOBs
   #--------------------------------------------#
-  for (i in 1:length(ranForest)) {
+  #for (i in 1:length(ranForest)) {
     
     i = 1
     
@@ -57,13 +58,20 @@ oobs_default <- get_OOBs_yai(yai)
     
     
     # get index of terminal nodes in each tree
-    nodeset=attr(predict(rf,
+    preds = predict(rf,
                          newdata = xall,
                          predict.all = TRUE,
-                         proximity=FALSE,nodes=TRUE, ),"nodes")
+                         #proximity=TRUE,
+                         nodes=TRUE)
+    nodeset = attr(preds, "nodes")
     if (is.null(nodeset)) stop("randomForest did not return nodes")
     colnames(nodeset)=paste(colnames(nodeset),i,sep=".")
     nodes= nodeset
+    
+    
+    # node.list <- lapply(seq_len(rf$ntree), function(z) 
+    #   split(x = my.df[rf$inbag[, z] == 1, "x"], 
+    #         f = attr(predList[[z]], "nodes")[, z]))
     
     # get in-bag / out of bag counts
     #in-bag counts = a vector of how many times each observation was used in a tree
@@ -73,11 +81,20 @@ oobs_default <- get_OOBs_yai(yai)
     # Pull the data together
     #-------------------------------------#
   
-    # link node info with xRef ids
+    # subset to nodes that match reference data
+    # - should be the same as nodes
     refNodes = nodes[rownames(xRefs),]
   
-    # set attributes of xRefs to be able to join later
-    xRefs$ID <- as.numeric(row.names(xRefs))
+    # convert to integer list
+    INTrefNodes=as.integer(refNodes)
+    INTnrow=as.integer(nrow(xRefs))
+    INTncol=as.integer(ncol(nodes))
+    INTsort = INTrefNodes
+    dim(INTsort) = c(INTnrow,INTncol)
+    INTsort=apply(INTsort,2,function (x) sort(x,index.return = TRUE, 
+                                              decreasing = FALSE)$ix-1)
+    attributes(INTsort)=NULL
+    INTsort = as.integer(INTsort)
   
     # TEST OPTION
     #refNodes = refNodes[c(1:6),] # TO TEST - on just 6 obs
@@ -89,17 +106,17 @@ oobs_default <- get_OOBs_yai(yai)
     # convert node index to integer
     INTrefNodes=as.integer(refNodes)
   
-    # Create INTsort table - used in original RF call
-    INTsort = INTrefNodes
-    dim(INTsort) = c(INTnrow,INTncol)
-    INTsort=apply(INTsort,2,function (x) sort(x,index.return = TRUE, 
-                                              decreasing = FALSE)$ix-1)
-    attributes(INTsort)=NULL
-    INTsort = as.integer(INTsort)
+    # # Create INTsort table - used in original RF call
+    # INTsort = INTrefNodes
+    # dim(INTsort) = c(INTnrow,INTncol)
+    # INTsort=apply(INTsort,2,function (x) sort(x,index.return = TRUE, 
+    #                                           decreasing = FALSE)$ix-1)
+    # attributes(INTsort)=NULL
+    # INTsort = as.integer(INTsort)
     
     # crosswalk node index to xRefs table
     tNodes = xRefs[INTrefNodes, "ID"]
-  
+    
     # convert back to matrix
     dim(tNodes) = c(INTnrow, INTncol)
   

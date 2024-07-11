@@ -10,20 +10,16 @@
 # set path to save output rasters
 # this directory will be created if it does not already exist
 # raw_outputs_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
-tmp_output_dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # for testing
+#tmp_output_dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # for testing
 
 # Load 
 #-----------------------------------------------#
 # Id where THIS script is located
 this_proj <- this.path::this.proj()
 
-# get path to imputations input script
+# get path to imputation inputs RDS
 inputs_for_imputation <- glue::glue('{this_proj}/gtac_production_scripts/03_Imputation/00b_zonal_inputs_for_imp.R')
 source(inputs_for_imputation)
-
-# path to RDS for imputation inputs
-#---------------------------------------------------------#
-save(list = ls(), file = glue::glue('{params_dir}/{output_name}_env.RDS'))
 
 # General inputs
 #--------------------------------------------------#
