@@ -32,7 +32,7 @@ vpd<- rast("../01_Data/07_Daymet/daymet_north_america_normal/vpd_normal_1981to20
 # Loop through landfire zones, masking, reprojecting, resampling, and saving data by zone ----
 
 # First create output directory 
-dir.create("../03_Outputs/05_Target_Rasters/pre_mask_climate/")
+dir.create("./03_Outputs/05_Target_Rasters/v2022/pre_mask/")
 
 
 for (i in lf_zone_nums){
@@ -41,22 +41,22 @@ for (i in lf_zone_nums){
   
   # Make a directory for saving landfire data for the zone
   ifelse(i<10, 
-         dir.create(paste0("../03_Outputs/05_Target_Rasters/pre_mask_climate/z0",i)),
-         dir.create(paste0("../03_Outputs/05_Target_Rasters/pre_mask_climate/z",i)))
+         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z0",i)),
+         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z",i)))
   
   # Save that directory path as a string
   ifelse(i<10, 
-         out_dir<- paste0("../03_Outputs/05_Target_Rasters/pre_mask_climate/z0",i),
-         out_dir<- paste0("../03_Outputs/05_Target_Rasters/pre_mask_climate/z",i))
+         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z0",i),
+         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z",i))
   
   
   # Crop, mask, and resample layers to each landfire zone---
   
-  # Read in the tree mask from the LandFire EVC layer for this zone----
+  # Read in the step 1 forest mask from the LandFire EVC layer for this zone----
   if (i<10) {
-    evc<- rast(paste0("../03_Outputs/05_Target_Rasters/v2020/pre_mask/z0",i,"/evc.tif"))
+    evc<- rast(paste0("../03_Outputs/05_Target_Rasters/v2022/pre_mask/z0",i,"/evc.tif"))
   } else {
-    evc<- rast(paste0("../03_Outputs/05_Target_Rasters/v2020/pre_mask/z",i,"/evc.tif"))
+    evc<- rast(paste0("../03_Outputs/05_Target_Rasters/v2022/pre_mask/z",i,"/evc.tif"))
   }
   
   # Make a reprojected extent for cropping the climate data

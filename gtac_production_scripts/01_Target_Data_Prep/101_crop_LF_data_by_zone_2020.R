@@ -22,6 +22,7 @@ lf_zone_nums<- sort(lf_zones$ZONE_NUM)
 evc<- rast("./01_Data/02_Landfire/LF_220/Vegetation/EVC/LF2022_EVC_220_CONUS/Tif/LC22_EVC_220.tif")
 evh<- rast("./01_Data/02_Landfire/LF_220/Vegetation/EVH/LF2022_EVH_220_CONUS/Tif/LC22_EVH_220.tif")
 evt<- rast("./01_Data/02_Landfire/LF_220/Vegetation/EVT/LF2020_EVT_220_CONUS/Tif/LC20_EVT_220.tif")
+#
 aspect<- rast("./01_Data/02_Landfire/LF_220/Topo/Asp/LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.tif")
 elevation<- rast("./01_Data/02_Landfire/LF_220/Topo/Elev/LF2020_Elev_220_CONUS/Tif/LC20_Elev_220.tif")
 slope<- rast("./01_Data/02_Landfire/LF_220/Topo/SlpD/LF2020_SlpD_220_CONUS/Tif/LC20_SlpD_220.tif")

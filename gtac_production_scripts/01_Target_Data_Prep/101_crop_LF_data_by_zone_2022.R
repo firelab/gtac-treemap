@@ -67,7 +67,7 @@ evt_levels <- levels(evt)[[1]] %>%
 # Loop through landfire zones, masking and reclassifying and saving data by zone ----
 
 # First create output directory 
-dir.create("./03_Outputs/05_Target_Rasters/v2020/pre_mask/")
+dir.create("./03_Outputs/05_Target_Rasters/v2022/pre_mask/")
 
 for (i in lf_zone_nums){
   
@@ -75,20 +75,20 @@ for (i in lf_zone_nums){
   
   # Make a directory for saving landfire data for the zone
   ifelse(i<10, 
-         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z0",i)),
-         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z",i)))
+         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z0",i)),
+         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z",i)))
   
   # Save that directory path as a string
   ifelse(i<10, 
-         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z0",i),
-         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z",i))
+         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z0",i),
+         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z",i))
   
   
   # Crop and mask layers to each landfire zone---
   
   # Crop and Reclassify EVC
   evc_zone<- terra::classify(terra::crop(evc, lf_zone, mask = TRUE),
-                             evc_forest_codes_mat, right = NA)
+                              evc_forest_codes_mat, right = NA)
   # Crop and Reclassify EVH
   evh_zone<- terra::classify(terra::crop(evh, lf_zone, mask = TRUE),
                              evh_class_mat, right = NA)
