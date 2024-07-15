@@ -12,7 +12,7 @@
 ###########################################################################
 
 # zone to run
-zone = 19
+zone = 16
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_project_inputs_for_imp.R
 # path is relative to script location

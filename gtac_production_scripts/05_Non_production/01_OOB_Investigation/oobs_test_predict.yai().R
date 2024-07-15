@@ -1,8 +1,11 @@
-# possible sources: 
+# Based on Ian's suggestion:
+# Get predicted values of response variables, and all other x variables, from original yai model
 
-# https://stackoverflow.com/questions/14676810/extracting-the-terminal-nodes-of-each-tree-associated-with-a-new-observation
+# But how do I know these are out of bag? 
 
-#
+# Then, input those predicted values into the model again, as response variables
+# Use those new ids to assess accuracy 
+
 
 # load library 
 this_proj = this.path::this.proj()
@@ -10,24 +13,27 @@ lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib
 source(lib_path)
 
 
-yai <- readRDS("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_ntree250_yai_treelist_bin.RDS")
+yai <- readRDS("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/model/z16_2016_GTAC_Test_yai_treelist_bin.RDS")
 
-xtable <- read.csv("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/xytables/z16_2016_Orig_Test_keepinbag_ntree250_Xdf_bin.csv")
+xtable <- read.csv("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z16/xytables/z16_2016_GTAC_Test_Xdf_bin.csv")
 
-oobs_default <- get_OOBs_yai(yai)
+#oobs_default <- get_OOBs_yai(yai)
+
+oobs_new <- get_OOBs_yai_predict(yai)
 
 yai_out <- foruse(yai)
 yai_out1 <- foruse(yai, kth = 1)
 
 # get new predictions / out of bag (?) predictions
-oobs_new <- predict(yai$ranForest$canopy_cover) # returns predictions for one variable
-
-impute_yai <- impute(yai, observed = TRUE) # same as predict()
-
+preds <- predict(yai$ranForest$canopy_cover) # returns predictions for one variable
 
 # get new predictions
 predict_yai <- predict(yai) 
-predict_yai_names <- predict(yai)
+
+impute_yai <- impute(yai, observed = TRUE) # same as predict.yai(). returns  
+
+identical(predict_yai, impute_yai)
+
 
 # update row names so we can use these as new target data
 maxv <- max(as.numeric(rownames(predict_yai)))
@@ -35,11 +41,11 @@ nrow <- nrow(predict_yai)
 new_names <- seq(from = maxv+1, to = maxv+nrow, by = 1)
 rownames(predict_yai) <- new_names
 
-# get only observed values
+# get only predicted values
 predict_yai %<>%
   select(sort(names(predict_yai))) %>%
-  select(matches(".o$")) %>%
-  rename_with(~str_remove(., "[.]o$")) 
+  select(-matches(".o$")) #%>%
+  #rename_with(~str_remove(., "[.]o$")) 
   
 # impute based on these predictions
 # new targets
@@ -51,7 +57,7 @@ out.neiIds <- newt$neiIdsTrgs # a matrix of reference identifications that corre
 yrows <- as.numeric(out.neiIds[,1]) # get list of plotIds; rowname = rowname from X.df.temp - corresponds to cell
 
 # bind with original
-out <- data.frame(cbind(as.numeric(rownames(predict_yai_names)), 
+out <- data.frame(cbind(as.numeric(rownames(yai$xall)), 
                         as.numeric(yrows)))
 names(out) <- c("ref_id", "pred_id")
 # how many imputed is are different? 
