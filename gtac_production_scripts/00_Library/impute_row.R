@@ -1,8 +1,20 @@
 # Function to make new imputation predictions given a raster input
 # This function is applied on a DATA FRAME (representing one row of raster) INSTEAD OF RASTER
 
+library(docstring)
+
 impute_row <- function(dat, yai, test)  { 
   
+  #' Function to make new imputation predictions given a data frame input
+  #' 
+  #' @param dat The data frame, for TreeMap, represents one row of a multi-layer raster
+  #' Where each column in the data frame represents all values in the row for a given layer of the raster
+  #' @param yai model created by the `yaImpute` function
+  #' @param test default FALSE. test = TRUE skips the imputation portion and returns a data frame of the input ids
+  #' @return data frame of imputed ids
+  #' @export
+  #'
+  #' @examples 
   require(yaImpute)
   require(dplyr)
   
