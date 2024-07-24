@@ -116,6 +116,29 @@ which.max.hightie <- function(x) {
   }
 }
 
+#####################################################
+# Parallel processing
+#####################################################
+#Progress combine function
+# use in foreach loop 
+# ex. 
+
+# # Run the loop in parallel
+# k <- foreach(i = icount(n), .final=sum, .combine=f()) %dopar% {
+#   log2(i)
+# }
+
+progress_foreach <- function(n){
+  pb <- txtProgressBar(min=1, max=n-1,style=3)
+  count <- 0
+  function(...) {
+    count <<- count + length(list(...)) - 1
+    setTxtProgressBar(pb,count)
+    Sys.sleep(0.01)
+    flush.console()
+    c(...)
+  }
+}
 
 
 #####################################################
@@ -165,7 +188,7 @@ filter_disturbance_rasters <- function(flist_tif, dist_layer_type){
   # get list of disturbance rasters
   flist_dist <- flist_tif %>%
     str_subset("disturb") %>%
-    str_subset(dist_layer_type)
+    str_subset(glue::glue('{dist_layer_type}.tif'))
   
   # get list of all other rasters
   flist_nondist <- flist_tif %>%
@@ -252,15 +275,9 @@ get_pr_RF <- function(rf_in, X_df) {
       distinct() %>%
       arrange(key_p)
     
-    # make sure preds are a factor if ref is a factor
-    if(is.factor(key_r$key_r)) {
-      p_r$pred <- factor(p_r$pred, levels = levels(key_r$key_r))
-      key_p$key_p <- factor(key_p$key_p, levels = levels(key_r$key_r))
-    }
-    
     # make sure pred vars are the same length as ref vars
     if(nrow(key_p) != nrow(key_r)) {
-
+      
       diff = abs(nrow(key_p) - nrow(key_r))
       
       # add an NA for each missing 
@@ -268,6 +285,12 @@ get_pr_RF <- function(rf_in, X_df) {
         key_p = rbind(key_p, 'NA')
       }
       
+    }
+    
+    # make sure preds are a factor if ref is a factor
+    if(is.factor(key_r$key_r)) {
+      p_r$pred <- factor(p_r$pred, levels = levels(key_r$key_r))
+      key_p$key_p <- factor(key_p$key_p, levels = levels(key_r$key_r))
     }
     
     key <- cbind(key_p, key_r)
