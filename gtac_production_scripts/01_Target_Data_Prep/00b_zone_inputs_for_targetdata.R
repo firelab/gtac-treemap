@@ -15,7 +15,8 @@
 # Set user inputs
 ###########################################################################
 
-zone = zone_input 
+#zone = zone_input
+zone = 16
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_inputs_for_target_data.R
 # path is relative to script location
@@ -127,8 +128,10 @@ lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF
 #   - specifically, used to project zone for cropping
 #   - used to define projection for all historic landfire disturbance
 
+lf_crs_version <- lf200_crs
+
 # load output crs
-lf_output_crs <- eval(parse(text = lf_crs_version))
+lf_output_crs <- lf_crs_version
 
 # Export data directories
 #----------------------------------------------------#

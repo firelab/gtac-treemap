@@ -15,7 +15,8 @@
 # General inputs - specific to each project
 #-----------------------------------------------#
 
-year <- year_input
+#year <- year_input
+year <- 2016
 
 #project name
 
@@ -46,8 +47,9 @@ landfire_version_topo <- 220
 landfire_year_topo <- 2020
 
 # VEG
-LFveg_yearDict <- list("2020" = 220, 
-                        "2022" = 230)
+LFveg_yearDict <- list("2016" = 200, 
+                       "2020" = 220, 
+                       "2022" = 230)
 
 landfire_year_veg <- year
 landfire_version_veg <- LFveg_yearDict[[as.character(landfire_year_veg)]]
