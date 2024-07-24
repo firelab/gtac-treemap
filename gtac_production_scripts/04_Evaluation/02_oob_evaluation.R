@@ -7,9 +7,7 @@
 
 # TO DO:
 
-# TALK MORE ABOUT OOB EVALUATION SO WE UNDERSTAND IT
-
-# Last updated: 7/8/2024
+# Last updated: 7/23/2024
 
 ###########################################################################
 # Set inputs
@@ -32,16 +30,16 @@ eval_vars <- c(eval_vars_cat, eval_vars_cont)
 # Standard inputs
 #---------------------------------------------#
 
-# Set inputs - from input script
-thispath <- this.path::this.path() # Id where THIS script is located
-
-# get path to input script
-spl <- stringr::str_split(thispath, "/")[[1]]
-input_script_path <- paste(c(spl[c(1:(length(spl) - 1))],
-                             "00_inputs_for_evaluation.R"),
-                           collapse = "/")
-
-source(input_script_path)
+# # Set inputs - from input script
+# thispath <- this.path::this.path() # Id where THIS script is located
+# 
+# # get path to input script
+# spl <- stringr::str_split(thispath, "/")[[1]]
+# input_script_path <- paste(c(spl[c(1:(length(spl) - 1))],
+#                              "00_inputs_for_evaluation.R"),
+#                            collapse = "/")
+# 
+# source(input_script_path)
 
 ############################################################
 
@@ -113,12 +111,13 @@ rat %<>%
 # plotid_ref : treemap plot id for the reference plot in the imputation/forest
 # plotid_pred : treemap plotid for the predicted plot in the imputation/forest
 
-# run custom function to get out of bag predictions - 1 for each ref for each forest
+# run custom function to get out of bag predictions - 1 for each ref 
 # this takes some time to run 
-oobs <- get_OOBs_yai(yai) #%>%
-  #rename("ref_id" = ref,
-  #       "pred_id" = pred) %>%
-oobs %<>% mutate(oob_id = row_number())
+oobs <- get_OOBs_yai_predict(yai) 
+oobs %<>% 
+  # rename("ref_id" = ref,
+  #        "pred_id" = pred) %>%
+  mutate(oob_id = row_number())
 
 
 # make Join OOB predicted and reference with Xdf and RAT to get variable values
@@ -197,7 +196,7 @@ for (i in eval_vars_cat) {
 
 # save cms as RDS
 write_rds(cms, file = 
-            glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB_ORIG_wrong.RDS'))
+            glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
 
 gc()
 
@@ -209,6 +208,7 @@ gc()
 # PLOT CONTINUOUS VARS
 # ---------------------------------------------------#
 
+# set parameters for continuous var plotting
 dodge <- position_dodge(width = 0.6)
 text_size <- 4 # 5 for indvidual plots 3 for all plots in grid
 percent_x_textPos <- 0.50 # 0.4 for individual plots
@@ -216,6 +216,9 @@ percent_y_textPos1 <- 0.99 # 0.96 for individual plots
 percent_y_textPos2 <- 0.78 # 0.96 for individual plots
 textBoxFill_ratioX <- 0.25
 textBoxFill_ratioY <- 0.04
+alpha <- 0.1
+export_width <- 7 # in inches
+export_height <- 4.5 # in inches
 
 for(i in 1:(length(eval_vars_cont))) {
   
@@ -258,9 +261,10 @@ for(i in 1:(length(eval_vars_cont))) {
   
   # build an LM
   lm <- lm(pred ~ ref, data = p_r2)
+  
+  # inspect LM
   # lm$coefficients
   # sum <- summary(lm)
-  # 
   # sum$r.squared
   
   
@@ -279,15 +283,15 @@ for(i in 1:(length(eval_vars_cont))) {
   p2 <- p_r2 %>%
     ggplot(aes(x = ref, y = pred)) + 
     geom_abline(intercept = 0, color = "red", linewidth = 1, linetype = 2) + 
-    geom_point(alpha = 0.25) +
+    geom_point(alpha = alpha) +
     geom_smooth(method = "lm", formula = y~x) +
     labs() + 
     theme_bw() + 
     ggtitle(glue::glue("OOB predicted vs. ref for {var_name}")) + 
     annotate(geom="text",
-             x = (max(ref)/2),
-             y = (percent_y_textPos1*max(y, na.rm = TRUE)),
-             label = as.character(eqn_LF),
+             x = (max(p_r2$ref)/2),
+             y = (percent_y_textPos1*max(p_r2$pred, na.rm = TRUE)),
+             label = as.character(eqn),
              parse = TRUE,
              color = "purple",
              size = text_size) 
@@ -295,16 +299,18 @@ for(i in 1:(length(eval_vars_cont))) {
   print(p2)
   
   # save
-  ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_violin_ORIG_wrong.png'),
+  ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_violin.png'),
          plot = p,
-         width = 7, 
-         height = 4.5)    
+         width = export_width, 
+         height = export_height)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_scatter_ORIG_wrong.png'),
+  ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_scatter.png'),
          plot = p2,
-         width = 7, 
-         height = 4.5) 
+         width = export_width, 
+         height = export_height) 
   
   gc()
 }
+
+#rm(lm, p, p2)

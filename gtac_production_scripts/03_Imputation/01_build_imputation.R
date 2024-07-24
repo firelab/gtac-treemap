@@ -4,7 +4,7 @@
 # original script: "rmrs_production_scripts/2016_updated_production_scripts/yai-treemap commented.R"
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
-# Last updated: 6/20/2024
+# Last updated: 7/15/2024
 
 # PART 1: 
 # - BUILD x and y tables
@@ -17,12 +17,13 @@
 ###################################################
 
 # Set inputs - from input script
+# Uncomment this if running a single zone at a time, outside of a loop for all zones
 #--------------------------------------------#
 
-this_dir <- this.path::this.dir()
-
-inputs_for_imputation<- glue::glue('{this_dir}/00b_zonal_inputs_for_imp.R')
-source(inputs_for_imputation)
+# this_dir <- this.path::this.dir()
+# 
+# inputs_for_imputation<- glue::glue('{this_dir}/00b_zonal_inputs_for_imp.R')
+# source(inputs_for_imputation)
   
 # Other options
 # --------------------------------#
@@ -32,6 +33,8 @@ source(inputs_for_imputation)
 options("scipen" = 100, "digits" = 8)
 
 ##########################################################
+
+message("Loading data for imputation")
 
 # Load target rasters - just for metatada
 # --------------------------------------------------------------------#
@@ -202,25 +205,27 @@ Y_df %>%
 
 # Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code)
 # -----------------------------------------------------------------------#
+message("Building imputation model")
+
 set.seed(56789)
 
-tic()
-yai_treelist_bin <- yaImpute::yai(X_df, Y_df,
+yai <- yaImpute::yai(X_df, Y_df,
                         method = "randomForest",
                         ntree = 250,
                         oob = TRUE # this option only available in the dev version of yaImpute found here: https://github.com/jeffreyevans/yaImpute
                         )
-toc()
 
 # Export model
-write_rds(yai_treelist_bin, model_path)
+write_rds(yai, model_path)
 
 
 # Report model accuracy for Response variables (EVC, EVH, EVG, disturb code)
 # ------------------------------------------------------------------------#
 
+message("Computing model accuracy")
+
 #RF summary
-RF_sum <- yaiRFsummary(yai_treelist_bin)
+RF_sum <- yaiRFsummary(yai)
 
 # for var in response variables, get a full suite of cms 
 # and then combine into a list RDS that I can plot the same way I do the others
@@ -236,7 +241,7 @@ for (i in seq_along(response_vars)) {
   var = response_vars[i]
   
   # get random forest model
-  rf_in <- yai_treelist_bin$ranForest[var]
+  rf_in <- yai$ranForest[var]
   
   # get predicted and ref table from RF model and X table
   p_r<- get_pr_RF(rf_in, X_df)
@@ -284,3 +289,6 @@ ggsave(glue::glue("{raw_outputs_dir}/model_eval/{output_name}_varImp.png"),
 
 # clear unused memory
 gc()
+
+# remove objects? 
+rm(allplot, allplot_vect, allplot_xy, cm, cms_list, coords, coords_sp, evg_reclass, p, p_r, rf_in, RF_sum, X_df, Y_df, varImp, plot_df)

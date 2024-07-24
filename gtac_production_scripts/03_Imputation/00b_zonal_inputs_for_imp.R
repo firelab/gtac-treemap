@@ -3,7 +3,7 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 7/2/24
+# Last updated: 7/15/24
 
 # TO DO: what target data params can i pull in from target data RDS? 
 
@@ -12,11 +12,11 @@
 ###########################################################################
 
 # zone to run
-zone = 16
+zone = zone_input
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_project_inputs_for_imp.R
 # path is relative to script location
-imputation_params_path <- "/params/2016_GTAC_Test_imputation_inputs.RDS"
+imputation_params_path <- glue::glue("/params/{project_name}_imputation_inputs.RDS")
 
 # model to use - supply path specific model to pull into imputation, or NA
 # path should be relative to home directory
@@ -28,8 +28,8 @@ model_path <- NA
 #-----------------------------------------#
 
 # # supply path to a shapefile to use as subset, or NA
-# aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-# aoi_name <- "UT_Uintas_rect"
+#aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+#aoi_name <- "UT_Uintas_rect"
 aoi_path <- NA
 aoi_name <- NA
 

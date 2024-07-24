@@ -4,7 +4,7 @@
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last updated:
-# 6/20/24
+# 7/18/24
 
 # Goals: 
 # - load preliminary imputation outputs
@@ -27,23 +27,27 @@
 # Set inputs - from input script used for imputation
 #-----------------------------------------------------#
 
-this_proj <- this.path::this.proj()
-this_dir <- this.path::this.dir()
+#this_proj <- this.path::this.proj()
+#this_dir <- this.path::this.dir()
 
-inputs_for_evaluation<- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
-source(inputs_for_evaluation)
+#inputs_for_evaluation<- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
+#source(inputs_for_evaluation)
 
 
 # Specific inputs
 #----------------------------------------------------------#
 
-# list layers to export
+# list layers to evaluate, assemble, and export
+# all options are: c("canopy_cover", "canopy_height", "EVT_GP", "disturb_code")
 eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
                    "disturb_code")
+
 
 #####################################################################
 # Load data
 ####################################################################
+
+message("Loading data for target layer comparison")
 
 # Imputed raster
 #-------------------------------------------#
@@ -51,7 +55,7 @@ eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
 raster_name <- glue::glue("{output_name}")
 
 #load raw imputation output raster
-ras <- terra::rast(glue("{assembled_dir}/01_Imputation/{raster_name}.tif"))
+ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{raster_name}.tif"))
 
 # trim off NA values
 ras <- terra::trim(ras)
@@ -64,7 +68,8 @@ names(ras) <- c("value")
 
 # inspect
 ras
-plot(ras)
+plot(ras,
+     main = glue::glue("Raw imputed ids: Zone {zone_num}"))
 
 # X - table
 #------------------------------------------#
@@ -88,6 +93,26 @@ target_files <- target_files[target_files %>%
 # load
 rs2 <- load_target_rasters(target_files)
 
+# FOR TESTING: Conditionally crop to aoi
+#---------------------------------------------------#
+if (!is.na(aoi_path)) {
+  
+  print("using input shapefile as AOI")
+  
+  # get desired crs
+  lf_crs <- terra::crs(rs2)
+  
+  # crop and mask
+  aoi <- terra::vect(aoi_path) %>% terra::project(lf_crs)
+  rs2 <- terra::crop(rs2, aoi, mask = TRUE)
+  
+  gc()
+  
+} else { print("using extent of input raster stack as AOI") }
+
+# Keep prepping AOI
+#-----------------------------------------------------------------#
+
 #trim away any NAs on the sides - helps match extent with outputs
 rs2 %<>% terra::trim()
 
@@ -109,6 +134,8 @@ gc()
 # Prep for assembly
 ####################################################################
 
+message("preparing data to assemble rasters")
+
 # get list of IDs present in ras
 id_list <- freq(ras)$value %>%
   sort() %>%
@@ -126,11 +153,14 @@ evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
 
 # join remapped EVT_GPs with lookup table
 lookup %<>%
-  left_join(evt_gp_remap_table, by = "EVT_GP")
+  rename("EVT_GP_remap" = EVT_GP) %>%
+  left_join(evt_gp_remap_table, by = c("EVT_GP_remap")) 
 
 ####################################################################
-# Evaluation: Calculate confusion matrices of Imputation vs Landfire / reference rasters
+# Evaluation: Calculate confusion matrices of Imputation vs Target Layers
 ####################################################################
+
+message("assembling and comparing imputed outputs vs Target Layers")
 
 # if exportTF = true: then exports assembled, imputed raster
 
@@ -214,3 +244,5 @@ write_rds(cms, glue::glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}_C
 #   
 #   
   
+rm(ras, lookup, rs2, vrt)
+gc()

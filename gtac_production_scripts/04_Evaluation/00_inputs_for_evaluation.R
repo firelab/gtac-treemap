@@ -18,8 +18,8 @@
 this_proj <- this.path::this.proj()
 
 # get path to imputation inputs RDS
-inputs_for_imputation <- glue::glue('{this_proj}/gtac_production_scripts/03_Imputation/00b_zonal_inputs_for_imp.R')
-source(inputs_for_imputation)
+#inputs_for_imputation <- glue::glue('{this_proj}/gtac_production_scripts/03_Imputation/00b_zonal_inputs_for_imp.R')
+#source(inputs_for_imputation)
 
 # General inputs
 #--------------------------------------------------#

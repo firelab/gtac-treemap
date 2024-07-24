@@ -3,21 +3,23 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 6/17/24
+# Last updated: 7/10/24
 
 ###########################################################################
 # Set inputs
 ###########################################################################
 
-# Project name - name for overarching folders
-project_name <- "2016_GTAC_Test" 
+year <- year_input
+
+#project_name <- glue::glue("{year}_Production")
+project_name <- glue::glue("{year}_ImputationPrep") #for testing
 
 # name for products - includes params here if desired
 #e.g., #output_name <- "2016_GTAC_LCMSDist"
-output_name <- "2016_GTAC_Test"  
+output_name <- glue::glue("{year}_GTAC_ImputationPrep") 
 
 # target data version to use
-target_data_version <- "v2016_GTAC"
+target_data_version <- glue::glue("v{year}_GTAC")
 
 # reference data version to use
 ref_data_version <- "v2016_RMRS"
@@ -27,17 +29,15 @@ dist_layer_type <- "LF"
 
 # # output crs - desired crs for output products
 # #options include: "lcms_crs", "lf200_crs", "lf220_crs", "lf230_crs", "tm16_crs"
-output_crs_name <- "tm16_crs"
+output_crs_name <- "lf230_crs"
 
-#set tmp directory
-tmp_dir <- "D:/tmp/"
 
 ####################################
 
 # Plot coordinates - relative to FIA_dir
 coords_path <- '/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv'
 
-# Path to X table - relative to home_dir
+# Path to X table that contains all original records - relative to home_dir
 xtable_path <- glue::glue("/03_Outputs/06_Reference_Data/{ref_data_version}/X_table_all_singlecondition.txt")
 
 # Make RDS of input parameters used
