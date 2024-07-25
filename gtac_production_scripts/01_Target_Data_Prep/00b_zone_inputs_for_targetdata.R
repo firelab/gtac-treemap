@@ -15,11 +15,19 @@
 # Set user inputs
 ###########################################################################
 
-zone = 19
+zone = 10
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_inputs_for_target_data.R
 # path is relative to script location
 target_prep_params_path <- "/params/v2016_GTAC_target_data_inputs.RDS"
+
+# Inputs for testing
+#-----------------------------------------------#
+# supply path to a shapefile to use as a subset, or NA
+#aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+#aoi_name <- "UT_Uintas_rect_"
+aoi_path <- NA
+aoi_name <- NA
 
 ##########################################
 # Run
@@ -94,13 +102,28 @@ evc_path <- glue::glue('{landfire_veg_dir}/EVC/LF{landfire_year_veg}_EVC_{landfi
 evh_path <- glue::glue('{landfire_veg_dir}/EVH/LF{landfire_year_veg}_EVH_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVH_{landfire_version_veg}.tif')
 evt_path <- glue::glue('{landfire_veg_dir}/EVT/LF{landfire_year_veg}_EVT_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVT_{landfire_version_veg}.tif')
 
-elev_path <- glue::glue('{landfire_topo_dir}/LF{landfire_year_topo}_Elev_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Elev_{landfire_version_topo}.tif')
-slopeP_path <- glue::glue('{landfire_topo_dir}/LF{landfire_year_topo}_SlpP_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpP_{landfire_version_topo}.tif')
-slopeD_path <- glue::glue('{landfire_topo_dir}/LF{landfire_year_topo}_SlpD_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpD_{landfire_version_topo}.tif')
-asp_path <- glue::glue('{landfire_topo_dir}/LF{landfire_year_topo}_Asp_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Asp_{landfire_version_topo}.tif')
+elev_path <- glue::glue('{landfire_topo_dir}/Elev/LF{landfire_year_topo}_Elev_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Elev_{landfire_version_topo}.tif')
+# slopeP_path <- glue::glue('{landfire_topo_dir}/SlpP/LF{landfire_year_topo}_SlpP_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpP_{landfire_version_topo}.tif')
+slopeD_path <- glue::glue('{landfire_topo_dir}/SlpD/LF{landfire_year_topo}_SlpD_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpD_{landfire_version_topo}.tif')
+asp_path <- glue::glue('{landfire_topo_dir}/Asp/LF{landfire_year_topo}_Asp_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Asp_{landfire_version_topo}.tif')
 
 # set dir for input biophys rasters
 biophys_dir <- glue::glue('{data_dir}02_Landfire/BioPhys/')
+
+# Input parameters for LCMS Disturbance
+#-----------------------------------------------------------#
+
+# Set variables
+LCMS_NAvalue <- -32768
+
+# set threshold for probability of slow loss from LCMS
+slow_loss_thresh <- 14 # default value for LCMS processing: 14
+
+# set probability thresholds for change
+LCMS_change_thresholds <- c(29, # fast loss; default = 29
+                            slow_loss_thresh, # slow loss; default = 14
+                            20 # gain; default = 20
+)
 
 # Export data directories
 #----------------------------------------------------#
@@ -145,7 +168,7 @@ if(is.na(aoi_name)) {
   aoi_name <- ""
 }
 
-# Export data paths
+# Export data paths- disturbance
 #---------------------------------------------------------------#
 # create output file names
 landfire_fire_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_Fire_Years.tif')
@@ -218,6 +241,10 @@ if(!file.exists(target_dir_z)) {
   dir.create(target_dir_z, recursive = TRUE)
   }
 
+if(!file.exists(glue::glue('{target_dir_z}/params/'))) {
+  dir.create(glue::glue('{target_dir_z}/params/'), recursive = TRUE)
+}
+
 # # target dir
 # if (!file.exists(glue::glue('{target_dir_z}/00_prelim_dist'))) {
 #   dir.create(glue::glue('{target_dir_z}/00_prelim_dist'), recursive = TRUE)
@@ -236,5 +263,5 @@ if(!file.exists(target_dir_z)) {
 
 # Make RDS of input parameters used
 #---------------------------------------------------------#
-save(list = ls(), file = glue::glue('{target_dir_z}/{cur_zone_zero}_env.RDS'))
+save(list = ls(), file = glue::glue('{target_dir_z}/params/{cur_zone_zero}_env.RDS'))
 

@@ -5,10 +5,11 @@
 # - Forest mask derived from Landfire EVC
 # - Landfire Existing Vegetation Type Group
 # - Landfire Existing Vegetation Height (EVH)
+# - Disturbance layers 
 # - EVT_GP remap table
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
-# Last Updated: 4/1/24
+# Last Updated: 6/18/24
 
 # Based on "prep_target_rasters_v2.py" by Karin Riley
 
@@ -21,16 +22,11 @@
 # SET INPUTS
 ##########################################################
 
-# Set inputs - from input script
-this.path <- this.path::this.path() # Id where THIS script is located
+# get path to inputs script
+this_dir <- this.path::this.dir()
+inputs_script <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
-# get path to input script
-spl <- stringr::str_split(this.path, "/")[[1]]
-input_script.path <- paste( c(spl[c(1:(length(spl)-1))],
-                              "00_inputs_for_targetdata.R" ),
-                            collapse = "/")
-
-source(input_script.path)
+source(inputs_script)
 
 # Terra options
 # --------------------------------#
@@ -145,11 +141,6 @@ evc %<>% terra::crop(zone, mask = TRUE) %>%
   terra::classify(evc_forest_codes_mat, right = NA) %>% # reclassify EVC: subset to only forested pixels
   terra::project(landfire_crs)
 
-
-# convert zone vector to raster - to help match extents 
-zone_r <- terra::rasterize(zone, evc) %>%
-  terra::project(landfire_crs)
-
 ## crop to zone again - this time by raster
 evc %<>% terra::crop(zone_r, mask = TRUE)
 evt %<>% terra::crop(zone_r, mask = TRUE)
@@ -176,8 +167,9 @@ evt_gp <- terra::classify(evt_gp, evg_remap_table)
 
 # export remap table
 write.csv(evg_remap_table, 
-          glue::glue('{target_dir_z}/01_final/EVG_remap_table.csv'), row.names = FALSE)
+          glue::glue('{target_dir_z}/EVG_remap_table.csv'), row.names = FALSE)
 
+gc()
 
 # Apply forest mask to remaining vegetation layers
 # ---------------------------------------- #
@@ -199,17 +191,17 @@ print(glue('exporting vegetation rasters for zone {zone_num}'))
 
 # export canopy cover
 writeRaster(evc, 
-            glue::glue('{target_dir_z}/01_final/canopy_cover.tif'),
+            glue::glue('{target_dir_z}/canopy_cover.tif'),
             overwrite = TRUE)
 
 # canopy height
 writeRaster(evh, 
-            glue::glue('{target_dir_z}/01_final/canopy_height.tif'),
+            glue::glue('{target_dir_z}/canopy_height.tif'),
             overwrite = TRUE)
 
 # evt_gp
 writeRaster(evt_gp, 
-            glue::glue('{target_dir_z}/01_final/EVT_GP.tif'),
+            glue::glue('{target_dir_z}/EVT_GP.tif'),
             overwrite = TRUE)
 
 
@@ -223,7 +215,7 @@ gc()
 
 # Load topo layers
 elev <- terra::rast(elev_path)
-slp <- terra::rast(slopeP_path)
+slp <- terra::rast(slopeD_path)
 asp <- terra::rast(asp_path)
 
 ## Crop to zone and mask to forested px
@@ -256,19 +248,90 @@ east <- terra::app(asp, function(i) sin((pi/180)*i))
 print(glue('exporting topo rasters for zone {zone_num}'))
 
 writeRaster(elev, 
-            glue::glue('{target_dir_z}/01_final/ELEV.tif'))
+            glue::glue('{target_dir_z}/ELEV.tif'),
+            overwrite = TRUE)
 writeRaster(slp, 
-            glue::glue('{target_dir_z}/01_final/SLOPE.tif'))
+            glue::glue('{target_dir_z}/SLOPE.tif'),
+            overwrite = TRUE)
 writeRaster(asp, 
-            glue::glue('{target_dir_z}/01_final/ASPECT.tif'))
+            glue::glue('{target_dir_z}/ASPECT.tif'),
+            overwrite = TRUE)
 writeRaster(north, 
-            glue::glue('{target_dir_z}/01_final/NORTHING.tif'))
+            glue::glue('{target_dir_z}/NORTHING.tif'),
+            overwrite = TRUE)
 writeRaster(east, 
-            glue::glue('{target_dir_z}/01_final/EASTING.tif'))
+            glue::glue('{target_dir_z}/EASTING.tif'),
+            overwrite = TRUE)
 
 #remove layers
 rm(elev, slp, asp, north, east)
 gc()
+
+
+## DISTURBANCE
+# ###################################################
+
+# # re-load evt_gp as mask
+# evt_gp <- terra::rast(glue::glue('{target_dir_z}/EVT_GP.tif'))
+# 
+# # convert zone vector to raster - to help match extents 
+# zone_r <- terra::rasterize(zone, evt_gp) %>%
+#   terra::project(landfire_crs)
+
+
+# Load disturbance layers
+#------------------------------------------------------#
+disturb_code_lf <- terra::rast(lf_disturb_code_outpath)
+disturb_year_lf <- terra::rast(lf_disturb_year_outpath)
+
+disturb_year_lflcms <- terra::rast(lcms_disturb_year_outpath)
+disturb_code_lflcms <- terra::rast(lcms_disturb_code_outpath)
+
+## Crop to zone and mask to forested px
+#------------------------------------------------------#
+
+# project zone_r
+zone_r %<>% terra::project(crs(disturb_code_lf))
+
+# crop, get to desired end projection, mask 
+disturb_code_lf <- terra::crop(disturb_code_lf, zone_r) %>%
+  terra::project(landfire_crs) %>%
+  terra::mask(evt_gp)
+disturb_year_lf <- terra::crop(disturb_year_lf, zone_r) %>%
+  terra::project(landfire_crs) %>%
+  terra::mask(evt_gp)
+
+zone_r %<>% terra::project(crs(disturb_code_lflcms))
+
+disturb_code_lflcms <- terra::crop(disturb_code_lflcms, zone_r) %>%
+  terra::project(landfire_crs) %>%
+  terra::mask(evt_gp)
+disturb_year_lflcms <- terra::crop(disturb_year_lflcms, zone_r) %>%
+  terra::project(landfire_crs) %>%
+  terra::mask(evt_gp)
+
+## Export
+#--------------------------------------------------------#
+
+print(glue('exporting disturbance rasters for zone {zone_num}'))
+
+writeRaster(disturb_code_lf, 
+            glue::glue('{target_dir_z}/disturb_code_LF.tif'),
+            overwrite = TRUE)
+writeRaster(disturb_year_lf, 
+            glue::glue('{target_dir_z}/disturb_year_LF.tif'),
+            overwrite = TRUE)
+
+writeRaster(disturb_code_lflcms, 
+            glue::glue('{target_dir_z}/disturb_code_LFLCMS.tif'),
+            overwrite = TRUE)
+writeRaster(disturb_year_lflcms, 
+            glue::glue('{target_dir_z}/disturb_year_LFLCMS.tif'),
+            overwrite = TRUE)
+
+# Remove input / temp disturbance layers
+
+rm(disturb_code_lf, disturb_year_lf, disturb_code_lflcms, disturb_year_lflcms)
 
 ## BIOPHYS
 # ###################################################
@@ -280,16 +343,6 @@ bio_list <- list.files(biophys_dir_z, full.names = TRUE)
 # load layers
 biophys <- terra::rast(bio_list)
 
-# inspect
-identical(crs(biophys[[1]]), landfire_crs)
-terra::ext(biophys[[1]])
-
-plot(terra::ext(evt_gp))
-plot(terra::ext(biophys[[1]]), col = "blue", add = TRUE)
-
-bp_crop <- biophys[[1]] %>% terra::crop(evt_gp)
-terra::ext(bp_crop)
-
 # Mask Biophys layers - to forested px for each zone
 # -------------------------------------------------------------#
 
@@ -299,7 +352,7 @@ for(i in 1:length(bio_list)) {
   #i = 1
 
   # load raster
-  r <- terra::rast(bio_list[[i]])
+  r <- terra::rast(bio_list[i])
 
   # crop and mask
   r %<>% terra::crop(evt_gp) %>%
@@ -307,14 +360,16 @@ for(i in 1:length(bio_list)) {
     terra::project(landfire_crs)
 
   # set name for output raster
-  r_name <- stringr::str_split(bio_list[[i]], "/")[[1]]
-  r_name <- gsub(".img", "", r_name[length(r_name)])
-  r_name <- gsub(cur.zone.zero, "", r_name)
-  r_name <- toupper(r_name)
+  r_name <- stringr::str_split(bio_list[[i]], "/")[[1]] # get strings for full path
+  r_name <- gsub(".img", "", r_name[length(r_name)]) %>% # get string that refers to the last part of the path
+    str_replace(cur_zone_zero, "") %>%
+    str_remove("NO") %>%
+    toupper() %>% # uppercase
+    glue::glue(., "I") # add 'I' to the end to match 2016 X table
 
   # write out
   writeRaster(r,
-              glue::glue('{target_dir_z}/01_final/{r_name}.tif'),
+              glue::glue('{target_dir_z}/{r_name}.tif'),
               overwrite = TRUE)
 
   gc()

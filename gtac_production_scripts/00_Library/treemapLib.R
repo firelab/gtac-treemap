@@ -10,20 +10,32 @@
 #################################################################
 
 # packages required
-list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", "magrittr", 
-                       "tictoc", "caret", "yaImpute", "randomForest", 
-                      "Metrics", "foreach", "doParallel")
+list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
+                      "magrittr", "tictoc", "caret", "randomForest", 
+                      "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
+                      "stringr", "stringi")
+
+# Install dev version of yaImpute - to make sure we get the option to retain OOB obs
+message("Installing dev version of yaImpute package")
+devtools::install_github("https://github.com/jeffreyevans/yaImpute")
 
 # #check for packages and install if needed
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
-if(length(new.packages) > 0) install.packages(new.packages)
+new.packages <- tryCatch(
+  
+  # try to get list of packages installed
+  {suppressWarnings(list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]) }, 
+  
+  error= function(cond) {
+    message("Can't access list of packages")
+    message("Here's the original error message:")
+    message(conditionMessage(cond))
+    
+    # return value in case of error:
+    NA
+  }
 
-# load all packages
-vapply(list.of.packages, library, logical(1L),
-       character.only = TRUE, logical.return = TRUE)
-
-#check for packages and install if needed
-new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+  )
+  
 if(length(new.packages) > 0) install.packages(new.packages)
 
 # load all packages
@@ -32,6 +44,22 @@ vapply(list.of.packages, library, logical(1L),
 
 # remove unused objects
 rm(list.of.packages, new.packages)
+
+#########################################################################
+# General options
+#########################################################################
+
+# Terra options
+# --------------------------------#
+
+#increase memory fraction available
+terraOptions(memfrac = 0.8)
+
+# Other options
+# --------------------------------#
+
+# Allow for sufficient digits to differentiate plot cn numbers
+options("scipen" = 100, "digits" = 8)
 
 ###########################
 # Run other scripts in this folder
@@ -82,6 +110,65 @@ which.max.hightie <- function(x) {
 # Raster operations
 #####################################################
 
+# Load target rasters
+#####################################################
+
+load_target_rasters <- function(flist_tif, n) {
+  
+  require(terra)
+  
+  # Objective: Load target rasters from a list into a single raster object
+  
+  # handle missing n param
+  if(missing(n)) {
+    n <- NA
+  }
+  
+  if(!is.na(n)) {
+    flist_tif <- flist_tif[n]
+  }
+  
+  rs2 <- terra::rast(flist_tif)
+  
+  # get raster layer names
+  layer_names <- flist_tif %>%
+    str_extract(., "z[0-9][0-9]/([^.])*") %>%
+    str_replace("z[0-9][0-9]/", "") %>%
+    str_remove("_LFLCMS") %>%
+    str_remove("_LF")
+  
+  #add names to raster list
+  names(rs2) <- layer_names
+  
+  return(rs2)
+}
+
+# Filter to disturbance rasters of interest
+
+# filter to target rasters of interest
+#####################################
+
+filter_disturbance_rasters <- function(flist_tif, dist_layer_type){
+  
+  # get list of disturbance rasters
+  flist_dist <- flist_tif %>%
+    str_subset("disturb") %>%
+    str_subset(dist_layer_type)
+  
+  # get list of all other rasters
+  flist_nondist <- flist_tif %>%
+    str_subset("disturb", negate = TRUE) 
+
+# recombine lists
+flist_tif <- c(flist_dist, flist_nondist) %>%
+  sort()
+
+return(flist_tif)
+
+}
+
+#########################################################################
+
 fill_matrix_to_raster <- function(mout, ncol_r, nrow_r, row1) { 
   
   require(terra) 
@@ -103,16 +190,68 @@ fill_matrix_to_raster <- function(mout, ncol_r, nrow_r, row1) {
   
   return(tile_out)
 
-  }
+}
+
+
 ###########################
 # Validation
 ###########################
 
-# Function to get out-of-bag cn predictions from a given yai object
-# returns a list of reference (ref) IDs, predicted (pred) IDs, tree number (1-ntrees in mode),
-# and the # of times that ref was included in-bag
-# so, where inbag_count = 0, that was an out-of-bag observatin for that tree
+# Get Predicted and Reference from a Random Forest object and the X table used to build it
+###########################################################################################
 
+get_pr_RF <- function(rf_in, X_df) {
+
+  # get predictions from random forest model and convert to data frame
+  preds <- rf_in[[1]]$predicted
+  ID_col <- names(preds)
+  preds_df <- data.frame(ID = ID_col, 
+                         pred = as.numeric(preds))
+  rownames(preds_df) <- NULL
+  
+  # get references from X_df
+  refs_df <- X_df %>%
+    dplyr::select(all_of(var)) %>%
+    dplyr::rename(ref = `var`) %>%
+    rownames_to_column("ID")
+  
+  # join refs and preds
+  p_r <- full_join(preds_df, refs_df, by = c("ID")) %>%
+    select(-ID)
+  
+  # if values are not unique, make a key
+  
+  if(!identical(sort(unique(p_r$pred)), sort(unique(p_r$ref)))) {
+    
+    # make a key for pred to ref
+    key_p <- p_r %>%
+      select(pred) %>%
+      rename(key_p = pred) %>%
+      distinct() %>%
+      arrange(key_p)
+    
+    key_r <- p_r %>%
+      select(ref) %>%
+      rename(key_r = ref) %>%
+      distinct() %>%
+      arrange(key_r)
+    
+    key <- cbind(key_p, key_r)
+    
+    # reclass preds to match refs
+    p_r_out <- left_join(p_r, key, by = c("pred" = "key_p") ) %>%
+      mutate(pred = key_r) %>%
+      select(pred, ref)
+    
+    p_r <- p_r_out
+    
+  } 
+  
+  return(p_r)
+
+}
+
+###############################################################################
 
 # Function for Evaluation - Confusion matrices 
 # Takes a two-column data frame as an input
@@ -166,7 +305,12 @@ eval_cm_function <- function(t, noDataVal) {
   
   # make data frame of classes
   cm_t_classes <- data.frame(as.matrix(cm, what = "classes"))
-  names(cm_t_classes) <- levels_t
+  
+  if(ncol(cm_t_classes) < 2) {
+    names(cm_t_classes) <- "1"
+  } else {
+    names(cm_t_classes) <- levels_t 
+  }
   cm_t_classes %<>% 
     rownames_to_column(., var = 'metric')
   
@@ -187,7 +331,8 @@ eval_cm_function <- function(t, noDataVal) {
   tfreq$class <- factor(rownames(tfreq), levels = levels_t)
   rownames(tfreq) <- NULL
   
-  #Calculate normalized frequency table also 
+  #Calculate normalized frequency table also
+  #----------------------------------------------#
 
   # calc total to use in normalizing
   total_pred = sum(tfreq$pred)
@@ -418,15 +563,5 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   
 }
 
-# Report Rendering
-########################################################
-
-FitFlextableToPage <- function(ft, pgwidth){
-  
-  ft_out <- ft %>% autofit()
-  
-  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
-  return(ft_out)
-}
 
 

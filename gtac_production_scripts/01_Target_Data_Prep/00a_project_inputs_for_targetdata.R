@@ -12,31 +12,14 @@
 # Set inputs
 ###########################################################################
 
-# Inputs for testing
+# General inputs - specific to each project
 #-----------------------------------------------#
-
-# supply path to a shapefile to use as a subset, or NA
-#aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-#aoi_name <- "UT_Uintas_rect_"
-aoi_path <- NA
-aoi_name <- NA
-
-# Standard inputs
-#-----------------------------------------------#
-
-# Zone list
-#zone_list <- c(16)
-
-#zone_num <- 16
 
 #project name
 project_name <- "2016_GTAC_Test"
 
 # target data version
 target_data_version <- "v2016_GTAC"
-
-# reference data version
-ref_data_version <- "v2016_GTAC"
 
 # set year range
 start_year <- 1999
@@ -60,9 +43,7 @@ landfire_year_topo <- 2020
 # Make RDS of input parameters used
 #---------------------------------------------------------#
 
-this_dir = this.path::this.dir()
-
 # Export to scripts folder for easy access 
 # over-writes by default
-save(list = ls(), file = glue::glue('{this_dir}/params/{target_data_version}_target_data_inputs.RDS'))
+save(list = ls(), file = glue::glue('{this.path::this.dir()}/params/{target_data_version}_target_data_inputs.RDS'))
 
