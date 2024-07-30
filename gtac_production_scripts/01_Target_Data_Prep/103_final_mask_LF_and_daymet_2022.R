@@ -34,9 +34,9 @@ zonal_evt_gp_reclass<- read.csv("../01_Data/11_EVG/zonal_evt_gp_reclass_LF2020.c
 # Loop through each zone. Mask EVT_GP to set defined codes as NA, and then reclassify EVT_GPs as necessary for the zone ----
 
 # First create output directory 
-dir.create("./03_Outputs/05_Target_Rasters/v2020/post_mask/")
+dir.create("./03_Outputs/05_Target_Rasters/v2022/post_mask/")
 
-lf_zone_nums<- lf_zone_nums[which(lf_zone_nums==65):length(lf_zone_nums)]
+lf_zone_nums<- lf_zone_nums[which(lf_zone_nums==32):length(lf_zone_nums)]
 
 for (i in lf_zone_nums){
   
@@ -44,18 +44,18 @@ for (i in lf_zone_nums){
   
   # Make a directory for saving final masked data for the zone
   ifelse(i<10, 
-         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z0",i)),
-         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z",i)))
+         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2022/post_mask/z0",i)),
+         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2022/post_mask/z",i)))
   
   # Save that directory path as a string
   ifelse(i<10, 
-         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z0",i),
-         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z",i))
+         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/post_mask/z0",i),
+         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/post_mask/z",i))
   
   # Get the in_dir for reading in pre-mask data
   ifelse(i<10, 
-         in_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z0",i),
-         in_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z",i))
+         in_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z0",i),
+         in_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z",i))
   
   # EVT GP  ----
   
@@ -111,7 +111,7 @@ for (i in lf_zone_nums){
   
   # Save the EVT GP Remap table for the zone 
   write.csv(evg_remap_table, paste0(out_dir,"/evt_gp_remap.csv"), row.names=F, quote=F)
-
+  
   
   # Save all the final rasters for the zone ----
   
@@ -135,7 +135,7 @@ for (i in lf_zone_nums){
   writeRaster(tmin, paste0(out_dir, "/tmin.tif"), datatype = "FLT4S")
   writeRaster(vp, paste0(out_dir, "/vp.tif"), datatype = "FLT4S")
   writeRaster(vpd, paste0(out_dir, "/vpd.tif"), datatype = "FLT4S")
-
+  
   # Remove objects from memory
   rm(list=setdiff(ls(), c("lf_raster", "lf_zones","lf_zone_nums", "evt_gps_na", "zonal_evt_gp_reclass")))
   
