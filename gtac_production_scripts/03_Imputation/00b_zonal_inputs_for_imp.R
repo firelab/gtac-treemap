@@ -55,74 +55,6 @@ if(!is.na(imputation_params_path)) {
   
 }
 
-# Load TreeMap script library
-#--------------------------------------------------#
-
-# load library 
-this_proj = this.path::this.proj()
-lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
-source(lib_path)
-
-
-# Build constructed inputs - less likely to change
-#-----------------------------------------------------------------#
-# data directory - where source data are located
-data_dir <- glue::glue('{home_dir}/01_Data/')
-
-# set path to landfire vector data
-lf_zones_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
-
-# Path to X table
-xtable_path <- glue::glue("{home_dir}/{xtable_path}")
-
-# Directory where target rasters live
-target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/")
-
-# Directory where disturbance layers live 
-dist_raster_dir <- target_dir 
-#dist_raster_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
-
-# Directory where EVT_GP remap table is located
-evt_gp_remap_table_dir <- target_dir
-#evt_gp_remap_table_dir <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/')
-
-# Plot coordinates
-coords_path <- glue::glue('{FIA_dir}/{coords_path}')
-
-# Paths for exporting data
-#--------------------------------------#
-
-# set path to save output rasters
-# this directory will be created if it does not already exist
-raw_outputs_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
-
-#set path for assembled rasters
-assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/')
-
-# Evaluation dir
-eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/')
-
-
-# Load CRS
-#----------------------------------------------------#
-
-# load lcms projections
-lcms_crs <- terra::crs(glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj'))
-
-# load treemap projection
-tm16_crs <- terra::crs(glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj"))
-
-# lf200
-lf200_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_200/CRS/LF_200_crs.prj"))
-
-# lf220
-lf220_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_220/CRS/LF_220_crs.prj"))
-
-# lf230
-lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
-
-# load output crs
-output_crs <- eval(parse(text = output_crs_name))
 
 # Set zone_number
 # ----------------------------------------------#
@@ -146,17 +78,19 @@ if(is.na(aoi_name)) {
 
 output_name <- glue::glue("{cur_zone_zero}_{output_name}")  
 
-target_dir = glue::glue('{target_dir}/{cur_zone_zero}/')
-raw_outputs_dir = glue::glue('{raw_outputs_dir}/{cur_zone_zero}/')
-params_dir <- glue::glue('{raw_outputs_dir}/params/')
-assembled_dir = glue::glue('{assembled_dir}/{cur_zone_zero}')
-eval_dir <- glue::glue('{eval_dir}{cur_zone_zero}')
+xtable_path = glue::glue("{xtable_dir}/x_table_{zone_num}.csv")
 
-tile_dir <- glue::glue('{raw_outputs_dir}raster/tiles/')
-model_dir = glue::glue('{raw_outputs_dir}/model/')
+target_dir = glue::glue("{target_dir}/{cur_zone_zero}")
+raw_outputs_dir = glue::glue("{raw_outputs_dir}/{cur_zone_zero}/")
+params_dir <- glue::glue("{raw_outputs_dir}/params/")
+assembled_dir = glue::glue("{assembled_dir}/{cur_zone_zero}")
+eval_dir <- glue::glue("{eval_dir}{cur_zone_zero}")
 
-evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/EVG_remap_table.csv')
-params_dir = glue::glue('{raw_outputs_dir}/params/')
+tile_dir <- glue::glue("{raw_outputs_dir}raster/tiles/")
+model_dir = glue::glue("{raw_outputs_dir}/model/")
+
+evt_gp_remap_table_path = glue::glue("{evt_gp_remap_table_dir}/{cur_zone_zero}/evt_gp_remap.csv")
+params_dir = glue::glue("{raw_outputs_dir}/params/")
 
 if (!is.na(dist_raster_dir)) {
   dist_raster_dir = glue::glue('{dist_raster_dir}/{cur_zone_zero}/')

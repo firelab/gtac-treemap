@@ -8,7 +8,7 @@ gc()
 #################################################################
 
 # Initialize projects (years) and zones
-year_input <- 2022
+year_input <- 2020
 
 zones_list <- 16
 #zones_list <- c(19, 5  ) #10,  # testing
@@ -47,10 +47,10 @@ list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse",
                       "stringr", "stringi", "devtools")
 
 
+  
 #################################################################
 # Make sure required packages are installed
 #################################################################
-
 
 # #check for packages and install if needed
 new.packages <- tryCatch(
@@ -70,10 +70,6 @@ new.packages <- tryCatch(
 )
 
 if(length(new.packages) > 0) install.packages(new.packages)
-
-# Install dev version of yaImpute - to make sure we get the option to retain OOB obs
-message("Installing dev version of yaImpute package")
-devtools::install_github("https://github.com/jeffreyevans/yaImpute") 
 
 # remove unused objects
 rm(list.of.packages, new.packages)

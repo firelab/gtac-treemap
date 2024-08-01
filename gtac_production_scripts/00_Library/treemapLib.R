@@ -148,7 +148,7 @@ progress_foreach <- function(n){
 # Load target rasters
 #####################################################
 
-load_target_rasters <- function(flist_tif, n) {
+load_and_name_rasters <- function(flist_tif, n) {
   
   require(terra)
   
@@ -187,8 +187,13 @@ filter_disturbance_rasters <- function(flist_tif, dist_layer_type){
   
   # get list of disturbance rasters
   flist_dist <- flist_tif %>%
-    str_subset("disturb") %>%
-    str_subset(glue::glue('{dist_layer_type}.tif'))
+    str_subset("disturb") 
+  
+  if(dist_layer_type == "LCMS") {
+  flist_dist %<>%
+      str_subset(glue::glue('{dist_layer_type}.tif'))  
+    }
+  
   
   # get list of all other rasters
   flist_nondist <- flist_tif %>%
@@ -235,7 +240,7 @@ fill_matrix_to_raster <- function(mout, ncol_r, nrow_r, row1) {
 # Get Predicted and Reference from a Random Forest object and the X table used to build it
 ###########################################################################################
 
-get_pr_RF <- function(rf_in, X_df) {
+get_pr_RF <- function(rf_in, X_df, var) {
 
   # get predictions from random forest model and convert to data frame
   preds <- rf_in[[1]]$predicted

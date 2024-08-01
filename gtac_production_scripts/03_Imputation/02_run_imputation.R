@@ -86,12 +86,18 @@ flist_tif %<>%
 flist_tif %<>%
   str_subset("Dist_",negate = TRUE)
 
+# select layers that appear in model vars
+flist_tif %<>%
+  str_subset(paste(model_vars, collapse = "|"))
+
 # load rasters using custom function
-rs2 <- load_target_rasters(flist_tif)
+rs2 <- load_and_name_rasters(flist_tif)
 
 # check if we have all the same layers as are included in the model
 if( !identical(model_vars, sort(names(rs2)))) {
   message("ERROR: Target layers provided don't match variables in input model")
+} else {
+  message("Target layers match variables in input model - you're good to go!")
 }
 
 # FOR TESTING: Conditionally crop to aoi
