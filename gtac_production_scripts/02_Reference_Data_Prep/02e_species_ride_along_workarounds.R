@@ -282,10 +282,10 @@ additional_plots$LFZones <- 57
 
 workaround2_plots <- rbind(plots_by_zone_EVG_available, unique(plots_EVG708[LFZones %in% c(48, 53, 54, 59, 61)]))
 
-write.csv(workaround2_plots, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2022_EVT_GP_byZone_Workaround2_Final.csv", row.names = FALSE)                    
+write.csv(workaround2_plots, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2020_EVT_GP_byZone_Workaround2_Final.csv", row.names = FALSE)                    
 
 # Create unique list of plots for spatial overlays
 
 unique_plots <- as.data.table(unique(workaround2_plots$PLT_CN))
 unique_plots <- rename(unique_plots, PLT_CN = V1)
-write.csv(unique_plots, "F:/LANDFIRE_Autokey/FIA_DataTables/TM_2022_X_table_Plots.csv", row.names = FALSE)
+write.csv(unique_plots, "F:/LANDFIRE_Autokey/FIA_DataTables/TM_2020_X_table_Plots.csv", row.names = FALSE)

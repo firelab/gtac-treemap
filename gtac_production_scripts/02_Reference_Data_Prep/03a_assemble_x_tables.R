@@ -6,7 +6,7 @@ options("scipen"=9999)
 
 biophysical <- as.data.table(read.csv("F:/TreeMap2020/XTable/TM_2020_X_table_Plots_with_biophys_extracted.csv"))
 vegetation <- as.data.table(read.csv("F:/TreeMap2020/XTable/FIA2020_FVS_cover_and_height.csv"))
-evg_zone <- as.data.table(read.csv("F:/TreeMap2020/XTable/LF2022_EVT_GP_byZone_Workaround2_Final.csv"))
+evg_zone <- as.data.table(read.csv("F:/TreeMap2020/XTable/LF2020_EVT_GP_byZone_Workaround2_Final.csv"))
 disturbance_data <- as.data.table(read.csv("F:/TreeMap2020/XTable/FIA2020_Disturbance.csv"))
 disturbance_data$PLT_CN <- as.numeric(disturbance_data$PLT_CN)
 elevation <- as.data.table(read.csv("F:/TreeMap2020/XTable/LF_Plots_Elevation.csv"))
