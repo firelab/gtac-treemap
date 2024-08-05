@@ -91,8 +91,8 @@ impute_row <- function(dat, yai, test)  {
     # EVG handling - 
     #### Identify EVGs in zone that don't appear in X.df   
     #-------------------------------------------------------#
-    evg.orig <- levels(yai$xRefs$EVT_GP)
-    evg.val.temp <- X.df.temp$EVT_GP  
+    evg.orig <- levels(yai$xRefs$evt_gp_remap)
+    evg.val.temp <- X.df.temp$evt_gp_remap  
     n.evgs.orig <- length(sort(unique(evg.orig)))  
     
     nonappearing.evgs <- evg.orig[-sort(unique(as.numeric(as.character(evg.val.temp))))]  
@@ -103,9 +103,9 @@ impute_row <- function(dat, yai, test)  {
     if(n.dummy.rows > 0)
     {    
       dummy.rows <- X.df.temp[1:n.dummy.rows,]    
-      tempchar <- as.character(X.df.temp$EVT_GP)    
-      X.df.temp$EVT_GP <- tempchar    
-      dummy.rows$EVT_GP <- as.character(nonappearing.evgs) 
+      tempchar <- as.character(X.df.temp$evt_gp_remap)    
+      X.df.temp$evt_gp_remap <- tempchar    
+      dummy.rows$evt_gp_remap <- as.character(nonappearing.evgs) 
       dummy.rows$disturb_code <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
       X.df.temp <- rbind(X.df.temp, dummy.rows)    
     }
@@ -115,7 +115,7 @@ impute_row <- function(dat, yai, test)  {
     #-------------------------------------------------------#
     X.df.temp <- 
       X.df.temp %>%
-      dplyr::mutate(EVT_GP = factor(EVT_GP, levels = levels(yai$xRefs$EVT_GP)),
+      dplyr::mutate(evt_gp_remap = factor(evt_gp_remap, levels = levels(yai$xRefs$evt_gp_remap)),
                     disturb_code = factor(disturb_code, levels = levels(yai$xRefs$disturb_code))) %>%
       # put columns in order expected
       dplyr::select(names(yai$xRefs))

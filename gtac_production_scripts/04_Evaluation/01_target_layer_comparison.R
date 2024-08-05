@@ -39,9 +39,8 @@
 
 # list layers to evaluate, assemble, and export
 # all options are: c("canopy_cover", "canopy_height", "EVT_GP", "disturb_code")
-eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
-                   "disturb_code")
-
+#eval_vars <- c("evc", "evh", "evt_gp_remap", "disturb_code")
+eval_vars <- yvars
 
 #####################################################################
 # Load data
@@ -71,10 +70,10 @@ ras
 plot(ras,
      main = glue::glue("Raw imputed ids: Zone {zone_num}"))
 
-# X - table
+# X - df
 #------------------------------------------#
-xtable <- read.csv(xtable_path)
-
+#yai <- readRDS(model_path)
+X_df <- read.csv(glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv"))
 
 # Target rasters
 #---------------------------------------#
@@ -91,7 +90,7 @@ target_files <- target_files[target_files %>%
     str_detect(eval_vars %>% paste(., collapse = "|"))]
 
 # load
-rs2 <- load_target_rasters(target_files)
+rs2 <- load_and_name_rasters(target_files)
 
 # FOR TESTING: Conditionally crop to aoi
 #---------------------------------------------------#
@@ -123,7 +122,8 @@ gc()
 identical(crs(ras), crs(rs2))
 compareGeom(ras, rs2)
 
-# keep landfire code as 1/2 - because output raster values derived from imputation will have 1/2
+# keep input disturbance raster as 1/2; don't convert to binary
+#- because output raster values derived from imputation will have 1/2
 
 
 # clear memory
@@ -144,7 +144,7 @@ names(id_list) <- "PLOTID"
 
 # join list of ids with x table
 # create lookup table that only has IDs present in zone
-lookup <- left_join(id_list, xtable, by = c("PLOTID" = "X")) %>%
+lookup <- left_join(id_list, X_df, by = c("PLOTID" = "X")) %>%
   select(PLOTID, CN, all_of(eval_vars)) %>%
   mutate(across(where(is.numeric), ~na_if(., NA)))
 
@@ -153,8 +153,7 @@ evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
 
 # join remapped EVT_GPs with lookup table
 lookup %<>%
-  rename("EVT_GP_remap" = EVT_GP) %>%
-  left_join(evt_gp_remap_table, by = c("EVT_GP_remap")) 
+  left_join(evt_gp_remap_table %>% dplyr::rename_with(tolower), by = c("evt_gp_remap")) 
 
 ####################################################################
 # Evaluation: Calculate confusion matrices of Imputation vs Target Layers

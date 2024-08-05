@@ -20,9 +20,9 @@
 
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
-eval_vars <- c("canopy_cover", 
-               "canopy_height", 
-               "EVT_GP", 
+eval_vars <- c("evc", 
+               "evh", 
+               "evt_gp_remap", 
                "disturb_code")
 
 # Eval report for OOB or derived vars
@@ -218,12 +218,12 @@ X_df <- read.csv(xtable_path) %>%
 #------------------------------------------#
 
 #load evt_gp remap table
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) %>%
+  rename_with(tolower)
 
 # join to reclass 
 X_df %<>%
-  dplyr::rename(EVT_GP_remap = EVT_GP) %>%
-  dplyr::left_join(evt_gp_remap_table, by = c("EVT_GP_remap"))
+  dplyr::left_join(evt_gp_remap_table, by = c("evt_gp_remap"))
 
 # Load raster attribute table and points
 #------------------------------------------#

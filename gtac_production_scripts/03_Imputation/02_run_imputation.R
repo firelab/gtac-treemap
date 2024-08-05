@@ -67,7 +67,7 @@ yai <- readr::read_rds(model_path)
 
 # get names of variables included in model
 model_vars <- names(yai$xRefs)
-model_vars %<>% str_subset("POINT_", negate = TRUE) %>% sort() # remove point x and point y as these are calculated in the imputation model step
+model_vars %<>% str_subset("point_", negate = TRUE) %>% sort() # remove point x and point y as these are calculated in the imputation model step
 
 # Load target rasters
 # --------------------------------------------------------------------#
@@ -80,11 +80,8 @@ flist_tif <- filter_disturbance_rasters(flist_tif, dist_layer_type) # custom fun
 
 # remove aspect if it's present - could make this conditional based on whether or not northing and easting are present in file list
 flist_tif %<>%
-  str_subset("ASPECT", negate = TRUE)
+  str_subset("aspect", negate = TRUE)
 
-# remove prelim disturbance layers, if necessary
-flist_tif %<>%
-  str_subset("Dist_",negate = TRUE)
 
 # select layers that appear in model vars
 flist_tif %<>%
@@ -244,10 +241,10 @@ for(j in which_tiles) {
   gc()
   
   # add XY coords to raster
-  ras$POINT_X <- terra::init(ras, "x")
-  names(ras$POINT_X) <- "POINT_X"
-  ras$POINT_Y <- terra::init(ras, "y")
-  names(ras$POINT_Y) <- "POINT_Y"
+  ras$point_x <- terra::init(ras, "x")
+  names(ras$point_x) <- "point_x"
+  ras$point_y <- terra::init(ras, "y")
+  names(ras$point_y) <- "point_y"
   
   gc()
   
@@ -342,4 +339,4 @@ stopCluster(cl)
 
 message(glue::glue("Done with zone {zone_num}!"))
 
-rm(f, cl, p, agg, model_vars, yai, ras, rs2, tile_out, mout, mat, ext_r, ncol_r, nrow_r, i, j)
+rm(f, cl, p, agg, model_vars, yai, ras, tile_out, mout, mat, ext_r, ncol_r, nrow_r, j)

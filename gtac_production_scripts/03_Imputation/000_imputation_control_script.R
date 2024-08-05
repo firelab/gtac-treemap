@@ -10,8 +10,8 @@ gc()
 # Initialize projects (years) and zones
 year_input <- 2020
 
-zones_list <- 16
-#zones_list <- c(19, 5  ) #10,  # testing
+#zones_list <- 16
+zones_list <- c(19, 5, 10  ) #10,  # testing
 # zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11 
 #                 seq(from = 12, to = 66, by = 1), 
 #                 98, 99)
@@ -87,11 +87,14 @@ message(paste0("Running imputation preparation for year: ", year_input))
 source(project_inputScript)
 
 # LOOP by zones (runs x66 for all zones in CONUS)
-#for (zone_input in zones_list){
+for (zone_input in zones_list){
 
-  zone_input <- zones_list[1] # for testing
+  #zone_input <- zones_list[1] # for testing
   
   ptm_zone_imp <- Sys.time()
+  
+  # load project inputs RDS
+  load(glue::glue('{this.path::this.dir()}/params/{project_name}_imputation_inputs.RDS'))
   
   # PASS variables to `00b_zone_inputs_imp.R` to SET variables by zone
   source(zone_inputScript)
@@ -155,7 +158,11 @@ source(project_inputScript)
   message("===========================================================================")
   
   # Remove all variables except the ones in the list (described below)
-  rm(list=setdiff(ls(), c("this_dir",
+  rm(list=setdiff(ls(), c("year_input",
+                          "zones_list",
+                          "eval_type_list",
+                          "this_dir",
+                          "this_proj",
                           "project_inputScript",
                           "zone_inputScript",
                           "buildImputation_script",
@@ -165,18 +172,9 @@ source(project_inputScript)
                           "targetLayerComparison_script",
                           "OOBEvaluation_script",
                           "reportGenerator_script",
-                          "year_input",
-                          "years_list",
-                          "zones_list",
                           "project_name",
-                          "output_name",
-                          "target_data_version",
-                          "ref_data_version",
-                          "dist_layer_type",
-                          "coords_path",
-                          "xtable_path",
-                          "year",
                           "ptm_start")))
+  gc()
   
 } # end of loop over zone
 

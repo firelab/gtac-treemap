@@ -287,16 +287,17 @@ get_pr_RF <- function(rf_in, X_df, var) {
       
       # add an NA for each missing 
       for(i in 1:diff){
-        key_p = rbind(key_p, 'NA')
+        if(is.factor(key_r$key_r)) {
+          key_p = rbind(key_p, "NA")
+        } else key_p = rbind(key_p, NA)
       }
-      
     }
     
     # make sure preds are a factor if ref is a factor
     if(is.factor(key_r$key_r)) {
       p_r$pred <- factor(p_r$pred, levels = levels(key_r$key_r))
       key_p$key_p <- factor(key_p$key_p, levels = levels(key_r$key_r))
-    }
+    } 
     
     key <- cbind(key_p, key_r)
     

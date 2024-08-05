@@ -42,8 +42,8 @@ message("loading data for raster assembly")
 # list raster files
 flist_tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
 
-# load a single raster as reference data = 2 = index of layer
-rs2 <- load_target_rasters(flist_tif, 2)
+# load a single raster as reference data = 5 = index of layer
+rs2 <- load_and_name_rasters(flist_tif, 5)
 
 
 # FOR TESTING: Conditionally crop to aoi

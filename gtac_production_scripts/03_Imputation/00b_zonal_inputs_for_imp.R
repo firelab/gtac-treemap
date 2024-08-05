@@ -3,7 +3,7 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 7/15/24
+# Last updated: 8/1/24
 
 # TO DO: what target data params can i pull in from target data RDS? 
 
@@ -16,7 +16,7 @@ zone = zone_input
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_project_inputs_for_imp.R
 # path is relative to script location
-imputation_params_path <- glue::glue("/params/{project_name}_imputation_inputs.RDS")
+#imputation_params_path <- glue::glue("/params/{project_name}_imputation_inputs.RDS")
 
 # model to use - supply path specific model to pull into imputation, or NA
 # path should be relative to home directory
@@ -37,23 +37,23 @@ aoi_name <- NA
 # Run
 ##################################################################
 
-# Load pre-existing params, if available
-#--------------------------------------------#
-
-this_dir <- this.path::this.dir()
-
-if(!is.na(imputation_params_path)) {
-  
-  # load params
-  params_script_path <- glue::glue('{this_dir}/{imputation_params_path}')
-  load(params_script_path)
-  
-} else {
-  
-  inputs_for_imputation<- glue::glue('{this_dir}/00a_project_inputs_for_imputation.R')
-  source(inputs_imputation)
-  
-}
+# # Load pre-existing params, if available
+# #--------------------------------------------#
+# 
+# this_dir <- this.path::this.dir()
+# 
+# if(!is.na(imputation_params_path)) {
+#   
+#   # load params
+#   params_script_path <- glue::glue('{this_dir}/{imputation_params_path}')
+#   load(params_script_path)
+#   
+# } else {
+#   
+#   inputs_for_imputation<- glue::glue('{this_dir}/00a_project_inputs_for_imputation.R')
+#   source(inputs_imputation)
+#   
+# }
 
 
 # Set zone_number
@@ -92,9 +92,6 @@ model_dir = glue::glue("{raw_outputs_dir}/model/")
 evt_gp_remap_table_path = glue::glue("{evt_gp_remap_table_dir}/{cur_zone_zero}/evt_gp_remap.csv")
 params_dir = glue::glue("{raw_outputs_dir}/params/")
 
-if (!is.na(dist_raster_dir)) {
-  dist_raster_dir = glue::glue('{dist_raster_dir}/{cur_zone_zero}/')
-}
 
 # Model inputs
 #----------------------------------#
@@ -193,7 +190,6 @@ params_out <- data.frame(
   aoi_name,
   target_data_version,
   ref_data_version,
-  dist_raster_dir,
   model_path,
   xtable_path,
   output_crs_name, 
@@ -212,7 +208,12 @@ params_out <- data.frame(
 write.csv(params_out, 
           glue::glue('{params_dir}/{output_name}_paramsTable.csv'))
 
+rm(params_out)
+
 # Make RDS of input parameters used
 #---------------------------------------------------------#
 save(list = ls(), file = glue::glue('{params_dir}/{output_name}_env.RDS'))
+
+
+
 
