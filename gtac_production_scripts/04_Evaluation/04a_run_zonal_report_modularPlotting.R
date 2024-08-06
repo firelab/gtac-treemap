@@ -26,11 +26,12 @@ eval_vars <- c("evc",
                "disturb_code")
 
 # Eval report for OOB or derived vars
-# - options: "OOB" or "TargetLayerComparison" 
+# - options: "OOB" or "TargetLayerComparison" or "CV"
 
-eval_type <- eval_type_in
+#eval_type <- eval_type_in
 #eval_type <- "TargetLayerComparison"
 # eval_type <- "OOB" 
+eval_type <- "CV"
 # FIXME: NO OOB RDS for 2016_GTAC_LCMSDist project
 
 
@@ -164,8 +165,12 @@ if(eval_type == "OOB") {
   
   cms_path <- glue::glue("{eval_dir}/02_Target_Layer_Comparison/{output_name}_CMs_{eval_type}.RDS")
   plot_labels <- c("Imputed", "Observed (Target Layers)")
-}
 
+} else if(eval_type == "CV") {
+    cms_path <- glue::glue("{eval_dir}/01_Cross_Validation/{output_name}_CMs_{eval_type}.RDS")
+    plot_labels <- c("Imputed", "Observed (Cross_validation)")
+  }
+  
 cms_all <- readRDS(cms_path)
 
 # Load zone

@@ -17,9 +17,15 @@
 # Id where THIS script is located
 this_proj <- this.path::this.proj()
 
+lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+source(lib_path)
+
 # get path to imputation inputs RDS
-#inputs_for_imputation <- glue::glue('{this_proj}/gtac_production_scripts/03_Imputation/00b_zonal_inputs_for_imp.R')
-#source(inputs_for_imputation)
+inputs_for_imputation <- glue::glue("{home_dir}03_Outputs/07_Projects/2020_ImputationPrep/01_Raw_model_outputs/z16/params/z16_2020_GTAC_ImputationPrep_env.RDS")
+
+load(inputs_for_imputation)
+
+
 
 # General inputs
 #--------------------------------------------------#
@@ -32,7 +38,7 @@ round_dig <- 4
 
 # Path to X table used to make model
 xtable_path <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv")
-
+ytable_path <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Ydf_bin.csv")
 
 # model to use - supply specific model to pull into imputation, or NA
 # if NA, uses default model name and path
@@ -79,6 +85,12 @@ xtable_path <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv"
 if(!file.exists(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/'))) {
   dir.create(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/'), recursive = TRUE)
 }
+
+# create eval dir if necessary
+if(!file.exists(glue::glue('{eval_dir}/01_Cross_Validation/figs/'))) {
+  dir.create(glue::glue('{eval_dir}/01_Cross_Validation/figs/'), recursive = TRUE)
+}
+
 
 # create eval dir if necessary
 if(!file.exists(glue::glue('{eval_dir}/02_Target_Layer_Comparison'))) {

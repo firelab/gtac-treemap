@@ -36,8 +36,12 @@ yai <- readRDS("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2020_ImputationPre
 # load rat
 rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
 
-rat <- rat <- terra::rast(glue::glue("{rat_path}TreeMap2016.tif"))
-rat <- data.frame(cats(rat))
+rat_tif <- terra::rast(glue::glue("{rat_path}TreeMap2016.tif"))
+rat <- data.frame(cats(rat_tif)) %>%
+  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
+                "CARBON_DOWN_DEAD" = CARBON_DWN)
+
+rm(rat_tif)
 
 # evt_gp_remap table
 evt_gp_remap_table <- read.csv("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v2020/post_mask/z16/evt_gp_remap.csv")%>%
@@ -65,9 +69,9 @@ Y_df <- left_join(X_df1, X_df2 %>% select(c(X, tm_id, CN)))
 # remove unused tables
 rm(X_df1, X_df2, Y_df1, Y_df2)
 
-# # limit to first 1000 rows for testing
-# X_df <- X_df[1:1000,]
-# Y_df <- Y_df[1:1000,]
+# limit to first 1000 rows for testing
+X_df <- X_df[1:1000,]
+Y_df <- Y_df[1:1000,]
 
 # remove any CNs with EVT_GPs that are < thresh of total
 evt_pct_thresh <- .3
@@ -101,19 +105,23 @@ row.names(Y_df) <- Y_df$tm_id
 # str(X_df$evt_gp_remap)
 # row.names(X_df)
 
+
 # process rat
+########################################################
+
+# identify eval_vars_cont that are not from RMRS - we handle NAs differently
+eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
+eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(is.numeric))), "RMRS", negate = TRUE)
+
+# prep rat table
 rat %<>%
-  rename("SDIPCT_RMRS" = SDIPCT_RMR,
-         "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
-  mutate(CN = as.numeric(CN)) %>%
-  # replace -99 (na value) with NA 
-  mutate_at(eval_vars_cont, ~na_if(.x, -99)) %>%
-  mutate_at(eval_vars_cont, ~na_if(.x, -99.00)) %>%
-  mutate_at(eval_vars_cont, ~na_if(.x, -99.00000)) %>%
-  # replace NA values with O for certain vars
-  mutate(TPA_DEAD = ifelse(is.na(TPA_DEAD), 0, TPA_DEAD ),
-         CARBON_D = ifelse(is.na(CARBON_D), 0 ,CARBON_D )) %>%
-  select(-c(Value, tm_id)) 
+  dplyr::mutate(CN = as.numeric(CN)) %>%
+  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
+  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
+  dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
+  dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
+  dplyr::select(-c(Value, tm_id))
+
 
 # join RAT with X df using row names
 rat_x <- rat %>%
@@ -284,7 +292,7 @@ percent_y_textPos1 <- 0.99 # 0.96 for individual plots
 percent_y_textPos2 <- 0.78 # 0.96 for individual plots
 textBoxFill_ratioX <- 0.25
 textBoxFill_ratioY <- 0.04
-alpha <- 0.1
+alpha <- 0.05
 export_width <- 7 # in inches
 export_height <- 4.5 # in inches
 
@@ -368,13 +376,13 @@ for(i in eval_vars_cont) {
   print(p2)
   
   # save
-  ggsave(glue::glue('{eval_dir}/01_Cross_Validation/figs/CV_pred_vs_ref_{var_name}_violin.png'),
+  ggsave(glue::glue('{eval_dir}/01_Cross_Validation/figs/CV_pred_vs_ref_{var_in}_violin.png'),
          plot = p,
          width = export_width, 
          height = export_height)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/01_Cross_Validation/figs/CV_pred_vs_ref_{var_name}_scatter.png'),
+  ggsave(glue::glue('{eval_dir}/01_Cross_Validation/figs/CV_pred_vs_ref_{var_in}_scatter.png'),
          plot = p2,
          width = export_width, 
          height = export_height) 
