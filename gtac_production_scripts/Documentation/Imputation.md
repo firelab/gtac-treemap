@@ -8,10 +8,11 @@ _Parameters to change:_
 
 
 1. 00_Library/setup_dirs.R
-    - ```home_dir  <<- "//166.2.126.25/TreeMap/" #e.g., "//166.2.126.25/TreeMap"  ```
-    - ```FIA_dir  <<-  "//166.2.126.25/TreeMap/01_Data/04_FIA/"```
-    - ```tmp_dir <<- "D:/tmp/"```
-Update these paths FIRST. Make sure that the setup_dirs.R script a) exists and b) is listed in your .gitignore file. 
+    - ```home_dir  <<- "//Your/Home/Directory" #e.g., "//166.2.126.25/TreeMap"  ```
+    - ```FIA_dir  <<-  "//Your/FIA/Directory"```
+    - ```tmp_dir <<- "//Your/Temporary/Directory" #e.g., "D:/tmp/"```
+
+Update these paths FIRST. Make sure that the "setup_dirs.R" script a) exists and b) is listed in your .gitignore file. 
 
 2. 03_Imputation/000_imputation_control_script.R : 
     - ``` year_input <- 2020 # change to year of interest ```
