@@ -1,8 +1,20 @@
 # Function to make new imputation predictions given a raster input
 # This function is applied on a DATA FRAME (representing one row of raster) INSTEAD OF RASTER
 
+library(docstring)
+
 impute_row <- function(dat, yai, test)  { 
   
+  #' Function to make new imputation predictions given a data frame input
+  #' 
+  #' @param dat The data frame, for TreeMap, represents one row of a multi-layer raster
+  #' Where each column in the data frame represents all values in the row for a given layer of the raster
+  #' @param yai model created by the `yaImpute` function
+  #' @param test default FALSE. test = TRUE skips the imputation portion and returns a data frame of the input ids
+  #' @return data frame of imputed ids
+  #' @export
+  #'
+  #' @examples 
   require(yaImpute)
   require(dplyr)
   
@@ -79,8 +91,8 @@ impute_row <- function(dat, yai, test)  {
     # EVG handling - 
     #### Identify EVGs in zone that don't appear in X.df   
     #-------------------------------------------------------#
-    evg.orig <- levels(yai$xRefs$EVT_GP)
-    evg.val.temp <- X.df.temp$EVT_GP  
+    evg.orig <- levels(yai$xRefs$evt_gp_remap)
+    evg.val.temp <- X.df.temp$evt_gp_remap  
     n.evgs.orig <- length(sort(unique(evg.orig)))  
     
     nonappearing.evgs <- evg.orig[-sort(unique(as.numeric(as.character(evg.val.temp))))]  
@@ -91,9 +103,9 @@ impute_row <- function(dat, yai, test)  {
     if(n.dummy.rows > 0)
     {    
       dummy.rows <- X.df.temp[1:n.dummy.rows,]    
-      tempchar <- as.character(X.df.temp$EVT_GP)    
-      X.df.temp$EVT_GP <- tempchar    
-      dummy.rows$EVT_GP <- as.character(nonappearing.evgs) 
+      tempchar <- as.character(X.df.temp$evt_gp_remap)    
+      X.df.temp$evt_gp_remap <- tempchar    
+      dummy.rows$evt_gp_remap <- as.character(nonappearing.evgs) 
       dummy.rows$disturb_code <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
       X.df.temp <- rbind(X.df.temp, dummy.rows)    
     }
@@ -103,7 +115,7 @@ impute_row <- function(dat, yai, test)  {
     #-------------------------------------------------------#
     X.df.temp <- 
       X.df.temp %>%
-      dplyr::mutate(EVT_GP = factor(EVT_GP, levels = levels(yai$xRefs$EVT_GP)),
+      dplyr::mutate(evt_gp_remap = factor(evt_gp_remap, levels = levels(yai$xRefs$evt_gp_remap)),
                     disturb_code = factor(disturb_code, levels = levels(yai$xRefs$disturb_code))) %>%
       # put columns in order expected
       dplyr::select(names(yai$xRefs))
@@ -128,7 +140,7 @@ impute_row <- function(dat, yai, test)  {
       rownames(X.df.temp) <- paste0("T- ", rownames.all)
       
       ### Perform imputation
-      # take object from formed random forests model and use X.df.temp dataframe to make predictions
+      # take object from already-made yaImpute model and use X.df.temp dataframe to make predictions
       temp.newtargs <- yaImpute::newtargets(yai, newdata = X.df.temp)
       
       #### Get outputs of interest

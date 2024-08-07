@@ -9,12 +9,11 @@
 # - EVT_GP remap table
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
-# Last Updated: 6/18/24
+# Last Updated: 7/19/24
 
 # Based on "prep_target_rasters_v2.py" by Karin Riley
 
 # TO DO: 
-# - test biophys var prep? or is this even necessary 
 # - there's def a way to make this look slicker using functions
 
 
@@ -22,11 +21,17 @@
 # SET INPUTS
 ##########################################################
 
-# get path to inputs script
-this_dir <- this.path::this.dir()
-inputs_script <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
+zone_input <- 5
 
-source(inputs_script)
+
+#get path to inputs script
+this_dir <- this.path::this.dir()
+
+inputs_script_a <- glue::glue('{this_dir}/00a_project_inputs_for_targetdata.R')
+inputs_script_b <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
+
+source(inputs_script_a)
+source(inputs_script_b)
 
 # Terra options
 # --------------------------------#
@@ -41,9 +46,12 @@ terraOptions(memfrac = 0.8)
 # load LF zone data
 LF_zones <- vect(lf_zones_path)
 
+# get crs
+landfire_crs <- lf_output_crs
+
 # Prep zone
 #-----------------------------------------#
-
+zone_num <- zone_input
 # select single LF zone
 zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num) 
 
@@ -139,6 +147,10 @@ evh %<>% terra::crop(zone, mask = TRUE) %>%
 # for evc: crop to zone and project, plus reclassifiy 
 evc %<>% terra::crop(zone, mask = TRUE) %>%
   terra::classify(evc_forest_codes_mat, right = NA) %>% # reclassify EVC: subset to only forested pixels
+  terra::project(landfire_crs)
+
+# convert zone vector to raster - to help match extents
+zone_r <- terra::rasterize(zone, evt) %>%
   terra::project(landfire_crs)
 
 ## crop to zone again - this time by raster
@@ -268,70 +280,70 @@ rm(elev, slp, asp, north, east)
 gc()
 
 
-## DISTURBANCE
-# ###################################################
-
-# # re-load evt_gp as mask
-# evt_gp <- terra::rast(glue::glue('{target_dir_z}/EVT_GP.tif'))
+# ## DISTURBANCE
+# # ###################################################
 # 
-# # convert zone vector to raster - to help match extents 
-# zone_r <- terra::rasterize(zone, evt_gp) %>%
-#   terra::project(landfire_crs)
-
-
-# Load disturbance layers
-#------------------------------------------------------#
-disturb_code_lf <- terra::rast(lf_disturb_code_outpath)
-disturb_year_lf <- terra::rast(lf_disturb_year_outpath)
-
-disturb_year_lflcms <- terra::rast(lcms_disturb_year_outpath)
-disturb_code_lflcms <- terra::rast(lcms_disturb_code_outpath)
-
-## Crop to zone and mask to forested px
-#------------------------------------------------------#
-
-# project zone_r
-zone_r %<>% terra::project(crs(disturb_code_lf))
-
-# crop, get to desired end projection, mask 
-disturb_code_lf <- terra::crop(disturb_code_lf, zone_r) %>%
-  terra::project(landfire_crs) %>%
-  terra::mask(evt_gp)
-disturb_year_lf <- terra::crop(disturb_year_lf, zone_r) %>%
-  terra::project(landfire_crs) %>%
-  terra::mask(evt_gp)
-
-zone_r %<>% terra::project(crs(disturb_code_lflcms))
-
-disturb_code_lflcms <- terra::crop(disturb_code_lflcms, zone_r) %>%
-  terra::project(landfire_crs) %>%
-  terra::mask(evt_gp)
-disturb_year_lflcms <- terra::crop(disturb_year_lflcms, zone_r) %>%
-  terra::project(landfire_crs) %>%
-  terra::mask(evt_gp)
-
-## Export
-#--------------------------------------------------------#
-
-print(glue('exporting disturbance rasters for zone {zone_num}'))
-
-writeRaster(disturb_code_lf, 
-            glue::glue('{target_dir_z}/disturb_code_LF.tif'),
-            overwrite = TRUE)
-writeRaster(disturb_year_lf, 
-            glue::glue('{target_dir_z}/disturb_year_LF.tif'),
-            overwrite = TRUE)
-
-writeRaster(disturb_code_lflcms, 
-            glue::glue('{target_dir_z}/disturb_code_LFLCMS.tif'),
-            overwrite = TRUE)
-writeRaster(disturb_year_lflcms, 
-            glue::glue('{target_dir_z}/disturb_year_LFLCMS.tif'),
-            overwrite = TRUE)
-
-# Remove input / temp disturbance layers
-
-rm(disturb_code_lf, disturb_year_lf, disturb_code_lflcms, disturb_year_lflcms)
+# # # re-load evt_gp as mask
+# # evt_gp <- terra::rast(glue::glue('{target_dir_z}/EVT_GP.tif'))
+#  
+# # # convert zone vector to raster - to help match extents
+# # zone_r <- terra::rasterize(zone, evt_gp) %>%
+# #   terra::project(landfire_crs)
+# 
+# 
+# # Load disturbance layers
+# #------------------------------------------------------#
+# disturb_code_lf <- terra::rast(lf_disturb_code_outpath)
+# disturb_year_lf <- terra::rast(lf_disturb_year_outpath)
+# 
+# disturb_year_lflcms <- terra::rast(lcms_disturb_year_outpath)
+# disturb_code_lflcms <- terra::rast(lcms_disturb_code_outpath)
+# 
+# ## Crop to zone and mask to forested px
+# #------------------------------------------------------#
+# 
+# # project zone_r
+# zone_r %<>% terra::project(crs(disturb_code_lf))
+# 
+# # crop, get to desired end projection, mask 
+# disturb_code_lf <- terra::crop(disturb_code_lf, zone_r) %>%
+#   terra::project(landfire_crs) %>%
+#   terra::mask(evt_gp)
+# disturb_year_lf <- terra::crop(disturb_year_lf, zone_r) %>%
+#   terra::project(landfire_crs) %>%
+#   terra::mask(evt_gp)
+# 
+# zone_r %<>% terra::project(crs(disturb_code_lflcms))
+# 
+# disturb_code_lflcms <- terra::crop(disturb_code_lflcms, zone_r) %>%
+#   terra::project(landfire_crs) %>%
+#   terra::mask(evt_gp)
+# disturb_year_lflcms <- terra::crop(disturb_year_lflcms, zone_r) %>%
+#   terra::project(landfire_crs) %>%
+#   terra::mask(evt_gp)
+# 
+# ## Export
+# #--------------------------------------------------------#
+# 
+# print(glue('exporting disturbance rasters for zone {zone_num}'))
+# 
+# writeRaster(disturb_code_lf, 
+#             glue::glue('{target_dir_z}/disturb_code_LF.tif'),
+#             overwrite = TRUE)
+# writeRaster(disturb_year_lf, 
+#             glue::glue('{target_dir_z}/disturb_year_LF.tif'),
+#             overwrite = TRUE)
+# 
+# writeRaster(disturb_code_lflcms, 
+#             glue::glue('{target_dir_z}/disturb_code_LFLCMS.tif'),
+#             overwrite = TRUE)
+# writeRaster(disturb_year_lflcms, 
+#             glue::glue('{target_dir_z}/disturb_year_LFLCMS.tif'),
+#             overwrite = TRUE)
+# 
+# # Remove input / temp disturbance layers
+# 
+# rm(disturb_code_lf, disturb_year_lf, disturb_code_lflcms, disturb_year_lflcms)
 
 ## BIOPHYS
 # ###################################################

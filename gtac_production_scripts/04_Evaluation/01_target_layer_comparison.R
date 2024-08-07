@@ -4,7 +4,7 @@
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last updated:
-# 6/20/24
+# 7/18/24
 
 # Goals: 
 # - load preliminary imputation outputs
@@ -27,22 +27,26 @@
 # Set inputs - from input script used for imputation
 #-----------------------------------------------------#
 
-this_proj <- this.path::this.proj()
+#this_proj <- this.path::this.proj()
+#this_dir <- this.path::this.dir()
 
-inputs_for_imputation<- glue::glue('{this_proj}/gtac_production_scripts/03_Imputation/00b_zonal_inputs_for_imp.R')
-source(inputs_for_imputation)
+#inputs_for_evaluation<- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
+#source(inputs_for_evaluation)
 
 
 # Specific inputs
 #----------------------------------------------------------#
 
-# list layers to export
-eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
-                   "disturb_code")
+# list layers to evaluate, assemble, and export
+# all options are: c("canopy_cover", "canopy_height", "EVT_GP", "disturb_code")
+#eval_vars <- c("evc", "evh", "evt_gp_remap", "disturb_code")
+eval_vars <- yvars
 
 #####################################################################
 # Load data
 ####################################################################
+
+message("Loading data for target layer comparison")
 
 # Imputed raster
 #-------------------------------------------#
@@ -50,7 +54,7 @@ eval_vars <- c("canopy_cover", "canopy_height", "EVT_GP",
 raster_name <- glue::glue("{output_name}")
 
 #load raw imputation output raster
-ras <- terra::rast(glue("{assembled_dir}/01_Imputation/{raster_name}.tif"))
+ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{raster_name}.tif"))
 
 # trim off NA values
 ras <- terra::trim(ras)
@@ -63,11 +67,13 @@ names(ras) <- c("value")
 
 # inspect
 ras
-plot(ras)
+plot(ras,
+     main = glue::glue("Raw imputed ids: Zone {zone_num}"))
 
-# X - table
+# X - df
 #------------------------------------------#
-xtable <- read.csv(xtable_path)
+#yai <- readRDS(model_path)
+X_df <- read.csv(glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv"))
 
 # Target rasters
 #---------------------------------------#
@@ -84,7 +90,27 @@ target_files <- target_files[target_files %>%
     str_detect(eval_vars %>% paste(., collapse = "|"))]
 
 # load
-rs2 <- load_target_rasters(target_files)
+rs2 <- load_and_name_rasters(target_files)
+
+# FOR TESTING: Conditionally crop to aoi
+#---------------------------------------------------#
+if (!is.na(aoi_path)) {
+  
+  print("using input shapefile as AOI")
+  
+  # get desired crs
+  lf_crs <- terra::crs(rs2)
+  
+  # crop and mask
+  aoi <- terra::vect(aoi_path) %>% terra::project(lf_crs)
+  rs2 <- terra::crop(rs2, aoi, mask = TRUE)
+  
+  gc()
+  
+} else { print("using extent of input raster stack as AOI") }
+
+# Keep prepping AOI
+#-----------------------------------------------------------------#
 
 #trim away any NAs on the sides - helps match extent with outputs
 rs2 %<>% terra::trim()
@@ -96,7 +122,8 @@ gc()
 identical(crs(ras), crs(rs2))
 compareGeom(ras, rs2)
 
-# keep landfire code as 1/2 - because output raster values derived from imputation will have 1/2
+# keep input disturbance raster as 1/2; don't convert to binary
+#- because output raster values derived from imputation will have 1/2
 
 
 # clear memory
@@ -107,6 +134,8 @@ gc()
 # Prep for assembly
 ####################################################################
 
+message("preparing data to assemble rasters")
+
 # get list of IDs present in ras
 id_list <- freq(ras)$value %>%
   sort() %>%
@@ -115,7 +144,7 @@ names(id_list) <- "PLOTID"
 
 # join list of ids with x table
 # create lookup table that only has IDs present in zone
-lookup <- left_join(id_list, xtable, by = c("PLOTID" = "ID")) %>%
+lookup <- left_join(id_list, X_df, by = c("PLOTID" = "X")) %>%
   select(PLOTID, CN, all_of(eval_vars)) %>%
   mutate(across(where(is.numeric), ~na_if(., NA)))
 
@@ -124,11 +153,13 @@ evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
 
 # join remapped EVT_GPs with lookup table
 lookup %<>%
-  left_join(evt_gp_remap_table, by = "EVT_GP")
+  left_join(evt_gp_remap_table %>% dplyr::rename_with(tolower), by = c("evt_gp_remap")) 
 
 ####################################################################
-# Evaluation: Calculate confusion matrices of Imputation vs Landfire / reference rasters
+# Evaluation: Calculate confusion matrices of Imputation vs Target Layers
 ####################################################################
+
+message("assembling and comparing imputed outputs vs Target Layers")
 
 # if exportTF = true: then exports assembled, imputed raster
 
@@ -212,3 +243,5 @@ write_rds(cms, glue::glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}_C
 #   
 #   
   
+rm(ras, lookup, rs2, vrt)
+gc()

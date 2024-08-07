@@ -4,7 +4,7 @@
 
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
-# Last updated: 6/18/2024
+# Last updated: 7/19/24
 
 # PART 2: 
 # - Run imputation over input area / target rasters
@@ -12,7 +12,8 @@
 
 
 # TO DO: 
-# - add progress bar to dopar - parabar https://parabar.mihaiconstantin.com/
+# - add progress bar to dopar - parabar https://parabar.mihaiconstantin.com/ 
+# implementation for foreach: https://github.com/mihaiconstantin/parabar/issues/53
 
 
 ###########################################################################
@@ -20,12 +21,13 @@
 ###########################################################################
 
 # Set inputs - from input script
+# Uncomment this if running a single zone at a time, outside of a loop for all zones
 #--------------------------------------------#
 
-this_dir <- this.path::this.dir()
-
-inputs_for_imputation<- glue::glue('{this_dir}/00b_zonal_inputs_for_imp.R')
-source(inputs_for_imputation)
+# this_dir <- this.path::this.dir()
+# 
+# inputs_for_imputation<- glue::glue('{this_dir}/00b_zonal_inputs_for_imp.R')
+# source(inputs_for_imputation)
 
 ############################################################
 
@@ -48,24 +50,14 @@ which_tiles <- NA
 
 # Parallelization settings
 #--------------------------------------#
-
 # Number of cores
-ncores <- 27
-
-# set up dopar
-cl <- makeCluster(ncores)
-registerDoParallel(cl)
-
-# load packages to each cluster
-clusterCall(cl, function() {
-                            library(tidyverse);
-                            library(yaImpute);
-                            library(randomForest);
-                            library(glue)})
+ncores <- 35
 
 ####################################################################
 # Load data
 ####################################################################
+
+message("loading data")
 
 # Load imputation model
 # ---------------------------------------------------------- #
@@ -73,10 +65,12 @@ clusterCall(cl, function() {
 #load model
 yai <- readr::read_rds(model_path)
 
+# get names of variables included in model
+model_vars <- names(yai$xRefs)
+model_vars %<>% str_subset("point_", negate = TRUE) %>% sort() # remove point x and point y as these are calculated in the imputation model step
 
 # Load target rasters
 # --------------------------------------------------------------------#
-
 
 # list raster files
 flist_tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
@@ -84,14 +78,24 @@ flist_tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE,
 # filter to target rasters of interest
 flist_tif <- filter_disturbance_rasters(flist_tif, dist_layer_type) # custom function
 
-# remove aspect - could make this conditional based on whether or not northing and easting are present in file list
+# remove aspect if it's present - could make this conditional based on whether or not northing and easting are present in file list
 flist_tif %<>%
-  str_subset("ASPECT", negate = TRUE)
+  str_subset("aspect", negate = TRUE)
 
+
+# select layers that appear in model vars
+flist_tif %<>%
+  str_subset(paste(model_vars, collapse = "|"))
 
 # load rasters using custom function
-rs2 <- load_target_rasters(flist_tif)
+rs2 <- load_and_name_rasters(flist_tif)
 
+# check if we have all the same layers as are included in the model
+if( !identical(model_vars, sort(names(rs2)))) {
+  message("ERROR: Target layers provided don't match variables in input model")
+} else {
+  message("Target layers match variables in input model - you're good to go!")
+}
 
 # FOR TESTING: Conditionally crop to aoi
 #---------------------------------------------------#
@@ -113,6 +117,8 @@ if (!is.na(aoi_path)) {
 ##################################################################
 #Apply Imputation Function
 ###################################################################
+
+message("setting up tiles for imputation")
 
 # Set up run
 # ---------------------------------------------------------- #
@@ -169,24 +175,43 @@ if(is.na(which_tiles[1])) {
 }
 
 
+# set up parallel processing
+#---------------------------------------------#
+message("setting up parallel processing")
+
+# set up dopar
+cl <- makeCluster(ncores)
+registerDoParallel(cl)
+
+# load packages to each cluster
+clusterCall(cl, function() {
+  library(tidyverse);
+  library(yaImpute);
+  library(randomForest);
+  library(glue)})
+
 #########################################
 # APPLY Imputation OVER TILES
 #------------------------------------------#
 
-print(glue::glue("Total tiles: {n_tiles}. Running over tiles {min(which_tiles)}
+rm(rs2) # remove input raster to save some space
+gc()
+
+# run imputation 
+message(glue::glue("Total tiles: {n_tiles}. Running over tiles {min(which_tiles)}
                  to {max(which_tiles)}!"))
 
 for(j in which_tiles) {
   
   # start timer
-  tic()
+  #tic()
   
   # for test 
   #j <- 3
   
   # select tile to run
   fn <- tiles[j]
-  print(glue::glue("working on tile {j}!"))
+  message(glue::glue("working on tile {j} of {n_tiles}!"))
   
   # read raster tile into memory
   ras <- terra::rast(fn)
@@ -199,12 +224,14 @@ for(j in which_tiles) {
   
   # Prep raster inputs
   #--------------------------------------------#
-  
+
   # # Calculate northing and easting from aspect
   # ras$NORTHING <- terra::app(ras$ASPECT, function(i) cos((pi / 180) * i))
   # names(ras$NORTHING) <- "NORTHING"
   # ras$EASTING <- terra::app(ras$ASPECT, function(i) sin((pi / 180) * i))
   # names(ras$EASTING) <- "EASTING"
+  # # remove aspect
+  #ras$ASPECT <- NULL
   
   gc()
   
@@ -214,13 +241,10 @@ for(j in which_tiles) {
   gc()
   
   # add XY coords to raster
-  ras$POINT_X <- terra::init(ras, "x")
-  names(ras$POINT_X) <- "POINT_X"
-  ras$POINT_Y <- terra::init(ras, "y")
-  names(ras$POINT_Y) <- "POINT_Y"
-  
-  # remove aspect
-  #ras$ASPECT <- NULL
+  ras$point_x <- terra::init(ras, "x")
+  names(ras$point_x) <- "point_x"
+  ras$point_y <- terra::init(ras, "y")
+  names(ras$point_y) <- "point_y"
   
   gc()
   
@@ -236,7 +260,7 @@ for(j in which_tiles) {
 
   f <- foreach(i = 1:nrow_r,
     .packages = c("tidyverse", "yaImpute", "glue"),
-    .export = c("mat", "impute.row", "yai", "tmp_dir" )
+    .export = c("tmp_dir" )
   ) %dopar% {
 
     # # for testing
@@ -291,7 +315,8 @@ for(j in which_tiles) {
   tile_out <- terra::trim(tile_out)
 
   # inspect
-  plot(tile_out)
+  plot(tile_out,
+       main = glue::glue('Zone {zone_num} ; tile {j} of {n_tiles}'))
 
   # export
   terra::writeRaster(tile_out,
@@ -305,11 +330,13 @@ for(j in which_tiles) {
   # delete rows from tmp dir - fresh start for next tile
   do.call(unlink, list(rlist))
 
-  print(glue::glue("done with tile {j} of {n_tiles}!"))
-  toc() # report time elapsed
+  message(glue::glue("done with tile {j} of {n_tiles}!"))
+  #toc() # report time elapsed
 
 }
 
 stopCluster(cl)
 
-print(glue::glue("Done with zone {zone_num}!"))
+message(glue::glue("Done with zone {zone_num}!"))
+
+rm(f, cl, p, agg, model_vars, yai, ras, tile_out, mout, mat, ext_r, ncol_r, nrow_r, j)

@@ -95,7 +95,7 @@ for(v in 1:length(eval_vars)){
   var_in <- eval_vars[v]
 
   cat("\n\n\\pagebreak\n")
-  print(glue("**Variable: {var_in}**
+  print(glue::glue("**Variable: {var_in}**
   
              "))
 
@@ -393,7 +393,7 @@ for(v in 1:length(eval_vars)){
     # add borders to body cells
     surround(border = fp_border_default(color = "gray", width = 1), part = "body") %>%
     # add title
-    set_caption(glue("Confusion Matrix  
+    set_caption(glue::glue("Confusion Matrix  
              Zone: z{zone_num} ; Attribute: {var_in},
              {plot_labels}")) 
 

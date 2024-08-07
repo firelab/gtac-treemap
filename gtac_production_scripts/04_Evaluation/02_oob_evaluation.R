@@ -6,11 +6,8 @@
 # - Report out model accuracy for vars
 
 # TO DO:
-# - add continuous vars 
 
-# TALK MORE ABOUT OOB EVALUATION SO WE UNDERSTAND IT
-
-# Last updated: 4/19/2024
+# Last updated: 7/23/2024
 
 ###########################################################################
 # Set inputs
@@ -33,16 +30,16 @@ eval_vars <- c(eval_vars_cat, eval_vars_cont)
 # Standard inputs
 #---------------------------------------------#
 
-# Set inputs - from input script
-thispath <- this.path::this.path() # Id where THIS script is located
-
-# get path to input script
-spl <- stringr::str_split(thispath, "/")[[1]]
-input_script_path <- paste(c(spl[c(1:(length(spl) - 1))],
-                             "00_inputs_for_evaluation.R"),
-                           collapse = "/")
-
-source(input_script_path)
+# # Set inputs - from input script
+# thispath <- this.path::this.path() # Id where THIS script is located
+# 
+# # get path to input script
+# spl <- stringr::str_split(thispath, "/")[[1]]
+# input_script_path <- paste(c(spl[c(1:(length(spl) - 1))],
+#                              "00_inputs_for_evaluation.R"),
+#                            collapse = "/")
+# 
+# source(input_script_path)
 
 ############################################################
 
@@ -75,7 +72,7 @@ yai <- readr::read_rds(model_path)
 
 # load X_df
 X_df <- read.csv(xtable_path) %>%
-  mutate(PLOTID = ID)
+  rename(PLOTID = X)
 
 # Load raster attribute table 
 #-------------------------------------------------#
@@ -92,12 +89,17 @@ rat %<>%
   mutate_at(eval_vars_cont, ~na_if(.x, -99)) %>%
   mutate_at(eval_vars_cont, ~na_if(.x, -99.00)) %>%
   mutate_at(eval_vars_cont, ~na_if(.x, -99.00000)) %>%
-  select(-Value)
+  # replace NA values with O for certain vars
+  mutate(TPA_DEAD = ifelse(is.na(TPA_DEAD), 0, TPA_DEAD ),
+         CARBON_D = ifelse(is.na(CARBON_D), 0 ,CARBON_D )) %>%
+  select(-Value) 
 
 # join with X df  
 rat %<>%
   right_join(X_df, by = c("CN" = "CN", "tm_id" = "PLOTID")) %>%
-  rename("PLOTID" = tm_id)
+  rename("PLOTID" = tm_id) %>%
+  # filter to plots with values
+  filter(!is.na(FORTYPCD))
 
 
 ######################################################################
@@ -106,32 +108,33 @@ rat %<>%
 
 # Data dictionary for OOB predicted and reference: 
 # oob_id : row number of original oob observation
-# plotid_ref : treemap plot id for the reference plot in the imutation/tree
-# plotid_pred : treemap plotid for the predicted plot in the imputatio/tree
+# plotid_ref : treemap plot id for the reference plot in the imputation/forest
+# plotid_pred : treemap plotid for the predicted plot in the imputation/forest
 
-# run custom function to get out of bag observations
-# this takes some time to run - ~15 secs
-oobs <- get_OOBs_yai(yai) %>%
-  rename("ref_id" = ref,
-         "pred_id" = pred) %>%
+# run custom function to get out of bag predictions - 1 for each ref 
+# this takes some time to run 
+oobs <- get_OOBs_yai_predict(yai) 
+oobs %<>% 
+  # rename("ref_id" = ref,
+  #        "pred_id" = pred) %>%
   mutate(oob_id = row_number())
 
 
-# make Join OOB predicted and reference with Xdf and RAT to get layer values
+# make Join OOB predicted and reference with Xdf and RAT to get variable values
 # --------------------------------------------#
 
 # join oobs with x df - reference
 refs <-
   left_join(oobs, rat,
-            by = c("ref_id" = "ID")) %>%
-  select(c(oob_id, ref_id, pred_id, inbag_count,
+            by = c("ref_id" = "PLOTID")) %>%
+  select(c(oob_id, ref_id, pred_id,
            any_of(eval_vars))) %>%
   mutate(dataset = "ref")
   
 # join oobs with X_df - predicted
 preds <- left_join(oobs, rat,
-                   by = c("pred_id" = "ID")) %>%
-  select(c(oob_id, ref_id, pred_id, inbag_count,
+                   by = c("pred_id" = "PLOTID")) %>%
+  select(c(oob_id, ref_id, pred_id,
            any_of(eval_vars))) %>%
   mutate(dataset = "pred") 
 
@@ -142,8 +145,6 @@ gc()
 #-----------------------------------------#
 
 p_r <- bind_rows(preds, refs) %>%
-  filter(inbag_count == 0) %>% # filter to only OOB
-  select(-inbag_count) %>%
   # pivot longer
   pivot_longer(!c(oob_id, ref_id, pred_id, dataset), 
                names_to = "var", values_to = "value") %>%
@@ -207,12 +208,22 @@ gc()
 # PLOT CONTINUOUS VARS
 # ---------------------------------------------------#
 
+# set parameters for continuous var plotting
 dodge <- position_dodge(width = 0.6)
+text_size <- 4 # 5 for indvidual plots 3 for all plots in grid
+percent_x_textPos <- 0.50 # 0.4 for individual plots
+percent_y_textPos1 <- 0.99 # 0.96 for individual plots
+percent_y_textPos2 <- 0.78 # 0.96 for individual plots
+textBoxFill_ratioX <- 0.25
+textBoxFill_ratioY <- 0.04
+alpha <- 0.1
+export_width <- 7 # in inches
+export_height <- 4.5 # in inches
 
 for(i in 1:(length(eval_vars_cont))) {
   
   # for testing
-  i = 5
+  #i = 6
   
   var_name <- eval_vars_cont[i]
   
@@ -250,10 +261,11 @@ for(i in 1:(length(eval_vars_cont))) {
   
   # build an LM
   lm <- lm(pred ~ ref, data = p_r2)
-  lm$coefficients
-  sum <- summary(lm)
   
-  sum$r.squared
+  # inspect LM
+  # lm$coefficients
+  # sum <- summary(lm)
+  # sum$r.squared
   
   
   # Parsing the information saved in the model to create the equation to be added to the scatterplot as an expression # https://r-graphics.org/recipe-scatter-fitlines-text
@@ -271,25 +283,34 @@ for(i in 1:(length(eval_vars_cont))) {
   p2 <- p_r2 %>%
     ggplot(aes(x = ref, y = pred)) + 
     geom_abline(intercept = 0, color = "red", linewidth = 1, linetype = 2) + 
-    geom_point(alpha = 0.25) +
+    geom_point(alpha = alpha) +
     geom_smooth(method = "lm", formula = y~x) +
     labs() + 
     theme_bw() + 
-    ggtitle(glue::glue("OOB predicted vs. ref for {var_name}"))
+    ggtitle(glue::glue("OOB predicted vs. ref for {var_name}")) + 
+    annotate(geom="text",
+             x = (max(p_r2$ref)/2),
+             y = (percent_y_textPos1*max(p_r2$pred, na.rm = TRUE)),
+             label = as.character(eqn),
+             parse = TRUE,
+             color = "purple",
+             size = text_size) 
   
   print(p2)
   
   # save
   ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_violin.png'),
          plot = p,
-         width = 7, 
-         height = 4.5)    
+         width = export_width, 
+         height = export_height)    
   
   # save
   ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_scatter.png'),
          plot = p2,
-         width = 7, 
-         height = 4.5) 
+         width = export_width, 
+         height = export_height) 
   
   gc()
 }
+
+#rm(lm, p, p2)

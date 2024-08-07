@@ -16,8 +16,8 @@ list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse",
                       "stringr", "stringi")
 
 # Install dev version of yaImpute - to make sure we get the option to retain OOB obs
-message("Installing dev version of yaImpute package")
-devtools::install_github("https://github.com/jeffreyevans/yaImpute")
+#message("Installing dev version of yaImpute package")
+#devtools::install_github("https://github.com/jeffreyevans/yaImpute")
 
 # #check for packages and install if needed
 new.packages <- tryCatch(
@@ -91,6 +91,18 @@ rm(this_path, this_dir, snames)
 # make 'notin' function
 `%notin%` <- Negate('%in%')
 
+# make a mode function
+mode <- function(x, na.rm){
+  
+  if(missing(na.rm)) {
+    na.rm = FALSE
+  }
+  
+  if(na.rm == TRUE) {
+    x <- x[!is.na(x)]
+  }
+  which.max(tabulate(x))
+}
 
 # which.max analog
 # in the case of a tie, returns the index with the highest value
@@ -104,6 +116,29 @@ which.max.hightie <- function(x) {
   }
 }
 
+#####################################################
+# Parallel processing
+#####################################################
+#Progress combine function
+# use in foreach loop 
+# ex. 
+
+# # Run the loop in parallel
+# k <- foreach(i = icount(n), .final=sum, .combine=f()) %dopar% {
+#   log2(i)
+# }
+
+progress_foreach <- function(n){
+  pb <- txtProgressBar(min=1, max=n-1,style=3)
+  count <- 0
+  function(...) {
+    count <<- count + length(list(...)) - 1
+    setTxtProgressBar(pb,count)
+    Sys.sleep(0.01)
+    flush.console()
+    c(...)
+  }
+}
 
 
 #####################################################
@@ -113,7 +148,7 @@ which.max.hightie <- function(x) {
 # Load target rasters
 #####################################################
 
-load_target_rasters <- function(flist_tif, n) {
+load_and_name_rasters <- function(flist_tif, n) {
   
   require(terra)
   
@@ -152,8 +187,13 @@ filter_disturbance_rasters <- function(flist_tif, dist_layer_type){
   
   # get list of disturbance rasters
   flist_dist <- flist_tif %>%
-    str_subset("disturb") %>%
-    str_subset(dist_layer_type)
+    str_subset("disturb") 
+  
+  if(dist_layer_type == "LCMS") {
+  flist_dist %<>%
+      str_subset(glue::glue('{dist_layer_type}.tif'))  
+    }
+  
   
   # get list of all other rasters
   flist_nondist <- flist_tif %>%
@@ -200,7 +240,7 @@ fill_matrix_to_raster <- function(mout, ncol_r, nrow_r, row1) {
 # Get Predicted and Reference from a Random Forest object and the X table used to build it
 ###########################################################################################
 
-get_pr_RF <- function(rf_in, X_df) {
+get_pr_RF <- function(rf_in, X_df, var) {
 
   # get predictions from random forest model and convert to data frame
   preds <- rf_in[[1]]$predicted
@@ -219,22 +259,45 @@ get_pr_RF <- function(rf_in, X_df) {
   p_r <- full_join(preds_df, refs_df, by = c("ID")) %>%
     select(-ID)
   
-  # if values are not unique, make a key
+  # if values are not identical, make a key
   
   if(!identical(sort(unique(p_r$pred)), sort(unique(p_r$ref)))) {
     
     # make a key for pred to ref
+    #--------------------------------#
+    
+    # get reference vars
+    key_r <- p_r %>%
+      select(ref) %>%
+      rename(key_r = ref) %>%
+      distinct() %>%
+      arrange(key_r)
+    
+    # get pred vars
     key_p <- p_r %>%
       select(pred) %>%
       rename(key_p = pred) %>%
       distinct() %>%
       arrange(key_p)
     
-    key_r <- p_r %>%
-      select(ref) %>%
-      rename(key_r = ref) %>%
-      distinct() %>%
-      arrange(key_r)
+    # make sure pred vars are the same length as ref vars
+    if(nrow(key_p) != nrow(key_r)) {
+      
+      diff = abs(nrow(key_p) - nrow(key_r))
+      
+      # add an NA for each missing 
+      for(i in 1:diff){
+        if(is.factor(key_r$key_r)) {
+          key_p = rbind(key_p, "NA")
+        } else key_p = rbind(key_p, NA)
+      }
+    }
+    
+    # make sure preds are a factor if ref is a factor
+    if(is.factor(key_r$key_r)) {
+      p_r$pred <- factor(p_r$pred, levels = levels(key_r$key_r))
+      key_p$key_p <- factor(key_p$key_p, levels = levels(key_r$key_r))
+    } 
     
     key <- cbind(key_p, key_r)
     
