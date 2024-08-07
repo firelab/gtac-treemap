@@ -28,10 +28,10 @@ eval_vars <- c("evc",
 # Eval report for OOB or derived vars
 # - options: "OOB" or "TargetLayerComparison" or "CV"
 
-#eval_type <- eval_type_in
+eval_type <- eval_type_in
 #eval_type <- "TargetLayerComparison"
 # eval_type <- "OOB" 
-eval_type <- "CV"
+#eval_type <- "CV"
 # FIXME: NO OOB RDS for 2016_GTAC_LCMSDist project
 
 
