@@ -18,10 +18,12 @@ zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone
 
 # path to priority zone list 
 
-
 # Types of evaluation to run and prepare reports for 
 # Options: "TargetLayerComparison", "OOB"
 eval_type_list <- c("TargetLayerComparison")
+
+# Script inputs - changed less frequently 
+########################################################
 
 # Initialize paths to scripts
 this_dir <- this.path::this.dir()
@@ -46,8 +48,10 @@ list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse",
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
                       "stringr", "stringi", "devtools")
 
+################################################################
+# END USER INPUTS
+################################################################
 
-  
 #################################################################
 # Make sure required packages are installed
 #################################################################

@@ -33,25 +33,25 @@ output_crs_name <- "lf230_crs"
 
 # list names of xvars in reference / x table
 #xvars <- c("SLOPE", "ELEV", "PARI", "PPTI", "RELHUMI", "TMAXI", "TMINI", "VPDI", "disturb_code", "disturb_year", "canopy_cover", "canopy_height", "EVT_GP", "NORTHING", "EASTING", "POINT_X", "POINT_Y") # 2016 version
-xvars <- c("slope", "elevation","easting", "northing",
-           "prcp","srad", "swe", "tmax" , "tmin", "vp","vpd" ,
-           "disturb_code", "disturb_year", "evc" , "evh","evt_gp_remap" ,
+xvars <- c("slope", "elevation", "easting", "northing",
+           "prcp", "srad", "swe", "tmax", "tmin", "vp", "vpd",
+           "disturb_code", "disturb_year", "evc", "evh", "evt_gp_remap",
            "point_x", "point_y") #2020/2022 version
   
-# list names of yvars used for modeling
-yvars <- c("evc" , "evh","evt_gp_remap" ,"disturb_code") # 2020 version
+# list names of yvars used as response vars for modeling
+yvars <- c("evc", "evh", "evt_gp_remap", "disturb_code") # 2020 version
   
 # list names of target vars / target layers
 #targetvars <- c("SLOPE", "ELEV", "PARI", "PPTI", "RELHUMI", "TMAXI", "TMINI", "VPDI", "disturb_code", "disturb_year", "canopy_cover", "canopy_height", "EVT_GP", "NORTHING", "EASTING", "POINT_X", "POINT_Y") # 2016 version
-targetvars <- c("elevation","easting", "northing",
-                "prcp","srad", "swe", "tmax" , "tmin", "vp","vpd" ,
-                "disturb_code", "disturb_year", "evc" , "evh","evt_gp_remap" ,
+targetvars <- c("elevation", "easting", "northing",
+                "prcp", "srad", "swe", "tmax", "tmin", "vp", "vpd",
+                "disturb_code", "disturb_year", "evc", "evh", "evt_gp_remap",
                 "point_x", "point_y") #2020/2022 version
   
 ####################################
 
 # Plot coordinates - relative to FIA_dir
-coords_path <- '/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv'
+coords_path <- "/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv"
 
 # Dir for X table - relative to home_dir
 xtable_dir <- glue::glue("/03_Outputs/06_Reference_Data/{ref_data_version}/01_X_tables_by_zone/")
@@ -63,18 +63,17 @@ xtable_dir <- glue::glue("/03_Outputs/06_Reference_Data/{ref_data_version}/01_X_
 
 # load library 
 this_proj = this.path::this.proj()
-lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+lib_path = glue::glue("{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R")
 source(lib_path)
-
 
 
 # Build constructed inputs - less likely to change
 #-----------------------------------------------------------------#
 # data directory - where source data are located
-data_dir <- glue::glue('{home_dir}/01_Data/')
+data_dir <- glue::glue("{home_dir}/01_Data/")
 
 # set path to landfire vector data
-lf_zones_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
+lf_zones_path <- glue::glue("{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp")
 
 # Path to X table
 xtable_dir <- glue::glue("{home_dir}/{xtable_dir}")
@@ -88,30 +87,30 @@ dist_raster_dir <- target_dir
 
 # Directory where EVT_GP remap table is located
 evt_gp_remap_table_dir <- target_dir
-#evt_gp_remap_table_dir <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/')
+#evt_gp_remap_table_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
 
 # Plot coordinates
-coords_path <- glue::glue('{FIA_dir}/{coords_path}')
+coords_path <- glue::glue("{FIA_dir}/{coords_path}")
 
 # Paths for exporting data
 #--------------------------------------#
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
-raw_outputs_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
+raw_outputs_dir <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/")
 
 #set path for assembled rasters
-assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/')
+assembled_dir <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
 
 # Evaluation dir
-eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/')
+eval_dir <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/")
 
 
 # Load CRS
 #----------------------------------------------------#
 
 # load lcms projections
-lcms_crs <- terra::crs(glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj'))
+lcms_crs <- terra::crs(glue::glue("{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj"))
 
 # load treemap projection
 tm16_crs <- terra::crs(glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj"))
@@ -133,5 +132,5 @@ output_crs <- eval(parse(text = output_crs_name))
 
 # Export to scripts folder for easy access 
 # over-writes by default
-save(list = ls(), file = glue::glue('{this.path::this.dir()}/params/{project_name}_imputation_inputs.RDS'))
+save(list = ls(), file = glue::glue("{this.path::this.dir()}/params/{project_name}_imputation_inputs.RDS"))
 
