@@ -21,8 +21,8 @@ lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib
 source(lib_path)
 
 # get path to imputation inputs RDS
-inputs_for_imputation <- glue::glue("{home_dir}03_Outputs/07_Projects/2020_ImputationPrep/01_Raw_model_outputs/z16/params/z16_2020_GTAC_ImputationPrep_env.RDS")
-
+inputs_for_imputation <- glue::glue("{params_dir}/{output_name}_env.RDS")
+#inputs_for_imputation <- glue::glue("{home_dir}03_Outputs/07_Projects/2020_ImputationPrep/01_Raw_model_outputs/z16/params/z16_2020_GTAC_ImputationPrep_env.RDS")
 load(inputs_for_imputation)
 
 
@@ -106,3 +106,4 @@ if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'))) {
 if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
   dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
 }
+

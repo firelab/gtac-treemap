@@ -32,8 +32,6 @@ eval_type <- eval_type_in
 #eval_type <- "TargetLayerComparison"
 # eval_type <- "OOB" 
 #eval_type <- "CV"
-# FIXME: NO OOB RDS for 2016_GTAC_LCMSDist project
-
 
 # PLOTS and TABLES TO INCLUDE; EXPORT OPTIONS
 #---------------------------------------------#
@@ -84,10 +82,10 @@ document_formatExtensionDict <- c("pdf_document" = ".pdf",
 # Set inputs - from input script used for imputation
 #-----------------------------------------------------#
 
-this_dir <- this.path::this.dir()
+#this_dir <- this.path::this.dir()
 
-inputs_for_evaluation <- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
-source(inputs_for_evaluation)
+#inputs_for_evaluation <- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
+#source(inputs_for_evaluation)
 
 # Other settings
 #------------------------------------------#
