@@ -11,18 +11,18 @@
 
 year <- year_input
 
-#project_name <- glue::glue("{year}_Production")
-project_name <- glue::glue("{year}_ImputationPrep") #for testing
+project_name <- glue::glue("{year}_Production")
+#project_name <- glue::glue("{year}_ImputationPrep") #for testing
 
 # name for products - includes params here if desired
 #e.g., #output_name <- "2016_GTAC_LCMSDist"
-output_name <- glue::glue("{year}_GTAC_ImputationPrep") 
+output_name <- glue::glue("{year}_Production") 
 
 # target data version to use
 target_data_version <- glue::glue("v{year}")
 
 # reference data version to use
-ref_data_version <- "v2020"
+ref_data_version <- "v2022"
 
 # disturbance type - options are "LF" or "LFLCMS"
 dist_layer_type <- "LF"
@@ -39,7 +39,7 @@ xvars <- c("slope", "elevation", "easting", "northing",
            "point_x", "point_y") #2020/2022 version
   
 # list names of yvars used as response vars for modeling
-yvars <- c("evc", "evh", "evt_gp_remap", "disturb_code") # 2020 version
+yvars <- c("evc", "evh", "evt_gp_remap", "disturb_code") # 2020/2022 version
   
 # list names of target vars / target layers
 #targetvars <- c("SLOPE", "ELEV", "PARI", "PPTI", "RELHUMI", "TMAXI", "TMINI", "VPDI", "disturb_code", "disturb_year", "canopy_cover", "canopy_height", "EVT_GP", "NORTHING", "EASTING", "POINT_X", "POINT_Y") # 2016 version
@@ -83,11 +83,9 @@ target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_ve
 
 # Directory where disturbance layers live 
 dist_raster_dir <- target_dir 
-#dist_raster_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
 
 # Directory where EVT_GP remap table is located
 evt_gp_remap_table_dir <- target_dir
-#evt_gp_remap_table_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
 
 # Plot coordinates
 coords_path <- glue::glue("{FIA_dir}/{coords_path}")
