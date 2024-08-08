@@ -14,10 +14,10 @@ year_input <- 2022
 priority_zones <- read.csv("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2022_Production/00_Prioritization/priority_forest_wcs.csv")
 priority_list <- priority_zones[,'ZONE_NUM']
 
-# get odd indices to run in a list
+# get odd indices to run in a list - F8V75K3
 zones_list <- priority_list[seq(1,length(priority_list),2)]
 
-# get even indices to run in a list
+# get even indices to run in a list - abhi
 #zones_list <- priority_list[seq(0,length(priority_list),2)]
 
 # manually list zones
