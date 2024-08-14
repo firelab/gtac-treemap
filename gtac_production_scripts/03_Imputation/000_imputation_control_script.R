@@ -16,12 +16,13 @@ priority_list <- priority_zones[,'ZONE_NUM']
 
 # get odd indices to run in a list - F8V75K3
 zones_list <- priority_list[seq(1,length(priority_list),2)]
+zones_list <- zones_list[18:34] 
+
 
 # get even indices to run in a list - abhi
 #zones_list <- priority_list[seq(0,length(priority_list),2)]
 
 # manually list zones
-#zones_list <- 1
 #zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
 #                seq(from = 12, to = 66, by = 1),
 #                98, 99)
