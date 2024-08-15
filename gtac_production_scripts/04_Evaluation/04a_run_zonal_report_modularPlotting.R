@@ -2,7 +2,7 @@
 # Written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # Updated by Abhinav Shrestha (abhinav.shrestha@usda.gov)
 
-# Last updated: 06/21/2024
+# Last updated: 08/14/2024
 
 
 # TODO:
@@ -214,8 +214,8 @@ zone_name <- glue::glue("LFz{zone_num}_{gsub(' ', '', zone$ZONE_NAME)}")
 #------------------------------------------#
 
 # load X_df
-X_df <- read.csv(xtable_path) %>%
-  dplyr::rename(PLOTID = X)
+X_df <- read.csv(xtable_path_model)  %>%
+  rename_with(tolower)
 
 # Reclass EVT_GP
 #------------------------------------------#
@@ -274,7 +274,7 @@ if (exists("rat") & exists("rat_pathCompare")){
   
   # join with X df  - limit to plots in X df
   rat %<>%
-    dplyr::right_join(X_df, by = c("CN" = "CN", "tm_id" = "PLOTID"))
+    dplyr::right_join(X_df, by = c("CN" = "CN", "tm_id" = "TM_ID"))
 
 }
 

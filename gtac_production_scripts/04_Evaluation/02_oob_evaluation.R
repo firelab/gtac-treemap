@@ -2,12 +2,15 @@
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Out-of-bag stats and validation
-# - Extract model validation stats from yai object
-# - Report out model accuracy for vars
+# - Use yaImpute::predict() to get putative "Out-of-bag" (OOB) Predictions
+# - We have not verified that these truly represent OOB prediction
+# - Assumption that these are OOB is following the logic present in the Random Forests predict.randomForest() function
+# - Returns confusion matrices for categorical response vars
+# - Returns scatterplots for continuous attributes
+# ### REQUIRES CURRENT RAT FOR ACCURACY OF CONTINUOUS ATTRIBUTES
 
-# TO DO:
 
-# Last updated: 7/23/2024
+# Last updated: 8/15/2024
 
 ###########################################################################
 # Set inputs
@@ -18,14 +21,15 @@
 
 # list variables to evaluate
 
-eval_vars_cat <- c("canopy_cover", "canopy_height", "EVT_GP", 
-                   "disturb_code")
+#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", 
+#                   "disturb_code")
+eval_vars_cat <- yvars
 
 eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
                     "TPA_DEAD", "TPA_LIVE")
 
-eval_vars <- c(eval_vars_cat, eval_vars_cont)
+eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
 # Standard inputs
 #---------------------------------------------#
@@ -78,7 +82,7 @@ X_df <- read.csv(xtable_path_model) %>%
 #-------------------------------------------------#
 
 # load rat
-rat <- terra::rast(glue::glue("{rat_path}TreeMap2016.tif"))
+rat <- terra::rast(glue::glue("{rat_path}"))
 rat <- data.frame(cats(rat))
 
 rat %<>%
@@ -128,14 +132,14 @@ refs <-
   left_join(oobs, rat,
             by = c("ref_id" = "PLOTID")) %>%
   select(c(oob_id, ref_id, pred_id,
-           any_of(eval_vars))) %>%
+           any_of(eval_vars_cat_cont))) %>%
   mutate(dataset = "ref")
   
 # join oobs with X_df - predicted
 preds <- left_join(oobs, rat,
                    by = c("pred_id" = "PLOTID")) %>%
   select(c(oob_id, ref_id, pred_id,
-           any_of(eval_vars))) %>%
+           any_of(eval_vars_cat_cont))) %>%
   mutate(dataset = "pred") 
 
 # clear memory
@@ -196,7 +200,7 @@ for (i in eval_vars_cat) {
 
 # save cms as RDS
 write_rds(cms, file = 
-            glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
+            glue::glue('{eval_dir}/02_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
 
 gc()
 
@@ -299,13 +303,13 @@ for(i in 1:(length(eval_vars_cont))) {
   print(p2)
   
   # save
-  ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_violin.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_violin.png'),
          plot = p,
          width = export_width, 
          height = export_height)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_scatter.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_scatter.png'),
          plot = p2,
          width = export_width, 
          height = export_height) 

@@ -1,44 +1,37 @@
-# Zonal Validation Script for TreeMap Outputs
-# Validation, in this instance, means comparing against the LandFire layers used as target data
+# Zonal Target layer Comparison for TreeMap Outputs
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last updated:
 # 7/18/24
 
-# Goals: 
+# In this script, we: 
 # - load preliminary imputation outputs
 # - join with x-table on ID 
 # - build rasters of attributes so we can inspect them 
 # - create confusion matrices to compare outputs against Landfire
 # - use concat to compare EVC, EVH, etc with landfire layers 
 
-# TO DO: 
-# - remove unused levels from concat / diff
-
 ###########################################################################
 # Set inputs
 ###########################################################################
 
-# Standard Inputs
-#-----------------------------------------------#
-
-
-# Set inputs - from input script used for imputation
+# Set inputs manually - if running standalone
 #-----------------------------------------------------#
 
 #this_proj <- this.path::this.proj()
 #this_dir <- this.path::this.dir()
 
-#inputs_for_evaluation<- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
-#source(inputs_for_evaluation)
+# LOAD PROJECT PARAMS RDS
 
+# get zone 
+
+# load zonal inputs RDS
 
 # Specific inputs
 #----------------------------------------------------------#
 
 # list layers to evaluate, assemble, and export
-# all options are: c("canopy_cover", "canopy_height", "EVT_GP", "disturb_code")
 #eval_vars <- c("evc", "evh", "evt_gp_remap", "disturb_code")
 eval_vars <- yvars
 
@@ -181,7 +174,7 @@ cms <- eval_vars %>%
 names(cms) <- eval_vars
 
 # export as RDS
-write_rds(cms, glue::glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}_CMs_TargetLayerComparison.RDS'))
+write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_CMs_TargetLayerComparison.RDS'))
 
 ############################################################################
 
@@ -235,7 +228,7 @@ write_rds(cms, glue::glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}_C
 #                           id_field = "PLOTID",
 #                           stackin_compare = rs2, 
 #                           stackin_compare_name = "Target",
-#                           export_path = glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}'),
+#                           export_path = glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}'),
 #                           remapEVT_GP = TRUE, 
 #                           EVT_GP_remap_table = evt_gp_remap_table))
 # 
