@@ -93,7 +93,7 @@ evt_gp_remap_table_path = glue::glue("{evt_gp_remap_table_dir}/{cur_zone_zero}/e
 params_dir = glue::glue("{raw_outputs_dir}/params/")
 
 
-# Model inputs
+# Model inputs / outputs
 #----------------------------------#
 
 # build default model path
@@ -108,6 +108,9 @@ if(is.na(model_path)) {
   
 }
 
+# path to save x and y tables used in model
+xtable_path_model <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv")
+ytable_path_model <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Ydf_bin.csv")
 
 
 # Create all directories
