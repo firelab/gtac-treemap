@@ -34,36 +34,19 @@ eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 # Standard inputs
 #---------------------------------------------#
 
-# # Set inputs - from input script
-# thispath <- this.path::this.path() # Id where THIS script is located
+# this_proj <- this.path::this.proj()
+# this_dir <- this.path::this.dir()
 # 
-# # get path to input script
-# spl <- stringr::str_split(thispath, "/")[[1]]
-# input_script_path <- paste(c(spl[c(1:(length(spl) - 1))],
-#                              "00_inputs_for_evaluation.R"),
-#                            collapse = "/")
-# 
-# source(input_script_path)
-
-############################################################
-
-# Terra options
-# --------------------------------#
-
-#increase memory fraction available
-#terraOptions(memfrac = 0.8)
-
-# Other options
-# --------------------------------#
-
-# Allow for sufficient digits to differentiate plot cn numbers
-
-options("scipen" = 100, "digits" = 8)
+# ## load treemap library
+# lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+# source(lib_path)
 
 
 ####################################################################
 # Load data
 ####################################################################
+
+message("loading data for OOB evaluation")
 
 # Load imputation model
 # ---------------------------------------------------------- #
@@ -71,73 +54,102 @@ options("scipen" = 100, "digits" = 8)
 #load model
 yai <- readr::read_rds(model_path)
 
-# Load x table
-# ------------------------------------------------------------#
-
-# load X_df
-X_df <- read.csv(xtable_path_model) %>%
-  rename(PLOTID = X)
 
 # Load raster attribute table 
 #-------------------------------------------------#
 
 # load rat
-rat <- terra::rast(glue::glue("{rat_path}"))
+rat <- terra::rast(rat_path)
 rat <- data.frame(cats(rat))
 
-rat %<>%
-  rename("SDIPCT_RMRS" = SDIPCT_RMR,
-         "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
-  mutate(CN = as.numeric(CN)) %>%
-  # replace -99 (na value) with NA 
-  mutate_at(eval_vars_cont, ~na_if(.x, -99)) %>%
-  mutate_at(eval_vars_cont, ~na_if(.x, -99.00)) %>%
-  mutate_at(eval_vars_cont, ~na_if(.x, -99.00000)) %>%
-  # replace NA values with O for certain vars
-  mutate(TPA_DEAD = ifelse(is.na(TPA_DEAD), 0, TPA_DEAD ),
-         CARBON_D = ifelse(is.na(CARBON_D), 0 ,CARBON_D )) %>%
-  select(-Value) 
+# Prep X table
+#-------------------------------------------------------------#
 
-# join with X df  
+# get x and y dfs
+X_df1 <- yai$xall %>%
+  mutate(X = as.numeric(row.names(yai$xall)))
+X_df2 <- read.csv(xtable_path_model) %>% arrange(X)
+
+
+# join tables so we have tm_id, cn, and point_x and point_y
+X_df <- left_join(X_df1, 
+                  X_df2 %>% select(c(X, tm_id, CN)), by = "X")
+
+
+# remove unused tables
+rm(X_df1, X_df2)
+
+# apply appropriate row names
+# important to do this AFTER all other data frame processing
+row.names(X_df) <- X_df$tm_id
+
+# Prep Raster Attribute Table
+#-----------------------------------------------------------------#
+
+# identify eval_vars_cont that are not from RMRS - we handle NAs differently
+eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
+eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(is.numeric))), "RMRS", negate = TRUE)
+
+# prep rat table
 rat %<>%
-  right_join(X_df, by = c("CN" = "CN", "tm_id" = "PLOTID")) %>%
-  rename("PLOTID" = tm_id) %>%
+  # rename shortened field names
+  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
+                "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
+  # convert CN to numeric
+  dplyr::mutate(CN = as.numeric(CN)) %>%
+  # round and fix NA values for RMRS and non RMRS vars
+  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
+  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
+  dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
+  # calculate TPA_DEAD_LIVE_RATIO
+  dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
+  # remove columns
+  dplyr::select(-c(Value, tm_id))
+
+# Join RAT and X_df into rat_x
+#-----------------------------------------------------------#
+
+# join RAT with X df using CN
+rat_x <- rat %>%
+  right_join(X_df, by = "CN") %>%
+  select(c(CN, tm_id, any_of(eval_vars_cat_cont))) %>%
   # filter to plots with values
-  filter(!is.na(FORTYPCD))
-
+  filter(!is.na(BALIVE)) %>%
+  # make factors into numeric so that we can make a long data frame
+  mutate(across(c(evt_gp_remap, disturb_code), as.numeric))
 
 ######################################################################
-# Get and prep validation data - out of bag observations
+# Get and prep validation data - out of bag predictions
 ######################################################################
+
+message("getting out-of-bag predictions")
 
 # Data dictionary for OOB predicted and reference: 
 # oob_id : row number of original oob observation
-# plotid_ref : treemap plot id for the reference plot in the imputation/forest
-# plotid_pred : treemap plotid for the predicted plot in the imputation/forest
+# ref_id : treemap plot id for the reference plot 
+# pred_id : treemap plotid for the predicted plot 
 
-# run custom function to get out of bag predictions - 1 for each ref 
+# run custom function to get out of bag predictions - 1 for each reference 
 # this takes some time to run 
 oobs <- get_OOBs_yai_predict(yai) 
 oobs %<>% 
-  # rename("ref_id" = ref,
-  #        "pred_id" = pred) %>%
   mutate(oob_id = row_number())
 
 
 # make Join OOB predicted and reference with Xdf and RAT to get variable values
-# --------------------------------------------#
+# ----------------------------------------------------------------------------#
 
 # join oobs with x df - reference
 refs <-
-  left_join(oobs, rat,
-            by = c("ref_id" = "PLOTID")) %>%
+  left_join(oobs, rat_x,
+            by = c("ref_id" = "tm_id")) %>%
   select(c(oob_id, ref_id, pred_id,
            any_of(eval_vars_cat_cont))) %>%
   mutate(dataset = "ref")
   
 # join oobs with X_df - predicted
-preds <- left_join(oobs, rat,
-                   by = c("pred_id" = "PLOTID")) %>%
+preds <- left_join(oobs, rat_x,
+                   by = c("pred_id" = "tm_id")) %>%
   select(c(oob_id, ref_id, pred_id,
            any_of(eval_vars_cat_cont))) %>%
   mutate(dataset = "pred") 
@@ -161,8 +173,7 @@ p_r <- bind_rows(preds, refs) %>%
 # Make confusion matrices for each categorical var
 #-----------------------------------------------#
 
-# loop over vars
-# using a for loop bc ¯\_(ツ)_/¯
+message("performing evaluation on OOB predictions")
 
 cms <- NULL
 
@@ -205,11 +216,7 @@ write_rds(cms, file =
 gc()
 
 
-####################################################
-# CONTINUOUS VARS EVAL
-####################################################
-
-# PLOT CONTINUOUS VARS
+# PLOT continuous vars
 # ---------------------------------------------------#
 
 # set parameters for continuous var plotting
@@ -223,6 +230,8 @@ textBoxFill_ratioY <- 0.04
 alpha <- 0.1
 export_width <- 7 # in inches
 export_height <- 4.5 # in inches
+
+# loop over continuous vars 
 
 for(i in 1:(length(eval_vars_cont))) {
   
