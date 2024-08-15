@@ -72,6 +72,7 @@ document_formatExtensionDict <- c("pdf_document" = ".pdf",
                                   "word_document" = ".docx", 
                                   "html_document" = ".html")
 
+
 #-------------------------------------------#
 #                                           #
 # Standard inputs (less likely to change)   #
@@ -110,7 +111,7 @@ this_dir <- this.path::this.dir()
 rmd_path <- glue::glue("{this_dir}/04b_zonal_eval_report_generator_modularPlotting.Rmd")
 
 # set dir for temporary outputs - needs to be a place w/ write permissions for R (network drives aren't allowed)
-#tmpout_dir <- tmp_dir
+tmpout_dir <- tmp_dir
 
 # set default plot labels - these will be updated for each evaluation type
 plot_labels <- c("Imputed", "Observed")
@@ -161,12 +162,12 @@ if(eval_type == "TargetLayerComparison") {
     
     cms_path <- glue::glue("{eval_dir}/01_Target_Layer_Comparison/{output_name}_CMs_{eval_type}.RDS")
     plot_labels <- c("Imputed", "Target")
-    cm_labels <- c("Imputed", "Target")
+    cm_labels <- c("Predicted", "Reference")
     
 } else if(eval_type == "OOB") {
   
   cms_path <- glue::glue("{eval_dir}/02_OOB_Evaluation/{output_name}_CMs_{eval_type}.RDS")
-  plot_labels <- c("Imputed (OOB)", "Observed")
+  plot_labels <- c("Imputed (OOB)", "Observed (FIA)")
 
 } else if(eval_type == "CV") {
     cms_path <- glue::glue("{eval_dir}/03_Cross_Validation/{output_name}_CMs_{eval_type}.RDS")
