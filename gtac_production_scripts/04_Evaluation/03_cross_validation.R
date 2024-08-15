@@ -43,14 +43,18 @@ k = 10
 # 
 # inputs_for_evaluation <- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
 # source(inputs_for_evaluation)
+#project_name <- "2020_ImputationPrep"
+
+#output_name <- "z16_2020_ImputationPrep"
+
+# Evaluation dir
+#eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/z16/')
+
+# number of digits to round to 
+#round_dig <- 4
 
 
-# Specific inputs
-#----------------------------------------------------------#
 
-# list layers to evaluate, assemble, and export
-#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "disturb_code")
-eval_vars_cat <- yvars
 
 #####################################################################
 # Load data
@@ -61,23 +65,16 @@ message("Loading data for cross-validation")
 # set inputs
 ###################################################
 
-# list variables to evaluate
+# list layers to evaluate, assemble, and export
+#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "disturb_code")
+eval_vars_cat <- yvars
+
 
 eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
                     "TPA_DEAD", "TPA_LIVE")
 
 eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
-
-#project_name <- "2020_ImputationPrep"
-
-#output_name <- "z16_2020_ImputationPrep"
-
-# Evaluation dir
-#eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/z16/')
-
-# number of digits to round to 
-round_dig <- 4
 
 # load input data
 ####################################################
@@ -90,10 +87,8 @@ yai <- readRDS(model_path)
 # load rat
 #rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
 
-rat_tif <- terra::rast(glue::glue("{rat_path}TreeMap2016.tif"))
-rat <- data.frame(cats(rat_tif)) %>%
-  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
-                "CARBON_DOWN_DEAD" = CARBON_DWN)
+rat_tif <- terra::rast(rat_path)
+rat <- data.frame(cats(rat_tif)) 
 
 rm(rat_tif)
 
@@ -109,18 +104,16 @@ evt_metadata <- read.csv(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/Veget
 #########################################################
 
 # get x and y dfs
-X_df1 <- yai$xall %>%
-  mutate(X = as.numeric(row.names(yai$xall)))
-X_df2 <- read.csv(xtable_path) %>% arrange(X)
-Y_df1 <- yai$yRefs %>%
-  mutate(X = as.numeric(row.names(yai$yRefs)))
-Y_df2 <- read.csv(ytable_path) %>% arrange(X)
+X_df1 <- yai$xall  %>% mutate(X = as.numeric(row.names(yai$xall)))
+X_df2 <- read.csv(xtable_path_model) %>% arrange(X)
+Y_df1 <- yai$yRefs %>%  mutate(X = as.numeric(row.names(yai$yRefs)))
+Y_df2 <- read.csv(ytable_path_model) %>% arrange(X)
 
 # join tables so we have tm_id, cn, and point_x and point_y
 X_df <- left_join(X_df1, 
                   X_df2 %>% select(c(X, tm_id, CN)), by = "X")
-Y_df <- left_join(X_df1, 
-                  X_df2 %>% select(c(X, tm_id, CN)), by = "X")
+Y_df <- left_join(Y_df1, 
+                  Y_df2 %>% select(c(X, tm_id, CN)), by = "X")
 
 # remove unused tables
 rm(X_df1, X_df2, Y_df1, Y_df2)
@@ -160,8 +153,8 @@ row.names(Y_df) <- Y_df$tm_id
 # row.names(X_df)
 
 
-# process rat
-########################################################
+# Prep Raster Attribute Table
+#-----------------------------------------------------------------#
 
 # identify eval_vars_cont that are not from RMRS - we handle NAs differently
 eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
@@ -169,15 +162,22 @@ eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(
 
 # prep rat table
 rat %<>%
+  # rename shortened field names
+  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
+                "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
+  # convert CN to numeric
   dplyr::mutate(CN = as.numeric(CN)) %>%
+  # round and fix NA values for RMRS and non RMRS vars
   dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
   dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
   dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
+  # calculate TPA_DEAD_LIVE_RATIO
   dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
+  # remove columns
   dplyr::select(-c(Value, tm_id))
 
 
-# join RAT with X df using row names
+# join RAT with X df using CN
 rat_x <- rat %>%
   right_join(X_df, by = "CN") %>%
   select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
@@ -197,10 +197,11 @@ evt_gp_remap_table %<>%
 rat_x %<>% left_join(evt_gp_remap_table, by = "evt_gp_remap") %>%
   mutate(across(c(evt_gp_remap, disturb_code), as.numeric))
 
-
-# run cross-validation
-# do this in parallel by fold? 
 ######################################################################
+# run cross-validation
+######################################################################
+
+message(glue::glue("running {k}-fold cross-validation"))
 
 # make folds
 folds <- caret::createMultiFolds(y= row.names(X_df), k = k, times = 1)
@@ -248,8 +249,8 @@ for(i in seq_along(folds)) {
 cv$cv_id = row.names(cv)
 
 
-#######################################################
 # get values of attributes 
+#--------------------------------------------------------------#
 
 # get predicted attributes
 cv_att_pred <- 
@@ -276,6 +277,8 @@ p_r <- bind_rows(cv_att_pred, cv_att_ref) %>%
 # #########################################################
 # Do evaluation
 ############################################################
+
+message("performing evaluation for cross-validation")
 
 # Make confusion matrices for each categorical var
 #-----------------------------------------------#
@@ -326,11 +329,7 @@ write_rds(cms, file =
 
 gc()
 
-####################################################
-# CONTINUOUS VARS EVAL
-####################################################
-
-# PLOT CONTINUOUS VARS
+# Plot continuous variables
 # ---------------------------------------------------#
 
 # set parameters for continuous var plotting
