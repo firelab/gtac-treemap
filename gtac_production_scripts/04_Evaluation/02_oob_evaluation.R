@@ -71,7 +71,7 @@ yai <- readr::read_rds(model_path)
 # ------------------------------------------------------------#
 
 # load X_df
-X_df <- read.csv(xtable_path) %>%
+X_df <- read.csv(xtable_path_model) %>%
   rename(PLOTID = X)
 
 # Load raster attribute table 
