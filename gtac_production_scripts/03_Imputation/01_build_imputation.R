@@ -4,7 +4,7 @@
 # original script: "rmrs_production_scripts/2016_updated_production_scripts/yai-treemap commented.R"
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
-# Last updated: 8/1/2024
+# Last updated: 8/15/2024
 
 # PART 1: 
 # - BUILD x and y tables
@@ -84,13 +84,16 @@ plot_df %<>%
   select(-EVT_GP)
 
 
-# Re-calculate aspect - to northing and easting
+# Address issues with slope and aspect
 #----------------------------------------------------------#
 plot_df %<>%
+  # calculate northing and easting from aspect
   dplyr::mutate(radians = (pi / 180) * ASPECT,
                 NORTHING = cos(radians),
-                EASTING = sin(radians))
-  
+                EASTING = sin(radians)) %>%
+  # convert slope from percent to degrees, to match target layer
+  dplyr::mutate(SLOPE = atan(SLOPE / 100) * 180 / pi)
+
 #Address no aspect issue by setting easting and northing to 0 anywhere with 0 slope and 0 aspect
 plot_df$EASTING[plot_df$SLOPE == 0 & plot_df$ASPECT == 0]<- 0
 plot_df$NORTHING[plot_df$SLOPE == 0 & plot_df$ASPECT == 0]<- 0
@@ -98,7 +101,7 @@ plot_df$NORTHING[plot_df$SLOPE == 0 & plot_df$ASPECT == 0]<- 0
 # Rename all other vars
 #----------------------------------------------------------#
 
-# Because target layers for 2020 on are all lower case, change field names to all lower case
+# Because target layers for 2020/22 are all lower case, change field names to all lower case
 # And change other necessary column names
 plot_df %<>%
   dplyr::rename_with(tolower) %>%
@@ -146,7 +149,8 @@ set.seed(56789)
 
 yai <- yaImpute::yai(X_df, Y_df,
                      method = "randomForest",
-                     ntree = 250)
+                     ntree = 300,
+                     mtry = 5)
 
 # Export model
 write_rds(yai, model_path)
@@ -161,12 +165,12 @@ X_df %>%
          tm_id = plot_df$tm_id) %>%
   # remove x and y coords for confidentiality
   select(-c(point_x, point_y)) %>%
-  write.csv(., glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv"))
+  write.csv(., xtable_path_model)
 
 Y_df %>%
   mutate(CN = plot_df$plt_cn,
          tm_id = plot_df$tm_id) %>%
-  write.csv(., glue::glue("{raw_outputs_dir}/xytables/{output_name}_Ydf_bin.csv"))
+  write.csv(., ytable_path_model)
 
 ###########################################################################
 # Compute model accuracy
