@@ -85,14 +85,14 @@ if (include_paramTable == "Y"){
 #choose single variable
 # 
 # v <- 2
-# var_in <- eval_vars[v]
+# var_in <- eval_vars_cat[v]
 ```
 
 ```{r format and plot tables for each var, results = 'asis', warning = F}
 
-for(v in 1:length(eval_vars)){
+for(v in 1:length(eval_vars_cat)){
   
-  var_in <- eval_vars[v]
+  var_in <- eval_vars_cat[v]
 
   cat("\n\n\\pagebreak\n")
   print(glue::glue("**Variable: {var_in}**
@@ -342,80 +342,79 @@ for(v in 1:length(eval_vars)){
     tidyr::replace_na(list(value = "NA")) 
   
   # join producer's accuracy
-  #cm_display <- cbind(cm_raw, pa)
-  
-  # #format user's accuracy to be able to bind
-  # # create list of length that will make it match size of cm_display
-  # b <- data.frame(value = rep("NA", ncol(cm_display)- nrow(ua)))
-  # ua <- 
-  #   #c("User's Acc") %>%
-  #   rbind(ua, b) %>%
-  #   # rename
-  #   dplyr::rename("User's Acc" = value) %>%
-  #   t() %>%
-  #   data.frame()
-  # 
-  # # add names to ua be able to bind
-  # names(ua) <- names(cm_display)
-  # 
-  # #bind ua with cm
-  # cm_display <- rbind(cm_display, ua)
-  # 
-  # # make row names a column
-  # cm_display$Predicted <- row.names(cm_display)
-  # row.names(cm_display) <- NULL
-  # 
-  # # bind row name column back with df
-  # cm_display <- cbind(Predicted = cm_display$Predicted, cm_display[1:ncol(cm_display)-1])
-  # 
-  # 
-  # 
-  # # flextable formatting for cm
-  # 
-  # ### NOTE: column and row number selections are hard coded (based on canopy height) in formatting section
-  # 
-  # table_cm <- flextable(cm_display) %>%
-  #   # add header and footer
-  #   add_header_row(values = c("", "Reference"), colwidths = c(1, ncol(cm_display)-1)) %>%
-  #   add_footer_row(values = c("Overall accuracy", oa), colwidths = c(ncol(cm_display)-1, 1)) %>%
-  #   # add background color for producer's and user's acc rows
-  #   bg(i = 1:nclass, j = nclass+3, bg = "darkseagreen1") %>%
-  #   bg(i = nclass+2, j = 1:nclass+1, bg = "darkseagreen1") %>%
-  #   # bold text
-  #   style(i = -1:nclass+2, j = c(1,nclass+3), fp_text_default(bold = TRUE)) %>%
-  #   style(i = nclass+2, j = 1:nclass+2, fp_text_default(bold = TRUE)) %>%
-  #   bold(part = "header") %>%
-  #   bold(part = "footer") %>%
-  #   # add background color for overall accuracy
-  #   bg(j = nclass + 3,  bg = "green4", part = "footer")%>%
-  #   # make font smaller
-  #   fontsize(size = 8, part = "all") %>%
-  #   # add borders to body cells
-  #   surround(border = fp_border_default(color = "gray", width = 1), part = "body") %>%
-  #   # add title
-  #   set_caption(glue::glue("Confusion Matrix  
-  #            Zone: z{zone_num} ; Attribute: {var_in},
-  #            {plot_labels}")) 
-  # 
-  # # highlight diagonal values
-  # for (r in 1:(nrow(cm_display)-1)) {
-  #   table_cm %<>%
-  #   surround(i = r, j = r+1, border = fp_border_default(color = "cornflowerblue", width = 1.5), part = "body")
-  #   }
-  # 
-  # # fit to page
-  # 
-  # table_cm <- FitFlextableToPage(ft = table_cm, 
-  #                                pgwidth = 7)
-  # 
-  # 
-  # #flextable_to_rmd(table_cm)
-  # cat(knitr::knit_print(table_cm))
+  cm_display <- cbind(cm_raw, pa)
+
+  #format user's accuracy to be able to bind
+  # create list of length that will make it match size of cm_display
+  b <- data.frame(value = rep("NA", ncol(cm_display)- nrow(ua)))
+  ua <-
+    #c("User's Acc") %>%
+    rbind(ua, b) %>%
+    # rename
+    dplyr::rename("User's Acc" = value) %>%
+    t() %>%
+    data.frame()
+
+  # add names to ua be able to bind
+  names(ua) <- names(cm_display)
+
+  #bind ua with cm
+  cm_display <- rbind(cm_display, ua)
+
+  # make row names a column
+  cm_display$Predicted <- row.names(cm_display)
+  row.names(cm_display) <- NULL
+
+  # bind row name column back with df
+  cm_display <- cbind(Predicted = cm_display$Predicted, cm_display[1:ncol(cm_display)-1])
+
+
+
+  # Format flextable
+  # - Add contrast background colors for accuracy
+  # - Highlight diagonal values
+
+  table_cm <- flextable(cm_display) %>%
+    # add header and footer
+    add_header_row(values = c("", "Reference"), colwidths = c(1, ncol(cm_display)-1)) %>%
+    add_footer_row(values = c("Overall accuracy", oa), colwidths = c(ncol(cm_display)-1, 1)) %>%
+    # add background color for producer's and user's acc rows
+    bg(i = 1:nclass, j = nclass+3, bg = "darkseagreen1") %>%
+    bg(i = nclass+2, j = 1:nclass+1, bg = "darkseagreen1") %>%
+    # bold text
+    style(i = -1:nclass+2, j = c(1,nclass+3), fp_text_default(bold = TRUE)) %>%
+    style(i = nclass+2, j = 1:nclass+2, fp_text_default(bold = TRUE)) %>%
+    bold(part = "header") %>%
+    bold(part = "footer") %>%
+    # add background color for overall accuracy
+    bg(j = nclass + 3,  bg = "green4", part = "footer")%>%
+    # make font smaller
+    fontsize(size = 8, part = "all") %>%
+    # add borders to body cells
+    surround(border = fp_border_default(color = "gray", width = 1), part = "body") %>%
+    # add title
+    set_caption(glue::glue("Confusion Matrix
+             Zone: z{zone_num} ; Attribute: {var_in},
+             {plot_labels}"))
+
+  # highlight diagonal values
+  for (r in 1:(nrow(cm_display)-1)) {
+    table_cm %<>%
+    surround(i = r, j = r+1, border = fp_border_default(color = "cornflowerblue", width = 1.5), part = "body")
+    }
+
+  # fit to page
+
+  table_cm <- FitFlextableToPage(ft = table_cm,
+                                 pgwidth = 7)
+
+
+  #flextable_to_rmd(table_cm)
+  cat(knitr::knit_print(table_cm))
   
   # End loop
 }
 ```
-
 
 
 ```{r conditionally plot CV figures, results = "asis"}
@@ -435,7 +434,9 @@ if(params$eval_type == "CV") {
   }
   
   
+```
 
+```{r conditionally plot OOB figures}
 
 ```
 
