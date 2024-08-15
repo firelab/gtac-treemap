@@ -78,6 +78,13 @@ rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/
 # digits to round to in evaluation
 round_dig <- 4
 
+# Allow for sufficient digits to differentiate plot cn numbers
+options("scipen" = 100, "digits" = 8)
+
+#increase memory fraction available for terra
+terra::terraOptions(memfrac = 0.8)
+
+
 
 # Build constructed inputs - less likely to change
 #-----------------------------------------------------------------#
@@ -130,31 +137,6 @@ assembled_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/02_
 
 # Evaluation dir
 eval_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/03_Evaluation/")
-
-# Target Layer COmparison Outputs
-if(!file.exists(glue::glue('{eval_dir}/01_Target_Layer_Comparison'))) {
-  dir.create(glue::glue('{eval_dir}/01_Target_Layer_Comparison'), recursive = TRUE)
-}
-
-# OOB outputs
-if(!file.exists(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'))) {
-  dir.create(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'), recursive = TRUE)
-}
-
-# CV outputs
-if(!file.exists(glue::glue('{eval_dir}/03_Cross_Validation/figs/'))) {
-  dir.create(glue::glue('{eval_dir}/03_Cross_Validation/figs/'), recursive = TRUE)
-}
-
-# FIA Comparison Outputs - DEPRECATED
-# if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'))) {
-#   dir.create(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'), recursive = TRUE)
-# }
-
-# Evaluation reports
-if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
-  dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
-}
 
 
 # Make RDS of input parameters used
