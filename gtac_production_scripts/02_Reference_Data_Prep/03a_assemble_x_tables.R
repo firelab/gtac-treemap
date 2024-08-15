@@ -3,15 +3,16 @@ library(dplyr)
 
 options("scipen"=9999)
 ## Combine X table variables into the x table:
+setwd("F:/TreeMap2022/XTable/")
 
-biophysical <- as.data.table(read.csv("F:/TreeMap2020/XTable/TM_2020_X_table_Plots_with_biophys_extracted.csv"))
-vegetation <- as.data.table(read.csv("F:/TreeMap2020/XTable/FIA2020_FVS_cover_and_height.csv"))
-evg_zone <- as.data.table(read.csv("F:/TreeMap2020/XTable/LF2020_EVT_GP_byZone_Workaround2_Final.csv"))
-disturbance_data <- as.data.table(read.csv("F:/TreeMap2020/XTable/FIA2020_Disturbance.csv"))
+biophysical <- as.data.table(read.csv("TM_2020_X_table_Plots_with_biophys_extracted.csv"))
+vegetation <- as.data.table(read.csv("FIA2020_FVS_cover_and_height.csv"))
+evg_zone <- as.data.table(read.csv("LF2022_EVT_GP_byZone_Workaround2_Final.csv"))
+disturbance_data <- as.data.table(read.csv("FIA2020_Disturbance.csv"))
 disturbance_data$PLT_CN <- as.numeric(disturbance_data$PLT_CN)
-elevation <- as.data.table(read.csv("F:/TreeMap2020/XTable/LF_Plots_Elevation.csv"))
-aspect <- as.data.table(read.csv("F:/TreeMap2020/XTable/LF_Plots_Aspect.csv"))
-slope <- as.data.table(read.csv("F:/TreeMap2020/XTable/LF_Plots_Slope.csv"))
+elevation <- as.data.table(read.csv("LF_Plots_Elevation.csv"))
+aspect <- as.data.table(read.csv("LF_Plots_Aspect.csv"))
+slope <- as.data.table(read.csv("LF_Plots_Slope.csv"))
 
 # Convert DEM elevation from meters to feet
 elevation$ELEV <- elevation$ELEV * 3.28084
@@ -62,5 +63,5 @@ x_table_complete <- setcolorder(x_table_complete, c("TM_ID", "Zone", "PLT_CN", "
 # write out x tables by zone.
 for(x in unique(x_table_complete$Zone)){
   x_table_zone <- x_table_complete[Zone == x,]
-  write.csv(x_table_zone, paste0("F:/TreeMap2020/XTable/X_tables_by_zone/x_table_", x, ".csv"), row.names = FALSE)
+  write.csv(x_table_zone, paste0("X_tables_by_zone/x_table_", x, ".csv"), row.names = FALSE)
 }
