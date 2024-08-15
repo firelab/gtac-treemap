@@ -236,7 +236,10 @@ for(j in which_tiles) {
   gc()
   
   # Reclass disturbance to binary
-  ras$disturb_code <- terra::classify(ras$disturb_code, cbind(2, 1))
+  ras$disturb_code_bin <- terra::classify(ras$disturb_code, cbind(2, 1))
+  
+  #remove original disturb code
+  ras$disturb_code <- NULL
   
   gc()
   

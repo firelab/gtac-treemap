@@ -112,8 +112,8 @@ plot_df %<>%
 # Calculate binary disturbance code and convert to factor
 #----------------------------------------------------------#
 plot_df %<>%
-  mutate(disturb_code = ifelse(disturb_code > 0, 1, disturb_code),
-         disturb_code = factor(disturb_code))
+  mutate(disturb_code_bin = ifelse(disturb_code > 0, 1, disturb_code),
+         disturb_code_bin = factor(disturb_code))
 
 
 # Replace row names with plot id
@@ -141,7 +141,7 @@ row.names(Y_df) <- plot_df$tm_id
 ## Build and export the model
 #############################################################
 
-# Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code)
+# Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code_bin)
 # -----------------------------------------------------------------------#
 message("Building imputation model")
 
@@ -159,17 +159,20 @@ write_rds(yai, model_path)
 # ------------------------------------------------------#
 
 # include CN in export so tables can be joined back
+# also include original disturbance code
 # row numbers, aka treemap id, are saved as X, or row number, in these csv outputs
 X_df %>%
   mutate(CN = plot_df$plt_cn,
-         tm_id = plot_df$tm_id) %>%
+         tm_id = plot_df$tm_id,
+         disturb_code = plot_df$disturb_code) %>%
   # remove x and y coords for confidentiality
   select(-c(point_x, point_y)) %>%
   write.csv(., xtable_path_model)
 
 Y_df %>%
   mutate(CN = plot_df$plt_cn,
-         tm_id = plot_df$tm_id) %>%
+         tm_id = plot_df$tm_id,
+         disturb_code = plot_df$disturb_code) %>%
   write.csv(., ytable_path_model)
 
 ###########################################################################

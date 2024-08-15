@@ -31,21 +31,21 @@ dist_layer_type <- "LF"
 # #options include: "lcms_crs", "lf200_crs", "lf220_crs", "lf230_crs", "tm16_crs"
 output_crs_name <- "lf230_crs"
 
-# list names of xvars in reference / x table
+# list names of xvars in reference / x table used to build model
 #xvars <- c("SLOPE", "ELEV", "PARI", "PPTI", "RELHUMI", "TMAXI", "TMINI", "VPDI", "disturb_code", "disturb_year", "canopy_cover", "canopy_height", "EVT_GP", "NORTHING", "EASTING", "POINT_X", "POINT_Y") # 2016 version
 xvars <- c("slope", "elevation", "easting", "northing",
            "prcp", "srad", "swe", "tmax", "tmin", "vp", "vpd",
-           "disturb_code", "disturb_year", "evc", "evh", "evt_gp_remap",
+           "disturb_code_bin", "disturb_year", "evc", "evh", "evt_gp_remap",
            "point_x", "point_y") #2020/2022 version
   
 # list names of yvars used as response vars for modeling
-yvars <- c("evc", "evh", "evt_gp_remap", "disturb_code") # 2020 version
+yvars <- c("evc", "evh", "evt_gp_remap", "disturb_code_bin") # 2020 version
   
 # list names of target vars / target layers
 #targetvars <- c("SLOPE", "ELEV", "PARI", "PPTI", "RELHUMI", "TMAXI", "TMINI", "VPDI", "disturb_code", "disturb_year", "canopy_cover", "canopy_height", "EVT_GP", "NORTHING", "EASTING", "POINT_X", "POINT_Y") # 2016 version
 targetvars <- c("elevation", "easting", "northing",
                 "prcp", "srad", "swe", "tmax", "tmin", "vp", "vpd",
-                "disturb_code", "disturb_year", "evc", "evh", "evt_gp_remap",
+                "disturb_code_bin", "disturb_year", "evc", "evh", "evt_gp_remap",
                 "point_x", "point_y") #2020/2022 version
   
 
