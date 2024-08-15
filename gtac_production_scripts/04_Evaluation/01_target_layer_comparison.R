@@ -32,8 +32,9 @@
 #----------------------------------------------------------#
 
 # list layers to evaluate, assemble, and export
-#eval_vars <- c("evc", "evh", "evt_gp_remap", "disturb_code")
-eval_vars <- yvars
+#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "disturb_code")
+eval_vars_cat <- yvars
+eva
 
 #####################################################################
 # Load data
@@ -66,7 +67,7 @@ plot(ras,
 # X - df
 #------------------------------------------#
 #yai <- readRDS(model_path)
-X_df <- read.csv(glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv"))
+X_df <- read.csv(xtable_path_model)
 
 # Target rasters
 #---------------------------------------#
@@ -80,10 +81,17 @@ target_files <- filter_disturbance_rasters(target_files, dist_layer_type)
 
 # filter to only include eval layers
 target_files <- target_files[target_files %>%
-    str_detect(eval_vars %>% paste(., collapse = "|"))]
+    str_detect(eval_vars_cat %>% paste(., collapse = "|"))]
 
 # load
 rs2 <- load_and_name_rasters(target_files)
+
+# # make binary disturbance code
+# rs2$binary_disturbance<- rs2$disturb_code
+# rs2$binary_disturbance[rs2$binary_disturbance == 2]<- 1
+# 
+# # Now add binary disturbance code to the variables being assessed
+# eval_vars_cat<- c(eval_vars_cat, "binary_disturbance")
 
 # FOR TESTING: Conditionally crop to aoi
 #---------------------------------------------------#
@@ -138,7 +146,7 @@ names(id_list) <- "PLOTID"
 # join list of ids with x table
 # create lookup table that only has IDs present in zone
 lookup <- left_join(id_list, X_df, by = c("PLOTID" = "X")) %>%
-  select(PLOTID, CN, all_of(eval_vars)) %>%
+  select(PLOTID, CN, all_of(eval_vars_cat)) %>%
   mutate(across(where(is.numeric), ~na_if(., NA)))
 
 # load evt_gp remap table
@@ -157,7 +165,7 @@ message("assembling and comparing imputed outputs vs Target Layers")
 # if exportTF = true: then exports assembled, imputed raster
 
 # apply function to all layers
-cms <- eval_vars %>%
+cms <- eval_vars_cat %>%
   map(\(x) assembleCM(x, 
                       raster = ras,
                       lookup = lookup,
@@ -171,7 +179,7 @@ cms <- eval_vars %>%
 
                       ))
 
-names(cms) <- eval_vars
+names(cms) <- eval_vars_cat
 
 # export as RDS
 write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_CMs_TargetLayerComparison.RDS'))
@@ -186,12 +194,12 @@ write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_C
 # #########################################
 # 
 # #lapply - change to map? for consistency with next step 
-# # lapply(eval_vars, assembleExport, 
+# # lapply(eval_vars_cat, assembleExport, 
 # #        # additional options for function
 # #        raster = ras, lookup = lookup, id_field = "PLOTID",
 # #        export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}'))
 # 
-# eval_vars %>%
+# eval_vars_cat %>%
 #   map(\(x) assembleExport(x, 
 #                           raster = ras, 
 #                           lookup = lookup, 
@@ -210,7 +218,7 @@ write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_C
 # 
 # # #lapply  function to selected layers
 # # #-------------------------------------------------#
-# # lapply(eval_vars, assembleConcat, # list to apply over, function to apply
+# # lapply(eval_vars_cat, assembleConcat, # list to apply over, function to apply
 # #        # additional arguments to function
 # #        ras = ras, 
 # #        lookup = lookup, 
@@ -221,7 +229,7 @@ write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_C
 # #        remapEVT_GP = TRUE, 
 # #        EVT_GP_remap_table = evt_gp_remap_table)
 # 
-# eval_vars %>%
+# eval_vars_cat %>%
 #   map(\(x) assembleConcat(x, 
 #                           ras = ras, 
 #                           lookup = lookup, 
