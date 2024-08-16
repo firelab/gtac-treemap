@@ -30,7 +30,7 @@
 
 # Allow for sufficient digits to differentiate plot cn numbers
 
-options("scipen" = 100, "digits" = 8)
+#options("scipen" = 100, "digits" = 8)
 
 ##########################################################
 
@@ -113,7 +113,8 @@ plot_df %<>%
 #----------------------------------------------------------#
 plot_df %<>%
   mutate(disturb_code_bin = ifelse(disturb_code > 0, 1, disturb_code),
-         disturb_code_bin = factor(disturb_code))
+         disturb_code_bin = factor(disturb_code_bin)
+         )
 
 
 # Replace row names with plot id
