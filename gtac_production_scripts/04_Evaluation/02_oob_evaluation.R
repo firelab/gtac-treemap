@@ -21,8 +21,6 @@
 
 # list variables to evaluate
 
-#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", 
-#                   "disturb_code_bin", "disturb_code")
 eval_vars_cat <- c(yvars, "disturb_code") # compare both binary disturbance and original disturbance codes
 
 eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
@@ -31,8 +29,12 @@ eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
 
 eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
-# Standard inputs
-#---------------------------------------------#
+# Set inputs manually - if running as standalone
+#-----------------------------------------------
+#
+
+# cur_zone_zero <- "z07"
+# year <- 2022
 
 # this_proj <- this.path::this.proj()
 # this_dir <- this.path::this.dir()
@@ -41,6 +43,10 @@ eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 # lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
 # source(lib_path)
 
+# load settings for zone
+# project_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+# 
+# load(project_settings)
 
 ####################################################################
 # Load data
@@ -54,15 +60,7 @@ message("loading data for OOB evaluation")
 #load model
 yai <- readr::read_rds(model_path)
 
-
-# Load raster attribute table 
-#-------------------------------------------------#
-
-# load rat
-rat <- terra::rast(rat_path)
-rat <- data.frame(cats(rat))
-
-# Prep X table
+# Load X df
 #-------------------------------------------------------------#
 
 # load X_df 
@@ -74,12 +72,17 @@ X_df <- read.csv(xtable_path_model) %>%
 # X_df$disturb_code_bin <- X_df$disturb_code
 
 
-# apply appropriate row names
-# important to do this AFTER all other data frame processing
+# apply row names - row names must be treemap id
 row.names(X_df) <- X_df$tm_id
 
-# Prep Raster Attribute Table
+
+# Load and prep Raster Attribute Table
 #-----------------------------------------------------------------#
+
+# load rat
+rat <- terra::rast(rat_path)
+rat <- data.frame(cats(rat))
+
 
 # identify eval_vars_cont that are not from RMRS - we handle NAs differently
 eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
@@ -113,13 +116,13 @@ rat_x <- rat %>%
   # make factors into numeric so that we can make a long data frame
   mutate(across(c(evt_gp_remap), as.numeric))
 
-# #convert disturb code to numeric, but preserve values
-# rat_x$disturb_code = as.numeric(levels(rat_x$disturb_code))[rat_x$disturb_code]
-# rat_x$disturb_code_bin = as.numeric(levels(rat_x$disturb_code_bin))[rat_x$disturb_code_bin]
 
 ######################################################################
-# Get and prep validation data - out of bag predictions
+# Obtain and prep out-of-bag predictions
 ######################################################################
+
+# Get OOB Predictions
+#-------------------------------------------------#
 
 message("getting out-of-bag predictions")
 
@@ -169,13 +172,19 @@ p_r <- bind_rows(preds, refs) %>%
   arrange(oob_id)
 
 
+######################################################################
+# Perform evaluation on OOB predictions
+######################################################################
+
 # Make confusion matrices for each categorical var
 #-----------------------------------------------#
 
 message("performing evaluation on OOB predictions")
 
+# make a container to hold output confusion matrices
 cms <- NULL
 
+# loop over variables named at teh top of the script
 for (i in eval_vars_cat) {
   
   var_in <- i
@@ -233,26 +242,26 @@ export_height <- 4.5 # in inches
 
 # loop over continuous vars 
 
-for(i in 1:(length(eval_vars_cont))) {
+for (i in eval_vars_cont) {
   
   # for testing
   #i = 6
   
-  var_name <- eval_vars_cont[i]
+  var_in <- i
   
   # Violin plots
   #------------------#
   
   p <- 
     p_r %>%
-    filter(var == var_name) %>%
+    filter(var == var_in) %>%
     select(-c(ref_id, pred_id)) %>%
     drop_na() %>%
     ggplot(aes(x = dataset, y = value, fill = dataset))+
     geom_violin(position = dodge)+
     geom_boxplot(width=.1, outlier.colour=NA, position = dodge) + 
-    labs(title = glue::glue('Variation in {var_name} by dataset')) + 
-    xlab(var_name) + 
+    labs(title = glue::glue('Variation in {var_in} by dataset')) + 
+    xlab(var_in) + 
     theme_bw()
   
   print(p)
@@ -265,7 +274,7 @@ for(i in 1:(length(eval_vars_cont))) {
   # prep dataset
   p_r2 <- 
   p_r %>%
-    filter(var == var_name) %>%
+    filter(var == var_in) %>%
     select(-c(ref_id, pred_id, var)) %>%
     pivot_wider(id_cols = oob_id, 
                 names_from = dataset, 
@@ -300,7 +309,7 @@ for(i in 1:(length(eval_vars_cont))) {
     geom_smooth(method = "lm", formula = y~x) +
     labs() + 
     theme_bw() + 
-    ggtitle(glue::glue("OOB predicted vs. ref for {var_name}")) + 
+    ggtitle(glue::glue("OOB predicted vs. ref for {var_in}")) + 
     annotate(geom="text",
              x = (max(p_r2$ref)/2),
              y = (percent_y_textPos1*max(p_r2$pred, na.rm = TRUE)),
@@ -312,13 +321,13 @@ for(i in 1:(length(eval_vars_cont))) {
   print(p2)
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_violin.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_in}_violin.png'),
          plot = p,
          width = export_width, 
          height = export_height)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_scatter.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_in}_scatter.png'),
          plot = p2,
          width = export_width, 
          height = export_height) 

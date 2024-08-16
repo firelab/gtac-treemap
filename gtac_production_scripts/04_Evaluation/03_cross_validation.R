@@ -23,7 +23,18 @@ evt_pct_thresh <- .3
 # choose number of folds
 k = 10
 
-# Set inputs manually - if running standalone
+# list variables to evaluate
+#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "disturb_code_bin")
+eval_vars_cat <- c(yvars, "disturb_code")
+
+
+eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
+                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
+                    "TPA_DEAD", "TPA_LIVE")
+
+eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
+
+# Set inputs manually - if running as standalone
 #--------------------------------------------------------------#
 
 # cur_zone_zero <- "z07"
@@ -45,13 +56,11 @@ k = 10
 # source(inputs_for_evaluation)
 #project_name <- "2020_ImputationPrep"
 
-#output_name <- "z16_2020_ImputationPrep"
+
 
 # Evaluation dir
 #eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/z16/')
 
-# number of digits to round to 
-#round_dig <- 4
 
 
 
@@ -62,31 +71,17 @@ k = 10
 
 message("Loading data for cross-validation")
 
-# set inputs
-###################################################
+# Load imputation model
+# ---------------------------------------------------------- #
 
-# list layers to evaluate, assemble, and export
-#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "disturb_code_bin")
-eval_vars_cat <- c(yvars, "disturb_code")
-
-
-eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
-                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
-                    "TPA_DEAD", "TPA_LIVE")
-
-eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
-
-# load input data
-####################################################
 
 # load model
-#yai <- readRDS("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2020_ImputationPrep/01_Raw_model_outputs/z16/model/z16_2020_GTAC_ImputationPrep_yai_treelist_bin.RDS")
-
-yai <- readRDS(model_path)
+yai <- readr::read_rds(model_path)
 
 
-# prep data
-#########################################################
+# Load X and Y dfs
+# ---------------------------------------------------------- #
+
 
 # load X_df 
 X_df <- read.csv(xtable_path_model) %>%
@@ -95,11 +90,6 @@ X_df <- read.csv(xtable_path_model) %>%
 # load Y_df 
 Y_df <- read.csv(ytable_path_model)  %>%
   mutate("PLOTID" = X)
-
-# apply appropriate row names
-# important to do this AFTER all other data frame processing
-row.names(X_df) <- X_df$tm_id
-row.names(Y_df) <- Y_df$tm_id
 
 # # ###### ** TEMP FOR TESTING ** ####
 # # # make dummy disturb_code field
@@ -129,7 +119,7 @@ X_df %<>% filter(evt_gp_remap %notin% gps_to_drop) %>%
 Y_df %<>% filter(evt_gp_remap %notin% gps_to_drop) %>%
   droplevels()
 
-# apply appropriate row names
+# apply row names - must be treemap id
 # important to do this AFTER all other data frame processing
 row.names(X_df) <- X_df$tm_id
 row.names(Y_df) <- Y_df$tm_id
@@ -158,16 +148,13 @@ evt_gp_remap_table %<>%
   select(evt_gp, evt_gp_remap, evt_gp_n) %>%
   distinct() 
 
-# Prep Raster Attribute Table
+# Load and prep Raster Attribute Table
 #-----------------------------------------------------------------#
 
 # load rat
-#rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
+rat <- terra::rast(rat_path)
+rat <- data.frame(cats(rat))
 
-rat_tif <- terra::rast(rat_path)
-rat <- data.frame(cats(rat_tif)) 
-
-rm(rat_tif)
 
 # identify eval_vars_cont that are not from RMRS - we handle NAs differently
 eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
@@ -189,6 +176,8 @@ rat %<>%
   # remove columns
   dplyr::select(-c(Value, tm_id))
 
+# Join RAT and X_df into rat_x
+#-----------------------------------------------------------#
 
 # join RAT with X df using CN
 rat_x <- rat %>%
@@ -199,25 +188,26 @@ rat_x <- rat %>%
   arrange(tm_id)
 
 # join evt_gp metadata to rat_x
-rat_x %<>% left_join(evt_gp_remap_table, by = "evt_gp_remap") 
+rat_x %<>% left_join(evt_gp_remap_table, by = "evt_gp_remap")
 
-# #convert disturb code to numeric, but preserve values
-# rat_x$disturb_code = as.numeric(levels(rat_x$disturb_code))[rat_x$disturb_code]
-# rat_x$disturb_code_bin = as.numeric(levels(rat_x$disturb_code_bin))[rat_x$disturb_code_bin]
+
 
 
 ######################################################################
 # run cross-validation
 ######################################################################
 
+
+# Set up and run CV model
+#-------------------------------------------------#
 message(glue::glue("running {k}-fold cross-validation"))
 
 # make folds
-folds <- caret::createMultiFolds(y= row.names(X_df), k = k, times = 1)
+folds <- caret::createMultiFolds(y = row.names(X_df), k = k, times = 1)
 
 cv <- data.frame()
 
-for(i in seq_along(folds)) {
+for (i in seq_along(folds)) {
   
   # for testing
   #i = 1
@@ -284,7 +274,7 @@ p_r <- bind_rows(cv_att_pred, cv_att_ref) %>%
   arrange(cv_id) 
 
 # #########################################################
-# Do evaluation
+# Perform evaluation on results of cross-validation
 ############################################################
 
 message("performing evaluation for cross-validation")
@@ -292,11 +282,10 @@ message("performing evaluation for cross-validation")
 # Make confusion matrices for each categorical var
 #-----------------------------------------------#
 
-# loop over vars
-# using a for loop bc ¯\_(ツ)_/¯
-
+# make a container to hold output confustion matrices
 cms <- NULL
 
+# loop over variables named at teh top of the script
 for (i in eval_vars_cat) {
   
   var_in <- i
@@ -308,7 +297,7 @@ for (i in eval_vars_cat) {
   d <- 
     p_r %>%
     dplyr::filter(var == var_in) %>%
-    select(-c( pred_id, dist, fold, var)) %>%
+    select(-c(pred_id, dist, fold, var)) %>%
     pivot_wider(id_cols = cv_id, 
                 names_from = dataset, 
                 values_from = value) %>%
@@ -353,7 +342,7 @@ alpha <- 0.05
 export_width <- 7 # in inches
 export_height <- 4.5 # in inches
 
-for(i in eval_vars_cont) {
+for (i in eval_vars_cont) {
   
   # for testing
   #i = 1
@@ -412,7 +401,7 @@ for(i in eval_vars_cont) {
     mae(na.omit(p_r2$pred), predict(lm))
   )
   
-  eqn
+  #eqn
   
   p2 <- p_r2 %>%
     ggplot(aes(x = ref, y = pred)) + 
