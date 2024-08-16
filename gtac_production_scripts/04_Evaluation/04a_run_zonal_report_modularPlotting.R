@@ -218,12 +218,9 @@ zone_name <- glue::glue("LFz{zone_num}_{gsub(' ', '', zone$ZONE_NAME)}")
 # Load X table
 #------------------------------------------#
 
-# load X_df - original table used in step 1 to build imputation
-X_df <- read.csv(xtable_path_model)  %>%
-  rename_with(tolower) %>%
-  rename("X" = x, 
-         "CN" = cn, 
-         "PLOTID" = x)
+# load X_df 
+X_df <- read.csv(xtable_path_model) %>%
+  mutate("PLOTID" = X)
 
 # Reclass EVT_GP
 #------------------------------------------#
@@ -269,33 +266,45 @@ X_df %<>%
   
   message("Preparing raster attribute table...")
   
+  # Prep Raster Attribute Table
+  #-----------------------------------------------------------------#
+  
+  # load rat
+  #rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
+  
+  rat_tif <- terra::rast(rat_path)
+  rat <- data.frame(cats(rat_tif)) 
+  
+  rm(rat_tif)
+  
   # identify eval_vars_cont that are not from RMRS - we handle NAs differently
   eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
   eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(is.numeric))), "RMRS", negate = TRUE)
   
   # prep rat table
   rat %<>%
-  # rename shortened field names
-  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
-                "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
-  # convert CN to numeric
-  dplyr::mutate(CN = as.numeric(CN)) %>%
-  # round and fix NA values for RMRS and non RMRS vars
-  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
-  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
-  dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
-  # calculate TPA_DEAD_LIVE_RATIO
-  dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
-  # remove columns
-  dplyr::select(-c(Value, tm_id))
+    # rename shortened field names
+    dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
+                  "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
+    # convert CN to numeric
+    dplyr::mutate(CN = as.numeric(CN)) %>%
+    # round and fix NA values for RMRS and non RMRS vars
+    dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
+    dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
+    dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
+    # calculate TPA_DEAD_LIVE_RATIO
+    dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
+    # remove columns
+    dplyr::select(-c(Value, tm_id))
   
-  # Join RAT and X_df into rat_x
-  #-----------------------------------------------------------#
   
   # join RAT with X df using CN
   rat_x <- rat %>%
     right_join(X_df, by = "CN") %>%
-    select(c(CN, tm_id, any_of(eval_vars_cat)))
+    select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
+    # filter to plots with values
+    #filter(!is.na(BALIVE)) %>%
+    arrange(tm_id)
 #}
 
 # Calc frequency for all vars in RAT_x
@@ -360,6 +369,6 @@ file.copy(from=glue::glue("{tmpout_dir}/{output_name}_eval_report_{eval_type}{fi
 # remove file from tmp location
 file.remove(glue::glue("{tmpout_dir}/{output_name}_eval_report_{eval_type}{fileExtension}"))
 
-message(glue::glue("Report render complete! Output file: {eval_dir}/04_Eval_Reports/{output_name}_eval_report_{eval_type}{fileExtension}"))
+message(glue::glue("Report render complete! Output file: {eval_dir}/04_Eval_Reports/{output_name}_eval_report_{eval_type}{fileExtension}\n\n"))
 
 #Sys.time() - ptm

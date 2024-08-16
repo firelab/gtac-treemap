@@ -22,8 +22,8 @@
 # list variables to evaluate
 
 #eval_vars_cat <- c("evc", "evh", "evt_gp_remap", 
-#                   "disturb_code")
-eval_vars_cat <- yvars
+#                   "disturb_code_bin", "disturb_code")
+eval_vars_cat <- c(yvars, "disturb_code") # compare both binary disturbance and original disturbance codes
 
 eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
@@ -65,19 +65,14 @@ rat <- data.frame(cats(rat))
 # Prep X table
 #-------------------------------------------------------------#
 
-# get x and y dfs
-X_df1 <- yai$xall %>%
-  mutate(X = as.numeric(row.names(yai$xall)))
-X_df2 <- read.csv(xtable_path_model) %>% arrange(X)
+# load X_df 
+X_df <- read.csv(xtable_path_model) %>%
+  mutate("PLOTID" = X)
 
+# ###### ** TEMP FOR TESTING ** ####
+# # make dummy disturb_code field
+# X_df$disturb_code_bin <- X_df$disturb_code
 
-# join tables so we have tm_id, cn, and point_x and point_y
-X_df <- left_join(X_df1, 
-                  X_df2 %>% select(c(X, tm_id, CN)), by = "X")
-
-
-# remove unused tables
-rm(X_df1, X_df2)
 
 # apply appropriate row names
 # important to do this AFTER all other data frame processing
@@ -113,10 +108,14 @@ rat %<>%
 rat_x <- rat %>%
   right_join(X_df, by = "CN") %>%
   select(c(CN, tm_id, any_of(eval_vars_cat_cont))) %>%
-  # filter to plots with values
-  filter(!is.na(BALIVE)) %>%
+  # filter to plots with values - limits available plots severely with 2016 iteration
+  #filter(!is.na(BALIVE)) %>%
   # make factors into numeric so that we can make a long data frame
-  mutate(across(c(evt_gp_remap, disturb_code), as.numeric))
+  mutate(across(c(evt_gp_remap), as.numeric))
+
+# #convert disturb code to numeric, but preserve values
+# rat_x$disturb_code = as.numeric(levels(rat_x$disturb_code))[rat_x$disturb_code]
+# rat_x$disturb_code_bin = as.numeric(levels(rat_x$disturb_code_bin))[rat_x$disturb_code_bin]
 
 ######################################################################
 # Get and prep validation data - out of bag predictions
@@ -180,6 +179,7 @@ cms <- NULL
 for (i in eval_vars_cat) {
   
   var_in <- i
+  #var_in <- "disturb_code"
   
   print(glue::glue("working on {var_in}"))
   

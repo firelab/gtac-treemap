@@ -66,8 +66,8 @@ message("Loading data for cross-validation")
 ###################################################
 
 # list layers to evaluate, assemble, and export
-#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "disturb_code")
-eval_vars_cat <- yvars
+#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "disturb_code_bin")
+eval_vars_cat <- c(yvars, "disturb_code")
 
 
 eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
@@ -84,43 +84,31 @@ eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
 yai <- readRDS(model_path)
 
-# load rat
-#rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
-
-rat_tif <- terra::rast(rat_path)
-rat <- data.frame(cats(rat_tif)) 
-
-rm(rat_tif)
-
-# evt_gp_remap table
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) %>%
-  rename_with(tolower)
-
-# evt metadata table
-evt_metadata <- read.csv(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/Vegetation/EVT/LF2022_EVT_230_CONUS/CSV_Data/LF22_EVT_230.csv")) %>%
-  rename_with(tolower)
 
 # prep data
 #########################################################
 
-# get x and y dfs
-X_df1 <- yai$xall  %>% mutate(X = as.numeric(row.names(yai$xall)))
-X_df2 <- read.csv(xtable_path_model) %>% arrange(X)
-Y_df1 <- yai$yRefs %>%  mutate(X = as.numeric(row.names(yai$yRefs)))
-Y_df2 <- read.csv(ytable_path_model) %>% arrange(X)
+# load X_df 
+X_df <- read.csv(xtable_path_model) %>%
+  mutate("PLOTID" = X)
 
-# join tables so we have tm_id, cn, and point_x and point_y
-X_df <- left_join(X_df1, 
-                  X_df2 %>% select(c(X, tm_id, CN)), by = "X")
-Y_df <- left_join(Y_df1, 
-                  Y_df2 %>% select(c(X, tm_id, CN)), by = "X")
+# load Y_df 
+Y_df <- read.csv(ytable_path_model)  %>%
+  mutate("PLOTID" = X)
 
-# remove unused tables
-rm(X_df1, X_df2, Y_df1, Y_df2)
+# apply appropriate row names
+# important to do this AFTER all other data frame processing
+row.names(X_df) <- X_df$tm_id
+row.names(Y_df) <- Y_df$tm_id
 
-# limit to first 1000 rows for testing
-#X_df <- X_df[1:1000,]
-#Y_df <- Y_df[1:1000,]
+# # ###### ** TEMP FOR TESTING ** ####
+# # # make dummy disturb_code field
+# X_df$disturb_code_bin <- X_df$disturb_code
+# Y_df$disturb_code_bin <- Y_df$disturb_code
+# 
+# # limit to first 1000 rows for testing
+# X_df <- X_df[1:1000,]
+# Y_df <- Y_df[1:1000,]
 
 
 # Identify Groups that comprise less than the threshold pct of total
@@ -153,8 +141,33 @@ row.names(Y_df) <- Y_df$tm_id
 # row.names(X_df)
 
 
+# Load and prep EVT_GP Table and Metadata
+#-----------------------------------------------------------------#
+
+# evt_gp_remap table
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) %>%
+  rename_with(tolower)
+
+# evt metadata table
+evt_metadata <- read.csv(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/Vegetation/EVT/LF2022_EVT_230_CONUS/CSV_Data/LF22_EVT_230.csv")) %>%
+  rename_with(tolower)
+
+# join evt_gp_remap table with metadata
+evt_gp_remap_table %<>%
+  left_join(evt_metadata, by = "evt_gp") %>%
+  select(evt_gp, evt_gp_remap, evt_gp_n) %>%
+  distinct() 
+
 # Prep Raster Attribute Table
 #-----------------------------------------------------------------#
+
+# load rat
+#rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
+
+rat_tif <- terra::rast(rat_path)
+rat <- data.frame(cats(rat_tif)) 
+
+rm(rat_tif)
 
 # identify eval_vars_cont that are not from RMRS - we handle NAs differently
 eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
@@ -182,20 +195,16 @@ rat_x <- rat %>%
   right_join(X_df, by = "CN") %>%
   select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
   # filter to plots with values
-  filter(!is.na(BALIVE))
-
-# join evt_gp_remap table with metadata
-evt_gp_remap_table %<>%
-  rename_with(tolower) %>%
-  left_join(evt_metadata, by = "evt_gp") %>%
-  #select(evt_gp, evt_gp_remap, evt_gp_n) %>%
-  select(evt_gp, evt_gp_remap) %>%
-  distinct() %>%
-  mutate(evt_gp_remap = factor(evt_gp_remap, levels = levels(X_df$evt_gp_remap)))
+  #filter(!is.na(BALIVE)) %>%
+  arrange(tm_id)
 
 # join evt_gp metadata to rat_x
-rat_x %<>% left_join(evt_gp_remap_table, by = "evt_gp_remap") %>%
-  mutate(across(c(evt_gp_remap, disturb_code), as.numeric))
+rat_x %<>% left_join(evt_gp_remap_table, by = "evt_gp_remap") 
+
+# #convert disturb code to numeric, but preserve values
+# rat_x$disturb_code = as.numeric(levels(rat_x$disturb_code))[rat_x$disturb_code]
+# rat_x$disturb_code_bin = as.numeric(levels(rat_x$disturb_code_bin))[rat_x$disturb_code_bin]
+
 
 ######################################################################
 # run cross-validation
@@ -254,19 +263,19 @@ cv$cv_id = row.names(cv)
 
 # get predicted attributes
 cv_att_pred <- 
-  left_join(cv, rat_x %>% mutate(across(c(evt_gp_remap, disturb_code), as.numeric)), 
+  left_join(cv, rat_x, 
             by = c("pred_id" = "tm_id")) %>%
   mutate(dataset = "pred")
 
 cv_att_ref <- 
-  left_join(cv, rat_x %>% mutate(across(c(evt_gp_remap, disturb_code), as.numeric)),
+  left_join(cv, rat_x,
             by = c("ref_id" = "tm_id")) %>%
   mutate(dataset = "ref") 
 
 
 # join predicted and reference
 p_r <- bind_rows(cv_att_pred, cv_att_ref) %>%
-  select(-CN) %>%
+  select(-c(CN, evt_gp_n)) %>%
   # pivot longer
   pivot_longer(!c(cv_id, ref_id, pred_id, dist, fold, dataset), 
                names_to = "var", values_to = "value") %>%

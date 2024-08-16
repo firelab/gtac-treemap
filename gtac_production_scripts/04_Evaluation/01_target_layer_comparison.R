@@ -33,8 +33,8 @@
 
 # list layers to evaluate, assemble, and export
 #eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "disturb_code")
-eval_vars_cat <- yvars
-eva
+eval_vars_cat <- c(yvars, "disturb_code") # compare both binary disturbance and original disturbance codes
+
 
 #####################################################################
 # Load data
@@ -86,12 +86,9 @@ target_files <- target_files[target_files %>%
 # load
 rs2 <- load_and_name_rasters(target_files)
 
-# # make binary disturbance code
-# rs2$binary_disturbance<- rs2$disturb_code
-# rs2$binary_disturbance[rs2$binary_disturbance == 2]<- 1
-# 
-# # Now add binary disturbance code to the variables being assessed
-# eval_vars_cat<- c(eval_vars_cat, "binary_disturbance")
+# make binary disturbance code, since this was a target layer
+rs2$disturb_code_bin<- rs2$disturb_code
+rs2$disturb_code_bin[rs2$disturb_code_bin == 2]<- 1
 
 # FOR TESTING: Conditionally crop to aoi
 #---------------------------------------------------#
@@ -122,9 +119,6 @@ gc()
 # Make sure target and imputation rasters have the same geometry
 identical(crs(ras), crs(rs2))
 compareGeom(ras, rs2)
-
-# keep input disturbance raster as 1/2; don't convert to binary
-#- because output raster values derived from imputation will have 1/2
 
 
 # clear memory
