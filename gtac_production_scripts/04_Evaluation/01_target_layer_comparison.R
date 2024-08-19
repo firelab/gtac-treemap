@@ -32,7 +32,7 @@
 #----------------------------------------------------------#
 
 # list layers to evaluate, assemble, and export
-#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "disturb_code")
+#eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
 eval_vars_cat <- c(yvars, "disturb_code") # compare both binary disturbance and original disturbance codes
 
 
@@ -45,7 +45,7 @@ message("Loading data for target layer comparison")
 # Imputed raster
 #-------------------------------------------#
 # name of raster to validate
-raster_name <- glue::glue("{output_name}")
+raster_name <- glue::glue("{output_name}_Imputation")
 
 #load raw imputation output raster
 ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{raster_name}.tif"))
@@ -66,7 +66,6 @@ plot(ras,
 
 # X - df
 #------------------------------------------#
-#yai <- readRDS(model_path)
 X_df <- read.csv(xtable_path_model)
 
 # Target rasters
@@ -166,10 +165,8 @@ cms <- eval_vars_cat %>%
                       id_field = "PLOTID",
                       stackin_compare = rs2,
                       stackin_compare_name =  "Target",
-                      remapEVT_GP = TRUE,
-                      EVT_GP_remap_table =  evt_gp_remap_table,
                       exportTF = TRUE,
-                      export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}')
+                      export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{output_name}')
 
                       ))
 
@@ -187,18 +184,12 @@ write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_C
 # # Assemble layers- derived from imputed ids matched with X table
 # #########################################
 # 
-# #lapply - change to map? for consistency with next step 
-# # lapply(eval_vars_cat, assembleExport, 
-# #        # additional options for function
-# #        raster = ras, lookup = lookup, id_field = "PLOTID",
-# #        export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}'))
-# 
 # eval_vars_cat %>%
 #   map(\(x) assembleExport(x, 
 #                           raster = ras, 
 #                           lookup = lookup, 
 #                           id_field = "PLOTID",
-#                           export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}')
+#                           export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{output_name}')
 #                           ))
 # 
 # gc()
@@ -208,21 +199,6 @@ write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_C
 # # Evaluation: Concat for selected fields to see difference when compared vs. target layers
 # ######################################################################
 # 
-# 
-# 
-# # #lapply  function to selected layers
-# # #-------------------------------------------------#
-# # lapply(eval_vars_cat, assembleConcat, # list to apply over, function to apply
-# #        # additional arguments to function
-# #        ras = ras, 
-# #        lookup = lookup, 
-# #        id_field = "PLOTID",
-# #        stackin_compare = rs2, 
-# #        stackin_compare_name = "Landfire",
-# #        export_path = glue('{eval_dir}/02_LF_Comparison/{output_name}'),
-# #        remapEVT_GP = TRUE, 
-# #        EVT_GP_remap_table = evt_gp_remap_table)
-# 
 # eval_vars_cat %>%
 #   map(\(x) assembleConcat(x, 
 #                           ras = ras, 
@@ -231,8 +207,7 @@ write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_C
 #                           stackin_compare = rs2, 
 #                           stackin_compare_name = "Target",
 #                           export_path = glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}'),
-#                           remapEVT_GP = TRUE, 
-#                           EVT_GP_remap_table = evt_gp_remap_table))
+#                           ))
 # 
 # ####################################
 #   
