@@ -271,6 +271,7 @@ get_pr_RF <- function(rf_in, X_df, var) {
       select(ref) %>%
       rename(key_r = ref) %>%
       distinct() %>%
+      filter(!is.na(key_r)) %>%
       arrange(key_r)
     
     # get pred vars
@@ -278,20 +279,25 @@ get_pr_RF <- function(rf_in, X_df, var) {
       select(pred) %>%
       rename(key_p = pred) %>%
       distinct() %>%
+      filter(!is.na(key_p)) %>%
       arrange(key_p)
     
-    # make sure pred vars are the same length as ref vars
+    # make sure pred vars are the same  as ref vars
     if(nrow(key_p) != nrow(key_r)) {
       
-      diff = abs(nrow(key_p) - nrow(key_r))
+      # find rows that are not in key_p
+      diffs <- setdiff(key_r$key_r, key_p$key_p)
       
-      # add an NA for each missing 
-      for(i in 1:diff){
-        if(is.factor(key_r$key_r)) {
-          key_p = rbind(key_p, "NA")
-        } else key_p = rbind(key_p, NA)
+      # add each value that's each missing 
+      for(i in diffs){
+          val <- diffs[i]
+          key_p = rbind(key_p, val)
       }
     }
+    
+    # sort
+    key_p %<>%
+      arrange(key_p)
     
     # make sure preds are a factor if ref is a factor
     if(is.factor(key_r$key_r)) {
@@ -306,11 +312,9 @@ get_pr_RF <- function(rf_in, X_df, var) {
       mutate(pred = key_r) %>%
       select(pred, ref)
     
-    p_r <- p_r_out
-    
-  } 
+    } else {p_r_out <- p_r} 
   
-  return(p_r)
+  return(p_r_out)
 
 }
 
@@ -363,14 +367,14 @@ eval_cm_function <- function(t, noDataVal) {
   #---------------------------------#
   
   # raw confusion matrix
-  cm_raw_out <- as.table(cm)
-  cm_raw_out <- addmargins(cm_raw_out)
+  cm_raw <- as.table(cm)
+  cm_raw <- addmargins(cm_raw)
   
   # make data frame of classes
   cm_t_classes <- data.frame(as.matrix(cm, what = "classes"))
   
   if(ncol(cm_t_classes) < 2) {
-    names(cm_t_classes) <- "1"
+    names(cm_t_classes) <- cm$positive
   } else {
     names(cm_t_classes) <- levels_t 
   }
@@ -406,9 +410,50 @@ eval_cm_function <- function(t, noDataVal) {
     mutate(pred = pred/total_pred, 
            ref = ref/total_ref)
   
-  # format output
+  # Calculate class-wise stats for a binary confusion matrix
+  # Currently only includes stats for: 
+  # - Precision
+  # - Recall
+  # - Balanced Accuracy 
+  #----------------------------------------------------------#
+  
+  if(length(levels_t) == 2) {
+  
+    
+    # calculate recall / users acc for class 1
+    rec1 <- (cm_raw[1,1]  / cm_raw[3,1] )
+    
+    # calculate precision / producers acc for class 1
+    prec1 <- (cm_raw[1,1] / cm_raw[1,3])
+    
+    # calculate recall / users acc for class2
+    rec2 <- (cm_raw[2,2]  / cm_raw[3,2])
+    
+    # calculate precision / producers acc for class 2
+    prec2 <- (cm_raw[2,2]  / cm_raw[2,3])
+    
+    # approximate balanced accuracy for class 1
+    ba1 <- (rec1 + prec1) / 2
+    
+    # approximate ba for class 2
+    ba2 <- (rec2 + prec2) / 2
+    
+    
+    # join classes
+    cm_t_classes <- data.frame(metric = c("Recall", "Precision", "Balanced Accuracy"),
+                               c1 = c(rec1, prec1, ba1),
+                               c2 = c(rec2, prec2, ba2))
+    
+    # apply field names
+    names(cm_t_classes) <- c("metric", levels_t)
+    
+    }
+  
+  
+
+  # format output into list 
   # ---------------------------- #
-  out_list <- list(cm_raw_out,
+  out_list <- list(cm_raw,
                    cm_t_classes,
                    cm_t_overall,
                    tfreq,
@@ -449,7 +494,6 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
 
 assembleCM <- function(layer_field, raster, lookup, id_field, 
                        stackin_compare, stackin_compare_name,  
-                       remapEVT_GP, EVT_GP_remap_table,
                        exportTF, export_path) {
   
   print(glue::glue("assembleCM: {layer_field}"))
@@ -486,19 +530,6 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
     lf1 <- terra::crop(lf1, imp1, mask = TRUE) # crop and mask 
   }
   
-  # Conditionally remap EVT
-  if(remapEVT_GP & layer_field == "EVT_GP") {
-    
-    # load remap table
-    lt_evg <- EVT_GP_remap_table
-    names(lt_evg) <- c("EVT_GP", "EVT_GP_remap")
-    lt_evg %<>%
-      select(EVT_GP_remap, EVT_GP)
-    
-    #remap
-    lf1 <- terra::classify(lf1, lt_evg)
-  } 
-
   gc()
   
   #print("get levels")
@@ -523,6 +554,8 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   
   # replace any NaN with NA
   t %<>% mutate_all(~ifelse(is.nan(.), NA, .))
+  # replace any NaN with NA
+  #t %<>% mutate_if(is.character, ~ifelse(is.na(.), NA, .))
   
   # remove rows that are only na
   t %<>% drop_na()
@@ -546,8 +579,7 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
 
 
 assembleConcat <- function(layer_field, raster, lookup, id_field, 
-                         stackin_compare, stackin_compare_name, export_path, 
-                         remapEVT_GP, EVT_GP_remap_table) {
+                         stackin_compare, stackin_compare_name, export_path) {
   
   print(glue('assembleConcat: {layer_field}'))
   
@@ -567,19 +599,6 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   
   # mask reference raster with input raster - necessary for testing on subset 
   lf1 <- terra::crop(lf1, imp1, mask = TRUE)
-  
-  # Conditionally remap EVT
-  if(remapEVT_GP & layer_field == "EVT_GP") {
-    
-    # load remap table
-    lt_evg <- EVT_GP_remap_table
-    names(lt_evg) <- c("EVT_GP", "EVT_GP_remap")
-    lt_evg %<>%
-      select(EVT_GP_remap, EVT_GP)
-    
-    #remap
-    lf1 <- terra::classify(lf1, lt_evg)
-  } 
   
   #print("make diff")
   # get difference; set to NA where layers are the same

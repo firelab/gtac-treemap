@@ -21,11 +21,13 @@
 
 # list variables to evaluate
 
+#eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
 eval_vars_cat <- c(yvars, "disturb_code") # compare both binary disturbance and original disturbance codes
 
-eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
-                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
-                    "TPA_DEAD", "TPA_LIVE")
+# eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
+#                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
+#                     "TPA_DEAD", "TPA_LIVE")
+eval_vars_cont <- attributevars
 
 eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
@@ -227,6 +229,8 @@ gc()
 
 # PLOT continuous vars
 # ---------------------------------------------------#
+
+print("working on continuous variables")
 
 # set parameters for continuous var plotting
 dodge <- position_dodge(width = 0.6)

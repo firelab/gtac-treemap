@@ -7,6 +7,9 @@
 
 # TODO:
 # add continuous vars to report - from plots already made 
+# - for OOB
+# - for CV
+
 
 
 #==========================================================#
@@ -20,17 +23,16 @@
 
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
-eval_vars_cat <- c("evc", 
-               "evh", 
-               "evt_gp_remap", 
-               "disturb_code")
+#eval_vars_cat <- yvars
+eval_vars_cat <- c(yvars, "disturb_code")
+eval_vars_cat_cont <- c(eval_vars_cat, attributevars)
 
 # Eval report for OOB or derived vars
-# - options: "OOB" or "TargetLayerComparison" or "CV"
+# - options: "TargetLayerComparison" or "OOB" or "CV"
 
 eval_type <- eval_type_in
 #eval_type <- "TargetLayerComparison"
-# eval_type <- "OOB" 
+#eval_type <- "OOB" 
 #eval_type <- "CV"
 
 # PLOTS and TABLES TO INCLUDE; EXPORT OPTIONS
@@ -147,7 +149,7 @@ cm_labels <- c("Predicted", "Reference")
 # } else {
   
   # load raw imputation output raster
-  ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}.tif"))
+  ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}_Imputation.tif"))
   raster_nameCompare <- output_name
   
 #}
@@ -171,7 +173,7 @@ if(eval_type == "TargetLayerComparison") {
 
 } else if(eval_type == "CV") {
     cms_path <- glue::glue("{eval_dir}/03_Cross_Validation/{output_name}_CMs_{eval_type}.RDS")
-    plot_labels <- c("Imputed (CV)", "Observed")
+    plot_labels <- c("Imputed (CV)", "Observed (FIA)")
   }
   
 cms_all <- readRDS(cms_path)
@@ -335,6 +337,7 @@ names(rat_freq_all) <- eval_vars_cat
 # # inspect
 # rat_freq_all
 
+
 # Render report
 #------------------------------------------#
 
@@ -372,3 +375,4 @@ file.remove(glue::glue("{tmpout_dir}/{output_name}_eval_report_{eval_type}{fileE
 message(glue::glue("Report render complete! Output file: {eval_dir}/04_Eval_Reports/{output_name}_eval_report_{eval_type}{fileExtension}\n\n"))
 
 #Sys.time() - ptm
+
