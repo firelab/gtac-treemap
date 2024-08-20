@@ -66,13 +66,6 @@ yai <- readr::read_rds(model_path)
 #------------------------------------------#
 X_df <- read.csv(xtable_path_model)
 
-# load evt_gp remap table
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
-
-# join remapped EVT_GPs with X_df table
-X_df %<>%
-  left_join(evt_gp_remap_table %>% dplyr::rename_with(tolower), by = c("evt_gp_remap")) 
-
 # apply row names - row names must be treemap id
 row.names(X_df) <- X_df$tm_id
 

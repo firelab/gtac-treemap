@@ -46,7 +46,7 @@ coords <- read.csv(coords_path)
 
 # Load EVT Group Remap table
 # ----------------------------------------------------------#
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) 
 
 ####################################################################
 # Prepare input data
@@ -80,8 +80,7 @@ print(plot_df %>%
 # And convert EVT-GP to factor
 plot_df %<>% 
   left_join(evt_gp_remap_table, by = "EVT_GP") %>%
-  dplyr::mutate(EVT_GP_remap = as.factor(EVT_GP_remap)) %>%
-  select(-EVT_GP)
+  dplyr::mutate(EVT_GP_remap = as.factor(EVT_GP_remap)) 
 
 
 # Address issues with slope and aspect
@@ -165,7 +164,8 @@ write_rds(yai, model_path)
 X_df %>%
   mutate(CN = plot_df$plt_cn,
          tm_id = plot_df$tm_id,
-         disturb_code = plot_df$disturb_code) %>%
+         disturb_code = plot_df$disturb_code, 
+         evt_gp = plot_df$evt_gp) %>%
   # remove x and y coords for confidentiality
   select(-c(point_x, point_y)) %>%
   write.csv(., xtable_path_model)
@@ -173,10 +173,11 @@ X_df %>%
 Y_df %>%
   mutate(CN = plot_df$plt_cn,
          tm_id = plot_df$tm_id,
-         disturb_code = plot_df$disturb_code) %>%
+         disturb_code = plot_df$disturb_code,
+         evt_gp = plot_df$evt_gp) %>%
   write.csv(., ytable_path_model)
 
-###########################################################################
+#########################################################################
 # Compute model accuracy
 ###########################################################################
 
@@ -193,7 +194,7 @@ RF_sum <- yaiRFsummary(yai)
 
 cms_list <- NULL
 
-for (i in seq_along(yvars)) {
+for (i in seq_along(c(yvars))) {
   
   # for testing
   #i = 3

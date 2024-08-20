@@ -110,23 +110,6 @@ row.names(Y_df) <- Y_df$tm_id
 # row.names(X_df)
 
 
-# Load and prep EVT_GP Table and Metadata
-#-----------------------------------------------------------------#
-
-# evt_gp_remap table
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) %>%
-  rename_with(tolower)
-
-# evt metadata table
-evt_metadata <- read.csv(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/Vegetation/EVT/LF2022_EVT_230_CONUS/CSV_Data/LF22_EVT_230.csv")) %>%
-  rename_with(tolower)
-
-# join evt_gp_remap table with metadata
-evt_gp_remap_table %<>%
-  left_join(evt_metadata, by = "evt_gp") %>%
-  select(evt_gp, evt_gp_remap, evt_gp_n) %>%
-  distinct() 
-
 # Load and prep Raster Attribute Table
 #-----------------------------------------------------------------#
 
@@ -161,8 +144,6 @@ rat %<>%
 # join RAT with  X df using CN
 rat_x <- rat %>%
   right_join(X_df, by = "CN") %>%
-  # join with evt metadata
-  left_join(evt_gp_remap_table, by = "evt_gp_remap") %>%
   select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
   # filter to plots with values
   #filter(!is.na(BALIVE)) %>%
