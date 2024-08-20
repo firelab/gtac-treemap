@@ -189,7 +189,7 @@ message("setting up parallel processing")
 
 # set up dopar
 cl <- parallel::makeCluster(ncores)
-doParallell::registerDoParallel(cl)
+doParallel::registerDoParallel(cl)
 
 # load packages to each cluster
 parallel::clusterCall(cl, function() {
