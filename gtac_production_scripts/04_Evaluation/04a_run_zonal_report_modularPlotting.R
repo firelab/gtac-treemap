@@ -24,7 +24,7 @@
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
 #eval_vars_cat <- yvars
-eval_vars_cat <- c(yvars, "disturb_code")
+eval_vars_cat <- c(yvars, "disturb_code", "evt_gp")
 eval_vars_cat_cont <- c(eval_vars_cat, attributevars)
 
 # Eval report for OOB or derived vars

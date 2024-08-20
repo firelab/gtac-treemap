@@ -49,6 +49,11 @@ targetvars <- c("elevation", "easting", "northing",
                 "point_x", "point_y") #2020/2022 version
   
 
+# list names of attribute vars to evaluate - these come from RAT table or similar; are not incuded in imputation
+attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
+                   "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
+                   "TPA_DEAD", "TPA_LIVE")
+
 # Load TreeMap script library
 #--------------------------------------------------#
 

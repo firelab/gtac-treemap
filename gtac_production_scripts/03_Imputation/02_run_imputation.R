@@ -188,11 +188,11 @@ if(is.na(which_tiles[1])) {
 message("setting up parallel processing")
 
 # set up dopar
-cl <- makeCluster(ncores)
-registerDoParallel(cl)
+cl <- parallel::makeCluster(ncores)
+doParallell::registerDoParallel(cl)
 
 # load packages to each cluster
-clusterCall(cl, function() {
+parallel::clusterCall(cl, function() {
   library(tidyverse);
   library(yaImpute);
   library(randomForest);

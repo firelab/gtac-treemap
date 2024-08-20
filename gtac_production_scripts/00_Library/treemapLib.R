@@ -327,14 +327,14 @@ get_pr_RF <- function(rf_in, X_df, var) {
 # Produces confusion matrix tables formatted the way I like them :)
 ########################################################################
 
-eval_cm_function <- function(t, noDataVal) {
+eval_cm_function <- function(t, noDataVal = NA) {
   
   #require(c(tidyverse, caret))
   
-  # handle missing param
-  if(missing(noDataVal)) {
-    noDataVal <- NA
-  }
+  # # handle missing param
+  # if(missing(noDataVal)) {
+  #   noDataVal <- NA
+  # }
   
   #apply column names
   names(t) <- c("pred", "ref")
@@ -355,7 +355,7 @@ eval_cm_function <- function(t, noDataVal) {
            ref = factor(ref, levels = levels_t)
     )  
   
-  # Get confusion  matrix
+  # Get confusion matrix
   #---------------------------------------------#
   
   # confusion matrix
@@ -398,7 +398,7 @@ eval_cm_function <- function(t, noDataVal) {
   tfreq$class <- factor(rownames(tfreq), levels = levels_t)
   rownames(tfreq) <- NULL
   
-  #Calculate normalized frequency table also
+  #Calculate normalized frequency table 
   #----------------------------------------------#
 
   # calc total to use in normalizing
@@ -520,9 +520,19 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   gc()
   
   #print("get lf1")
-  # get single lf raster
+  # get single target layer raster
   lf1 <- stackin_compare[layer_field]
-  lf1 %<>% terra::trim() # remove NA values on borders
+  
+  # make sure to get disturb code ONLY, not disturb_code_bin
+  if(layer_field == "disturb_code") {
+    
+    if(!is.null(lf1$disturb_code_bin)) {
+      lf1$disturb_code_bin <- NULL
+    }
+    }
+  
+  # remove NA values on borders
+  lf1 %<>% terra::trim() 
   
   # crop and mask reference raster with input raster
   # necessary for testing on subset 
@@ -534,8 +544,8 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   
   #print("get levels")
   # make both rasters categorical - get levels of layer field
-  levels <- data.frame(id = sort(unique(lt[,2])),
-                       levels = levels(as.factor(lt[,2])))
+  # levels <- data.frame(id = sort(unique(lt[,2])),
+  #                      levels = levels(as.factor(lt[,2])))
   
   # #print("set levels")
   # # set levels for rasters to make them categorical
@@ -552,11 +562,12 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   #update names
   names(t) <- c("pred", "ref")
   
+  #inspect
+  #summary(t)
+  
   # replace any NaN with NA
   t %<>% mutate_all(~ifelse(is.nan(.), NA, .))
-  # replace any NaN with NA
-  #t %<>% mutate_if(is.character, ~ifelse(is.na(.), NA, .))
-  
+
   # remove rows that are only na
   t %<>% drop_na()
   

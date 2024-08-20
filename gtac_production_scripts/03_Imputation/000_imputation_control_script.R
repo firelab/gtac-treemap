@@ -10,8 +10,8 @@ gc()
 # Initialize projects (years) and zones
 year_input <- 2022
 
-zones_list <- 7
-#zones_list <- c(5, 1, 10  ) #10,  # testing
+
+zones_list <- c(1, 8, 10  )   # testing
 #zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
 #                seq(from = 12, to = 66, by = 1),
 #                98, 99)
@@ -93,9 +93,9 @@ message(paste0("Running imputation preparation for year: ", year_input))
 source(project_inputScript)
 
 # LOOP by zones (runs x66 for all zones in CONUS)
-#for (zone_input in zones_list){
+for (zone_input in zones_list){
 
-  zone_input <- zones_list[1] # for testing
+  #zone_input <- zones_list[1] # for testing
   
   ptm_zone_imp <- Sys.time()
   
@@ -129,10 +129,8 @@ source(project_inputScript)
   
   ptm_zone_eval <- Sys.time()
   
-  # SOURCE eval script: 
-  #message("Setting inputs for evaluation")
-  #source(eval_inputScript)
-  
+  # SOURCE eval scripts: 
+
   if("TargetLayerComparison" %in% eval_type_list) {
     # SOURCE target layer comparison
     message("Performing target layer comparison")

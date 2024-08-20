@@ -196,7 +196,7 @@ cms_list <- NULL
 for (i in seq_along(yvars)) {
   
   # for testing
-  #i = 1
+  #i = 3
   
   var = yvars[i]
   

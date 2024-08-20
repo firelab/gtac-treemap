@@ -1,4 +1,4 @@
-# TreeMap Evaluation
+# Zonal Treemap out-of-bag Evaluation
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Out-of-bag stats and validation
@@ -7,7 +7,7 @@
 # - Assumption that these are OOB is following the logic present in the Random Forests predict.randomForest() function
 # - Returns confusion matrices for categorical response vars
 # - Returns scatterplots for continuous attributes
-# ### REQUIRES CURRENT RAT FOR ACCURACY OF CONTINUOUS ATTRIBUTES
+# ### REQUIRES CURRENT RAT FOR COMPLETE ACCURACY OF CONTINUOUS ATTRIBUTES
 
 
 # Last updated: 8/15/2024
@@ -22,7 +22,7 @@
 # list variables to evaluate
 
 #eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
-eval_vars_cat <- c(yvars, "disturb_code") # compare both binary disturbance and original disturbance codes
+eval_vars_cat <- c(yvars, "disturb_code", "evt_gp") # compare both binary disturbance and original disturbance codes
 
 # eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
 #                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
@@ -46,9 +46,9 @@ eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 # source(lib_path)
 
 # load settings for zone
-# project_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+# zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
 # 
-# load(project_settings)
+# load(zone_settings)
 
 ####################################################################
 # Load data
@@ -62,17 +62,16 @@ message("loading data for OOB evaluation")
 #load model
 yai <- readr::read_rds(model_path)
 
-# Load X df
-#-------------------------------------------------------------#
+# X - df
+#------------------------------------------#
+X_df <- read.csv(xtable_path_model)
 
-# load X_df 
-X_df <- read.csv(xtable_path_model) %>%
-  mutate("PLOTID" = X)
+# load evt_gp remap table
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
 
-# ###### ** TEMP FOR TESTING ** ####
-# # make dummy disturb_code field
-# X_df$disturb_code_bin <- X_df$disturb_code
-
+# join remapped EVT_GPs with X_df table
+X_df %<>%
+  left_join(evt_gp_remap_table %>% dplyr::rename_with(tolower), by = c("evt_gp_remap")) 
 
 # apply row names - row names must be treemap id
 row.names(X_df) <- X_df$tm_id
@@ -186,7 +185,7 @@ message("performing evaluation on OOB predictions")
 # make a container to hold output confusion matrices
 cms <- NULL
 
-# loop over variables named at teh top of the script
+# loop over variables named at the top of the script
 for (i in eval_vars_cat) {
   
   var_in <- i
@@ -339,4 +338,4 @@ for (i in eval_vars_cont) {
   gc()
 }
 
-#rm(lm, p, p2)
+rm(lm, p, p2, refs, preds, p_r, cms, oobs)

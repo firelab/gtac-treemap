@@ -1,4 +1,4 @@
-# Zonal Cross-Validation for TreeMap Outputs
+# Zonal TreeMap Cross-Validation
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last updated: 8/15/2024
@@ -8,7 +8,7 @@
 # Performs k-fold cross-validation on yaImpute model
 # Returns confusion matrices for categorical response vars
 # Returns scatterplots for continuous attribues
-# ### REQUIRES CURRENT RAT FOR ACCURACY OF CONTINUOUS ATTRIBUTES
+# ### REQUIRES CURRENT RAT FOR COMPLETE ACCURACY OF CONTINUOUS ATTRIBUTES
 
 ###########################################################################
 # Set inputs
@@ -25,7 +25,7 @@ k = 10
 
 # list variables to evaluate
 #eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
-eval_vars_cat <- c(yvars, "disturb_code")
+eval_vars_cat <- c(yvars, "disturb_code", "evt_gp")
 
 
 # eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
@@ -49,20 +49,10 @@ eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 # source(lib_path)
 # 
 # 
-# imputation_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+# load settings for zone
+# zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
 # 
-# load(imputation_settings)
-# 
-# inputs_for_evaluation <- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
-# source(inputs_for_evaluation)
-#project_name <- "2020_ImputationPrep"
-
-
-
-# Evaluation dir
-#eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/z16/')
-
-
+# load(zone_settings)
 
 
 
@@ -85,22 +75,10 @@ yai <- readr::read_rds(model_path)
 
 
 # load X_df 
-X_df <- read.csv(xtable_path_model) %>%
-  mutate("PLOTID" = X)
+X_df <- read.csv(xtable_path_model) 
 
 # load Y_df 
-Y_df <- read.csv(ytable_path_model)  %>%
-  mutate("PLOTID" = X)
-
-# # ###### ** TEMP FOR TESTING ** ####
-# # # make dummy disturb_code field
-# X_df$disturb_code_bin <- X_df$disturb_code
-# Y_df$disturb_code_bin <- Y_df$disturb_code
-# 
-# # limit to first 1000 rows for testing
-# X_df <- X_df[1:1000,]
-# Y_df <- Y_df[1:1000,]
-
+Y_df <- read.csv(ytable_path_model)  
 
 # Identify Groups that comprise less than the threshold pct of total
 gps_to_drop <- X_df %>%
@@ -180,18 +158,15 @@ rat %<>%
 # Join RAT and X_df into rat_x
 #-----------------------------------------------------------#
 
-# join RAT with X df using CN
+# join RAT with  X df using CN
 rat_x <- rat %>%
   right_join(X_df, by = "CN") %>%
+  # join with evt metadata
+  left_join(evt_gp_remap_table, by = "evt_gp_remap") %>%
   select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
   # filter to plots with values
   #filter(!is.na(BALIVE)) %>%
   arrange(tm_id)
-
-# join evt_gp metadata to rat_x
-rat_x %<>% left_join(evt_gp_remap_table, by = "evt_gp_remap")
-
-
 
 
 ######################################################################
@@ -254,7 +229,7 @@ cv$cv_id = row.names(cv)
 
 # get predicted attributes
 cv_att_pred <- 
-  left_join(cv, rat_x, 
+  left_join(cv, rat_x,
             by = c("pred_id" = "tm_id")) %>%
   mutate(dataset = "pred")
 
@@ -266,7 +241,7 @@ cv_att_ref <-
 
 # join predicted and reference
 p_r <- bind_rows(cv_att_pred, cv_att_ref) %>%
-  select(-c(CN, evt_gp_n)) %>%
+  select(-c(CN)) %>%
   # pivot longer
   pivot_longer(!c(cv_id, ref_id, pred_id, dist, fold, dataset), 
                names_to = "var", values_to = "value") %>%
@@ -442,4 +417,4 @@ for (i in eval_vars_cont) {
 message("done with cross-validation!")
 
 #remove unused objects
-rm(yai, yai_fold, Y_fold, X_fold, cm, cms, cv, cv_att_pred, cv_att_ref, evt_metadata, folds, lm, p, p_r, p_r2, p2)
+rm(yai, yai_fold, Y_fold, X_fold, cm, cms, cv, cv_att_pred, cv_att_ref, evt_metadata, folds, lm, p, p_r, p_r2, p2, gps_to_drop)
