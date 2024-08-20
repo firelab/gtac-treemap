@@ -252,7 +252,7 @@ get_pr_RF <- function(rf_in, X_df, var) {
   # get references from X_df
   refs_df <- X_df %>%
     dplyr::select(all_of(var)) %>%
-    dplyr::rename(ref = `var`) %>%
+    dplyr::rename(ref = any_of(var)) %>%
     rownames_to_column("ID")
   
   # join refs and preds
