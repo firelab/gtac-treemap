@@ -221,19 +221,7 @@ zone_name <- glue::glue("LFz{zone_num}_{gsub(' ', '', zone$ZONE_NAME)}")
 #------------------------------------------#
 
 # load X_df 
-X_df <- read.csv(xtable_path_model) %>%
-  mutate("PLOTID" = X)
-
-# Reclass EVT_GP
-#------------------------------------------#
-
-#load evt_gp remap table
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) %>%
-  rename_with(tolower)
-
-# join to reclass 
-X_df %<>%
-  dplyr::left_join(evt_gp_remap_table, by = c("evt_gp_remap"))
+X_df <- read.csv(xtable_path_model) 
 
 # Load raster attribute table and points
 #------------------------------------------#
