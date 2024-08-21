@@ -3,7 +3,7 @@
 
 library(docstring)
 
-impute_row <- function(dat, yai, test)  { 
+impute_row <- function(dat, yai, test = FALSE)  { 
   
   #' Function to make new imputation predictions given a data frame input
   #' 
@@ -30,10 +30,10 @@ impute_row <- function(dat, yai, test)  {
   #give dat the name we use in this function
   extract.currow <- data.frame(dat)
   
-  # handle missing test param
-  if(missing(test)) {
-    test <- FALSE
-  }
+  # # handle missing test param
+  # if(missing(test)) {
+  #   test <- FALSE
+  # }
   
   # # handle a wrapped raster as input
   # if(is(ras) == "PackedSpatRaster") {
