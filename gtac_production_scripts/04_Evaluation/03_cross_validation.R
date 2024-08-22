@@ -1,28 +1,32 @@
-# Zonal Treemap out-of-bag Evaluation
+# Zonal TreeMap Cross-Validation
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Out-of-bag stats and validation
-# - Use yaImpute::predict() to get putative "Out-of-bag" (OOB) Predictions
-# - We have not verified that these truly represent OOB prediction
-# - Assumption that these are OOB is following the logic present in the Random Forests predict.randomForest() function
-# - Returns confusion matrices for categorical response vars
-# - Returns scatterplots for continuous attributes
-# ### REQUIRES CURRENT RAT FOR COMPLETE ACCURACY OF CONTINUOUS ATTRIBUTES
-
-
 # Last updated: 8/15/2024
+
+
+# In this script: 
+# Performs k-fold cross-validation on yaImpute model
+# Returns confusion matrices for categorical response vars
+# Returns scatterplots for continuous attribues
+# ### REQUIRES CURRENT RAT FOR COMPLETE ACCURACY OF CONTINUOUS ATTRIBUTES
 
 ###########################################################################
 # Set inputs
 ###########################################################################
 
 # Specific inputs
-#---------------------------------------------#
+#-----------------------------------------------------#
+
+# remove any CNs with EVT_GPs that are < thresh of total
+evt_pct_thresh <- .3
+
+# choose number of folds
+k = 10
 
 # list variables to evaluate
-
 #eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
-eval_vars_cat <- c(yvars, "disturb_code", "evt_gp") # compare both binary disturbance and original disturbance codes
+eval_vars_cat <- c(yvars, "disturb_code", "evt_gp")
+
 
 # eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
 #                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
@@ -32,42 +36,78 @@ eval_vars_cont <- attributevars
 eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
 # Set inputs manually - if running as standalone
-#-----------------------------------------------
-#
+#--------------------------------------------------------------#
 
 # cur_zone_zero <- "z07"
 # year <- 2022
-
+# 
 # this_proj <- this.path::this.proj()
 # this_dir <- this.path::this.dir()
 # 
-# ## load treemap library
+# 
 # lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
 # source(lib_path)
-
+# 
+# 
 # load settings for zone
 # zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
 # 
 # load(zone_settings)
 
-####################################################################
+
+
+#####################################################################
 # Load data
 ####################################################################
 
-message("loading data for OOB evaluation")
+message("Loading data for cross-validation")
 
 # Load imputation model
 # ---------------------------------------------------------- #
 
-#load model
+
+# load model
 yai <- readr::read_rds(model_path)
 
-# X - df
-#------------------------------------------#
-X_df <- read.csv(xtable_path_model)
 
-# apply row names - row names must be treemap id
+# Load X and Y dfs
+# ---------------------------------------------------------- #
+
+
+# load X_df 
+X_df <- read.csv(xtable_path_model) 
+
+# load Y_df 
+Y_df <- read.csv(ytable_path_model)  
+
+# Identify Groups that comprise less than the threshold pct of total
+gps_to_drop <- X_df %>%
+  group_by(evt_gp_remap) %>%
+  summarize(n = n(),
+            total = nrow(X_df), 
+            pct = 100 * (n/total)) %>%
+  filter(pct < evt_pct_thresh) %>%
+  select(evt_gp_remap) %>% 
+  mutate(evt_gp_remap = as.integer(evt_gp_remap)) %>%
+  as.list()
+
+# remove EVT-GPs from Xdf and Ydf and drop levels
+X_df %<>% filter(evt_gp_remap %notin% gps_to_drop) %>%
+  droplevels()
+
+Y_df %<>% filter(evt_gp_remap %notin% gps_to_drop) %>%
+  droplevels()
+
+# apply row names - must be treemap id
+# important to do this AFTER all other data frame processing
 row.names(X_df) <- X_df$tm_id
+row.names(Y_df) <- Y_df$tm_id
+
+
+# # inspect
+# summary(X_df$evt_gp_remap)
+# str(X_df$evt_gp_remap)
+# row.names(X_df)
 
 
 # Load and prep Raster Attribute Table
@@ -101,98 +141,121 @@ rat %<>%
 # Join RAT and X_df into rat_x
 #-----------------------------------------------------------#
 
-# join RAT with X df using CN
+# join RAT with  X df using CN
 rat_x <- rat %>%
   right_join(X_df, by = "CN") %>%
-  select(c(CN, tm_id, any_of(eval_vars_cat_cont))) %>%
-  # filter to plots with values - limits available plots severely with 2016 iteration
+  select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
+  # filter to plots with values
   #filter(!is.na(BALIVE)) %>%
-  # make factors into numeric so that we can make a long data frame
-  mutate(across(c(evt_gp_remap), as.numeric))
+  arrange(tm_id)
 
 
 ######################################################################
-# Obtain and prep out-of-bag predictions
+# run cross-validation
 ######################################################################
 
-# Get OOB Predictions
+
+# Set up and run CV model
 #-------------------------------------------------#
+message(glue::glue("running {k}-fold cross-validation"))
 
-message("getting out-of-bag predictions")
+# make folds
+folds <- caret::createMultiFolds(y = row.names(X_df), k = k, times = 1)
 
-# Data dictionary for OOB predicted and reference: 
-# oob_id : row number of original oob observation
-# ref_id : treemap plot id for the reference plot 
-# pred_id : treemap plotid for the predicted plot 
+cv <- data.frame()
 
-# run custom function to get out of bag predictions - 1 for each reference 
-# this takes some time to run 
-oobs <- get_OOBs_yai_predict(yai) 
-oobs %<>% 
-  mutate(oob_id = row_number())
-
-
-# make Join OOB predicted and reference with Xdf and RAT to get variable values
-# ----------------------------------------------------------------------------#
-
-# join oobs with x df - reference
-refs <-
-  left_join(oobs, rat_x,
-            by = c("ref_id" = "tm_id")) %>%
-  select(c(oob_id, ref_id, pred_id,
-           any_of(eval_vars_cat_cont))) %>%
-  mutate(dataset = "ref")
+for (i in seq_along(folds)) {
   
-# join oobs with X_df - predicted
-preds <- left_join(oobs, rat_x,
-                   by = c("pred_id" = "tm_id")) %>%
-  select(c(oob_id, ref_id, pred_id,
-           any_of(eval_vars_cat_cont))) %>%
-  mutate(dataset = "pred") 
+  # for testing
+  #i = 1
+  print(glue::glue("working on fold {i}"))
+  
+  # get the subset / fold of obs to include
+  fold <- unlist(folds[i])
+  
+  # subset input data frames
+  X_fold <- X_df[fold,]
+  Y_fold <- Y_df[fold,]
+  
+  # fit the model
+  yai_fold <- yaImpute::yai(X_fold, Y_fold,
+                            method = "randomForest",
+                            ntree = 250)
+  
+  # get imputed ids for each id
+  yai_out <- yaImpute::foruse(yai_fold, kth = 1)
+  
+  # rename fields
+  yai_out %<>%
+    data.frame() %>%
+    mutate(ref_id = as.numeric(row.names(yai_out)),
+           pred_id = as.numeric(use), 
+           fold = i) %>%
+    select(ref_id, pred_id, dist, fold) %>%
+    data.frame()
+  
+  # bind to data frame
+  cv <- rbind(cv, yai_out)
+  
+  gc()
+  
+}
 
-# clear memory
-gc()
+# add id to help with restructuring data
+cv$cv_id = row.names(cv)
 
-# Join Predicted and Reference
-#-----------------------------------------#
 
-p_r <- bind_rows(preds, refs) %>%
+# get values of attributes 
+#--------------------------------------------------------------#
+
+# get predicted attributes
+cv_att_pred <- 
+  left_join(cv, rat_x,
+            by = c("pred_id" = "tm_id")) %>%
+  mutate(dataset = "pred")
+
+cv_att_ref <- 
+  left_join(cv, rat_x,
+            by = c("ref_id" = "tm_id")) %>%
+  mutate(dataset = "ref") 
+
+
+# join predicted and reference
+p_r <- bind_rows(cv_att_pred, cv_att_ref) %>%
+  select(-c(CN)) %>%
   # pivot longer
-  pivot_longer(!c(oob_id, ref_id, pred_id, dataset), 
+  pivot_longer(!c(cv_id, ref_id, pred_id, dist, fold, dataset), 
                names_to = "var", values_to = "value") %>%
   mutate(var = factor(var),
-         value = na_if(value, -99.0000),
          value = round(value, round_dig)) %>%
-  arrange(oob_id)
+  arrange(cv_id) 
 
+# #########################################################
+# Perform evaluation on results of cross-validation
+############################################################
 
-######################################################################
-# Perform evaluation on OOB predictions
-######################################################################
+message("performing evaluation for cross-validation")
 
 # Make confusion matrices for each categorical var
 #-----------------------------------------------#
 
-message("performing evaluation on OOB predictions")
-
-# make a container to hold output confusion matrices
+# make a container to hold output confustion matrices
 cms <- NULL
 
-# loop over variables named at the top of the script
+# loop over variables named at teh top of the script
 for (i in eval_vars_cat) {
   
   var_in <- i
-  #var_in <- "disturb_code"
   
   print(glue::glue("working on {var_in}"))
   
   # subset to var of interest
   # and transform as necessary 
   d <- 
-  p_r %>%
+    p_r %>%
     dplyr::filter(var == var_in) %>%
-    select(-c(ref_id, pred_id, var)) %>%
-    pivot_wider(id_cols = oob_id, 
+    select(-c(pred_id, dist, fold, var)) %>%
+    pivot_wider(id_cols = cv_id, 
                 names_from = dataset, 
                 values_from = value) %>%
     dplyr::select(pred, ref)
@@ -209,17 +272,19 @@ for (i in eval_vars_cat) {
   } else {
     cms <- c(cms, cm)
   }
-
+  
 }
+
+#inspect
+cms
 
 # save cms as RDS
 write_rds(cms, file = 
-            glue::glue('{eval_dir}/02_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
+            glue::glue('{eval_dir}/03_Cross_Validation/{output_name}_CMs_CV.RDS'))
 
 gc()
 
-
-# PLOT continuous vars
+# Plot continuous variables
 # ---------------------------------------------------#
 
 print("working on continuous variables")
@@ -232,16 +297,15 @@ percent_y_textPos1 <- 0.99 # 0.96 for individual plots
 percent_y_textPos2 <- 0.78 # 0.96 for individual plots
 textBoxFill_ratioX <- 0.25
 textBoxFill_ratioY <- 0.04
-alpha <- 0.1
+alpha <- 0.05
 export_width <- 7 # in inches
 export_height <- 4.5 # in inches
-
-# loop over continuous vars 
 
 for (i in eval_vars_cont) {
   
   # for testing
-  #i = 6
+  #i = 1
+  #var_in <- eval_vars_cont[i]
   
   var_in <- i
   
@@ -269,10 +333,10 @@ for (i in eval_vars_cont) {
   
   # prep dataset
   p_r2 <- 
-  p_r %>%
+    p_r %>%
     filter(var == var_in) %>%
     select(-c(ref_id, pred_id, var)) %>%
-    pivot_wider(id_cols = oob_id, 
+    pivot_wider(id_cols = cv_id, 
                 names_from = dataset, 
                 values_from = value) %>%
     drop_na()
@@ -296,7 +360,7 @@ for (i in eval_vars_cont) {
     mae(na.omit(p_r2$pred), predict(lm))
   )
   
-  eqn
+  #eqn
   
   p2 <- p_r2 %>%
     ggplot(aes(x = ref, y = pred)) + 
@@ -305,7 +369,7 @@ for (i in eval_vars_cont) {
     geom_smooth(method = "lm", formula = y~x) +
     labs() + 
     theme_bw() + 
-    ggtitle(glue::glue("OOB predicted vs. ref for {var_in}")) + 
+    ggtitle(glue::glue("CV predicted vs. ref for {var_in}")) + 
     annotate(geom="text",
              x = (max(p_r2$ref)/2),
              y = (percent_y_textPos1*max(p_r2$pred, na.rm = TRUE)),
@@ -317,13 +381,13 @@ for (i in eval_vars_cont) {
   print(p2)
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_in}_violin.png'),
+  ggsave(glue::glue('{eval_dir}/03_Cross_Validation/figs/CV_pred_vs_ref_{var_in}_violin.png'),
          plot = p,
          width = export_width, 
          height = export_height)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_in}_scatter.png'),
+  ggsave(glue::glue('{eval_dir}/03_Cross_Validation/figs/CV_pred_vs_ref_{var_in}_scatter.png'),
          plot = p2,
          width = export_width, 
          height = export_height) 
@@ -331,4 +395,7 @@ for (i in eval_vars_cont) {
   gc()
 }
 
-rm(lm, p, p2, refs, preds, p_r, cms, oobs)
+message("done with cross-validation!")
+
+#remove unused objects
+rm(yai, yai_fold, Y_fold, X_fold, cm, cms, cv, cv_att_pred, cv_att_ref, evt_metadata, folds, lm, p, p_r, p_r2, p2, gps_to_drop)

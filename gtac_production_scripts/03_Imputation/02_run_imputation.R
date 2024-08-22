@@ -67,7 +67,7 @@ yai <- readr::read_rds(model_path)
 
 # get names of variables included in model
 model_vars <- names(yai$xRefs)
-model_vars %<>% str_subset("point_", negate = TRUE) %>% sort() # remove point x and point y as these are calculated in the imputation model step
+model_vars %<>% str_subset("point_", negate = TRUE) %>% sort() # remove point x and point y as these are calculated tile by tile in the imputation step
 
 # Load target rasters
 # --------------------------------------------------------------------#
@@ -82,13 +82,21 @@ flist_tif <- filter_disturbance_rasters(flist_tif, dist_layer_type) # custom fun
 flist_tif %<>%
   str_subset("aspect", negate = TRUE)
 
-
-# select layers that appear in model vars
-flist_tif %<>%
-  str_subset(paste(model_vars, collapse = "|"))
-
 # load rasters using custom function
 rs2 <- load_and_name_rasters(flist_tif)
+
+# Prep binary disturbance code layer
+#-------------------------------------------------------------------------#
+# Reclass disturbance to binary
+rs2$disturb_code_bin <- terra::classify(rs2$disturb_code, cbind(2, 1))
+names(rs2$disturb_code_bin) <- "disturb_code_bin"
+varnames(rs2$disturb_code_bin) <- "disturb_code_bin"
+
+# remove original disturb code - model runs with binary
+rs2$disturb_code <- NULL
+
+# subset layers to vars present in model
+rs2 <- subset(rs2, model_vars)
 
 # check if we have all the same layers as are included in the model
 if( !identical(model_vars, sort(names(rs2)))) {
@@ -180,11 +188,11 @@ if(is.na(which_tiles[1])) {
 message("setting up parallel processing")
 
 # set up dopar
-cl <- makeCluster(ncores)
-registerDoParallel(cl)
+cl <- parallel::makeCluster(ncores)
+doParallel::registerDoParallel(cl)
 
 # load packages to each cluster
-clusterCall(cl, function() {
+parallel::clusterCall(cl, function() {
   library(tidyverse);
   library(yaImpute);
   library(randomForest);
@@ -207,7 +215,7 @@ for(j in which_tiles) {
   #tic()
   
   # for test 
-  #j <- 3
+ # j <- 1
   
   # select tile to run
   fn <- tiles[j]
@@ -235,11 +243,6 @@ for(j in which_tiles) {
   
   gc()
   
-  # Reclass disturbance to binary
-  ras$disturb_code <- terra::classify(ras$disturb_code, cbind(2, 1))
-  
-  gc()
-  
   # add XY coords to raster
   ras$point_x <- terra::init(ras, "x")
   names(ras$point_x) <- "point_x"
@@ -264,7 +267,7 @@ for(j in which_tiles) {
   ) %dopar% {
 
     # # for testing
-    #i = 37
+    #i = 1851
     # print(glue::glue("working on row {i}/{nrow_r}"))
 
     # get extracted values from each field for each row of input raster

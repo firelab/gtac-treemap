@@ -6,11 +6,11 @@ params:
   eval_vars:
   cms_path:
 title: "TreeMap Zonal Validation: Zone `r params$zone_num` "
-subtitle: "`r params$raster_name` ; `r params$eval_type`"
+subtitle: "`r params$raster_name` ; Eval Type = `r params$eval_type`"
 output:
-  word_document: default
   html_document:
     df_print: paged
+  word_document: default
   pdf_document: default
 date: "`r Sys.Date()`"
 ---
@@ -27,12 +27,13 @@ knitr::opts_chunk$set(echo = FALSE)
 ```
 
 
-
 Landfire zone: `r params$zone_num`
 
 Run name: `r params$raster_name` 
 
-Variables to evaluate: `r params$eval_type`
+Variables to evaluate: `r params$eval_vars`
+
+Evaluation method: `r params$eval_type`
 
 Path for confusion matrices: `r params$cms_path`
 
@@ -58,12 +59,9 @@ if (!exists("pltObj")) {
 
 if (include_paramTable == "Y"){
 
-    # TODO: un-comment when rest of the data is this structure, no only .RDS file available for `2016_GTAC_Test` project
-  #params_RDS_path <- glue::glue('{params_dir}/{output_name}_paramsTable.RDS')
+  params_RDS_path <- glue::glue('{params_dir}/{output_name}_paramsTable.RDS')
   
   params_csv_path <- glue::glue('{params_dir}/{output_name}_paramsTable.csv')
-  
-  #params_RDS_path <- glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z{zone_num}/params/z{zone_num}_2016_Orig_Test_params.RDS")
   
   #load(params_RDS_path)
   
@@ -84,15 +82,15 @@ if (include_paramTable == "Y"){
 ```{r choose single variable to start}
 #choose single variable
 # 
-# v <- 2
-# var_in <- eval_vars[v]
+#v <- 4
+# var_in <- eval_vars_cat[v]
 ```
 
 ```{r format and plot tables for each var, results = 'asis', warning = F}
 
-for(v in 1:length(eval_vars)){
+for(v in 1:length(eval_vars_cat)){
   
-  var_in <- eval_vars[v]
+  var_in <- eval_vars_cat[v]
 
   cat("\n\n\\pagebreak\n")
   print(glue::glue("**Variable: {var_in}**
@@ -212,7 +210,7 @@ for(v in 1:length(eval_vars)){
     dplyr::filter(metric == "Balanced Accuracy")
   
   n_acc <- X_df %>%
-    dplyr::select(PLOTID, CN, !!var_in) %>%
+    dplyr::select(tm_id, CN, !!var_in) %>%
     dplyr::rename("class" = !!var_in) %>%
     dplyr::mutate(class = factor(class)) %>%
     dplyr::group_by(class) %>%
@@ -242,28 +240,6 @@ for(v in 1:length(eval_vars)){
   oa <- cm_overall %>%
     dplyr::filter(metric == "Accuracy") %>%
     dplyr::select(value) 
- 
-   if (var_in != "disturb_code"){
-    print(glue::glue("*Overall accuracy: {round(oa*100,4)}%*"))
-    cat("\n\n")
-  }
-  
-  
-  if (var_in == "disturb_code"){
-    cms_adjusted<- matrix(nrow=2,ncol=2)
-    cms_adjusted[1,1]<- cms$raw[1,1]
-    cms_adjusted[1,2]<- cms$raw[1,2] + cms$raw[1,3]
-    #
-    cms_adjusted[2,2]<- cms$raw[2,2] + cms$raw[3,3] + cms$raw[2,3] + cms$raw[3,2]
-    cms_adjusted[2,1]<- cms$raw[2,1] + cms$raw[3,1]
-    #
-    adjusted_accuracy<- (cms_adjusted[1,1] + cms_adjusted[2,2]) / (cms_adjusted[1,1] + cms_adjusted[2,2] +
-                                                                     cms_adjusted[2,1] + cms_adjusted[1,2]) 
-    
-     print(glue::glue("*Overall accuracy: {round(oa*100,4)}%*  /  *Adjusted overall accuracy: {round(round(adjusted_accuracy,4)*100,4)}%*"))
-     cat("\n\n")
-    
-  }
   
   oa %<>%
     round(round_dig)
@@ -318,6 +294,9 @@ for(v in 1:length(eval_vars)){
     print(scatter_plot2)
   }
 
+  
+  # Get producer's and user's accuracy for CM
+  #---------------------------------------------------------------------------------------#
     
   # get producer's accuracy for each class - precision
   pa <- cm_classes %>%
@@ -331,7 +310,7 @@ for(v in 1:length(eval_vars)){
     dplyr::rename("Prod. Acc" = value) %>%
     # add extra row to be able to bind
     rbind(c("NA"))
-  
+    
   # get user's accuracy for each class - recall
   ua <- cm_classes %>%
     dplyr::filter(metric == "Recall") %>% 
@@ -340,40 +319,40 @@ for(v in 1:length(eval_vars)){
     # replace NA with character
     dplyr::mutate(value = as.character(value)) %>%
     tidyr::replace_na(list(value = "NA")) 
-  
+    
   # join producer's accuracy
   cm_display <- cbind(cm_raw, pa)
-  
+
   #format user's accuracy to be able to bind
   # create list of length that will make it match size of cm_display
   b <- data.frame(value = rep("NA", ncol(cm_display)- nrow(ua)))
-  ua <- 
+  ua <-
     #c("User's Acc") %>%
     rbind(ua, b) %>%
     # rename
     dplyr::rename("User's Acc" = value) %>%
     t() %>%
     data.frame()
-  
+
   # add names to ua be able to bind
   names(ua) <- names(cm_display)
-  
+
   #bind ua with cm
   cm_display <- rbind(cm_display, ua)
-  
+
   # make row names a column
   cm_display$Predicted <- row.names(cm_display)
   row.names(cm_display) <- NULL
-  
+
   # bind row name column back with df
   cm_display <- cbind(Predicted = cm_display$Predicted, cm_display[1:ncol(cm_display)-1])
-  
-  
-  
-  # flextable formatting for cm
-  
-  ### NOTE: column and row number selections are hard coded (based on canopy height) in formatting section
-  
+
+
+
+  # Format flextable
+  # - Add contrast background colors for accuracy
+  # - Highlight diagonal values
+
   table_cm <- flextable(cm_display) %>%
     # add header and footer
     add_header_row(values = c("", "Reference"), colwidths = c(1, ncol(cm_display)-1)) %>%
@@ -393,9 +372,9 @@ for(v in 1:length(eval_vars)){
     # add borders to body cells
     surround(border = fp_border_default(color = "gray", width = 1), part = "body") %>%
     # add title
-    set_caption(glue::glue("Confusion Matrix  
+    set_caption(glue::glue("Confusion Matrix
              Zone: z{zone_num} ; Attribute: {var_in},
-             {plot_labels}")) 
+             {plot_labels}"))
 
   # highlight diagonal values
   for (r in 1:(nrow(cm_display)-1)) {
@@ -404,12 +383,10 @@ for(v in 1:length(eval_vars)){
     }
 
   # fit to page
-  
-  table_cm <- FitFlextableToPage(ft = table_cm, 
+  table_cm <- FitFlextableToPage(ft = table_cm,
                                  pgwidth = 7)
-  
-  
-  #flextable_to_rmd(table_cm)
+
+
   cat(knitr::knit_print(table_cm))
   
   # End loop
@@ -417,5 +394,26 @@ for(v in 1:length(eval_vars)){
 ```
 
 
+```{r conditionally plot CV figures, results = "asis"}
 
+# conditionally add plots from cross-validation
+
+if(params$eval_type == "CV") {
+ 
+  # list all figures in cross-validation folder
+  eval_figs_list <- list.files(glue::glue('{eval_dir}/01_Cross_Validation/figs/'), full.names = TRUE, pattern = ".png$")
+  
+  print(eval_figs_list)
+  
+  # render graphics in markdown
+  knitr::include_graphics(eval_figs_list, rel_path = FALSE, error =TRUE)
+  
+  }
+  
+  
+```
+
+```{r conditionally plot OOB figures}
+
+```
 

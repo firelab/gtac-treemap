@@ -3,7 +3,7 @@
 
 library(docstring)
 
-impute_row <- function(dat, yai, test)  { 
+impute_row <- function(dat, yai, test = FALSE)  { 
   
   #' Function to make new imputation predictions given a data frame input
   #' 
@@ -30,10 +30,10 @@ impute_row <- function(dat, yai, test)  {
   #give dat the name we use in this function
   extract.currow <- data.frame(dat)
   
-  # handle missing test param
-  if(missing(test)) {
-    test <- FALSE
-  }
+  # # handle missing test param
+  # if(missing(test)) {
+  #   test <- FALSE
+  # }
   
   # # handle a wrapped raster as input
   # if(is(ras) == "PackedSpatRaster") {
@@ -100,13 +100,12 @@ impute_row <- function(dat, yai, test)  {
     
     # Create dummy rows for non-appearing EVGs
     # Question: are dummy rows necessary? 
-    if(n.dummy.rows > 0)
-    {    
+    if(n.dummy.rows > 0) {      
       dummy.rows <- X.df.temp[1:n.dummy.rows,]    
       tempchar <- as.character(X.df.temp$evt_gp_remap)    
       X.df.temp$evt_gp_remap <- tempchar    
       dummy.rows$evt_gp_remap <- as.character(nonappearing.evgs) 
-      dummy.rows$disturb_code <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
+      dummy.rows$disturb_code_bin <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
       X.df.temp <- rbind(X.df.temp, dummy.rows)    
     }
     
@@ -116,7 +115,7 @@ impute_row <- function(dat, yai, test)  {
     X.df.temp <- 
       X.df.temp %>%
       dplyr::mutate(evt_gp_remap = factor(evt_gp_remap, levels = levels(yai$xRefs$evt_gp_remap)),
-                    disturb_code = factor(disturb_code, levels = levels(yai$xRefs$disturb_code))) %>%
+                    disturb_code_bin = factor(disturb_code_bin, levels = levels(yai$xRefs$disturb_code_bin))) %>%
       # put columns in order expected
       dplyr::select(names(yai$xRefs))
     

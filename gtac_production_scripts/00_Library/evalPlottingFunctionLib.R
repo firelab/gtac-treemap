@@ -7,7 +7,8 @@ list.of.packages <- c("tidyverse",
                       "officer", 
                       "docstring", 
                       "roxygen2",
-                      "glue")
+                      "glue", 
+                      "ggrepel")
 
 #check for packages and install if needed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -136,6 +137,14 @@ plot_scatter_refVClassAcc <- function(df, var_in, zone_num, save_Plot, exportDir
     scatter_plot1 <- df %>%
                         ggplot()+
                         geom_point(aes(x = n, y = value), size = 2) + 
+                        geom_label_repel(aes(x = n, y = value, label = class),
+                          box.padding   = 0.6, 
+                          point.padding = 0,
+                          label.padding = 0.2,
+                          segment.color = 'grey50',
+                          size=3.3,
+                          min.segment.length = 0,
+                          max.time = 3) +
                         theme_bw() +
                         labs(x = "total N of class in reference data", y = "Balanced Accuracy") + 
                         ggtitle(glue::glue("Accuracy vs. N Reference pts per class
@@ -179,6 +188,14 @@ plot_scatter_obsVClassAcc <- function(df, var_in, zone_num, save_Plot, exportDir
     scatter_plot2 <- df %>%
                         ggplot()+
                         geom_point(aes(x = n, y = value), size = 2) + 
+                        geom_label_repel(aes(x = n, y = value, label = class),
+                          box.padding   = 0.6, 
+                          point.padding = 0,
+                          label.padding = 0.2,
+                          segment.color = 'grey50',
+                          size=3.3,
+                          min.segment.length = 0,
+                          max.time = 3) +
                         theme_bw() +
                         labs(x = "total N of class in Imputed observations", y = "Balanced Accuracy") + 
                         ggtitle(glue::glue("Accuracy vs. N Imputed Obs per class

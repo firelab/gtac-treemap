@@ -28,10 +28,11 @@ get_OOBs_yai_predict <- function(yai) {
   rownames(predict_yai) <- new_names
   
   # get only predicted values
+  # fields with "o" = observed values; remove these fields
   predict_yai %<>%
     select(sort(names(predict_yai))) %>%
-    select(matches(".o$")) %>%
-    rename_with(~str_remove(., "[.]o$")) 
+    select(-matches(".o$")) #%>%
+    #rename_with(~str_remove(., "[.]o$")) 
   
   # get new targets based on these predictions
   # takes some time to run
