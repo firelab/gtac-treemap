@@ -529,7 +529,15 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
     if(!is.null(lf1$disturb_code_bin)) {
       lf1$disturb_code_bin <- NULL
     }
+  }
+  
+  # make sure to get evt_gp ONLY, not evt_gp_remap
+  if(layer_field == "evt_gp") {
+    
+    if(!is.null(lf1$evt_gp_remap)) {
+      lf1$evt_gp_remap <- NULL
     }
+  }
   
   # remove NA values on borders
   lf1 %<>% terra::trim() 

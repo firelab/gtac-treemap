@@ -22,7 +22,8 @@ vapply(list.of.packages, library, logical(1L),
 
 # Bar plot: Raw frequency, observed vs. predicted for each class 
   
-plot_barchart_raw <- function(df, var_in, zone_num, save_Plot, exportDir){
+plot_barchart_raw <- function(df, var_in, zone_num, plot_labels = c("Imputed", "Observed"), 
+                              save_Plot, exportDir){
     #' Create barchart of raw frequency values
     #'
     #' @param df `freq` data frame assembled from `cms$freq`
@@ -35,16 +36,18 @@ plot_barchart_raw <- function(df, var_in, zone_num, save_Plot, exportDir){
     #' @export
     #'
     #' @examples 
-    
-    plot_labels <- c("Imputed", "Observed")
 
+    if(zone_num <10) {
+      zone_num <- paste0("0", zone_num)
+    }
+  
     barchart1 <- df %>% # format frequency table for plotting
                     tidyr::pivot_longer(!class, names_to = "dataset") %>%
                     dplyr::rename(frequency = "value") %>%
                     dplyr::arrange(dataset, class) %>% 
                     ggplot() + # plot
                     geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
-                    scale_fill_manual(name = "Dataset", labels = c("Ground (FIA)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
+                    scale_fill_manual(name = "Dataset", labels = c("Reference (FIA)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
                     theme_bw() +
                     ggtitle(glue::glue("Frequency of classes
                             Zone: z{zone_num} ; Attribute: {var_in}"))
@@ -70,7 +73,8 @@ plot_barchart_raw <- function(df, var_in, zone_num, save_Plot, exportDir){
 
 # Bar plot: Normalized frequency, observed vs. predicted vs. for each class
 
-plot_barchart_norm <- function(df, var_in, zone_num, save_Plot, exportDir){
+plot_barchart_norm <- function(df, var_in, zone_num, plot_labels = c("Imputed", "Observed"),
+                               save_Plot, exportDir ){
     #' Create barchart of normalized frequency values
     #'
     #' @param df `freq_norm` data frame assembled from normalizing `cms$freq` by pred and ref totals
@@ -84,19 +88,21 @@ plot_barchart_norm <- function(df, var_in, zone_num, save_Plot, exportDir){
     #'
     #' @examples  
 
-    plot_labels <- c("Imputed", "Observed")
-    
-    barchart2 <- df %>% # format frequency table for plotting
-                    tidyr::pivot_longer(!class, names_to = "dataset") %>%
-                    dplyr::rename(frequency = "value") %>%
-                    dplyr::mutate(dataset= factor(dataset)) %>%
-                    dplyr::arrange(dataset, class) %>%
-                    ggplot() + # plot
-                    geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
-                    scale_fill_manual(name = "Dataset", labels = c("Ground (FIA)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
-                    theme_bw() +
-                    ggtitle(glue::glue("Normalized frequency of classes
-                            Zone: z{zone_num} ; Attribute: {var_in}"))
+  if(zone_num <10) {
+    zone_num <- paste0("0", zone_num)
+  }
+  
+  barchart2 <- df %>% # format frequency table for plotting
+                  tidyr::pivot_longer(!class, names_to = "dataset") %>%
+                  dplyr::rename(frequency = "value") %>%
+                  dplyr::mutate(dataset= factor(dataset)) %>%
+                  dplyr::arrange(dataset, class) %>%
+                  ggplot() + # plot
+                  geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
+                  scale_fill_manual(name = "Dataset", labels = c("Reference (FIA)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
+                  theme_bw() +
+                  ggtitle(glue::glue("Normalized frequency of classes
+                          Zone: z{zone_num} ; Attribute: {var_in}"))
 
     # conditionally flip axis text labeling
     if(var_in == "EVT_GP") {
@@ -134,6 +140,10 @@ plot_scatter_refVClassAcc <- function(df, var_in, zone_num, save_Plot, exportDir
   #'
   #' @examples
 
+  if(zone_num <10) {
+    zone_num <- paste0("0", zone_num)
+  }
+  
     scatter_plot1 <- df %>%
                         ggplot()+
                         geom_point(aes(x = n, y = value), size = 2) + 
@@ -185,6 +195,10 @@ plot_scatter_obsVClassAcc <- function(df, var_in, zone_num, save_Plot, exportDir
   #'
   #' @examples
 
+  if(zone_num <10) {
+    zone_num <- paste0("0", zone_num)
+  }
+  
     scatter_plot2 <- df %>%
                         ggplot()+
                         geom_point(aes(x = n, y = value), size = 2) + 

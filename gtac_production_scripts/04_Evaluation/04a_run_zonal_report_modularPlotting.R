@@ -18,14 +18,22 @@
 #                                                          #    
 #==========================================================#
 
+# IF RUNNING STANDALONE: 
+#------------------------------------------#
+cur_zone_zero_standalone <- "z08"
+year_standalone <- 2022
+standalone <- "Y"
+
+
 # VARIABLES TO EVALUATE
 #------------------------------------------#
 
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
 #eval_vars_cat <- yvars
-eval_vars_cat <- c(yvars, "disturb_code") #FIXME:, "evt_gp")
-eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
+eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code_bin", "disturb_code" )
+#eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
+eval_vars_cat_cont <- eval_vars_cat
 
 # Eval report for OOB or derived vars
 # - options: "TargetLayerComparison" or "OOB" or "CV"
@@ -82,14 +90,6 @@ document_formatExtensionDict <- c("pdf_document" = ".pdf",
 #-------------------------------------------#
 
 
-# Set inputs - from input script used for imputation
-#-----------------------------------------------------#
-
-#this_dir <- this.path::this.dir()
-
-#inputs_for_evaluation <- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
-#source(inputs_for_evaluation)
-
 # Other settings
 #------------------------------------------#
 
@@ -103,6 +103,32 @@ round_dig <- 4
 # Allow for sufficient digits to differentiate plot cn numbers
 
 options("scipen" = 100, "digits" = 8)
+
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
+
+if(standalone == 'Y') {
+  
+  # assign main variables
+  cur_zone_zero <- cur_zone_zero_standalone
+  year <- year_standalone
+  
+  # load directories
+  this_proj <- this.path::this.proj()
+  this_dir <- this.path::this.dir()
+  
+  ## load treemap library
+  lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+  source(lib_path)
+  
+  #load settings for zone
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  
+  load(zone_settings)
+  
+  # load library again in case functions have been updated since initial creation of RDS
+  source(lib_path)
+}
 
 # Prep constructed paths
 #------------------------------------------#
@@ -151,13 +177,13 @@ if(eval_type == "TargetLayerComparison") {
   
   cms_path <- glue::glue("{eval_dir}/02_OOB_Evaluation/{output_name}_CMs_{eval_type}.RDS")
   plot_labels <- c("Imputed (OOB)", "Observed (FIA)")
-  cm_labels <- c("Predicted", "Reference")
+  cm_labels <- c("Imputed (OOB)", "Reference (FIA)")
 
   
 } else if(eval_type == "CV") {
     cms_path <- glue::glue("{eval_dir}/03_Cross_Validation/{output_name}_CMs_{eval_type}.RDS")
     plot_labels <- c("Imputed (CV)", "Observed (FIA)")
-    cm_labels <- c("Predicted", "Reference")
+    cm_labels <- c("Imputed (CV)", "Reference(FIA)")
   }
   
 cms_all <- readRDS(cms_path)
@@ -177,6 +203,18 @@ zone <- terra::project(zone, crs(ras))
 # get name of zone
 zone_name <- glue::glue("LFz{zone_num}_{gsub(' ', '', zone$ZONE_NAME)}")
 
+# Load EVT metadata
+#------------------------------------------#
+evt_gp_metadata <- read.csv(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/Vegetation/EVT/LF2022_EVT_230_CONUS/CSV_Data/LF22_EVT_230.csv")) %>% 
+  rename_with(tolower) %>%
+  dplyr::select(evt_gp, evt_gp_n) %>%
+  dplyr::mutate(evt_gp = factor(evt_gp),
+                # make a shortened evt_gp_name 
+                evt_gp_n_short = paste0(evt_gp, "-", substr(evt_gp_n, 1, 15)) ) %>% 
+  arrange(evt_gp) %>%
+  distinct()
+
+
 # Load X table
 #------------------------------------------#
 
@@ -187,15 +225,14 @@ X_df <- read.csv(xtable_path_model)
 #------------------------------------------#
 
 message("Importing raster attribute table...")
-rat_tif <- terra::rast(rat_path)
-rat <- data.frame(cats(rat_tif))
+rat <- terra::rast(rat_path)
+rat <- data.frame(cats(rat))
 
 
 # Prep Raster Attribute Table
 #-----------------------------------------------------------------#
 
 message("Preparing raster attribute table...")
-rm(rat_tif)
 
 # identify eval_vars_cont that are not from RMRS - we handle NAs differently
 eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
@@ -257,11 +294,11 @@ rat_freq_all <- list()
 
 for (i in seq_along(eval_vars_cat)) {
 
-  var = eval_vars_cat[i]
+  var_in = eval_vars_cat[i]
 
 # get frequency table
   f_out <- rat_x %>%
-    dplyr::select(all_of(var)) %>%
+    dplyr::select(all_of(var_in)) %>%
     table() %>%
     data.frame() 
   
