@@ -401,19 +401,64 @@ for(v in 1:length(eval_vars_cat)){
 if(params$eval_type == "CV") {
  
   # list all figures in cross-validation folder
-  eval_figs_list <- list.files(glue::glue('{eval_dir}/01_Cross_Validation/figs/'), full.names = TRUE, pattern = ".png$")
+  eval_figs_list <- list.files(glue::glue('{eval_dir}/03_Cross_Validation/figs/'), full.names = TRUE, pattern = ".png$") #TODO: make paths dynamic
   
-  print(eval_figs_list)
-  
-  # render graphics in markdown
-  knitr::include_graphics(eval_figs_list, rel_path = FALSE, error =TRUE)
-  
-  }
-  
-  
-```
+  evalFig_tmpDir <- file.path(getwd(), "tmp")
 
-```{r conditionally plot OOB figures}
+  if(!file.exists(evalFig_tmpDir)){dir.create(evalFig_tmpDir)}
+
+  # message(paste0("Moving figs from ", glue::glue('{eval_dir}/03_Cross_Validation/figs/'), " to ", evalFig_tmpDir))
+  for (fig in eval_figs_list){
+    file.copy(from = fig,
+              #to= glue::glue("{tmp_output_dir}/"),
+              to = evalFig_tmpDir,
+              overwrite = TRUE, recursive = FALSE,
+              copy.mode = TRUE)
+    }
+  
+  # initialize list
+  tmp_figs_list <- list()
+  tmp_figs_list <- list.files(evalFig_tmpDir, full.names = TRUE, pattern = ".png$")
+  # print(tmp_figs_list)
+
+  cat("\n\n\\pagebreak\n")
+  cat("**Cross-validation (CV) evaluation of continuous variables:**\n\n")
+  # render graphics in markdown
+  knitr::include_graphics(tmp_figs_list, rel_path = TRUE, error =TRUE)
+ 
+  
+}
+
+```
+```{r conditionally plot OOB figures, results = "asis"}
+if(params$eval_type == "OOB") {
+
+  # list all figures in cross-validation folder
+  eval_figs_list <- list.files(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'), full.names = TRUE, pattern = ".png$") #TODO: make paths dynamic
+
+  evalFig_tmpDir <- file.path(getwd(), "tmp")
+
+  if(!file.exists(evalFig_tmpDir)){dir.create(evalFig_tmpDir)}
+
+  # message(paste0("Moving figs from ", glue::glue('{eval_dir}/03_Cross_Validation/figs/'), " to ", evalFig_tmpDir))
+  for (fig in eval_figs_list){
+    file.copy(from = fig,
+              #to= glue::glue("{tmp_output_dir}/"),
+              to = evalFig_tmpDir,
+              overwrite = TRUE, recursive = FALSE,
+              copy.mode = TRUE)
+    }
+  # initialize list
+  tmp_figs_list <- list()
+  tmp_figs_list <- list.files(evalFig_tmpDir, full.names = TRUE, pattern = ".png$")
+  # print(tmp_figs_list) # testing
+
+  cat("\n\n\\pagebreak\n")
+  cat("**Out-of-bag (OOB) evaluation of continuous variables:**\n\n")
+  # render graphics in markdown
+  knitr::include_graphics(tmp_figs_list, rel_path = TRUE, error =TRUE)
+
+}
 
 ```
 

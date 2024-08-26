@@ -24,8 +24,8 @@
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
 #eval_vars_cat <- yvars
-eval_vars_cat <- c(yvars, "disturb_code", "evt_gp")
-eval_vars_cat_cont <- c(eval_vars_cat, attributevars)
+eval_vars_cat <- c(yvars, "disturb_code") #FIXME:, "evt_gp")
+eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
 
 # Eval report for OOB or derived vars
 # - options: "TargetLayerComparison" or "OOB" or "CV"
@@ -340,6 +340,8 @@ rmarkdown::render(rmd_path,
                                 eval_vars= eval_vars_cat,
                                 cms_path = cms_path)
 )
+
+file.remove(tmp_figs_list)
 
 # File Organization
 #------------------------------------------#
