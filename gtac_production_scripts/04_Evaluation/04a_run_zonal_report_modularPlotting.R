@@ -30,7 +30,7 @@ standalone <- "N"
 
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
-#eval_vars_cat <- yvars
+# eval_vars_cat <- yvars
 eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code_bin", "disturb_code" )
 eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
 #eval_vars_cat_cont <- eval_vars_cat
@@ -331,7 +331,9 @@ rmarkdown::render(rmd_path,
                                 cms_path = cms_path)
 )
 
-#file.remove(tmp_figs_list)
+if(eval_type_in %in% c("OOB", "CV")){
+    file.remove(tmp_figs_list)
+}
 
 # File Organization
 #------------------------------------------#

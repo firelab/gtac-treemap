@@ -11,10 +11,10 @@ gc()
 year_input <- 2022
 
 
-zones_list <- c(7)   # testing
-# zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-#                seq(from = 12, to = 66, by = 1),
-#                98, 99)
+# zones_list <- c(7)   # testing
+zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
+               seq(from = 12, to = 66, by = 1),
+               98, 99)
 
 # path to priority zone list 
 
