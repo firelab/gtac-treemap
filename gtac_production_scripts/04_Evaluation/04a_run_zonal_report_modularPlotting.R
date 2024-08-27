@@ -22,7 +22,7 @@
 #------------------------------------------#
 cur_zone_zero_standalone <- "z08"
 year_standalone <- 2022
-standalone <- "Y"
+standalone <- "N"
 
 
 # VARIABLES TO EVALUATE
@@ -32,14 +32,14 @@ standalone <- "Y"
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
 #eval_vars_cat <- yvars
 eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code_bin", "disturb_code" )
-#eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
-eval_vars_cat_cont <- eval_vars_cat
+eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
+#eval_vars_cat_cont <- eval_vars_cat
 
 # Eval report for OOB or derived vars
 # - options: "TargetLayerComparison" or "OOB" or "CV"
 
-#eval_type <- eval_type_in
-eval_type <- "TargetLayerComparison"
+eval_type <- eval_type_in
+#eval_type <- "TargetLayerComparison"
 #eval_type <- "OOB" 
 #eval_type <- "CV"
 

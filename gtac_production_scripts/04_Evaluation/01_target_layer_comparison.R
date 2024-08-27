@@ -26,9 +26,9 @@ eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code", "dist
 # Set inputs manually - if running standalone
 #-----------------------------------------------------#
 
-cur_zone_zero_standalone <- "z08"
-year_standalone <- 2022
-standalone <- "Y"
+# cur_zone_zero_standalone <- "z08"
+# year_standalone <- 2022
+standalone <- "N"
 
 # Set inputs manually - if running standalone
 #-----------------------------------------------------#
