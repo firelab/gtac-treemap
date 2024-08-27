@@ -18,14 +18,22 @@
 #                                                          #    
 #==========================================================#
 
+# IF RUNNING STANDALONE: 
+#------------------------------------------#
+cur_zone_zero_standalone <- "z08"
+year_standalone <- 2022
+standalone <- "N"
+
+
 # VARIABLES TO EVALUATE
 #------------------------------------------#
 
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
-#eval_vars_cat <- yvars
-eval_vars_cat <- c(yvars, "disturb_code", "evt_gp")
-eval_vars_cat_cont <- c(eval_vars_cat, attributevars)
+# eval_vars_cat <- yvars
+eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code_bin", "disturb_code" )
+eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
+#eval_vars_cat_cont <- eval_vars_cat
 
 # Eval report for OOB or derived vars
 # - options: "TargetLayerComparison" or "OOB" or "CV"
@@ -82,14 +90,6 @@ document_formatExtensionDict <- c("pdf_document" = ".pdf",
 #-------------------------------------------#
 
 
-# Set inputs - from input script used for imputation
-#-----------------------------------------------------#
-
-#this_dir <- this.path::this.dir()
-
-#inputs_for_evaluation <- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
-#source(inputs_for_evaluation)
-
 # Other settings
 #------------------------------------------#
 
@@ -103,6 +103,32 @@ round_dig <- 4
 # Allow for sufficient digits to differentiate plot cn numbers
 
 options("scipen" = 100, "digits" = 8)
+
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
+
+if(standalone == 'Y') {
+  
+  # assign main variables
+  cur_zone_zero <- cur_zone_zero_standalone
+  year <- year_standalone
+  
+  # load directories
+  this_proj <- this.path::this.proj()
+  this_dir <- this.path::this.dir()
+  
+  ## load treemap library
+  lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+  source(lib_path)
+  
+  #load settings for zone
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  
+  load(zone_settings)
+  
+  # load library again in case functions have been updated since initial creation of RDS
+  source(lib_path)
+}
 
 # Prep constructed paths
 #------------------------------------------#
@@ -132,27 +158,8 @@ cm_labels <- c("Predicted", "Reference")
 # Load evaluation data
 #------------------------------------------#
 
-# # CACHING -- checking if the same raster was already imported
-# if (exists("ras")){
-#   
-#   if(ras@ptr$get_sourcenames() == raster_nameCompare){
-#   
-#     message("Using preloaded raster from previous run...")
-#   
-#   } else {
-#     
-#     # ras exists but not the same as previous one
-#     # load raw imputation output raster
-#     ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}.tif"))
-#     raster_nameCompare <- output_name
-#   }
-# } else {
-  
-  # load raw imputation output raster
-  ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}_Imputation.tif"))
-  raster_nameCompare <- output_name
-  
-#}
+# load raw imputation output raster
+ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}_Imputation.tif"))
 
 # conditional loads and variables based on evaluation type: 
 
@@ -164,49 +171,28 @@ if(eval_type == "TargetLayerComparison") {
     
     cms_path <- glue::glue("{eval_dir}/01_Target_Layer_Comparison/{output_name}_CMs_{eval_type}.RDS")
     plot_labels <- c("Imputed", "Target")
-    cm_labels <- c("Predicted", "Reference")
+    cm_labels <- c("Imputed", "Target")
     
 } else if(eval_type == "OOB") {
   
   cms_path <- glue::glue("{eval_dir}/02_OOB_Evaluation/{output_name}_CMs_{eval_type}.RDS")
   plot_labels <- c("Imputed (OOB)", "Observed (FIA)")
+  cm_labels <- c("Imputed (OOB)", "Reference (FIA)")
 
+  
 } else if(eval_type == "CV") {
     cms_path <- glue::glue("{eval_dir}/03_Cross_Validation/{output_name}_CMs_{eval_type}.RDS")
     plot_labels <- c("Imputed (CV)", "Observed (FIA)")
+    cm_labels <- c("Imputed (CV)", "Reference(FIA)")
   }
   
 cms_all <- readRDS(cms_path)
 
-# Load zone
+# Load Landfire Zones
 #------------------------------------------#
 
-if (exists("LF_zones")){
-  
-  if(lf_zones_pathCompare == lf_zones_path) { # check if its the same rat as before
-    
-    message("Using previously loaded lf zones vector...")
-    
-  } else {
-    
-    message("`lf_zones` exists but not the same as previously loaded data, importing lf_zones...")
-    LF_zones <- terra::vect(lf_zones_path)
-    lf_zones_pathCompare <- lf_zones_path
-    
-  }
-  
-} else {
-  
-  message("Importing lf_zones...")
-  LF_zones <- terra::vect(lf_zones_path)
-  lf_zones_pathCompare <- lf_zones_path
-  
-}
-
-
-
 # load LF zone data
-# LF_zones <- terra::vect(lf_zones_path)
+LF_zones <- terra::vect(lf_zones_path)
 
 # select single LF zone
 zone <- terra::subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
@@ -217,6 +203,18 @@ zone <- terra::project(zone, crs(ras))
 # get name of zone
 zone_name <- glue::glue("LFz{zone_num}_{gsub(' ', '', zone$ZONE_NAME)}")
 
+# Load EVT metadata
+#------------------------------------------#
+evt_gp_metadata <- read.csv(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/Vegetation/EVT/LF2022_EVT_230_CONUS/CSV_Data/LF22_EVT_230.csv")) %>% 
+  rename_with(tolower) %>%
+  dplyr::select(evt_gp, evt_gp_n) %>%
+  dplyr::mutate(evt_gp = factor(evt_gp),
+                # make a shortened evt_gp_name 
+                evt_gp_n_short = paste0(evt_gp, "-", substr(evt_gp_n, 1, 15)) ) %>% 
+  arrange(evt_gp) %>%
+  distinct()
+
+
 # Load X table
 #------------------------------------------#
 
@@ -226,76 +224,68 @@ X_df <- read.csv(xtable_path_model)
 # Load raster attribute table and points
 #------------------------------------------#
 
-# # load rat
-#  
-# if (exists("rat_x") & exists("rat_pathCompare")){
-#    
-#    if(rat_pathCompare == rat_path) { # check if its the same rat as before
-#      
-#      message("Using previously loaded raster attribute table...")
-#      
-#    } else {
-#      
-#      message("`rat` exists but not the same as previously loaded data, importing rat...")
-#      rat_tif <- terra::rast(rat_path)
-#      rat_pathCompare <- rat_path
-#  
-#    }
-#    
-#  } else {
-  
-  message("Importing raster attribute table...")
-  rat_tif <- terra::rast(rat_path)
-  rat_pathCompare <- rat_path
-  # convert from attribute table to data frame
-  rat <- data.frame(cats(rat_tif)) 
-  
-  
-  # Prep Raster Attribute Table
-  #-----------------------------------------------------------------#
-  
-  message("Preparing raster attribute table...")
-  
-  # Prep Raster Attribute Table
-  #-----------------------------------------------------------------#
-  
-  # load rat
-  #rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
-  
-  rat_tif <- terra::rast(rat_path)
-  rat <- data.frame(cats(rat_tif)) 
-  
-  rm(rat_tif)
-  
-  # identify eval_vars_cont that are not from RMRS - we handle NAs differently
-  eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
-  eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(is.numeric))), "RMRS", negate = TRUE)
-  
-  # prep rat table
-  rat %<>%
-    # rename shortened field names
-    dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
-                  "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
-    # convert CN to numeric
-    dplyr::mutate(CN = as.numeric(CN)) %>%
-    # round and fix NA values for RMRS and non RMRS vars
-    dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
-    dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
-    dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
-    # calculate TPA_DEAD_LIVE_RATIO
-    dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
-    # remove columns
-    dplyr::select(-c(Value, tm_id))
-  
-  
-  # join RAT with X df using CN
-  rat_x <- rat %>%
-    right_join(X_df, by = "CN") %>%
-    select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
-    # filter to plots with values
-    #filter(!is.na(BALIVE)) %>%
-    arrange(tm_id)
-#}
+message("Importing raster attribute table...")
+rat <- terra::rast(rat_path)
+rat <- data.frame(cats(rat))
+
+
+# Prep Raster Attribute Table
+#-----------------------------------------------------------------#
+
+message("Preparing raster attribute table...")
+
+# identify eval_vars_cont that are not from RMRS - we handle NAs differently
+eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
+eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(is.numeric))), "RMRS", negate = TRUE)
+
+# prep rat table
+rat %<>%
+  # rename shortened field names
+  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
+                "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
+  # convert CN to numeric
+  dplyr::mutate(CN = as.numeric(CN)) %>%
+  # round and fix NA values for RMRS and non RMRS vars
+  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
+  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
+  dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
+  # calculate TPA_DEAD_LIVE_RATIO
+  dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
+  # remove columns
+  dplyr::select(-c(Value, tm_id))
+
+
+# join RAT with X df using CN
+rat_x <- rat %>%
+  right_join(X_df, by = "CN") %>%
+  select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
+  # filter to plots with values
+  #filter(!is.na(BALIVE)) %>%
+  arrange(tm_id)
+
+# Spatial Filter for RAT - Include only points that fall within the zone
+#--------------------------------------------------------------------------#
+
+# load model to get xy data
+yai <- readRDS(model_path)
+
+# get xy data from model
+X_xy <- yai$xRefs %>%
+  dplyr::select(point_x, point_y) %>%
+  tibble::rownames_to_column(var = "tm_id")
+
+# convert xy data to spatial points
+X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = "epsg:4269")
+
+# project
+X_pts <- terra::project(X_pts, crs(zone))
+
+# mask to pts within zone
+zone_pts <- terra::mask(X_pts, zone)
+
+# filter to pts within zone
+rat_x <- rat_x %>%
+  dplyr::filter(tm_id %in% as.numeric(zone_pts$tm_id))
 
 # Calc frequency for all vars in RAT_x
 #------------------------------------------#
@@ -304,11 +294,11 @@ rat_freq_all <- list()
 
 for (i in seq_along(eval_vars_cat)) {
 
-  var = eval_vars_cat[i]
+  var_in = eval_vars_cat[i]
 
 # get frequency table
   f_out <- rat_x %>%
-    dplyr::select(all_of(var)) %>%
+    dplyr::select(all_of(var_in)) %>%
     table() %>%
     data.frame() 
   
@@ -340,6 +330,10 @@ rmarkdown::render(rmd_path,
                                 eval_vars= eval_vars_cat,
                                 cms_path = cms_path)
 )
+
+if(eval_type_in %in% c("OOB", "CV")){
+    file.remove(tmp_figs_list)
+}
 
 # File Organization
 #------------------------------------------#

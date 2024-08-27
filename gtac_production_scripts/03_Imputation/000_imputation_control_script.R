@@ -11,10 +11,10 @@ gc()
 year_input <- 2022
 
 
-zones_list <- c(1, 8, 10  )   # testing
-#zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-#                seq(from = 12, to = 66, by = 1),
-#                98, 99)
+# zones_list <- c(7)   # testing
+zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
+               seq(from = 12, to = 66, by = 1),
+               98, 99)
 
 # path to priority zone list 
 
@@ -95,7 +95,7 @@ source(project_inputScript)
 # LOOP by zones (runs x66 for all zones in CONUS)
 for (zone_input in zones_list){
 
-  #zone_input <- zones_list[1] # for testing
+  # zone_input <- zones_list[1] # for testing
   
   ptm_zone_imp <- Sys.time()
   
@@ -159,9 +159,8 @@ for (zone_input in zones_list){
     
     message(glue::glue("Generating evaluation report for {eval_type_in}"))
     source(reportGenerator_script)
-  }
-  
-  
+    }
+
   
   #############################################################
   

@@ -187,7 +187,7 @@ if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
 }
 
 
-# Set up temp directory 
+# Set up temp directory
 #----------------------------------#
 
 # check if tmp directory exists ; create it if it doesn't

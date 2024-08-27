@@ -20,26 +20,40 @@
 #----------------------------------------------------------#
 
 # list layers to evaluate, assemble, and export
-#eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
-eval_vars_cat <- c(yvars, "evt_gp", "disturb_code") # compare both binary disturbance and original disturbance codes
+eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code", "disturb_code_bin")
+#eval_vars_cat <- c(yvars, "evt_gp", "disturb_code") # compare both binary disturbance and original disturbance codes
 
 # Set inputs manually - if running standalone
 #-----------------------------------------------------#
 
-# cur_zone_zero <- "z07"
-# year <- 2022
+# cur_zone_zero_standalone <- "z08"
+# year_standalone <- 2022
+standalone <- "N"
 
-# this_proj <- this.path::this.proj()
-# this_dir <- this.path::this.dir()
-# 
-# ## load treemap library
-# lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
-# source(lib_path)
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
 
-# load settings for zone
-# zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
-# 
-# load(zone_settings)
+if(standalone == 'Y') {
+  
+  # assign main variables
+  cur_zone_zero <- cur_zone_zero_standalone
+  year <- year_standalone
+  
+  this_proj <- this.path::this.proj()
+  this_dir <- this.path::this.dir()
+  
+  ## load treemap library
+  lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+  source(lib_path)
+  
+  #load settings for zone
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  
+  load(zone_settings)
+  
+  # load library again in case functions have been updated since initial creation of RDS
+  source(lib_path)
+}
 
 
 #####################################################################
@@ -74,7 +88,7 @@ plot(ras,
 #------------------------------------------#
 X_df <- read.csv(xtable_path_model)
 
-# Target rasters
+# Load target rasters
 #---------------------------------------#
 
 # list landfire rasters in dir
@@ -91,9 +105,25 @@ target_files <- target_files[target_files %>%
 # load
 rs2 <- load_and_name_rasters(target_files)
 
+# Prep disturbance code binary target raster
+#------------------------------------------------------#
+
 # make binary disturbance code, since this was a target layer
 rs2$disturb_code_bin<- rs2$disturb_code
 rs2$disturb_code_bin[rs2$disturb_code_bin == 2]<- 1
+
+# Prep evt_gp orig target raster
+#-------------------------------------------------------#
+
+# load evt_gp remap table
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) %>%
+  rename_with(tolower) %>%
+  dplyr::select(evt_gp_remap, evt_gp) %>%
+  as.matrix()
+
+# make evt_gp raster, not remapped
+rs2$evt_gp <- terra::classify(rs2$evt_gp_remap, evt_gp_remap_table )
+
 
 # FOR TESTING: Conditionally crop to aoi
 #---------------------------------------------------#
@@ -213,5 +243,5 @@ write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_C
 #   
 #   
   
-rm(ras, lookup, rs2, vrt, id_list)
+#rm(ras, lookup, rs2, id_list)
 gc()

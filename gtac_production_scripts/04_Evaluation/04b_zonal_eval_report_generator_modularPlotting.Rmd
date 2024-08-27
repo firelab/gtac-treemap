@@ -79,11 +79,11 @@ if (include_paramTable == "Y"){
 
 ```
 
-```{r choose single variable to start}
-#choose single variable
+```{r for testing: choose single variable to start}
+# for testing: choose single variable
 # 
 #v <- 4
-# var_in <- eval_vars_cat[v]
+#var_in <- eval_vars_cat[v]
 ```
 
 ```{r format and plot tables for each var, results = 'asis', warning = F}
@@ -139,7 +139,7 @@ for(v in 1:length(eval_vars_cat)){
     dplyr::select(-Freq_norm)
   
   
-  #prep rat frequency table
+  #prep rat frequency table - normalized
   rat_freq_norm %<>% 
     dplyr::rename(class = !!var_in, 
            "aRAT" = Freq_norm) %>%
@@ -155,6 +155,14 @@ for(v in 1:length(eval_vars_cat)){
     dplyr::full_join(rat_freq_norm, by = join_by("class")) %>%
     dplyr::arrange(class)
   
+  # Format frequency data for plotting - to be used in bar plot
+  #---------------------------------------------------------------------------------#
+
+  freq_t2 <- freq_norm %>%
+    tidyr::pivot_longer(!class, names_to = "dataset") %>%
+    dplyr::rename(frequency = "value") %>%
+    dplyr::mutate(dataset= factor(dataset)) %>%
+    dplyr::arrange(dataset, class)
   
   # Prep CM Classes
   #---------------------------------------------#
@@ -171,37 +179,6 @@ for(v in 1:length(eval_vars_cat)){
   # get number of classes
   nclass = length(unique(cm_classes$class))
   
-  # Prep raw CM
-  #------------------------------------------------#
-  
-  #load cm_raw table
-  cm_raw <- as.data.frame.matrix(cms$raw)
-  
-  # Prep cm overall metrics table
-  #------------------------------------------------------#
-  
-  cm_overall <- cms$overall
-
-  #format
-  cm_overall %<>% 
-    dplyr::mutate(value = round(value, round_dig))
-  
-  row.names(cm_overall) <- NULL
-  
-  # Prepare data for plotting
-  ##################################################################################
-  
-  # Bar plot: Normalized frequency, observed vs. predicted vs. for each class
-  # ---------------------------------------------------------#
-  
-  #format frequency table for plotting
-  freq_t2 <- freq_norm %>%
-    tidyr::pivot_longer(!class, names_to = "dataset") %>%
-    dplyr::rename(frequency = "value") %>%
-    dplyr::mutate(dataset= factor(dataset)) %>%
-    dplyr::arrange(dataset, class)
-    
-    
   # Scatterplot: N of class in reference data vs. classwise accuracy
   # -----------------------------------------------------------------
   
@@ -232,7 +209,44 @@ for(v in 1:length(eval_vars_cat)){
     dplyr::summarise(n = ref + pred) %>%
     dplyr::left_join(acc, by = "class")
   
-   
+  
+  # for evt group - replace group number with long group name for class, for plotting
+  #---------------------------------------------------------------------------------#
+  if(var_in == "evt_gp") {
+    
+    freq %<>% 
+      left_join(evt_gp_metadata, by = c("class" = "evt_gp")) %>%
+      dplyr::mutate(class = evt_gp_n_short) %>%
+      select(-c(evt_gp_n, evt_gp_n_short))
+    
+    freq_norm %<>%
+      left_join(evt_gp_metadata, by = c("class" = "evt_gp")) %>%
+      dplyr::mutate(class = evt_gp_n_short) %>%
+      select(-c(evt_gp_n, evt_gp_n_short))
+    
+  }
+  
+  
+  
+  
+  # Prep raw CM
+  #------------------------------------------------#
+  
+  #load cm_raw table
+  cm_raw <- as.data.frame.matrix(cms$raw)
+  
+  # Prep cm overall metrics table
+  #------------------------------------------------------#
+  
+  cm_overall <- cms$overall
+
+  #format
+  cm_overall %<>% 
+    dplyr::mutate(value = round(value, round_dig))
+  
+  row.names(cm_overall) <- NULL
+  
+  
   # Prep confusion matrix for display
   # -------------------------------------------------#
   
@@ -252,22 +266,49 @@ for(v in 1:length(eval_vars_cat)){
   # Uses functions from the `evalPlottingFunctionLib.R` library
 
   if(barPlot_raw == "Y"){
+    
+    #conditionally add and flip axis labels for evt_gp 
+    
+    
     barchart1 <- plot_barchart_raw(df = freq, 
                                     var_in = var_in, 
                                     zone_num = zone_num, 
+                                    plot_labels = plot_labels, 
                                     save_Plot = save_Plot, 
                                     exportDir = exportDir)
+    
+    if(var_in == "evt_gp") {
+      
+      # flip x-axis labels to be vertical
+      barchart1 <- barchart1 + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + 
+        coord_flip()
+      
+    }
     
     print(barchart1)
   }
   
   if (barPlot_norm == "Y"){
     
+    #conditionally add and flip axis labels for evt_gp
+    
     barchart2 <- plot_barchart_norm(df = freq_norm, 
                                   var_in = var_in, 
                                   zone_num = zone_num, 
+                                  plot_labels = plot_labels,
                                   save_Plot = save_Plot, 
                                   exportDir = exportDir)
+    
+    if(var_in == "evt_gp") {
+      
+      # flip x-axis labels to be vertical
+      barchart2 <- barchart2 + 
+        theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5)) + 
+        coord_flip()
+      
+    }
+    
     print(barchart2)
   } 
 
@@ -341,21 +382,23 @@ for(v in 1:length(eval_vars_cat)){
   cm_display <- rbind(cm_display, ua)
 
   # make row names a column
-  cm_display$Predicted <- row.names(cm_display)
+  cm_display$Imputed <- row.names(cm_display)
   row.names(cm_display) <- NULL
 
   # bind row name column back with df
-  cm_display <- cbind(Predicted = cm_display$Predicted, cm_display[1:ncol(cm_display)-1])
-
-
+  cm_display <- cbind(Imputed = cm_display$Imputed, cm_display[1:ncol(cm_display)-1])
+  
+  # substitute desired column name
+  names(cm_display) <- c(cm_labels[1], names(cm_display)[2:ncol(cm_display)])
 
   # Format flextable
   # - Add contrast background colors for accuracy
   # - Highlight diagonal values
 
+  
   table_cm <- flextable(cm_display) %>%
     # add header and footer
-    add_header_row(values = c("", "Reference"), colwidths = c(1, ncol(cm_display)-1)) %>%
+    add_header_row(values = c("", cm_labels[2]), colwidths = c(1, ncol(cm_display)-1)) %>%
     add_footer_row(values = c("Overall accuracy", oa), colwidths = c(ncol(cm_display)-1, 1)) %>%
     # add background color for producer's and user's acc rows
     bg(i = 1:nclass, j = nclass+3, bg = "darkseagreen1") %>%
@@ -401,19 +444,64 @@ for(v in 1:length(eval_vars_cat)){
 if(params$eval_type == "CV") {
  
   # list all figures in cross-validation folder
-  eval_figs_list <- list.files(glue::glue('{eval_dir}/01_Cross_Validation/figs/'), full.names = TRUE, pattern = ".png$")
+  eval_figs_list <- list.files(glue::glue('{eval_dir}/03_Cross_Validation/figs/'), full.names = TRUE, pattern = ".png$") #TODO: make paths dynamic
   
-  print(eval_figs_list)
-  
-  # render graphics in markdown
-  knitr::include_graphics(eval_figs_list, rel_path = FALSE, error =TRUE)
-  
-  }
-  
-  
-```
+  evalFig_tmpDir <- file.path(getwd(), "tmp")
 
-```{r conditionally plot OOB figures}
+  if(!file.exists(evalFig_tmpDir)){dir.create(evalFig_tmpDir)}
+
+  # message(paste0("Moving figs from ", glue::glue('{eval_dir}/03_Cross_Validation/figs/'), " to ", evalFig_tmpDir))
+  for (fig in eval_figs_list){
+    file.copy(from = fig,
+              #to= glue::glue("{tmp_output_dir}/"),
+              to = evalFig_tmpDir,
+              overwrite = TRUE, recursive = FALSE,
+              copy.mode = TRUE)
+    }
+  
+  # initialize list
+  tmp_figs_list <- list()
+  tmp_figs_list <- list.files(evalFig_tmpDir, full.names = TRUE, pattern = ".png$")
+  # print(tmp_figs_list)
+
+  cat("\n\n\\pagebreak\n")
+  cat("**Cross-validation (CV) evaluation of continuous variables:**\n\n")
+  # render graphics in markdown
+  knitr::include_graphics(tmp_figs_list, rel_path = TRUE, error =TRUE)
+ 
+  
+}
+
+```
+```{r conditionally plot OOB figures, results = "asis"}
+if(params$eval_type == "OOB") {
+
+  # list all figures in cross-validation folder
+  eval_figs_list <- list.files(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'), full.names = TRUE, pattern = ".png$") #TODO: make paths dynamic
+
+  evalFig_tmpDir <- file.path(getwd(), "tmp")
+
+  if(!file.exists(evalFig_tmpDir)){dir.create(evalFig_tmpDir)}
+
+  # message(paste0("Moving figs from ", glue::glue('{eval_dir}/03_Cross_Validation/figs/'), " to ", evalFig_tmpDir))
+  for (fig in eval_figs_list){
+    file.copy(from = fig,
+              #to= glue::glue("{tmp_output_dir}/"),
+              to = evalFig_tmpDir,
+              overwrite = TRUE, recursive = FALSE,
+              copy.mode = TRUE)
+    }
+  # initialize list
+  tmp_figs_list <- list()
+  tmp_figs_list <- list.files(evalFig_tmpDir, full.names = TRUE, pattern = ".png$")
+  # print(tmp_figs_list) # testing
+
+  cat("\n\n\\pagebreak\n")
+  cat("**Out-of-bag (OOB) evaluation of continuous variables:**\n\n")
+  # render graphics in markdown
+  knitr::include_graphics(tmp_figs_list, rel_path = TRUE, error =TRUE)
+
+}
 
 ```
 

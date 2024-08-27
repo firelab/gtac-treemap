@@ -398,4 +398,4 @@ for (i in eval_vars_cont) {
 message("done with cross-validation!")
 
 #remove unused objects
-rm(yai, yai_fold, Y_fold, X_fold, cm, cms, cv, cv_att_pred, cv_att_ref, evt_metadata, folds, lm, p, p_r, p_r2, p2, gps_to_drop)
+rm(yai, yai_fold, Y_fold, X_fold, cm, cms, cv, cv_att_pred, cv_att_ref, folds, lm, p, p_r, p_r2, p2, gps_to_drop) # evt_metadata
