@@ -1,28 +1,7 @@
-# Function to make new imputation predictions given a raster input
-# This function is applied on a DATA FRAME (representing one row of raster) INSTEAD OF RASTER
-
-library(docstring)
-
-impute_row <- function(dat, yai, test = FALSE)  { 
+impute.row <- function(dat, yai, test)  { 
   
-  #' Function to make new imputation predictions given a data frame input
-  #' 
-  #' @param dat The data frame, for TreeMap, represents one row of a multi-layer raster
-  #' Where each column in the data frame represents all values in the row for a given layer of the raster
-  #' @param yai model created by the `yaImpute` function
-  #' @param test default FALSE. test = TRUE skips the imputation portion and returns a data frame of the input ids
-  #' @return data frame of imputed ids
-  #' @export
-  #'
-  #' @examples 
   require(yaImpute)
   require(dplyr)
-  
-  # #for testing
-  #currow <- 400
-  #yai <- yai.treelist.bin
-  #ras <- ras
-  #test <- FALSE
   
   # Manage inputs
   #---------------------------------------#
@@ -30,35 +9,10 @@ impute_row <- function(dat, yai, test = FALSE)  {
   #give dat the name we use in this function
   extract.currow <- data.frame(dat)
   
-  # # handle missing test param
-  # if(missing(test)) {
-  #   test <- FALSE
-  # }
-  
-  # # handle a wrapped raster as input
-  # if(is(ras) == "PackedSpatRaster") {
-  #   ras <- terra::unwrap(ras)}
-  
-  
-  # # Get data from raster
-  # #------------------------------------------------#
-  # 
-  # #### Get dimensions of input raster stack
-  # nrows.out <- dim(ras)[1]
-  # ncols.out <- dim(ras)[2]
-  # 
-  # # get cell numbers and raster values for current row
-  # rsvals <- terra::cellFromRowCol(ras, row = currow, col = 1:ncols.out)
-  # rsmat <- ras[rsvals]
-  # extract.currow <- data.frame(rsmat)
-  # 
-  # #### Get coordinates from current row of raster
-  # xycoords <- terra::xyFromCell(ras, rsvals)
-  # xycoords <- data.frame(xycoords)
-  
-  # #### Get coords of current row
-  # extract.currow$POINT_X <- xycoords$x
-  # extract.currow$POINT_Y <-xycoords$y
+  # handle missing test param
+  if(missing(test)) {
+    test <- FALSE
+  }
   
   #### Get dimensions of current row
   colseq <- 1:length(extract.currow[,1])
@@ -91,8 +45,8 @@ impute_row <- function(dat, yai, test = FALSE)  {
     # EVG handling - 
     #### Identify EVGs in zone that don't appear in X.df   
     #-------------------------------------------------------#
-    evg.orig <- levels(yai$xRefs$evt_gp_remap)
-    evg.val.temp <- X.df.temp$evt_gp_remap  
+    evg.orig <- levels(yai$xRefs$evt_gp)
+    evg.val.temp <- X.df.temp$evt_gp  
     n.evgs.orig <- length(sort(unique(evg.orig)))  
     
     nonappearing.evgs <- evg.orig[-sort(unique(as.numeric(as.character(evg.val.temp))))]  
@@ -100,12 +54,13 @@ impute_row <- function(dat, yai, test = FALSE)  {
     
     # Create dummy rows for non-appearing EVGs
     # Question: are dummy rows necessary? 
-    if(n.dummy.rows > 0) {      
+    if(n.dummy.rows > 0)
+    {    
       dummy.rows <- X.df.temp[1:n.dummy.rows,]    
-      tempchar <- as.character(X.df.temp$evt_gp_remap)    
-      X.df.temp$evt_gp_remap <- tempchar    
-      dummy.rows$evt_gp_remap <- as.character(nonappearing.evgs) 
-      dummy.rows$disturb_code_bin <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
+      tempchar <- as.character(X.df.temp$evt_gp)    
+      X.df.temp$evt_gp <- tempchar    
+      dummy.rows$evt_gp <- as.character(nonappearing.evgs) 
+      dummy.rows$disturb_code <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
       X.df.temp <- rbind(X.df.temp, dummy.rows)    
     }
     
@@ -114,8 +69,8 @@ impute_row <- function(dat, yai, test = FALSE)  {
     #-------------------------------------------------------#
     X.df.temp <- 
       X.df.temp %>%
-      dplyr::mutate(evt_gp_remap = factor(evt_gp_remap, levels = levels(yai$xRefs$evt_gp_remap)),
-                    disturb_code_bin = factor(disturb_code_bin, levels = levels(yai$xRefs$disturb_code_bin))) %>%
+      dplyr::mutate(evt_gp = factor(evt_gp, levels = levels(yai$xRefs$evt_gp)),
+                    disturb_code = factor(disturb_code, levels = levels(yai$xRefs$disturb_code))) %>%
       # put columns in order expected
       dplyr::select(names(yai$xRefs))
     
@@ -124,7 +79,7 @@ impute_row <- function(dat, yai, test = FALSE)  {
     
     # Option for TESTING  - skip imputation
     if(test == TRUE){
-      # test output - simple extract the same size and format as impute.row
+      # test output - simple extract the same size ans format as impute.row
       test.out.tmp <- as.numeric(unlist(extract.currow[2]))
       test.out <- impute.out
       test.out[valid.cols] <- test.out.tmp
@@ -139,17 +94,14 @@ impute_row <- function(dat, yai, test = FALSE)  {
       rownames(X.df.temp) <- paste0("T- ", rownames.all)
       
       ### Perform imputation
-      # take object from already-made yaImpute model and use X.df.temp dataframe to make predictions
+      # take object from formed random forests model and use X.df.temp dataframe to make predictions
       temp.newtargs <- yaImpute::newtargets(yai, newdata = X.df.temp)
       
       #### Get outputs of interest
-      #out.trgrows <- temp.newtargs$trgRows # row names for target observations
-      #temp.xall <- temp.newtargs$xall # x-variables (predictors) for all observations
       out.neiIds <- temp.newtargs$neiIdsTrgs # a matrix of reference identifications that correspond to neiDstTrgs (distances between target and ref).
       
       #### Format outputs into imputation results
       yrows <- as.numeric(out.neiIds[,1]) # get list of plotIds; rowname = rowname from X.df.temp - corresponds to cell
-      #id.out <- id.table[yrows] # subset id table to only the ids that appear in the output
       impute.out[valid.cols] <- yrows[1:nrows.orig] # for each valid column: match it with the output row from imputation
       
       # garbage collection
@@ -159,5 +111,28 @@ impute_row <- function(dat, yai, test = FALSE)  {
   
   # return at end of function
   impute.out
+  
+}
+
+
+fill_matrix_to_raster <- function(mout, ncol_r, nrow_r, row1) { 
+  
+  require(terra) 
+  
+  # make rows with NAs to make full raster of test 
+  ncols.out <- ncol_r
+  nrows.out <- nrow_r
+  d <- rep(NA, ncols.out)
+  blank_rows_top <- do.call("rbind", replicate(row1-1, d, simplify = FALSE))
+  blank_rows_bottom <- do.call("rbind", replicate(nrows.out-nrow(mout), d, simplify = FALSE))
+  
+  # will the output raster, with blank rows, be the same size as the input raster?
+  
+  #bind test rows with NAs to make full raster
+  tile_out <- terra::rast(rbind(blank_rows_top,
+                                mout,
+                                blank_rows_bottom))
+  
+  return(tile_out)
   
 }
