@@ -12,7 +12,7 @@
 year <- year_input
 
 #project_name <- glue::glue("{year}_Production")
-project_name <- glue::glue("{year}_Production") #for testing
+project_name <- glue::glue("{year}_Production")
 
 # name for products - includes params here if desired
 #e.g., #output_name <- "2016_GTAC_LCMSDist"
@@ -39,14 +39,17 @@ xvars <- c("slope", "elevation", "easting", "northing",
            "point_x", "point_y") #2020/2022 version
   
 # list names of yvars used as response vars for modeling
-yvars <- c("evc", "evh", "evt_gp_remap", "disturb_code_bin") # 2020 version
+yvars <- c("evc", "evh", "evt_gp_remap", "disturb_code_bin") 
+
+# list names of vars desired for evaluation
+eval_vars_cat <- c(yvars, "evt_gp", "disturb_code")
   
 # list names of target vars / target layers
 #targetvars <- c("SLOPE", "ELEV", "PARI", "PPTI", "RELHUMI", "TMAXI", "TMINI", "VPDI", "disturb_code", "disturb_year", "canopy_cover", "canopy_height", "EVT_GP", "NORTHING", "EASTING", "POINT_X", "POINT_Y") # 2016 version
 targetvars <- c("elevation", "easting", "northing",
                 "prcp", "srad", "swe", "tmax", "tmin", "vp", "vpd",
                 "disturb_code_bin", "disturb_year", "evc", "evh", "evt_gp_remap",
-                "point_x", "point_y") #2020/2022 version
+                "point_x", "point_y") 
   
 
 # list names of attribute vars to evaluate - these come from RAT table or similar; are not incuded in imputation
