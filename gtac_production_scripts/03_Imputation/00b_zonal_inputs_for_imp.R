@@ -93,7 +93,7 @@ evt_gp_remap_table_path = glue::glue("{evt_gp_remap_table_dir}/{cur_zone_zero}/e
 params_dir = glue::glue("{raw_outputs_dir}/params/")
 
 
-# Model inputs
+# Model inputs / outputs
 #----------------------------------#
 
 # build default model path
@@ -108,6 +108,9 @@ if(is.na(model_path)) {
   
 }
 
+# path to save x and y tables used in model
+xtable_path_model <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv")
+ytable_path_model <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Ydf_bin.csv")
 
 
 # Create all directories
@@ -158,8 +161,33 @@ if(!file.exists(glue::glue('{assembled_dir}/02_Assembled_vars/'))){
   dir.create(glue::glue('{assembled_dir}/02_Assembled_vars/'), recursive = TRUE)
 }
 
+# Target Layer COmparison Outputs
+if(!file.exists(glue::glue('{eval_dir}/01_Target_Layer_Comparison'))) {
+  dir.create(glue::glue('{eval_dir}/01_Target_Layer_Comparison'), recursive = TRUE)
+}
 
-# Set up temp directory 
+# OOB outputs
+if(!file.exists(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'))) {
+  dir.create(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'), recursive = TRUE)
+}
+
+# CV outputs
+if(!file.exists(glue::glue('{eval_dir}/03_Cross_Validation/figs/'))) {
+  dir.create(glue::glue('{eval_dir}/03_Cross_Validation/figs/'), recursive = TRUE)
+}
+
+# FIA Comparison Outputs - DEPRECATED
+# if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'))) {
+#   dir.create(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'), recursive = TRUE)
+# }
+
+# Evaluation reports
+if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
+  dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
+}
+
+
+# Set up temp directory
 #----------------------------------#
 
 # check if tmp directory exists ; create it if it doesn't

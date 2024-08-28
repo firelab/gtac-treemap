@@ -27,7 +27,7 @@
 tile_name <- output_name
 
 # desired name for output raster
-rout_name <- tile_name
+rout_name <- glue::glue("{output_name}_Imputation")
 
 
 #####################################################################

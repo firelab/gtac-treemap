@@ -1,46 +1,60 @@
-# Zonal Validation Script for TreeMap Outputs
-# Validation, in this instance, means comparing against the LandFire layers used as target data
+# Zonal Target layer Comparison for TreeMap Outputs
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated:
-# 7/18/24
-
-# Goals: 
+# In this script, we: 
 # - load preliminary imputation outputs
 # - join with x-table on ID 
 # - build rasters of attributes so we can inspect them 
-# - create confusion matrices to compare outputs against Landfire
-# - use concat to compare EVC, EVH, etc with landfire layers 
+# - create confusion matrices to compare imputatation outputs against target layers
+# - Optionally use concat for a visual inspection of differences of imputation outputs vs target layers
 
-# TO DO: 
-# - remove unused levels from concat / diff
+# Last updated:
+# 8/19/24
 
 ###########################################################################
 # Set inputs
 ###########################################################################
 
-# Standard Inputs
-#-----------------------------------------------#
-
-
-# Set inputs - from input script used for imputation
-#-----------------------------------------------------#
-
-#this_proj <- this.path::this.proj()
-#this_dir <- this.path::this.dir()
-
-#inputs_for_evaluation<- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
-#source(inputs_for_evaluation)
-
-
 # Specific inputs
 #----------------------------------------------------------#
 
 # list layers to evaluate, assemble, and export
-# all options are: c("canopy_cover", "canopy_height", "EVT_GP", "disturb_code")
-#eval_vars <- c("evc", "evh", "evt_gp_remap", "disturb_code")
-eval_vars <- yvars
+eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code", "disturb_code_bin")
+#eval_vars_cat <- c(yvars, "evt_gp", "disturb_code") # compare both binary disturbance and original disturbance codes
+
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
+
+# cur_zone_zero_standalone <- "z08"
+# year_standalone <- 2022
+standalone <- "N"
+
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
+
+if(standalone == 'Y') {
+  
+  # assign main variables
+  cur_zone_zero <- cur_zone_zero_standalone
+  year <- year_standalone
+  
+  this_proj <- this.path::this.proj()
+  this_dir <- this.path::this.dir()
+  
+  ## load treemap library
+  lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+  source(lib_path)
+  
+  #load settings for zone
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  
+  load(zone_settings)
+  
+  # load library again in case functions have been updated since initial creation of RDS
+  source(lib_path)
+}
+
 
 #####################################################################
 # Load data
@@ -51,7 +65,7 @@ message("Loading data for target layer comparison")
 # Imputed raster
 #-------------------------------------------#
 # name of raster to validate
-raster_name <- glue::glue("{output_name}")
+raster_name <- glue::glue("{output_name}_Imputation")
 
 #load raw imputation output raster
 ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{raster_name}.tif"))
@@ -72,10 +86,9 @@ plot(ras,
 
 # X - df
 #------------------------------------------#
-#yai <- readRDS(model_path)
-X_df <- read.csv(glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv"))
+X_df <- read.csv(xtable_path_model)
 
-# Target rasters
+# Load target rasters
 #---------------------------------------#
 
 # list landfire rasters in dir
@@ -87,10 +100,30 @@ target_files <- filter_disturbance_rasters(target_files, dist_layer_type)
 
 # filter to only include eval layers
 target_files <- target_files[target_files %>%
-    str_detect(eval_vars %>% paste(., collapse = "|"))]
+    str_detect(eval_vars_cat %>% paste(., collapse = "|"))]
 
 # load
 rs2 <- load_and_name_rasters(target_files)
+
+# Prep disturbance code binary target raster
+#------------------------------------------------------#
+
+# make binary disturbance code, since this was a target layer
+rs2$disturb_code_bin<- rs2$disturb_code
+rs2$disturb_code_bin[rs2$disturb_code_bin == 2]<- 1
+
+# Prep evt_gp orig target raster
+#-------------------------------------------------------#
+
+# load evt_gp remap table
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) %>%
+  rename_with(tolower) %>%
+  dplyr::select(evt_gp_remap, evt_gp) %>%
+  as.matrix()
+
+# make evt_gp raster, not remapped
+rs2$evt_gp <- terra::classify(rs2$evt_gp_remap, evt_gp_remap_table )
+
 
 # FOR TESTING: Conditionally crop to aoi
 #---------------------------------------------------#
@@ -122,9 +155,6 @@ gc()
 identical(crs(ras), crs(rs2))
 compareGeom(ras, rs2)
 
-# keep input disturbance raster as 1/2; don't convert to binary
-#- because output raster values derived from imputation will have 1/2
-
 
 # clear memory
 #--------------------#
@@ -136,24 +166,18 @@ gc()
 
 message("preparing data to assemble rasters")
 
-# get list of IDs present in ras
+# get list of IDs present in imputed raster
 id_list <- freq(ras)$value %>%
   sort() %>%
   as.data.frame()
-names(id_list) <- "PLOTID"
+names(id_list) <- "tm_id"
 
 # join list of ids with x table
 # create lookup table that only has IDs present in zone
-lookup <- left_join(id_list, X_df, by = c("PLOTID" = "X")) %>%
-  select(PLOTID, CN, all_of(eval_vars)) %>%
+lookup <- left_join(id_list, X_df, by = "tm_id") %>%
+  select(tm_id, CN, all_of(eval_vars_cat)) %>%
   mutate(across(where(is.numeric), ~na_if(., NA)))
 
-# load evt_gp remap table
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
-
-# join remapped EVT_GPs with lookup table
-lookup %<>%
-  left_join(evt_gp_remap_table %>% dplyr::rename_with(tolower), by = c("evt_gp_remap")) 
 
 ####################################################################
 # Evaluation: Calculate confusion matrices of Imputation vs Target Layers
@@ -164,24 +188,22 @@ message("assembling and comparing imputed outputs vs Target Layers")
 # if exportTF = true: then exports assembled, imputed raster
 
 # apply function to all layers
-cms <- eval_vars %>%
+cms <- eval_vars_cat %>%
   map(\(x) assembleCM(x, 
                       raster = ras,
                       lookup = lookup,
-                      id_field = "PLOTID",
+                      id_field = "tm_id",
                       stackin_compare = rs2,
                       stackin_compare_name =  "Target",
-                      remapEVT_GP = TRUE,
-                      EVT_GP_remap_table =  evt_gp_remap_table,
                       exportTF = TRUE,
-                      export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}')
+                      export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{output_name}')
 
                       ))
 
-names(cms) <- eval_vars
+names(cms) <- eval_vars_cat
 
 # export as RDS
-write_rds(cms, glue::glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}_CMs_TargetLayerComparison.RDS'))
+write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_CMs_TargetLayerComparison.RDS'))
 
 ############################################################################
 
@@ -192,18 +214,12 @@ write_rds(cms, glue::glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}_C
 # # Assemble layers- derived from imputed ids matched with X table
 # #########################################
 # 
-# #lapply - change to map? for consistency with next step 
-# # lapply(eval_vars, assembleExport, 
-# #        # additional options for function
-# #        raster = ras, lookup = lookup, id_field = "PLOTID",
-# #        export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}'))
-# 
-# eval_vars %>%
+# eval_vars_cat %>%
 #   map(\(x) assembleExport(x, 
 #                           raster = ras, 
 #                           lookup = lookup, 
-#                           id_field = "PLOTID",
-#                           export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{raster_name}')
+#                           id_field = "tm_id",
+#                           export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{output_name}')
 #                           ))
 # 
 # gc()
@@ -213,35 +229,19 @@ write_rds(cms, glue::glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}_C
 # # Evaluation: Concat for selected fields to see difference when compared vs. target layers
 # ######################################################################
 # 
-# 
-# 
-# # #lapply  function to selected layers
-# # #-------------------------------------------------#
-# # lapply(eval_vars, assembleConcat, # list to apply over, function to apply
-# #        # additional arguments to function
-# #        ras = ras, 
-# #        lookup = lookup, 
-# #        id_field = "PLOTID",
-# #        stackin_compare = rs2, 
-# #        stackin_compare_name = "Landfire",
-# #        export_path = glue('{eval_dir}/02_LF_Comparison/{output_name}'),
-# #        remapEVT_GP = TRUE, 
-# #        EVT_GP_remap_table = evt_gp_remap_table)
-# 
-# eval_vars %>%
+# eval_vars_cat %>%
 #   map(\(x) assembleConcat(x, 
 #                           ras = ras, 
 #                           lookup = lookup, 
-#                           id_field = "PLOTID",
+#                           id_field = "tm_id",
 #                           stackin_compare = rs2, 
 #                           stackin_compare_name = "Target",
-#                           export_path = glue('{eval_dir}/02_Target_Layer_Comparison/{output_name}'),
-#                           remapEVT_GP = TRUE, 
-#                           EVT_GP_remap_table = evt_gp_remap_table))
+#                           export_path = glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}'),
+#                           ))
 # 
 # ####################################
 #   
 #   
   
-rm(ras, lookup, rs2, vrt)
+#rm(ras, lookup, rs2, id_list)
 gc()

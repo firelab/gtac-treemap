@@ -30,8 +30,8 @@ zones_list <- zones_list[18:34]
  
 
 # Types of evaluation to run and prepare reports for 
-# Options: "TargetLayerComparison", "OOB"
-eval_type_list <- c("TargetLayerComparison")
+# Options: "TargetLayerComparison", "OOB", "CV"
+eval_type_list <- c("TargetLayerComparison", "OOB", "CV")
 
 # Script inputs - changed less frequently 
 ########################################################
@@ -51,6 +51,8 @@ assembleImputation_script <- glue::glue("{this_dir}/03_assemble_imputation_raste
 eval_inputScript <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/00_inputs_for_evaluation.R")
 targetLayerComparison_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/01_target_layer_comparison.R")
 OOBEvaluation_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/02_oob_evaluation.R")
+CV_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/03_cross_validation.R")
+
 reportGenerator_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/04a_run_zonal_report_modularPlotting.R")
 
 # packages required
@@ -104,7 +106,7 @@ source(project_inputScript)
 # LOOP by zones (runs x66 for all zones in CONUS)
 for (zone_input in zones_list){
 
-  #zone_input <- zones_list[1] # for testing
+  # zone_input <- zones_list[1] # for testing
   
   ptm_zone_imp <- Sys.time()
   
@@ -138,18 +140,27 @@ for (zone_input in zones_list){
   
   ptm_zone_eval <- Sys.time()
   
-  # SOURCE eval script: 
-  message("Setting inputs for evaluation")
-  source(eval_inputScript)
+  # SOURCE eval scripts: 
+
+  if("TargetLayerComparison" %in% eval_type_list) {
+    # SOURCE target layer comparison
+    message("Performing target layer comparison")
+    source(targetLayerComparison_script)
+  }
   
-  # SOURCE target layer comparison
-  message("Performing target layer comparison")
-  source(targetLayerComparison_script)
+  if("OOB" %in% eval_type_list) {  
+    # SOURCE OOB evaluation
+    message("Performing OOB evaluation")
+    source(OOBEvaluation_script)
+  }
+   
+  if("CV" %in% eval_type_list) {
+    # SOURCE cross-validation
+    message("Performing cross-validation")
+    source(CV_script)
+  }
   
-  # SOURCE OOB evaluation
-  #message("Performing OOB evaluation")
-  #source(OOBEvaluation_script)
-  
+    
   # SOURCE eval report generator
   # For each evaluation type specified
   for (i in seq_along(eval_type_list)) {
@@ -159,9 +170,8 @@ for (zone_input in zones_list){
     
     message(glue::glue("Generating evaluation report for {eval_type_in}"))
     source(reportGenerator_script)
-  }
-  
-  
+    }
+
   
   #############################################################
   

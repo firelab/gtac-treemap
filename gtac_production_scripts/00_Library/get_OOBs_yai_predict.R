@@ -18,15 +18,6 @@ get_OOBs_yai_predict <- function(yai) {
   require(tidyverse)
   require(magrittr)
 
-  # yai_out <- foruse(yai)
-  # yai_out1 <- foruse(yai, kth = 1)
-  # 
-  # # get new predictions / out of bag (?) predictions
-  # preds <- predict(yai$ranForest$canopy_cover) # returns predictions for one variable
-  # 
-  # impute_yai <- impute(yai, observed = TRUE) # same as predict(), but for all 
-  
-  
   # get new predictions
   predict_yai <- predict(yai) 
   
@@ -37,10 +28,11 @@ get_OOBs_yai_predict <- function(yai) {
   rownames(predict_yai) <- new_names
   
   # get only predicted values
+  # fields with "o" = observed values; remove these fields
   predict_yai %<>%
     select(sort(names(predict_yai))) %>%
-    select(matches(".o$")) %>%
-    rename_with(~str_remove(., "[.]o$")) 
+    select(-matches(".o$")) #%>%
+    #rename_with(~str_remove(., "[.]o$")) 
   
   # get new targets based on these predictions
   # takes some time to run

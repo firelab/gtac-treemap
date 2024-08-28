@@ -4,7 +4,7 @@
 # original script: "rmrs_production_scripts/2016_updated_production_scripts/yai-treemap commented.R"
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
-# Last updated: 8/1/2024
+# Last updated: 8/15/2024
 
 # PART 1: 
 # - BUILD x and y tables
@@ -30,7 +30,7 @@
 
 # Allow for sufficient digits to differentiate plot cn numbers
 
-options("scipen" = 100, "digits" = 8)
+#options("scipen" = 100, "digits" = 8)
 
 ##########################################################
 
@@ -46,7 +46,7 @@ coords <- read.csv(coords_path)
 
 # Load EVT Group Remap table
 # ----------------------------------------------------------#
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) 
 
 ####################################################################
 # Prepare input data
@@ -80,17 +80,19 @@ print(plot_df %>%
 # And convert EVT-GP to factor
 plot_df %<>% 
   left_join(evt_gp_remap_table, by = "EVT_GP") %>%
-  dplyr::mutate(EVT_GP_remap = as.factor(EVT_GP_remap)) %>%
-  select(-EVT_GP)
+  dplyr::mutate(EVT_GP_remap = as.factor(EVT_GP_remap)) 
 
 
-# Re-calculate aspect - to northing and easting
+# Address issues with slope and aspect
 #----------------------------------------------------------#
 plot_df %<>%
+  # calculate northing and easting from aspect
   dplyr::mutate(radians = (pi / 180) * ASPECT,
                 NORTHING = cos(radians),
-                EASTING = sin(radians))
-  
+                EASTING = sin(radians)) %>%
+  # convert slope from percent to degrees, to match target layer
+  dplyr::mutate(SLOPE = atan(SLOPE / 100) * 180 / pi)
+
 #Address no aspect issue by setting easting and northing to 0 anywhere with 0 slope and 0 aspect
 plot_df$EASTING[plot_df$SLOPE == 0 & plot_df$ASPECT == 0]<- 0
 plot_df$NORTHING[plot_df$SLOPE == 0 & plot_df$ASPECT == 0]<- 0
@@ -98,7 +100,7 @@ plot_df$NORTHING[plot_df$SLOPE == 0 & plot_df$ASPECT == 0]<- 0
 # Rename all other vars
 #----------------------------------------------------------#
 
-# Because target layers for 2020 on are all lower case, change field names to all lower case
+# Because target layers for 2020/22 are all lower case, change field names to all lower case
 # And change other necessary column names
 plot_df %<>%
   dplyr::rename_with(tolower) %>%
@@ -109,8 +111,9 @@ plot_df %<>%
 # Calculate binary disturbance code and convert to factor
 #----------------------------------------------------------#
 plot_df %<>%
-  mutate(disturb_code = ifelse(disturb_code > 0, 1, disturb_code),
-         disturb_code = factor(disturb_code))
+  mutate(disturb_code_bin = ifelse(disturb_code > 0, 1, disturb_code),
+         disturb_code_bin = factor(disturb_code_bin)
+         )
 
 
 # Replace row names with plot id
@@ -138,7 +141,7 @@ row.names(Y_df) <- plot_df$tm_id
 ## Build and export the model
 #############################################################
 
-# Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code)
+# Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code_bin)
 # -----------------------------------------------------------------------#
 message("Building imputation model")
 
@@ -146,7 +149,8 @@ set.seed(56789)
 
 yai <- yaImpute::yai(X_df, Y_df,
                      method = "randomForest",
-                     ntree = 250)
+                     ntree = 300,
+                     mtry = 5)
 
 # Export model
 write_rds(yai, model_path)
@@ -155,20 +159,25 @@ write_rds(yai, model_path)
 # ------------------------------------------------------#
 
 # include CN in export so tables can be joined back
+# also include original disturbance code
 # row numbers, aka treemap id, are saved as X, or row number, in these csv outputs
 X_df %>%
   mutate(CN = plot_df$plt_cn,
-         tm_id = plot_df$tm_id) %>%
+         tm_id = plot_df$tm_id,
+         disturb_code = plot_df$disturb_code, 
+         evt_gp = plot_df$evt_gp) %>%
   # remove x and y coords for confidentiality
   select(-c(point_x, point_y)) %>%
-  write.csv(., glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv"))
+  write.csv(., xtable_path_model)
 
 Y_df %>%
   mutate(CN = plot_df$plt_cn,
-         tm_id = plot_df$tm_id) %>%
-  write.csv(., glue::glue("{raw_outputs_dir}/xytables/{output_name}_Ydf_bin.csv"))
+         tm_id = plot_df$tm_id,
+         disturb_code = plot_df$disturb_code,
+         evt_gp = plot_df$evt_gp) %>%
+  write.csv(., ytable_path_model)
 
-###########################################################################
+#########################################################################
 # Compute model accuracy
 ###########################################################################
 
@@ -185,10 +194,10 @@ RF_sum <- yaiRFsummary(yai)
 
 cms_list <- NULL
 
-for (i in seq_along(yvars)) {
+for (i in seq_along(c(yvars))) {
   
   # for testing
-  #i = 1
+  #i = 3
   
   var = yvars[i]
   
