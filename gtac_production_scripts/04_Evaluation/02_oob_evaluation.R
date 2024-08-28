@@ -256,7 +256,7 @@ for (i in eval_vars_cont) {
     ggplot(aes(x = dataset, y = value, fill = dataset))+
     geom_violin(position = dodge)+
     geom_boxplot(width=.1, outlier.colour=NA, position = dodge) + 
-    labs(title = glue::glue('{year_input} {cur_zone_zero}: Variation in {var_in} by dataset')) + 
+    labs(title = glue::glue('Variation in {var_in} by dataset')) + 
     xlab(var_in) + 
     theme_bw()
   
@@ -305,7 +305,7 @@ for (i in eval_vars_cont) {
     geom_smooth(method = "lm", formula = y~x) +
     labs() + 
     theme_bw() + 
-    ggtitle(glue::glue("{year_input} {cur_zone_zero}: OOB predicted vs. ref for {var_in}")) + 
+    ggtitle(glue::glue("OOB predicted vs. ref for {var_in}")) + 
     annotate(geom="text",
              x = (max(p_r2$ref)/2),
              y = (percent_y_textPos1*max(p_r2$pred, na.rm = TRUE)),
@@ -317,13 +317,13 @@ for (i in eval_vars_cont) {
   print(p2)
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_violin.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_in}_violin.png'),
          plot = p,
          width = export_width, 
          height = export_height)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_scatter.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_in}_scatter.png'),
          plot = p2,
          width = export_width, 
          height = export_height) 
