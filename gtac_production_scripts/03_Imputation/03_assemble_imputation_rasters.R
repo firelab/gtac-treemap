@@ -1,26 +1,16 @@
-# TreeMap Imputation
-# Lila Leatherman, lila.leatherman@usda.gov
+# TreeMap Imputation Assembly
+# Written by Lila Leatherman, lila.leatherman@usda.gov
 
-# PART 3: 
+# This script accomplishes the following: 
 # - Load tiles from output
-# - assemble into one raster per zone
+# - Assemble into one raster per zone
 
-# TO DO: 
-# - make a decision about whether to delete intermediate tiles or no
 
 # Last updated: 7/19/2024
 
 ##################################################
 # Set inputs
 ###################################################
-
-# Set inputs - from input script
-#--------------------------------------------#
-
-# this_dir <- this.path::this.dir()
-# 
-# inputs_for_imputation<- glue::glue('{this_dir}/00b_zonal_inputs_for_imp.R')
-# source(inputs_for_imputation)
 
 #------------------------------------------------#
 # # input raster tile base name
@@ -93,4 +83,4 @@ writeRaster(vrt,
 # clear unused memory
 gc()
 
-# do we want to delete the raster tiles from the NAS after this is done? 
+rm(tile_list, vrt)

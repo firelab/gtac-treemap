@@ -25,8 +25,7 @@ k = 10
 
 # list variables to evaluate
 #eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
-eval_vars_cat <- c(yvars, "disturb_code", "evt_gp")
-
+#eval_vars_cat <- c(yvars, "disturb_code", "evt_gp")
 
 # eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
 #                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
@@ -35,30 +34,42 @@ eval_vars_cont <- attributevars
 
 eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
-# Set inputs manually - if running as standalone
-#--------------------------------------------------------------#
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
 
-# cur_zone_zero <- "z07"
-# year <- 2022
-# 
-# this_proj <- this.path::this.proj()
-# this_dir <- this.path::this.dir()
-# 
-# 
-# lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
-# source(lib_path)
-# 
-# 
-# load settings for zone
-# zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
-# 
-# load(zone_settings)
-
+# cur_zone_zero_standalone <- "z08"
+# year_standalone <- 2022
+standalone <- "N"
 
 
 #####################################################################
 # Load data
 ####################################################################
+
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
+
+if(standalone == 'Y') {
+  
+  # assign main variables
+  cur_zone_zero <- cur_zone_zero_standalone
+  year <- year_standalone
+  
+  this_proj <- this.path::this.proj()
+  this_dir <- this.path::this.dir()
+  
+  ## load treemap library
+  lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+  source(lib_path)
+  
+  #load settings for zone
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  
+  load(zone_settings)
+  
+  # load library again in case functions have been updated since initial creation of RDS
+  source(lib_path)
+}
 
 message("Loading data for cross-validation")
 
@@ -104,12 +115,6 @@ row.names(X_df) <- X_df$tm_id
 row.names(Y_df) <- Y_df$tm_id
 
 
-# # inspect
-# summary(X_df$evt_gp_remap)
-# str(X_df$evt_gp_remap)
-# row.names(X_df)
-
-
 # Load and prep Raster Attribute Table
 #-----------------------------------------------------------------#
 
@@ -151,7 +156,7 @@ rat_x <- rat %>%
 
 
 ######################################################################
-# run cross-validation
+# Run cross-validation
 ######################################################################
 
 

@@ -1,69 +1,59 @@
 # TreeMap Imputation
-# Based on original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
-#   and Karin Riley (karin.riley@usda.gov)
+# Based on original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) and Karin Riley (karin.riley@usda.gov)
 # original script: "rmrs_production_scripts/2016_updated_production_scripts/yai-treemap commented.R"
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
+# With contributions from Abhinav Shrestha (abhinav.shrestha@usda.gov) and Scott Zimmer (scott.zimmer@usda.gov)
 
-# Last updated: 8/15/2024
+# Last updated: 8/28/2024
 
-# PART 1: 
-# - BUILD x and y tables
-# - save x and y tables
-# - Build model for a zone
-# - Save model validation
+# This script accomplishes the following tasks: 
+# - BUILD and save x and y tables
+# - Build and save model for a zone
+# - Execute and save model validation
 
 ##################################################
 # Set inputs
 ###################################################
 
-# Set inputs - from input script
-# Uncomment this if running a single zone at a time, outside of a loop for all zones
-#--------------------------------------------#
-
-# this_dir <- this.path::this.dir()
-# 
-# inputs_for_imputation<- glue::glue('{this_dir}/00b_zonal_inputs_for_imp.R')
-# source(inputs_for_imputation)
-  
-# Other options
-# --------------------------------#
-
-# Allow for sufficient digits to differentiate plot cn numbers
-
-#options("scipen" = 100, "digits" = 8)
+# all inputs are set by zone and year in the 00b_zonal_inputs_for_imp.R script
 
 ##########################################################
 
 message("Loading data for imputation")
 
-# Load X table
-# ----------------------------------------------------------#
-xtable <- read.csv(xtable_path)
-
-# Load coords table
-#-----------------------------------------------------------#
-coords <- read.csv(coords_path)
-
-# Load EVT Group Remap table
-# ----------------------------------------------------------#
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) 
-
 ####################################################################
 # Prepare input data
 ####################################################################
 
-# Get distinct rows
-xtable %<>% distinct()
+# Load X table
+# ----------------------------------------------------------#
+xtable <- read.csv(xtable_path) %>%
+  # Get distinct rows 
+  distinct()
 
 # Prepare plot coordinates
 #------------------------------------------------------------------#
 
-coords %<>%
-  dplyr::rename("point_x" = ACTUAL_LON,
-                "point_y" = ACTUAL_LAT) %>%
-  select(-c(STATECD, COUNTYCD, MaxOfINVYR, PLOT))
+# Load coords table
+coords <- read.csv(coords_path)
 
-# join x table with coords into new table : plot_df 
+# project coords into same coordinate system 
+coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:4629") %>%
+  terra::project(output_crs)
+
+# reassign to coords object
+coords <- cbind(data.frame(coords), data.frame(terra::geom(coords)))
+
+# select fields of interest
+coords %<>%
+  dplyr::rename("point_x" = x,
+                "point_y" = y) %>%
+  select(PLT_CN, point_x, point_y)
+
+# Join x table with coords into new table : plot_df 
+#------------------------------------------------------------#
+
+# create plot_df
 plot_df <- xtable %>%
   left_join(coords, by = "PLT_CN")
 
@@ -73,8 +63,11 @@ print(plot_df %>%
   filter(is.na(point_x)) %>%
   nrow())
 
-# Remap EVT Group
+# Prep EVT Group
 # ---------------------------------#
+
+# Load EVT Group Remap table
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) 
 
 # Join with evt remap table to reclass EVT_GPs
 # And convert EVT-GP to factor
@@ -115,7 +108,6 @@ plot_df %<>%
          disturb_code_bin = factor(disturb_code_bin)
          )
 
-
 # Replace row names with plot id
 #------------------------------------------------------------------#
 
@@ -131,7 +123,7 @@ X_df <- plot_df %>% dplyr::select(all_of(xvars))
 row.names(X_df) <- plot_df$tm_id
 
 
-# Create Y table (aka variables to be predicted)
+# Create Y table (aka response variables)
 #-----------------------------------------------------------#
 
 Y_df <- plot_df %>% dplyr::select(all_of(yvars))
@@ -141,7 +133,7 @@ row.names(Y_df) <- plot_df$tm_id
 ## Build and export the model
 #############################################################
 
-# Build the random forests model (X=all predictors, Y=EVG, EVC, EVH, disturb_code_bin)
+# Build the random forests model (X=all predictors, Y= evc, evh, evt_gp_remap,disturb_code_bin)
 # -----------------------------------------------------------------------#
 message("Building imputation model")
 
@@ -158,15 +150,20 @@ write_rds(yai, model_path)
 # Export X and Y tables
 # ------------------------------------------------------#
 
+# Add fields to include in exported table: 
+# CN
+# tm_id
+# disturb_code (original, non-binary disturbance code)
+# evt_gp (original, non-remapped evt gp)
 # include CN in export so tables can be joined back
-# also include original disturbance code
-# row numbers, aka treemap id, are saved as X, or row number, in these csv outputs
+# also include original disturbance code and non-remapped evt_gp
+
 X_df %>%
   mutate(CN = plot_df$plt_cn,
          tm_id = plot_df$tm_id,
          disturb_code = plot_df$disturb_code, 
          evt_gp = plot_df$evt_gp) %>%
-  # remove x and y coords for confidentiality
+  # remove x and y coords from export
   select(-c(point_x, point_y)) %>%
   write.csv(., xtable_path_model)
 
@@ -181,7 +178,7 @@ Y_df %>%
 # Compute model accuracy
 ###########################################################################
 
-# Report model accuracy for Response variables (EVC, EVH, EVG, disturb code)
+# Report model accuracy for Response variables (evc, evh, evt_gp_remap,disturb_code_bin)
 # ------------------------------------------------------------------------#
 
 message("Computing model accuracy")
@@ -221,7 +218,8 @@ names(cms_list) <- yvars
 saveRDS(cms_list, file = glue::glue("{raw_outputs_dir}/model_eval/{output_name}_CMs_ResponseVariables.RDS"))
 
 
-#########################
+# Calculate variable importance
+#------------------------------------------------------------#
 
 # Get variable importance
 varImp <- data.frame(RF_sum$scaledImportance)
@@ -247,7 +245,11 @@ p <- varImp %>%
 ggsave(glue::glue("{raw_outputs_dir}/model_eval/{output_name}_varImp.png"),
        width = 7, height = 5)
 
-# remove objects? 
+
+# Clean up
+#-----------------------------------------------------------------#
+
+# remove objects 
 rm(coords, xtable, plot_df, X_df, Y_df, RF_sum, var, rf_in, p_r, p, cm, cms_list , varImp )
 
 # clear unused memory
