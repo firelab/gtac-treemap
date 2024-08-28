@@ -36,21 +36,14 @@
 
 message("Loading data for imputation")
 
-# Load X table
-# ----------------------------------------------------------#
-xtable <- read.csv(xtable_path)
-
-# Load coords table
-#-----------------------------------------------------------#
-coords <- read.csv(coords_path)
-
-# Load EVT Group Remap table
-# ----------------------------------------------------------#
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) 
 
 ####################################################################
 # Prepare input data
 ####################################################################
+
+# Load X table
+# ----------------------------------------------------------#
+xtable <- read.csv(xtable_path)
 
 # Get distinct rows
 xtable %<>% distinct()
@@ -58,10 +51,21 @@ xtable %<>% distinct()
 # Prepare plot coordinates
 #------------------------------------------------------------------#
 
+# Load coords table
+coords <- read.csv(coords_path)
+
+# project coords into same coordinate system 
+coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:4629") %>%
+  terra::project(output_crs)
+
+# reassign to coords object
+coords <- cbind(data.frame(coords), data.frame(terra::geom(coords)))
+
+# select fields of interest
 coords %<>%
-  dplyr::rename("point_x" = ACTUAL_LON,
-                "point_y" = ACTUAL_LAT) %>%
-  select(-c(STATECD, COUNTYCD, MaxOfINVYR, PLOT))
+  dplyr::rename("point_x" = x,
+                "point_y" = y) %>%
+  select(PLT_CN, point_x, point_y)
 
 # join x table with coords into new table : plot_df 
 plot_df <- xtable %>%
@@ -73,8 +77,11 @@ print(plot_df %>%
   filter(is.na(point_x)) %>%
   nrow())
 
-# Remap EVT Group
+# Prep EVT Group
 # ---------------------------------#
+
+# Load EVT Group Remap table
+evt_gp_remap_table <- read.csv(evt_gp_remap_table_path) 
 
 # Join with evt remap table to reclass EVT_GPs
 # And convert EVT-GP to factor
