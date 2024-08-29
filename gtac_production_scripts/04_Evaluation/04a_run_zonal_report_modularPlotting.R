@@ -4,14 +4,6 @@
 
 # Last updated: 08/14/2024
 
-
-# TODO:
-# add continuous vars to report - from plots already made 
-# - for OOB
-# - for CV
-
-
-
 #==========================================================#
 #                                                          # 
 #         Specific inputs (CHANGE VARIABLES HERE)          #  
@@ -22,6 +14,7 @@
 #------------------------------------------#
 cur_zone_zero_standalone <- "z08"
 year_standalone <- 2022
+eval_type_standalone <- "TargetLayerComparison"
 standalone <- "N"
 
 
@@ -112,6 +105,7 @@ if(standalone == 'Y') {
   # assign main variables
   cur_zone_zero <- cur_zone_zero_standalone
   year <- year_standalone
+  eval_type <- eval_type_standalone
   
   # load directories
   this_proj <- this.path::this.proj()
@@ -279,6 +273,7 @@ X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = output_crs)
 
 # mask to pts within zone
 zone_pts <- terra::mask(X_pts, zone)
+zone_pts$tm_id <- as.numeric(zone_pts$tm_id)
 
 # filter to pts within zone
 rat_x <- rat_x %>%
@@ -295,7 +290,7 @@ for (i in seq_along(eval_vars_cat)) {
 
 # get frequency table
   f_out <- rat_x %>%
-    dplyr::select(var_in) %>%
+    dplyr::select(all_of(var_in)) %>%
     table() %>%
     data.frame() 
   
