@@ -275,10 +275,7 @@ X_xy <- yai$xRefs %>%
   tibble::rownames_to_column(var = "tm_id")
 
 # convert xy data to spatial points
-X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = "epsg:4269")
-
-# project
-X_pts <- terra::project(X_pts, crs(zone))
+X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = output_crs)
 
 # mask to pts within zone
 zone_pts <- terra::mask(X_pts, zone)
@@ -298,7 +295,7 @@ for (i in seq_along(eval_vars_cat)) {
 
 # get frequency table
   f_out <- rat_x %>%
-    dplyr::select(all_of(var_in)) %>%
+    dplyr::select(var_in) %>%
     table() %>%
     data.frame() 
   
