@@ -159,6 +159,7 @@ for (zone_input in zones_list){
     
     message(glue::glue("Generating evaluation report for {eval_type_in}"))
     source(reportGenerator_script)
+    eval_figs_list <- list() # re-initialize list for next loop
     }
 
   
