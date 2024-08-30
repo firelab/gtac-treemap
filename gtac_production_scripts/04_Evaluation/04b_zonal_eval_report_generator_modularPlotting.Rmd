@@ -446,7 +446,7 @@ if(params$eval_type == "CV") {
   # list all figures in cross-validation folder
   eval_figs_list <- list.files(glue::glue('{eval_dir}/03_Cross_Validation/figs/'), full.names = TRUE, pattern = ".png$") #TODO: make paths dynamic
   
-  evalFig_tmpDir <- file.path(getwd(), "tmp")
+  evalFig_tmpDir <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/tmp")
 
   if(!file.exists(evalFig_tmpDir)){dir.create(evalFig_tmpDir)}
 
@@ -479,7 +479,7 @@ if(params$eval_type == "OOB") {
   # list all figures in cross-validation folder
   eval_figs_list <- list.files(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'), full.names = TRUE, pattern = ".png$") #TODO: make paths dynamic
 
-  evalFig_tmpDir <- file.path(getwd(), "tmp")
+  evalFig_tmpDir <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/tmp")
 
   if(!file.exists(evalFig_tmpDir)){dir.create(evalFig_tmpDir)}
 

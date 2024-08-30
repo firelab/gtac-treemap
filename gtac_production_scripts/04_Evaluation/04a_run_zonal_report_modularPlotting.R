@@ -323,7 +323,7 @@ rmarkdown::render(rmd_path,
                                 cms_path = cms_path)
 )
 
-if(eval_type_in %in% c("OOB", "CV")){
+if(eval_type %in% c("OOB", "CV")){
     file.remove(tmp_figs_list)
 }
 
