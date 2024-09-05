@@ -1,5 +1,6 @@
 # Zonal Treemap out-of-bag Evaluation
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
+# With contributions from Abhinav Shrestha (abhinav.shrestha@usda.gov)
 
 # Out-of-bag stats and validation
 # - Use yaImpute::predict() to get putative "Out-of-bag" (OOB) Predictions
@@ -10,7 +11,7 @@
 # ### REQUIRES CURRENT RAT FOR COMPLETE ACCURACY OF CONTINUOUS ATTRIBUTES
 
 
-# Last updated: 8/15/2024
+# Last updated: 8/28/2024
 
 ###########################################################################
 # Set inputs
@@ -22,7 +23,7 @@
 # list variables to evaluate
 
 #eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
-eval_vars_cat <- c(yvars, "disturb_code", "evt_gp") # compare both binary disturbance and original disturbance codes
+
 
 # eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
 #                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
@@ -31,28 +32,42 @@ eval_vars_cont <- attributevars
 
 eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
-# Set inputs manually - if running as standalone
-#-----------------------------------------------
-#
+#Set inputs manually - if running standalone
+#-----------------------------------------------------#
 
-# cur_zone_zero <- "z07"
-# year <- 2022
+# cur_zone_zero_standalone <- "z08"
+# year_standalone <- 2022
+standalone <- "N"
 
-# this_proj <- this.path::this.proj()
-# this_dir <- this.path::this.dir()
-# 
-# ## load treemap library
-# lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
-# source(lib_path)
-
-# load settings for zone
-# zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
-# 
-# load(zone_settings)
 
 ####################################################################
 # Load data
 ####################################################################
+
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
+
+if(standalone == 'Y') {
+  
+  # assign main variables
+  cur_zone_zero <- cur_zone_zero_standalone
+  year <- year_standalone
+  
+  this_proj <- this.path::this.proj()
+  this_dir <- this.path::this.dir()
+  
+  ## load treemap library
+  lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+  source(lib_path)
+  
+  #load settings for zone
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  
+  load(zone_settings)
+  
+  # load library again in case functions have been updated since initial creation of RDS
+  source(lib_path)
+}
 
 message("loading data for OOB evaluation")
 
@@ -105,7 +120,7 @@ rat %<>%
 rat_x <- rat %>%
   right_join(X_df, by = "CN") %>%
   select(c(CN, tm_id, any_of(eval_vars_cat_cont))) %>%
-  # filter to plots with values - limits available plots severely with 2016 iteration
+  # filter to plots with values from RAT - limits available plots severely when using 2016 RAT
   #filter(!is.na(BALIVE)) %>%
   # make factors into numeric so that we can make a long data frame
   mutate(across(c(evt_gp_remap), as.numeric))
@@ -256,7 +271,7 @@ for (i in eval_vars_cont) {
     ggplot(aes(x = dataset, y = value, fill = dataset))+
     geom_violin(position = dodge)+
     geom_boxplot(width=.1, outlier.colour=NA, position = dodge) + 
-    labs(title = glue::glue('Variation in {var_in} by dataset')) + 
+    labs(title = glue::glue('{year_input} {cur_zone_zero}: Variation in {var_in} by dataset')) + 
     xlab(var_in) + 
     theme_bw()
   
@@ -296,7 +311,6 @@ for (i in eval_vars_cont) {
     mae(na.omit(p_r2$pred), predict(lm))
   )
   
-  eqn
   
   p2 <- p_r2 %>%
     ggplot(aes(x = ref, y = pred)) + 
@@ -305,7 +319,7 @@ for (i in eval_vars_cont) {
     geom_smooth(method = "lm", formula = y~x) +
     labs() + 
     theme_bw() + 
-    ggtitle(glue::glue("OOB predicted vs. ref for {var_in}")) + 
+    ggtitle(glue::glue("{year_input} {cur_zone_zero}: OOB predicted vs. ref for {var_in}")) + 
     annotate(geom="text",
              x = (max(p_r2$ref)/2),
              y = (percent_y_textPos1*max(p_r2$pred, na.rm = TRUE)),
@@ -317,13 +331,13 @@ for (i in eval_vars_cont) {
   print(p2)
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_in}_violin.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_violin.png'),
          plot = p,
          width = export_width, 
          height = export_height)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_in}_scatter.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_scatter.png'),
          plot = p2,
          width = export_width, 
          height = export_height) 

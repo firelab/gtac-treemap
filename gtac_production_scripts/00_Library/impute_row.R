@@ -8,21 +8,15 @@ impute_row <- function(dat, yai, test = FALSE)  {
   #' Function to make new imputation predictions given a data frame input
   #' 
   #' @param dat The data frame, for TreeMap, represents one row of a multi-layer raster
-  #' Where each column in the data frame represents all values in the row for a given layer of the raster
+  #' Where each column in the data frame represents all values in the row for a given layer of the raster. Each column represents a different layer. 
   #' @param yai model created by the `yaImpute` function
   #' @param test default FALSE. test = TRUE skips the imputation portion and returns a data frame of the input ids
-  #' @return data frame of imputed ids
+  #' @return data frame of imputed ids in the same shape and size as the input `dat`
   #' @export
   #'
   #' @examples 
   require(yaImpute)
   require(dplyr)
-  
-  # #for testing
-  #currow <- 400
-  #yai <- yai.treelist.bin
-  #ras <- ras
-  #test <- FALSE
   
   # Manage inputs
   #---------------------------------------#
@@ -30,35 +24,6 @@ impute_row <- function(dat, yai, test = FALSE)  {
   #give dat the name we use in this function
   extract.currow <- data.frame(dat)
   
-  # # handle missing test param
-  # if(missing(test)) {
-  #   test <- FALSE
-  # }
-  
-  # # handle a wrapped raster as input
-  # if(is(ras) == "PackedSpatRaster") {
-  #   ras <- terra::unwrap(ras)}
-  
-  
-  # # Get data from raster
-  # #------------------------------------------------#
-  # 
-  # #### Get dimensions of input raster stack
-  # nrows.out <- dim(ras)[1]
-  # ncols.out <- dim(ras)[2]
-  # 
-  # # get cell numbers and raster values for current row
-  # rsvals <- terra::cellFromRowCol(ras, row = currow, col = 1:ncols.out)
-  # rsmat <- ras[rsvals]
-  # extract.currow <- data.frame(rsmat)
-  # 
-  # #### Get coordinates from current row of raster
-  # xycoords <- terra::xyFromCell(ras, rsvals)
-  # xycoords <- data.frame(xycoords)
-  
-  # #### Get coords of current row
-  # extract.currow$POINT_X <- xycoords$x
-  # extract.currow$POINT_Y <-xycoords$y
   
   #### Get dimensions of current row
   colseq <- 1:length(extract.currow[,1])
@@ -89,7 +54,7 @@ impute_row <- function(dat, yai, test = FALSE)  {
     maxrow <- max(id.table)
     
     # EVG handling - 
-    #### Identify EVGs in zone that don't appear in X.df   
+    #### Identify EVGs in zone that don't appear in X.df.tmp   
     #-------------------------------------------------------#
     evg.orig <- levels(yai$xRefs$evt_gp_remap)
     evg.val.temp <- X.df.temp$evt_gp_remap  

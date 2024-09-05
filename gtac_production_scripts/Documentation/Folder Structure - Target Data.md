@@ -1,0 +1,70 @@
+```
+└── 📁v2022
+    └── 📁post_mask
+        └── 📁z01
+            └── aspect.tif
+            └── disturb_code.tif
+            └── disturb_year.tif
+            └── easting.tif
+            └── elevation.tif
+            └── evc.tif
+            └── evh.tif
+            └── evt_gp_remap.csv
+            └── evt_gp_remap.tif
+            └── evt_gp_remap.tif.aux.xml
+            └── evt_gp_remap.tif.vat.cpg
+            └── evt_gp_remap.tif.vat.dbf
+            └── northing.tif
+            └── prcp.tif
+            └── slope.tif
+            └── srad.tif
+            └── swe.tif
+            └── tmax.tif
+            └── tmin.tif
+            └── vp.tif
+            └── vpd.tif
+        ...
+        └── 📁z99
+    └── 📁post_mask_vrt
+        └── aspect.vrt
+        └── disturb_code.vrt
+        └── disturb_year.vrt
+        └── easting.vrt
+        └── elevation.vrt
+        └── evc.vrt
+        └── evh.vrt
+        └── evt_gp_remap.vrt
+        └── northing.vrt
+        └── prcp.vrt
+        └── slope.vrt
+        └── srad.vrt
+        └── swe.vrt
+        └── tmax.vrt
+        └── tmin.vrt
+        └── vp.vrt
+        └── vpd.vrt
+    └── 📁pre_mask
+        └── 📁z01
+            └── aspect.tif
+            └── disturb_code_LF.tif
+            └── disturb_year_LF.tif
+            └── easting.tif
+            └── elevation.tif
+            └── evc.tif
+            └── evh.tif
+            └── evt_gp.tif
+            └── evt_name.tif
+            └── evt_name.tif.aux.xml
+            └── northing.tif
+            └── prcp_normal_1981to2020.tif
+            └── slope.tif
+            └── srad_normal_1981to2020.tif
+            └── swe_normal_1981to2020.tif
+            └── tmax_normal_1981to2020.tif
+            └── tmin_normal_1981to2020.tif
+            └── vp_normal_1981to2020.tif
+            └── vpd_normal_1981to2020.tif
+        ...
+        └── 📁z99
+        
+```

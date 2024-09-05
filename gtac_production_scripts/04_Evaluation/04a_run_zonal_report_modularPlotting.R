@@ -4,14 +4,6 @@
 
 # Last updated: 08/14/2024
 
-
-# TODO:
-# add continuous vars to report - from plots already made 
-# - for OOB
-# - for CV
-
-
-
 #==========================================================#
 #                                                          # 
 #         Specific inputs (CHANGE VARIABLES HERE)          #  
@@ -22,6 +14,7 @@
 #------------------------------------------#
 cur_zone_zero_standalone <- "z08"
 year_standalone <- 2022
+eval_type_standalone <- "TargetLayerComparison"
 standalone <- "N"
 
 
@@ -112,6 +105,7 @@ if(standalone == 'Y') {
   # assign main variables
   cur_zone_zero <- cur_zone_zero_standalone
   year <- year_standalone
+  eval_type <- eval_type_standalone
   
   # load directories
   this_proj <- this.path::this.proj()
@@ -275,13 +269,11 @@ X_xy <- yai$xRefs %>%
   tibble::rownames_to_column(var = "tm_id")
 
 # convert xy data to spatial points
-X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = "epsg:4269")
-
-# project
-X_pts <- terra::project(X_pts, crs(zone))
+X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = output_crs)
 
 # mask to pts within zone
 zone_pts <- terra::mask(X_pts, zone)
+zone_pts$tm_id <- as.numeric(zone_pts$tm_id)
 
 # filter to pts within zone
 rat_x <- rat_x %>%
@@ -331,7 +323,7 @@ rmarkdown::render(rmd_path,
                                 cms_path = cms_path)
 )
 
-if(eval_type_in %in% c("OOB", "CV")){
+if(eval_type %in% c("OOB", "CV")){
     file.remove(tmp_figs_list)
 }
 

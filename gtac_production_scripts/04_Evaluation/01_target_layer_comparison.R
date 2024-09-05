@@ -2,7 +2,7 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# In this script, we: 
+# This script accomplishes the following: 
 # - load preliminary imputation outputs
 # - join with x-table on ID 
 # - build rasters of attributes so we can inspect them 
@@ -10,7 +10,7 @@
 # - Optionally use concat for a visual inspection of differences of imputation outputs vs target layers
 
 # Last updated:
-# 8/19/24
+# 8/28/24
 
 ###########################################################################
 # Set inputs
@@ -20,7 +20,7 @@
 #----------------------------------------------------------#
 
 # list layers to evaluate, assemble, and export
-eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code", "disturb_code_bin")
+#eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code", "disturb_code_bin")
 #eval_vars_cat <- c(yvars, "evt_gp", "disturb_code") # compare both binary disturbance and original disturbance codes
 
 # Set inputs manually - if running standalone
@@ -29,6 +29,11 @@ eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code", "dist
 # cur_zone_zero_standalone <- "z08"
 # year_standalone <- 2022
 standalone <- "N"
+
+
+#####################################################################
+# Load data
+####################################################################
 
 # Set inputs manually - if running standalone
 #-----------------------------------------------------#
@@ -54,11 +59,6 @@ if(standalone == 'Y') {
   # load library again in case functions have been updated since initial creation of RDS
   source(lib_path)
 }
-
-
-#####################################################################
-# Load data
-####################################################################
 
 message("Loading data for target layer comparison")
 
@@ -208,23 +208,7 @@ write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_C
 ############################################################################
 
 # Below are additional eval steps that can be run if desired
-# assembleExport() is redundant with assembleCM() in that they both have the ability to export assembled rasters 
 
-# #########################################################
-# # Assemble layers- derived from imputed ids matched with X table
-# #########################################
-# 
-# eval_vars_cat %>%
-#   map(\(x) assembleExport(x, 
-#                           raster = ras, 
-#                           lookup = lookup, 
-#                           id_field = "tm_id",
-#                           export_path = glue::glue('{assembled_dir}/02_Assembled_vars/{output_name}')
-#                           ))
-# 
-# gc()
-# 
-# 
 # ############################################################
 # # Evaluation: Concat for selected fields to see difference when compared vs. target layers
 # ######################################################################
@@ -239,9 +223,9 @@ write_rds(cms, glue::glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}_C
 #                           export_path = glue('{eval_dir}/01_Target_Layer_Comparison/{output_name}'),
 #                           ))
 # 
-# ####################################
-#   
-#   
+
+ 
+
   
-#rm(ras, lookup, rs2, id_list)
+rm(ras, lookup, rs2, id_list)
 gc()
