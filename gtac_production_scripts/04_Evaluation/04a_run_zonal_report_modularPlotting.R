@@ -29,7 +29,7 @@ eval_vars_cat_cont <- c(eval_vars_cat, attributevars)
 #eval_vars_cat_cont <- eval_vars_cat
 
 # Eval report for OOB or derived vars
-# - options: "TargetLayerComparison" or "OOB" or "CV"
+# Options: "OOB_model", "TargetLayerComparison", "OOB_manual", "CV"
 
 eval_type <- eval_type_in
 #eval_type <- "TargetLayerComparison"
@@ -167,17 +167,22 @@ if(eval_type == "TargetLayerComparison") {
     plot_labels <- c("Imputed", "Target")
     cm_labels <- c("Imputed", "Target")
     
-} else if(eval_type == "OOB") {
+} else if(eval_type == "OOB_manual") {
   
-  cms_path <- glue::glue("{eval_dir}/02_OOB_Evaluation/{output_name}_CMs_{eval_type}.RDS")
+  cms_path <- glue::glue("{eval_dir}/02_OOB_Manual_Evaluation/{output_name}_CMs_{eval_type}.RDS")
   plot_labels <- c("Imputed (OOB)", "Observed (FIA)")
-  cm_labels <- c("Imputed (OOB)", "Reference (FIA)")
-
+  cm_labels <- c("Imputed (OOB)", "Observed (FIA)")
+  
+} else if(eval_type == "OOB_model") {
+  
+  cms_path <- glue::glue("{eval_dir}/00_OOB_Model_Evaluation/{output_name}_CMs_{eval_type}.RDS")
+  plot_labels <- c("Predicted - RF", "Reference")
+  cm_labels <- c("Predicted - RF", "Reference")
   
 } else if(eval_type == "CV") {
     cms_path <- glue::glue("{eval_dir}/03_Cross_Validation/{output_name}_CMs_{eval_type}.RDS")
     plot_labels <- c("Imputed (CV)", "Observed (FIA)")
-    cm_labels <- c("Imputed (CV)", "Reference(FIA)")
+    cm_labels <- c("Imputed (CV)", "Observed (FIA)")
   }
   
 cms_all <- readRDS(cms_path)

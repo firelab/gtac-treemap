@@ -47,7 +47,7 @@ plot_barchart_raw <- function(df, var_in, zone_num, plot_labels = c("Imputed", "
                     dplyr::arrange(dataset, class) %>% 
                     ggplot() + # plot
                     geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
-                    scale_fill_manual(name = "Dataset", labels = c("Reference (FIA)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
+                    scale_fill_manual(name = "Dataset", labels = c("Reference (X-table)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
                     theme_bw() +
                     ggtitle(glue::glue("Frequency of classes
                             Zone: z{zone_num} ; Attribute: {var_in}"))
@@ -99,7 +99,7 @@ plot_barchart_norm <- function(df, var_in, zone_num, plot_labels = c("Imputed", 
                   dplyr::arrange(dataset, class) %>%
                   ggplot() + # plot
                   geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
-                  scale_fill_manual(name = "Dataset", labels = c("Reference (FIA)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
+                  scale_fill_manual(name = "Dataset", labels = c("Reference (X-table)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
                   theme_bw() +
                   ggtitle(glue::glue("Normalized frequency of classes
                           Zone: z{zone_num} ; Attribute: {var_in}"))

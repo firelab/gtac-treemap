@@ -19,8 +19,8 @@ zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone
 # path to priority zone list 
 
 # Types of evaluation to run and prepare reports for 
-# Options: "TargetLayerComparison", "OOB", "CV"
-eval_type_list <- c("TargetLayerComparison", "OOB", "CV")
+# Options: "OOB_model", "TargetLayerComparison", "OOB_manual", "CV"
+eval_type_list <- c("OOB_model", "TargetLayerComparison", "OOB_manual", "CV")
 
 # Script inputs - changed less frequently 
 ########################################################
@@ -93,9 +93,9 @@ message(paste0("Running imputation preparation for year: ", year_input))
 source(project_inputScript)
 
 # LOOP by zones (runs x66 for all zones in CONUS)
-for (zone_input in zones_list){
+#for (zone_input in zones_list){
 
-  # zone_input <- zones_list[1] # for testing
+  zone_input <- zones_list[1] # for testing
   
   ptm_zone_imp <- Sys.time()
   
@@ -130,16 +130,18 @@ for (zone_input in zones_list){
   ptm_zone_eval <- Sys.time()
   
   # SOURCE eval scripts: 
-
+  
+  # NOTE: OOB Model evaluation is done by default in the 01_build_imputation step.
+  
   if("TargetLayerComparison" %in% eval_type_list) {
     # SOURCE target layer comparison
     message("Performing target layer comparison")
     source(targetLayerComparison_script)
   }
   
-  if("OOB" %in% eval_type_list) {  
+  if("OOB_manual" %in% eval_type_list) {  
     # SOURCE OOB evaluation
-    message("Performing OOB evaluation")
+    message("Performing manual OOB evaluation")
     source(OOBEvaluation_script)
   }
    
