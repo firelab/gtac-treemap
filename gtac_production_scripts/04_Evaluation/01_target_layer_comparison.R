@@ -19,15 +19,15 @@
 # Specific inputs
 #----------------------------------------------------------#
 
-# list layers to evaluate, assemble, and export
+#list layers to evaluate, assemble, and export
 #eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code", "disturb_code_bin")
 #eval_vars_cat <- c(yvars, "evt_gp", "disturb_code") # compare both binary disturbance and original disturbance codes
 
 # Set inputs manually - if running standalone
 #-----------------------------------------------------#
 
-# cur_zone_zero_standalone <- "z08"
-# year_standalone <- 2022
+cur_zone_zero_standalone <- "z02"
+year_standalone <- 2022
 standalone <- "N"
 
 
@@ -56,8 +56,6 @@ if(standalone == 'Y') {
   
   load(zone_settings)
   
-  # load library again in case functions have been updated since initial creation of RDS
-  source(lib_path)
 }
 
 message("Loading data for target layer comparison")
@@ -148,13 +146,13 @@ if (!is.na(aoi_path)) {
 #trim away any NAs on the sides - helps match extent with outputs
 rs2 %<>% terra::trim()
 
-gc()
+#crop target data to extent of outputs
+rs2 %<>% terra::crop(ext(ras))
 
 
 # Make sure target and imputation rasters have the same geometry
 identical(crs(ras), crs(rs2))
 compareGeom(ras, rs2)
-
 
 # clear memory
 #--------------------#
