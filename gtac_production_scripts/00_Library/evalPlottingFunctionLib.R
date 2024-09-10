@@ -312,6 +312,10 @@ paramsCSV_toFlexTable <- function(csv){
     dplyr::rename(Parameter = param, 
                   Value = value)
   
+  # remove row.name column ("X"; if it exists)
+  if (names(params_df[1]) == "X"){
+      params_df = params_df[-1]
+  }
   
   # Convert df to flextable and autofit contents
   params_df_toConvert <- flextable::flextable(data = params_df) %>%
