@@ -16,7 +16,7 @@ project_name <- glue::glue("{year}_Production")
 
 # name for products - includes params here if desired
 #e.g., #output_name <- "2016_GTAC_LCMSDist"
-output_name <- glue::glue("{year}_Production") 
+output_name <- glue::glue("{year}_GTAC_Production") 
 
 # target data version to use
 target_data_version <- glue::glue("v{year}")

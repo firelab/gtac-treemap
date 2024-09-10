@@ -5,6 +5,9 @@ params:
   zone_num:
   eval_vars:
   cms_path:
+  unique_pltsZone:
+  numPltsZone_XdfModel:
+  percent_avlbPlts_imputed:
 title: "TreeMap Zonal Validation: Zone `r params$zone_num` "
 subtitle: "`r params$raster_name` ; Eval Type = `r params$eval_type`"
 output:
@@ -36,6 +39,12 @@ Variables to evaluate: `r params$eval_vars`
 Evaluation method: `r params$eval_type`
 
 Path for confusion matrices: `r params$cms_path`
+
+Unique plots imputed in zone: `r unique_pltsZone`
+
+Plots available in zone: `r numPltsZone_XdfModel`
+
+Percent of available plots imputed: `r percent_avlbPlts_imputed`%
 
 ```{r plot raster}
 # plt_time <- Sys.time()
