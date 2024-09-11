@@ -62,8 +62,6 @@ if (!exists("pltObj")) {
 }
 ```
 
-
-
 ```{r param table, results = 'asis', warning = F}
 
 if (include_paramTable == "Y"){
@@ -79,8 +77,7 @@ if (include_paramTable == "Y"){
   #param_table <- RDS_toTable(params_RDS_path)
   param_table <- paramsCSV_toFlexTable(param_table)
   
-  cat("\n\n\\pagebreak\n")
-  cat("Run paramters:")
+  cat("\nRun paramters:")
   param_table
   
 }
@@ -266,6 +263,8 @@ for(v in 1:length(eval_vars_cat)){
   
   oa %<>%
     round(round_dig)
+  
+  print(glue::glue("*Overall accuracy: {oa*100}%*"))
 
 
   # PLOTS
