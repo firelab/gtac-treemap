@@ -8,6 +8,7 @@ params:
   unique_pltsZone:
   numPltsZone_XdfModel:
   percent_avlbPlts_imputed:
+  rat_x_catVarsSummary_df:
 title: "TreeMap Zonal Validation: Zone `r params$zone_num` "
 subtitle: "`r params$raster_name` ; Eval Type = `r params$eval_type`"
 output:
@@ -40,11 +41,11 @@ Evaluation method: `r params$eval_type`
 
 Path for confusion matrices: `r params$cms_path`
 
-Unique plots imputed in zone: `r unique_pltsZone`
+Unique plots imputed in zone: `r params$unique_pltsZone`
 
-Plots available in zone: `r numPltsZone_XdfModel`
+Plots available in zone: `r params$numPltsZone_XdfModel`
 
-Percent of available plots imputed: `r percent_avlbPlts_imputed`%
+Percent of available plots imputed: `r params$percent_avlbPlts_imputed`%
 
 ```{r plot raster}
 # plt_time <- Sys.time()
@@ -265,6 +266,13 @@ for(v in 1:length(eval_vars_cat)){
     round(round_dig)
   
   print(glue::glue("*Overall accuracy: {oa*100}%*"))
+  
+  var_statSumTable <- params$rat_x_catVarsSummary_df # store passed `params` var to local var to subset by `var_in`
+  var_statSumTable <- var_statSumTable[var_in]
+  
+  cat("\n\nStatistical summary:\n\n")
+  cat(paste0("- `", unlist(var_statSumTable),"`"), sep = "\n") #https://bookdown.org/yihui/rmarkdown-cookbook/results-asis.html 
+  
 
 
   # PLOTS
