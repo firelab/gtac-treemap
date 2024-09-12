@@ -78,7 +78,10 @@ if (include_paramTable == "Y"){
   #param_table <- RDS_toTable(params_RDS_path)
   param_table <- paramsCSV_toFlexTable(param_table)
   
-  cat("\nRun paramters:")
+  if (eval_type_in != "TargetLayerComparison"){
+    cat("\n\n\\pagebreak\n")
+  }
+  cat("Run paramters:")
   param_table
   
 }
