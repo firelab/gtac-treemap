@@ -38,7 +38,7 @@ xtable <- read.csv(xtable_path) %>%
 coords <- read.csv(coords_path)
 
 # project coords into same coordinate system 
-coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:4629") %>%
+coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:4269") %>%
   terra::project(output_crs)
 
 # reassign to coords object
@@ -202,7 +202,10 @@ for (i in seq_along(c(yvars))) {
   rf_in <- yai$ranForest[var]
   
   # get predicted and ref table from RF model and X table
-  p_r <- get_pr_RF(rf_in, X_df, var)
+  #p_r <- get_pr_RF(rf_in, X_df, var)
+  preds <- rf_in[[var]]$predicted
+  refs <- rf_in[[var]]$y
+  p_r <- as.data.frame(cbind(preds, refs))
   
   # get confusion matrices desired
   cm <- list(eval_cm_function(p_r))
@@ -211,6 +214,7 @@ for (i in seq_along(c(yvars))) {
   cms_list <- c(cms_list, cm)
   
 }
+
 
 # name 
 names(cms_list) <- yvars
