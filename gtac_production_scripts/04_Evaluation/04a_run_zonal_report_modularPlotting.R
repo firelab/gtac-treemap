@@ -288,6 +288,11 @@ zone_pts$tm_id <- as.numeric(zone_pts$tm_id)
 rat_x <- rat_x %>%
   dplyr::filter(tm_id %in% as.numeric(zone_pts$tm_id))
 
+# Create a data.frame to store summaries of the categorical vars seen in `rat_x`
+rat_x_catVarsSummary_df <- data.frame(unclass(summary(rat_x[which((names(rat_x) %in% eval_vars_cat))])), check.names = FALSE, stringsAsFactors = TRUE, row.names = NULL)
+names(rat_x_catVarsSummary_df) <- str_replace_all(names(rat_x_catVarsSummary_df), c(" " = "")) #remove any spaces in column names
+
+
 # Calc frequency for all vars in RAT_x
 #------------------------------------------#
 
@@ -332,7 +337,8 @@ rmarkdown::render(rmd_path,
                                 cms_path = cms_path, 
                                 unique_pltsZone = unique_pltsZone, 
                                 numPltsZone_XdfModel = numPltsZone_XdfModel, 
-                                percent_avlbPlts_imputed = percent_avlbPlts_imputed)
+                                percent_avlbPlts_imputed = percent_avlbPlts_imputed, 
+                                rat_x_catVarsSummary_df = rat_x_catVarsSummary_df)
 )
 
 if(eval_type %in% c("OOB", "CV")){
