@@ -155,6 +155,9 @@ cm_labels <- c("Predicted", "Reference")
 # load raw imputation output raster
 ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}_Imputation.tif"))
 
+# Unique plots imputed in zone
+unique_pltsZone <- length(freq(ras)$value)
+
 # conditional loads and variables based on evaluation type: 
 
 #   - load RDS of cm files
@@ -218,7 +221,13 @@ evt_gp_metadata <- read.csv(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/Ve
 #------------------------------------------#
 
 # load X_df 
-X_df <- read.csv(xtable_path_model) 
+X_df <- read.csv(xtable_path_model)
+
+# Plots available in zone
+numPltsZone_XdfModel <- nrow(X_df)
+
+# Percent of available plots imputed
+percent_avlbPlts_imputed <- round((100 * (unique_pltsZone/numPltsZone_XdfModel)), 2)
 
 # Load raster attribute table and points
 #------------------------------------------#
@@ -284,6 +293,11 @@ zone_pts$tm_id <- as.numeric(zone_pts$tm_id)
 rat_x <- rat_x %>%
   dplyr::filter(tm_id %in% as.numeric(zone_pts$tm_id))
 
+# Create a data.frame to store summaries of the categorical vars seen in `rat_x`
+rat_x_catVarsSummary_df <- data.frame(unclass(summary(rat_x[which((names(rat_x) %in% eval_vars_cat))])), check.names = FALSE, stringsAsFactors = TRUE, row.names = NULL)
+names(rat_x_catVarsSummary_df) <- str_replace_all(names(rat_x_catVarsSummary_df), c(" " = "")) #remove any spaces in column names
+
+
 # Calc frequency for all vars in RAT_x
 #------------------------------------------#
 
@@ -325,7 +339,11 @@ rmarkdown::render(rmd_path,
                                 zone_num = zone_num,
                                 eval_type = eval_type,
                                 eval_vars= eval_vars_cat,
-                                cms_path = cms_path)
+                                cms_path = cms_path, 
+                                unique_pltsZone = unique_pltsZone, 
+                                numPltsZone_XdfModel = numPltsZone_XdfModel, 
+                                percent_avlbPlts_imputed = percent_avlbPlts_imputed, 
+                                rat_x_catVarsSummary_df = rat_x_catVarsSummary_df)
 )
 
 if(eval_type %in% c("OOB", "CV")){

@@ -10,13 +10,25 @@ gc()
 # Initialize projects (years) and zones
 year_input <- 2022
 
+# # path to priority zone list
+# priority_zones <- read.csv("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2022_Production/00_Prioritization/priority_forest_wcs.csv")
+# priority_list <- priority_zones[,'ZONE_NUM']
+# 
+# # get odd indices to run in a list - F8V75K3
+# zones_list <- priority_list[seq(1,length(priority_list),2)]
+# zones_list <- zones_list[18:34] 
 
-# zones_list <- c(7)   # testing
-zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-               seq(from = 12, to = 66, by = 1),
-               98, 99)
 
-# path to priority zone list 
+# get even indices to run in a list - abhi
+#zones_list <- priority_list[seq(0,length(priority_list),2)]
+
+# manually list zones
+#zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
+#                seq(from = 12, to = 66, by = 1),
+#                98, 99)
+# zones_list <- c(8) #testing
+
+ 
 
 # Types of evaluation to run and prepare reports for 
 # Options: "OOB_model", "TargetLayerComparison", "OOB_manual", "CV"
