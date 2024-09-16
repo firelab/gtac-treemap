@@ -161,9 +161,9 @@ if(!file.exists(glue::glue('{assembled_dir}/02_Assembled_vars/'))){
   dir.create(glue::glue('{assembled_dir}/02_Assembled_vars/'), recursive = TRUE)
 }
 
-# Target Layer COmparison Outputs
-if(!file.exists(glue::glue('{eval_dir}/00_OOB_Model_Evaluation'))) {
-  dir.create(glue::glue('{eval_dir}/00_OOB_Model_Evaluation'), recursive = TRUE)
+# yai-model evaluation outputs
+if(!file.exists(glue::glue('{eval_dir}/00_Model_Evaluation'))) {
+  dir.create(glue::glue('{eval_dir}/00_Model_Evaluation'), recursive = TRUE)
 }
 
 # Target Layer COmparison Outputs

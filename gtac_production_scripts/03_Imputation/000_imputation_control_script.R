@@ -31,8 +31,12 @@ year_input <- 2022
  
 
 # Types of evaluation to run and prepare reports for 
-# Options: "OOB_model", "TargetLayerComparison", "OOB_manual", "CV"
-eval_type_list <- c("OOB_model", "TargetLayerComparison", "OOB_manual", "CV")
+# Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
+eval_type_list <- c("model_eval", "TargetLayerComparison", "OOB_manual", "CV")
+# eval_type_list <- c("model_eval")
+
+# Export evaluation report stats (parameters, metrics, and accuracies) 
+exportEvalReportStats <- TRUE # TRUE or FALSE
 
 # Script inputs - changed less frequently 
 ########################################################
@@ -105,9 +109,9 @@ message(paste0("Running imputation preparation for year: ", year_input))
 source(project_inputScript)
 
 # LOOP by zones (runs x66 for all zones in CONUS)
-#for (zone_input in zones_list){
+for (zone_input in zones_list){
 
-  zone_input <- zones_list[1] # for testing
+  # zone_input <- zones_list[1] # for testing
   
   ptm_zone_imp <- Sys.time()
   
