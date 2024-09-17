@@ -4,7 +4,7 @@
 
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 
-# Last updated: 8/28/24
+# Last updated: 9/17/24
 
 # This script accomplishes the following tasks: 
 # - Run imputation over provided input area and target rasters
@@ -75,12 +75,34 @@ rs2$disturb_code <- NULL
 # subset layers to vars present in model
 rs2 <- subset(rs2, model_vars)
 
-# check if we have all the same layers as are included in the model
-if( !identical(model_vars, sort(names(rs2)))) {
-  message("ERROR: Target layers provided don't match variables in input model")
+# Target layer checks
+#----------------------------------------------------------------- #
+# CHECK if all target layers have the same # of NA / non-NA pixels
+
+# get count of non-NA px for all layers 
+px_count <- data.frame(global(rs2, fun = "notNA"))
+na_count <- data.frame(global(rs2, fun = "isNA"))
+
+if (!identical(min(px_count[,1]), max(px_count[,1]))) {
+  stop("ERROR: Target layers have different numbers of valid pixels. Check px_count object for details.")
 } else {
-  message("Target layers match variables in input model - you're good to go!")
+  message("Target layers all have identical numbers of valid pixels.")
 }
+
+if (!identical(min(na_count[,1]), max(na_count[,1]))) {
+  stop("ERROR: Target layers have different numbers of NA pixels. Check na_count object for details.")
+} else {
+  message("Target layers all have identical numbers of NA pixels.")
+}
+
+# check if we have all the same layers as are included in the model
+if (!identical(model_vars, sort(names(rs2)))) {
+  stop("ERROR: Target layer names don't match variables in input model")
+} else {
+  message("Target layer names match variables in input model - you're good to go!")
+}
+
+gc()
 
 # FOR TESTING: Conditionally crop to aoi
 # ---------------------------------------------------------- #
@@ -301,4 +323,4 @@ stopCluster(cl)
 
 message(glue::glue("Done with zone {zone_num}!"))
 
-rm(f, cl, p, agg, model_vars, yai, ras, tile_out, mout, mat, ext_r, ncol_r, nrow_r, j)
+rm(f, cl, p, agg, yai, ras, tile_out, mout, mat, ext_r, ncol_r, nrow_r, j)
