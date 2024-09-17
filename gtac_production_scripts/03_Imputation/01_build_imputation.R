@@ -58,10 +58,8 @@ plot_df <- xtable %>%
   left_join(coords, by = "PLT_CN")
 
 #inspect - check that all points have coords
-print("number of plots without coordinates:")
-print(plot_df %>%
-  filter(is.na(point_x)) %>%
-  nrow())
+message(glue::glue("number of plots without coordinates: {plot_df %>% filter(is.na(point_x)) %>% nrow())}"))
+
 
 # Prep EVT Group
 # ---------------------------------#
