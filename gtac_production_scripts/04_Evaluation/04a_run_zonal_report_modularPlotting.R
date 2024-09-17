@@ -24,12 +24,13 @@ standalone <- "N"
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
 # eval_vars_cat <- yvars
-eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code_bin", "disturb_code" )
+# eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code_bin", "disturb_code" )
+eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code_bin", "disturb_code" ) # without "evt_gp_remap"
 eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
 #eval_vars_cat_cont <- eval_vars_cat
 
 # Eval report for OOB or derived vars
-# - options: "TargetLayerComparison" or "OOB" or "CV"
+# Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
 
 eval_type <- eval_type_in
 #eval_type <- "TargetLayerComparison"
@@ -170,17 +171,22 @@ if(eval_type == "TargetLayerComparison") {
     plot_labels <- c("Imputed", "Target")
     cm_labels <- c("Imputed", "Target")
     
-} else if(eval_type == "OOB") {
+} else if(eval_type == "OOB_manual") {
   
-  cms_path <- glue::glue("{eval_dir}/02_OOB_Evaluation/{output_name}_CMs_{eval_type}.RDS")
-  plot_labels <- c("Imputed (OOB)", "Observed (FIA)")
-  cm_labels <- c("Imputed (OOB)", "Reference (FIA)")
-
+  cms_path <- glue::glue("{eval_dir}/02_OOB_Manual_Evaluation/{output_name}_CMs_{eval_type}.RDS")
+  plot_labels <- c("Imputed (OOB)", "Observed (RAT; FIA)")
+  cm_labels <- c("Imputed (OOB)", "Observed (RAT; FIA)")
+  
+} else if(eval_type == "model_eval") {
+  
+  cms_path <- glue::glue("{raw_outputs_dir}/model_eval/{output_name}_CMs_ResponseVariables.RDS")
+  plot_labels <- c("Predicted - RF", "Reference - RF")
+  cm_labels <- c("Predicted - RF", "Reference - RF")
   
 } else if(eval_type == "CV") {
     cms_path <- glue::glue("{eval_dir}/03_Cross_Validation/{output_name}_CMs_{eval_type}.RDS")
-    plot_labels <- c("Imputed (CV)", "Observed (FIA)")
-    cm_labels <- c("Imputed (CV)", "Reference(FIA)")
+    plot_labels <- c("Imputed (CV)", "Observed (RAT; FIA)")
+    cm_labels <- c("Imputed (CV)", "Observed (RAT; FIA)")
   }
   
 cms_all <- readRDS(cms_path)

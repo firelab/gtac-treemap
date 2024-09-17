@@ -229,7 +229,7 @@ for (i in eval_vars_cat) {
 
 # save cms as RDS
 write_rds(cms, file = 
-            glue::glue('{eval_dir}/02_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
+            glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/{output_name}_CMs_OOB_manual.RDS'))
 
 gc()
 
@@ -331,13 +331,13 @@ for (i in eval_vars_cont) {
   print(p2)
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_violin.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_violin.png'),
          plot = p,
          width = export_width, 
          height = export_height)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_scatter.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_scatter.png'),
          plot = p2,
          width = export_width, 
          height = export_height) 
