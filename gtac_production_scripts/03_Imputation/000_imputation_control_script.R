@@ -23,12 +23,20 @@ year_input <- 2022
 #zones_list <- priority_list[seq(0,length(priority_list),2)]
 
 # manually list zones
-#zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-#                seq(from = 12, to = 66, by = 1),
-#                98, 99)
+zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
+                seq(from = 12, to = 66, by = 1),
+                98, 99)
 # zones_list <- c(8) #testing
 
- 
+
+### Additional code for sub-setting zones list (for production)
+## Filter out certain run zones (unordered list)
+# zones_prev_ran <- c(1) # manually type zones previously ran
+# zones_list <- zones_list[-c(which(zones_list %in% zones_prev_ran))] # for sequential, zones_list[-c(zones_prev_ran)] works
+
+## Filter out zones before a certain zone (ordered)
+# zones_run_from <- 36 # RUN AFTER THIS ZONE (exclusive)
+# zones_list <- zones_list[-c(which(zones_list %in% c(1:zones_run_from)))]
 
 # Types of evaluation to run and prepare reports for 
 # Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
@@ -37,6 +45,9 @@ eval_type_list <- c("model_eval", "TargetLayerComparison", "OOB_manual", "CV")
 
 # Export evaluation report stats (parameters, metrics, and accuracies) 
 exportEvalReportStats <- TRUE # TRUE or FALSE
+
+# RUN EVAL ONLY (skips imputation -- assumes already done)
+skip_Imputation <- FALSE
 
 # Script inputs - changed less frequently 
 ########################################################
@@ -121,23 +132,27 @@ for (zone_input in zones_list){
   # PASS variables to `00b_zone_inputs_imp.R` to SET variables by zone
   source(zone_inputScript)
   
-  # SOURCE script 01 to build the imputation model for the zone
-  message(paste0("Building imputation model for zone: ", zone_input))
-  source(buildImputation_script)
-  
-  # SOURCE script 02 to run the imputation model for each zone
-  message(paste0("Applying imputation model for zone: ", zone_input))
-  source(runImputation_script)
-  
-  # SOURCE script 03 to assemble the imputation outputs tiles into a single raster
-  message(paste0("Assembling imputation tiles into final imputation raster for zone: ", zone_input))
-  source(assembleImputation_script)
-  
-  #############################################################################
-  message(paste0("Imputation complete for zone: ", zone_input, ". Moving to evaluation..."))
-  print(Sys.time() - ptm_zone_imp)
-  message("---------------------------------------------------------------------------")
-  
+  if (skip_Imputation == FALSE){
+    # SOURCE script 01 to build the imputation model for the zone
+    message(paste0("Building imputation model for zone: ", zone_input))
+    source(buildImputation_script)
+    
+    # SOURCE script 02 to run the imputation model for each zone
+    message(paste0("Applying imputation model for zone: ", zone_input))
+    source(runImputation_script)
+    
+    # SOURCE script 03 to assemble the imputation outputs tiles into a single raster
+    message(paste0("Assembling imputation tiles into final imputation raster for zone: ", zone_input))
+    source(assembleImputation_script)
+    
+    #############################################################################
+    message(paste0("Imputation complete for zone: ", zone_input, ". Moving to evaluation..."))
+    print(Sys.time() - ptm_zone_imp)
+    message("---------------------------------------------------------------------------")
+  } else {
+    message("---------------------------------------------------------------------------")
+    message("Skipping imputation as `skip_Imputation` was set to TRUE. Moving to evaluation...")
+  }
   
   ############################################################## 
   # Run evaluation for zone

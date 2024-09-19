@@ -48,11 +48,10 @@ eval_vars_cat <- c(yvars, "evt_gp", "disturb_code")
 #targetvars <- c("SLOPE", "ELEV", "PARI", "PPTI", "RELHUMI", "TMAXI", "TMINI", "VPDI", "disturb_code", "disturb_year", "canopy_cover", "canopy_height", "EVT_GP", "NORTHING", "EASTING", "POINT_X", "POINT_Y") # 2016 version
 targetvars <- c("elevation", "easting", "northing",
                 "prcp", "srad", "swe", "tmax", "tmin", "vp", "vpd",
-                "disturb_code_bin", "disturb_year", "evc", "evh", "evt_gp_remap",
-                "point_x", "point_y") 
+                "disturb_code_bin", "disturb_year", "evc", "evh", "evt_gp_remap") 
   
 
-# list names of attribute vars to evaluate - these come from RAT table or similar; are not incuded in imputation
+# list names of attribute vars to evaluate - these come from RAT table or similar; are not included in imputation
 attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
                    "TPA_DEAD", "TPA_LIVE")

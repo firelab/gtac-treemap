@@ -58,10 +58,8 @@ plot_df <- xtable %>%
   left_join(coords, by = "PLT_CN")
 
 #inspect - check that all points have coords
-print("number of plots without coordinates:")
-print(plot_df %>%
-  filter(is.na(point_x)) %>%
-  nrow())
+message(glue::glue("number of plots without coordinates: {plot_df %>% filter(is.na(point_x)) %>% nrow()}"))
+
 
 # Prep EVT Group
 # ---------------------------------#
@@ -205,7 +203,16 @@ for (i in seq_along(c(yvars))) {
   #p_r <- get_pr_RF(rf_in, X_df, var)
   preds <- rf_in[[var]]$predicted
   refs <- rf_in[[var]]$y
+  
   p_r <- as.data.frame(cbind(preds, refs))
+  
+  if (var == "evt_gp_remap"){
+  
+    p_r_new <- p_r # initialize dataframe with original dataframe (to maintain shape)
+    p_r_new[] <- evt_gp_remap_table$EVT_GP[match(unlist(p_r), evt_gp_remap_table$EVT_GP_remap)]
+    p_r <- p_r_new # pass new remapped dataframe to original df variable
+    
+  }
   
   # get confusion matrices desired
   cm <- list(eval_cm_function(p_r))
@@ -218,6 +225,7 @@ for (i in seq_along(c(yvars))) {
 
 # name 
 names(cms_list) <- yvars
+names(cms_list)[which(names(cms_list) == "evt_gp_remap")] <- "evt_gp" # change name back to evt_gp
 
 saveRDS(cms_list, file = glue::glue("{raw_outputs_dir}/model_eval/{output_name}_CMs_ResponseVariables.RDS"))
 

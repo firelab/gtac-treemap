@@ -102,7 +102,7 @@ oaTable <- matrix(ncol = 2, nrow = 0)
 colnames(oaTable) <- c("Var", "OA")
 
 if (params$eval_type == "model_eval"){
-    eval_vars_cat <- eval_vars_cat[!eval_vars_cat %in% c("evt_gp", "disturb_code")]
+    eval_vars_cat <- eval_vars_cat[!eval_vars_cat %in% c("disturb_code")]
 }
 
 for(v in 1:length(eval_vars_cat)){
@@ -282,7 +282,7 @@ for(v in 1:length(eval_vars_cat)){
   var_statSumTable <- params$rat_x_catVarsSummary_df # store passed `params` var to local var to subset by `var_in`
   var_statSumTable <- var_statSumTable[var_in]
   
-  cat("\n\nStatistical summary:\n\n")
+  cat("\n\nStatistical summary of imputed values:\n\n")
   cat(paste0("- `", unlist(var_statSumTable),"`"), sep = "\n") #https://bookdown.org/yihui/rmarkdown-cookbook/results-asis.html 
   
 
