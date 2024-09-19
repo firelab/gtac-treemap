@@ -8,6 +8,7 @@ params:
   unique_pltsZone:
   numPltsZone_XdfModel:
   percent_avlbPlts_imputed:
+  rat_x_catVarsSummary_df:
 title: "TreeMap Zonal Validation: Zone `r params$zone_num` "
 subtitle: "`r params$raster_name` ; Eval Type = `r params$eval_type`"
 output:
@@ -40,11 +41,11 @@ Evaluation method: `r params$eval_type`
 
 Path for confusion matrices: `r params$cms_path`
 
-Unique plots imputed in zone: `r unique_pltsZone`
+Unique plots imputed in zone: `r params$unique_pltsZone`
 
-Plots available in zone: `r numPltsZone_XdfModel`
+Plots available in zone: `r params$numPltsZone_XdfModel`
 
-Percent of available plots imputed: `r percent_avlbPlts_imputed`%
+Percent of available plots imputed: `r params$percent_avlbPlts_imputed`%
 
 ```{r plot raster}
 # plt_time <- Sys.time()
@@ -62,8 +63,6 @@ if (!exists("pltObj")) {
 }
 ```
 
-
-
 ```{r param table, results = 'asis', warning = F}
 
 if (include_paramTable == "Y"){
@@ -79,7 +78,9 @@ if (include_paramTable == "Y"){
   #param_table <- RDS_toTable(params_RDS_path)
   param_table <- paramsCSV_toFlexTable(param_table)
   
-  cat("\n\n\\pagebreak\n")
+  if (eval_type_in != "TargetLayerComparison"){
+    cat("\n\n\\pagebreak\n")
+  }
   cat("Run paramters:")
   param_table
   
@@ -96,6 +97,13 @@ if (include_paramTable == "Y"){
 ```
 
 ```{r format and plot tables for each var, results = 'asis', warning = F}
+
+oaTable <- matrix(ncol = 2, nrow = 0)
+colnames(oaTable) <- c("Var", "OA")
+
+if (params$eval_type == "model_eval"){
+    eval_vars_cat <- eval_vars_cat[!eval_vars_cat %in% c("evt_gp", "disturb_code")]
+}
 
 for(v in 1:length(eval_vars_cat)){
   
@@ -266,6 +274,17 @@ for(v in 1:length(eval_vars_cat)){
   
   oa %<>%
     round(round_dig)
+  
+  print(glue::glue("*Overall accuracy: {oa*100}%*"))
+  
+  oaTable <- rbind(oaTable, c(var_in, oa))
+  
+  var_statSumTable <- params$rat_x_catVarsSummary_df # store passed `params` var to local var to subset by `var_in`
+  var_statSumTable <- var_statSumTable[var_in]
+  
+  cat("\n\nStatistical summary:\n\n")
+  cat(paste0("- `", unlist(var_statSumTable),"`"), sep = "\n") #https://bookdown.org/yihui/rmarkdown-cookbook/results-asis.html 
+  
 
 
   # PLOTS
@@ -486,7 +505,7 @@ if(params$eval_type == "CV") {
 if(params$eval_type == "OOB") {
 
   # list all figures in cross-validation folder
-  eval_figs_list <- list.files(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'), full.names = TRUE, pattern = ".png$") #TODO: make paths dynamic
+  eval_figs_list <- list.files(glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/figs/'), full.names = TRUE, pattern = ".png$") #TODO: make paths dynamic
 
   evalFig_tmpDir <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/tmp")
 
@@ -514,3 +533,40 @@ if(params$eval_type == "OOB") {
 
 ```
 
+```{r export-eval-metrics-stats-asRDS, echo=FALSE, results='hide', message=FALSE, warning=FALSE}
+
+# Export RDS of model evaluation stats
+
+oaTable_df <- as.data.frame(oaTable)
+
+evaluation_reportStats_list <- list("Landfire_zone"= params$zone_num,
+                                    "Year" = year,
+                                    "run_name"= params$raster_name,
+                                    "eval_type"= params$eval_type,
+                                    "unique_pltsInZone" = params$unique_pltsZone,
+                                    "plts_availableInZone" = params$numPltsZone_XdfModel,
+                                    "percent_availablePlts_imputedInZone" = params$percent_avlbPlts_imputed,
+                                    "OA_table" = oaTable_df)
+
+evalTypeDir_dict <- c("model_eval"           = "00_Model_Evaluation", 
+                      "TargetLayerComparison"= "01_Target_Layer_Comparison", 
+                      "OOB_manual"           = "02_OOB_Manual_Evaluation", 
+                      "CV"                   = "03_Cross_Validation")
+
+evalType_subDir <- evalTypeDir_dict[[{eval_type_in}]]
+
+saveRDS(evaluation_reportStats_list, file = glue::glue("{eval_dir}/{evalType_subDir}/{output_name}_{eval_type_in}_STATS.RDS"))
+
+if (exportEvalReportStats == TRUE){
+  evalReportRDS <- readRDS(glue::glue("{eval_dir}/{evalType_subDir}/{output_name}_{eval_type_in}_STATS.RDS"))
+  listObjects_fromEvalRDS <- evalRDS_toFlexTables(evalReportRDS)
+  listObjects_toWord(listObjects = listObjects_fromEvalRDS, 
+                     exportDir = glue::glue('{eval_dir}/{evalType_subDir}/'), 
+                     exportName = glue::glue("{output_name}_{eval_type_in}_STATS"), 
+                     project_name = project_name, 
+                     cur_zone_zero = cur_zone_zero, 
+                     eval_type = eval_type_in)
+}
+
+
+```

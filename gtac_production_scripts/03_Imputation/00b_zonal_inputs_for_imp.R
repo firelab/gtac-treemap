@@ -161,25 +161,25 @@ if(!file.exists(glue::glue('{assembled_dir}/02_Assembled_vars/'))){
   dir.create(glue::glue('{assembled_dir}/02_Assembled_vars/'), recursive = TRUE)
 }
 
+# yai-model evaluation outputs
+if(!file.exists(glue::glue('{eval_dir}/00_Model_Evaluation'))) {
+  dir.create(glue::glue('{eval_dir}/00_Model_Evaluation'), recursive = TRUE)
+}
+
 # Target Layer COmparison Outputs
 if(!file.exists(glue::glue('{eval_dir}/01_Target_Layer_Comparison'))) {
   dir.create(glue::glue('{eval_dir}/01_Target_Layer_Comparison'), recursive = TRUE)
 }
 
 # OOB outputs
-if(!file.exists(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'))) {
-  dir.create(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'), recursive = TRUE)
+if(!file.exists(glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/figs/'))) {
+  dir.create(glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/figs/'), recursive = TRUE)
 }
 
 # CV outputs
 if(!file.exists(glue::glue('{eval_dir}/03_Cross_Validation/figs/'))) {
   dir.create(glue::glue('{eval_dir}/03_Cross_Validation/figs/'), recursive = TRUE)
 }
-
-# FIA Comparison Outputs - DEPRECATED
-# if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'))) {
-#   dir.create(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'), recursive = TRUE)
-# }
 
 # Evaluation reports
 if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {

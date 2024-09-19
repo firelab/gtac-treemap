@@ -31,8 +31,12 @@ year_input <- 2022
  
 
 # Types of evaluation to run and prepare reports for 
-# Options: "TargetLayerComparison", "OOB", "CV"
-eval_type_list <- c("TargetLayerComparison", "OOB", "CV")
+# Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
+eval_type_list <- c("model_eval", "TargetLayerComparison", "OOB_manual", "CV")
+# eval_type_list <- c("model_eval")
+
+# Export evaluation report stats (parameters, metrics, and accuracies) 
+exportEvalReportStats <- TRUE # TRUE or FALSE
 
 # Script inputs - changed less frequently 
 ########################################################
@@ -142,16 +146,18 @@ for (zone_input in zones_list){
   ptm_zone_eval <- Sys.time()
   
   # SOURCE eval scripts: 
-
+  
+  # NOTE: OOB Model evaluation is done by default in the 01_build_imputation step.
+  
   if("TargetLayerComparison" %in% eval_type_list) {
     # SOURCE target layer comparison
     message("Performing target layer comparison")
     source(targetLayerComparison_script)
   }
   
-  if("OOB" %in% eval_type_list) {  
+  if("OOB_manual" %in% eval_type_list) {  
     # SOURCE OOB evaluation
-    message("Performing OOB evaluation")
+    message("Performing manual OOB evaluation")
     source(OOBEvaluation_script)
   }
    

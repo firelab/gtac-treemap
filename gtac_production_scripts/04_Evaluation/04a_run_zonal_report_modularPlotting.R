@@ -29,7 +29,7 @@ eval_vars_cat_cont <- c(eval_vars_cat, attributevars)
 #eval_vars_cat_cont <- eval_vars_cat
 
 # Eval report for OOB or derived vars
-# - options: "TargetLayerComparison" or "OOB" or "CV"
+# Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
 
 eval_type <- eval_type_in
 #eval_type <- "TargetLayerComparison"
@@ -170,17 +170,22 @@ if(eval_type == "TargetLayerComparison") {
     plot_labels <- c("Imputed", "Target")
     cm_labels <- c("Imputed", "Target")
     
-} else if(eval_type == "OOB") {
+} else if(eval_type == "OOB_manual") {
   
-  cms_path <- glue::glue("{eval_dir}/02_OOB_Evaluation/{output_name}_CMs_{eval_type}.RDS")
-  plot_labels <- c("Imputed (OOB)", "Observed (FIA)")
-  cm_labels <- c("Imputed (OOB)", "Reference (FIA)")
-
+  cms_path <- glue::glue("{eval_dir}/02_OOB_Manual_Evaluation/{output_name}_CMs_{eval_type}.RDS")
+  plot_labels <- c("Imputed (OOB)", "Observed (RAT; FIA)")
+  cm_labels <- c("Imputed (OOB)", "Observed (RAT; FIA)")
+  
+} else if(eval_type == "model_eval") {
+  
+  cms_path <- glue::glue("{raw_outputs_dir}/model_eval/{output_name}_CMs_ResponseVariables.RDS")
+  plot_labels <- c("Predicted - RF", "Reference - RF")
+  cm_labels <- c("Predicted - RF", "Reference - RF")
   
 } else if(eval_type == "CV") {
     cms_path <- glue::glue("{eval_dir}/03_Cross_Validation/{output_name}_CMs_{eval_type}.RDS")
-    plot_labels <- c("Imputed (CV)", "Observed (FIA)")
-    cm_labels <- c("Imputed (CV)", "Reference(FIA)")
+    plot_labels <- c("Imputed (CV)", "Observed (RAT; FIA)")
+    cm_labels <- c("Imputed (CV)", "Observed (RAT; FIA)")
   }
   
 cms_all <- readRDS(cms_path)
@@ -288,6 +293,11 @@ zone_pts$tm_id <- as.numeric(zone_pts$tm_id)
 rat_x <- rat_x %>%
   dplyr::filter(tm_id %in% as.numeric(zone_pts$tm_id))
 
+# Create a data.frame to store summaries of the categorical vars seen in `rat_x`
+rat_x_catVarsSummary_df <- data.frame(unclass(summary(rat_x[which((names(rat_x) %in% eval_vars_cat))])), check.names = FALSE, stringsAsFactors = TRUE, row.names = NULL)
+names(rat_x_catVarsSummary_df) <- str_replace_all(names(rat_x_catVarsSummary_df), c(" " = "")) #remove any spaces in column names
+
+
 # Calc frequency for all vars in RAT_x
 #------------------------------------------#
 
@@ -332,7 +342,8 @@ rmarkdown::render(rmd_path,
                                 cms_path = cms_path, 
                                 unique_pltsZone = unique_pltsZone, 
                                 numPltsZone_XdfModel = numPltsZone_XdfModel, 
-                                percent_avlbPlts_imputed = percent_avlbPlts_imputed)
+                                percent_avlbPlts_imputed = percent_avlbPlts_imputed, 
+                                rat_x_catVarsSummary_df = rat_x_catVarsSummary_df)
 )
 
 if(eval_type %in% c("OOB", "CV")){
