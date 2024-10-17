@@ -76,8 +76,8 @@ plot_df <- xtable %>%
 #inspect - check that all points have coords
 print("number of plots without coordinates:")
 print(plot_df %>%
-  filter(is.na(point_x)) %>%
-  nrow())
+        filter(is.na(point_x)) %>%
+        nrow())
 
 # Prep EVT Group
 # ---------------------------------#
@@ -122,7 +122,7 @@ plot_df %<>%
 plot_df %<>%
   mutate(disturb_code_bin = ifelse(disturb_code > 0, 1, disturb_code),
          disturb_code_bin = factor(disturb_code_bin)
-         )
+  )
 
 # Replace row names with plot id
 #------------------------------------------------------------------#
@@ -188,14 +188,14 @@ X_df %>%
          evt_gp = plot_df$evt_gp) %>%
   # remove x and y coords from export
   select(-c(point_x, point_y)) %>%
-  write.csv(., xtable_path_model)
+  write.csv(., gsub(".csv","_No_Ridealong_Fix.csv",xtable_path_model))
 
 Y_df %>%
   mutate(CN = plot_df$plt_cn,
          tm_id = plot_df$tm_id,
          disturb_code = plot_df$disturb_code,
          evt_gp = plot_df$evt_gp) %>%
-  write.csv(., ytable_path_model)
+  write.csv(., gsub(".csv","_No_Ridealong_Fix.csv",ytable_path_model))
 
 #########################################################################
 # Compute model accuracy
@@ -232,7 +232,7 @@ for (i in seq_along(c(yvars))) {
   
   # get confusion matrices desired
   cm <- list(eval_cm_function(p_r))
-    
+  
   # append to a list to write out
   cms_list <- c(cms_list, cm)
   
