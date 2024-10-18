@@ -76,8 +76,8 @@ plot_df <- xtable %>%
 #inspect - check that all points have coords
 print("number of plots without coordinates:")
 print(plot_df %>%
-        filter(is.na(point_x)) %>%
-        nrow())
+  filter(is.na(point_x)) %>%
+  nrow())
 
 # Prep EVT Group
 # ---------------------------------#
@@ -122,7 +122,7 @@ plot_df %<>%
 plot_df %<>%
   mutate(disturb_code_bin = ifelse(disturb_code > 0, 1, disturb_code),
          disturb_code_bin = factor(disturb_code_bin)
-  )
+         )
 
 # Replace row names with plot id
 #------------------------------------------------------------------#
@@ -161,13 +161,7 @@ yai <- yaImpute::yai(X_df, Y_df,
                      mtry = 5)
 
 # Export model
-
-# First create new directory for the non-ridealong fix model
-model_dir_no_ridealong_fix<- gsub("/model/","/model_no_ridealong_fix/", model_dir)
-model_path_no_ridealong_fix<- gsub("/model/","/model_no_ridealong_fix/", model_path)
-dir.create(model_dir_no_ridealong_fix)
-
-write_rds(yai, model_path_no_ridealong_fix)
+write_rds(yai, model_path)
 
 
 # Export X and Y tables
@@ -188,14 +182,14 @@ X_df %>%
          evt_gp = plot_df$evt_gp) %>%
   # remove x and y coords from export
   select(-c(point_x, point_y)) %>%
-  write.csv(., gsub(".csv","_No_Ridealong_Fix.csv",xtable_path_model))
+  write.csv(., xtable_path_model)
 
 Y_df %>%
   mutate(CN = plot_df$plt_cn,
          tm_id = plot_df$tm_id,
          disturb_code = plot_df$disturb_code,
          evt_gp = plot_df$evt_gp) %>%
-  write.csv(., gsub(".csv","_No_Ridealong_Fix.csv",ytable_path_model))
+  write.csv(., ytable_path_model)
 
 #########################################################################
 # Compute model accuracy
@@ -232,7 +226,7 @@ for (i in seq_along(c(yvars))) {
   
   # get confusion matrices desired
   cm <- list(eval_cm_function(p_r))
-  
+    
   # append to a list to write out
   cms_list <- c(cms_list, cm)
   
@@ -241,13 +235,9 @@ for (i in seq_along(c(yvars))) {
 
 # name 
 names(cms_list) <- yvars
+names(cms_list)[which(names(cms_list) == "evt_gp_remap")] <- "evt_gp" # change name back to evt_gp
 
-
-
-# Make directory to save model eval results
-dir.create(glue::glue("{raw_outputs_dir}/model_eval_no_ridealong_fix"))
-#
-saveRDS(cms_list, file = glue::glue("{raw_outputs_dir}/model_eval_no_ridealong_fix/{output_name}_CMs_ResponseVariables_No_Riedealong_Fix.RDS"))
+saveRDS(cms_list, file = glue::glue("{raw_outputs_dir}/model_eval/{output_name}_CMs_ResponseVariables.RDS"))
 
 
 # Calculate variable importance
@@ -274,7 +264,7 @@ p <- varImp %>%
 
 
 # export to file
-ggsave(glue::glue("{raw_outputs_dir}/model_eval_no_ridealong_fix/{output_name}_varImp_No_Riedealong_Fix.png"),
+ggsave(glue::glue("{raw_outputs_dir}/model_eval/{output_name}_varImp.png"),
        width = 7, height = 5)
 
 
