@@ -181,6 +181,9 @@ for(v in 1:length(eval_vars_cat)){
     dplyr::mutate(dataset= factor(dataset)) %>%
     dplyr::arrange(dataset, class)
   
+  # Set NA's to 0
+  freq_t2$frequency[is.na(freq_t2$frequency)]<-0
+
   # Prep CM Classes
   #---------------------------------------------#
   
@@ -340,6 +343,27 @@ for(v in 1:length(eval_vars_cat)){
     print(barchart2)
   } 
 
+  # Distribution Density
+  if(var_in %in% c("evc","evh","disturb_code_bin") & eval_type == "TargetLayerComparison") {
+    
+    density_plot<- plot_density(df=freq_t2,
+                                var_in = var_in, 
+                                zone_num = zone_num,
+                                save_Plot = save_Plot, 
+                                exportDir = exportDir)
+    
+  message(paste0("KL divergence between X-table and Target: ", round(suppressMessages(philentropy::KL(x= rbind(freq_t2$frequency[freq_t2$dataset == "ref"], freq_t2$frequency[freq_t2$dataset == "aRAT"]), unit="log2")),4)))
+  message(paste0("KL divergence between X-table and Imputation: ", round(suppressMessages(philentropy::KL(x= rbind(freq_t2$frequency[freq_t2$dataset == "pred"], freq_t2$frequency[freq_t2$dataset == "aRAT"]), unit="log2")),4)))
+  
+
+    print(density_plot)
+  }
+   
+  
+  
+  
+  
+  
   if (scatterPlot_refVClassAcc == "Y"){
     
     scatter_plot1 <- plot_scatter_refVClassAcc(df = n_acc, 
@@ -363,6 +387,9 @@ for(v in 1:length(eval_vars_cat)){
     print(scatter_plot2)
   }
 
+
+  
+  
   
   # Get producer's and user's accuracy for CM
   #---------------------------------------------------------------------------------------#
