@@ -8,25 +8,15 @@ gc()
 #################################################################
 
 # Initialize projects (years) and zones
-year_input <- 2022
+year_input <- 2020
 
-# # path to priority zone list
-# priority_zones <- read.csv("//166.2.126.25/TreeMap/03_Outputs/07_Projects/2022_Production/00_Prioritization/priority_forest_wcs.csv")
-# priority_list <- priority_zones[,'ZONE_NUM']
-# 
-# # get odd indices to run in a list - F8V75K3
-# zones_list <- priority_list[seq(1,length(priority_list),2)]
-# zones_list <- zones_list[18:34] 
-
-
-# get even indices to run in a list - abhi
-#zones_list <- priority_list[seq(0,length(priority_list),2)]
 
 # manually list zones
 zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
                 seq(from = 12, to = 66, by = 1),
                 98, 99)
-# zones_list <- c(8) #testing
+
+zones_list <- zones_list[zones_list %in% c(8)]
 
 
 ### Additional code for sub-setting zones list (for production)
@@ -40,7 +30,7 @@ zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone
 
 # Types of evaluation to run and prepare reports for 
 # Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
-eval_type_list <- c("model_eval", "TargetLayerComparison", "OOB_manual", "CV")
+eval_type_list <- c("model_eval", "TargetLayerComparison")
 # eval_type_list <- c("model_eval")
 
 # Export evaluation report stats (parameters, metrics, and accuracies) 
@@ -75,7 +65,7 @@ reportGenerator_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Eva
 list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
                       "magrittr", "tictoc", "caret", "randomForest", 
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
-                      "stringr", "stringi", "devtools")
+                      "stringr", "stringi", "devtools", "philentropy")
 
 ################################################################
 # END USER INPUTS
@@ -118,6 +108,7 @@ message(paste0("Running imputation preparation for year: ", year_input))
 
 # PASS variables to `00a_project_inputs_for_imp.R` to SET project directory for each year
 source(project_inputScript)
+#zone_input=8
 
 # LOOP by zones (runs x66 for all zones in CONUS)
 for (zone_input in zones_list){
@@ -131,6 +122,7 @@ for (zone_input in zones_list){
   
   # PASS variables to `00b_zone_inputs_imp.R` to SET variables by zone
   source(zone_inputScript)
+  skip_Imputation <- FALSE
   
   if (skip_Imputation == FALSE){
     # SOURCE script 01 to build the imputation model for the zone
