@@ -8,7 +8,7 @@ gc()
 #################################################################
 
 # Initialize projects (years) and zones
-year_input <- 2020
+year_input <- 2022
 
 
 # manually list zones
@@ -16,7 +16,7 @@ zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone
                 seq(from = 12, to = 66, by = 1),
                 98, 99)
 
-zones_list <- zones_list[zones_list %in% c(8)]
+# zones_list <- zones_list[zones_list %in% c(8)]
 
 
 ### Additional code for sub-setting zones list (for production)
@@ -108,7 +108,6 @@ message(paste0("Running imputation preparation for year: ", year_input))
 
 # PASS variables to `00a_project_inputs_for_imp.R` to SET project directory for each year
 source(project_inputScript)
-#zone_input=8
 
 # LOOP by zones (runs x66 for all zones in CONUS)
 for (zone_input in zones_list){
@@ -122,7 +121,6 @@ for (zone_input in zones_list){
   
   # PASS variables to `00b_zone_inputs_imp.R` to SET variables by zone
   source(zone_inputScript)
-  skip_Imputation <- FALSE
   
   if (skip_Imputation == FALSE){
     # SOURCE script 01 to build the imputation model for the zone

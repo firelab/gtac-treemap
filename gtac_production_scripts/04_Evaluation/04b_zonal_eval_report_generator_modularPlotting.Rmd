@@ -286,8 +286,8 @@ for(v in 1:length(eval_vars_cat)){
   var_statSumTable <- var_statSumTable[var_in]
   
   cat("\n\nStatistical summary of imputed values:\n\n")
-  cat(paste0("- `", unlist(var_statSumTable),"`"), sep = "\n") #https://bookdown.org/yihui/rmarkdown-cookbook/results-asis.html 
-  
+  cat(paste0("- `", unlist(var_statSumTable),"`"), sep = "\n") #https://bookdown.org/yihui/rmarkdown-cookbook/results-asis.html
+
 
 
   # PLOTS
@@ -318,6 +318,7 @@ for(v in 1:length(eval_vars_cat)){
     }
     
     print(barchart1)
+    cat("\n\n\\pagebreak\n")
   }
   
   if (barPlot_norm == "Y"){
@@ -351,12 +352,19 @@ for(v in 1:length(eval_vars_cat)){
                                 zone_num = zone_num,
                                 save_Plot = save_Plot, 
                                 exportDir = exportDir)
-    
-  message(paste0("KL divergence between X-table and Target: ", round(suppressMessages(philentropy::KL(x= rbind(freq_t2$frequency[freq_t2$dataset == "ref"], freq_t2$frequency[freq_t2$dataset == "aRAT"]), unit="log2")),4)))
-  message(paste0("KL divergence between X-table and Imputation: ", round(suppressMessages(philentropy::KL(x= rbind(freq_t2$frequency[freq_t2$dataset == "pred"], freq_t2$frequency[freq_t2$dataset == "aRAT"]), unit="log2")),4)))
   
-
-    print(density_plot)
+  # Calculate KL divergence (save to a variable to print with formatting later)
+  kl_divergence_x_target <- (paste0("KL divergence between X-table and Target: ", round(suppressMessages(philentropy::KL(x= rbind(freq_t2$frequency[freq_t2$dataset == "ref"], freq_t2$frequency[freq_t2$dataset == "aRAT"]), unit="log2")),4)))
+  
+  kl_divergence_x_imputation <- (paste0("KL divergence between X-table and Imputation: ", round(suppressMessages(philentropy::KL(x= rbind(freq_t2$frequency[freq_t2$dataset == "pred"], freq_t2$frequency[freq_t2$dataset == "aRAT"]), unit="log2")),4)))
+  
+  # Print out KL divergence values as a bulleted list and print plot
+  cat("\n\n")  
+  cat(cat(paste0("- ", kl_divergence_x_target)))
+  cat("\n\n")  
+  cat((paste0("- ",kl_divergence_x_imputation)))
+  print(density_plot)
+  
   }
    
   
