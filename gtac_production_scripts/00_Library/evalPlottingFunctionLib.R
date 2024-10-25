@@ -229,6 +229,59 @@ plot_scatter_obsVClassAcc <- function(df, var_in, zone_num, save_Plot, exportDir
     
 }
 
+
+
+# ----------------------------------------------------------------------------------------
+
+# Normalized Frequency Density Plot
+
+
+plot_density <- function(df, var_in, zone_num, save_Plot, exportDir){
+  #' Title
+  #'
+  #' @param df `freq_t2` data frame created from normalizing the `freq` table
+  #' @param var_in Variable that is evaluated, set `var_in = var_in` for report generation
+  #' @param zone_num Zone number for evaluation, set `zone_num = zone_num` for report generation
+  #' @param save_Plot Boolean. If `T`, plot will be saved in the output dir
+  #' @param exportDir Directory to export plots to IF `savePlot == T` 
+  #'
+  #' @return ggplot object
+  #' @export
+  #'
+  #' @examples
+  
+  if(zone_num <10) {
+    zone_num <- paste0("0", zone_num)
+  }
+
+  density_plot <- df %>%
+    ggplot(aes(x=as.numeric(as.character(class)),weight=frequency, color=dataset))+
+    geom_density(size=1.2, alpha=0.4, fill="grey50")+
+    scale_color_brewer(palette="Set2", labels = c("Reference (X-table)", plot_labels))+
+    labs(x = "EVC (%)", y = "Density", 
+         fill = "Data")+
+    theme_bw()+
+    theme(legend.title=element_blank())+
+    labs(x = var_in, y = "Density")+
+    ggtitle(glue::glue("Density Comparison
+                                Zone: z{zone_num} ; Attribute: {var_in}")) 
+  
+  if (save_Plot == "T"){
+    
+    ggplot2::ggsave(filename = glue::glue("distribution_density_{var_in}_{zone_num}.png"),
+                    density_plot, 
+                    path = exportDir)
+    
+    print(glue::glue("Plot exported to: {exportDir}"))
+    
+  }
+  
+  return(density_plot)
+  
+}
+
+
+
 # Report Rendering
 ########################################################
 
