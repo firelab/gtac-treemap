@@ -37,7 +37,10 @@ eval_type_list <- c("model_eval", "TargetLayerComparison")
 exportEvalReportStats <- TRUE # TRUE or FALSE
 
 # RUN EVAL ONLY (skips imputation -- assumes already done)
-skip_Imputation <- FALSE
+skip_Imputation <- TRUE
+
+# RUN EVAL REPORT GENERATION ONLY (skips evaluation script -- assumes eval RDS is already saved in zone folder)
+skip_Evaluation <- TRUE
 
 # Script inputs - changed less frequently 
 ########################################################
@@ -111,7 +114,7 @@ source(project_inputScript)
 
 # LOOP by zones (runs x66 for all zones in CONUS)
 for (zone_input in zones_list){
-
+  
   # zone_input <- zones_list[1] # for testing
   
   ptm_zone_imp <- Sys.time()
@@ -150,29 +153,33 @@ for (zone_input in zones_list){
   
   ptm_zone_eval <- Sys.time()
   
-  # SOURCE eval scripts: 
-  
-  # NOTE: OOB Model evaluation is done by default in the 01_build_imputation step.
-  
-  if("TargetLayerComparison" %in% eval_type_list) {
-    # SOURCE target layer comparison
-    message("Performing target layer comparison")
-    source(targetLayerComparison_script)
-  }
-  
-  if("OOB_manual" %in% eval_type_list) {  
-    # SOURCE OOB evaluation
-    message("Performing manual OOB evaluation")
-    source(OOBEvaluation_script)
-  }
-   
-  if("CV" %in% eval_type_list) {
-    # SOURCE cross-validation
-    message("Performing cross-validation")
-    source(CV_script)
-  }
-  
+  if (skip_Evaluation == FALSE){
+    # SOURCE eval scripts: 
     
+    # NOTE: OOB Model evaluation is done by default in the 01_build_imputation step.
+    
+    if("TargetLayerComparison" %in% eval_type_list) {
+      # SOURCE target layer comparison
+      message("Performing target layer comparison")
+      source(targetLayerComparison_script)
+    }
+    
+    if("OOB_manual" %in% eval_type_list) {  
+      # SOURCE OOB evaluation
+      message("Performing manual OOB evaluation")
+      source(OOBEvaluation_script)
+    }
+    
+    if("CV" %in% eval_type_list) {
+      # SOURCE cross-validation
+      message("Performing cross-validation")
+      source(CV_script)
+    }
+  } else {
+    message("---------------------------------------------------------------------------")
+    message("Skipping evaluation as `skip_Evaluation` was set to TRUE. Moving to report generation...")
+  }
+  
   # SOURCE eval report generator
   # For each evaluation type specified
   for (i in seq_along(eval_type_list)) {
@@ -183,8 +190,8 @@ for (zone_input in zones_list){
     message(glue::glue("Generating evaluation report for {eval_type_in}"))
     source(reportGenerator_script)
     eval_figs_list <- list() # re-initialize list for next loop
-    }
-
+  }
+  
   
   #############################################################
   
