@@ -481,7 +481,8 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
   rout <- terra::classify(raster, lt)
   writeRaster(rout,
               glue('{export_path}_{layer_field}.tif'),
-              overwrite = TRUE)
+              overwrite = TRUE,
+              datatype="INT4U")
   rm(rout)
   toc()
   gc()
@@ -514,7 +515,8 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   if(exportTF) {
     writeRaster(imp1,
                 glue::glue("{export_path}_{layer_field}.tif"),
-                overwrite = TRUE)
+                overwrite = TRUE,
+                datatype="INT4U")
   }
   
   gc()
@@ -658,7 +660,8 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   #export
   writeRaster(out1, 
               glue('{export_path}_{layer_field}_v{stackin_compare_name}.tif'),
-              overwrite = TRUE)
+              overwrite = TRUE,
+              datatype="INT4U")
   rm(out1)
   gc()
   

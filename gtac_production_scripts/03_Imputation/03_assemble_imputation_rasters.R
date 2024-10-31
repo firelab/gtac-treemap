@@ -127,7 +127,8 @@ if (na_imputed == na_target) {
 # export as single raster per zone
 writeRaster(vrt, 
             glue('{assembled_dir}/01_Imputation/{rout_name}.tif'),
-            overwrite = TRUE)
+            overwrite = TRUE,
+            datatype="INT4U")
 
 
 # clear unused memory
