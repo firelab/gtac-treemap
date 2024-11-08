@@ -1,0 +1,1 @@
+CALL "C:\Program Files\R\R-4.4.1\bin\Rscript.exe" "run.R"
