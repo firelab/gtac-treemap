@@ -344,8 +344,18 @@ server = function(input, output, session){
       
       if (eval_vars == "evt_gp"){
         
-        LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF23_EVT_240_forJoin.csv')
-        evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2022/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
+        if (project_name == "2020_Production"){
+          
+          LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF20_EVT_220_forJoin.csv')
+          evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2020/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
+          
+        } else if (project_name == "2022_Production"){
+          
+          LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF23_EVT_240_forJoin.csv')
+          evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2022/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
+          
+        }
+        
         
         LF_evt_gp_numName_joinTable <- as.data.frame(read.csv(LF_evt_gp_numNameCSV_path))
         evt_gp_remapTable <- as.data.frame(read.csv(evt_gp_remapTable_path))
