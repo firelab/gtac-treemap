@@ -23,7 +23,14 @@ ui = fluidPage(
                  actionButton("display", tags$b("Generate metric table"), style = "color: white; background-color: green;"),
                  p(), 
                  actionButton("generate", tags$b("Generate interactive plot (ONLY for metric = classes)"), style = "color: ForestGreen; background-color: khaki;"),
-                 width = 3),
+                 p(),
+                 hr(),
+                 h3(tags$b("X Table row finder:")),
+                 numericInput(inputId = "TM_ID", label = "Enter TM ID:", value=21348),
+                 actionButton("getXTableRow", tags$b("Get X Table row for input TM_ID"), style = "color: white; background-color: green;"),
+                 p(),
+                 tableOutput("getXTableRow_out"),
+                 width = 3), 
     mainPanel(tags$head(
       tags$style(HTML("hr {border-top: 2px solid #000000;}"))
     ),
