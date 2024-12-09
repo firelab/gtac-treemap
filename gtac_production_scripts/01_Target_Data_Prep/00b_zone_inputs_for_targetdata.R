@@ -3,7 +3,7 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 7/2/24
+# Last updated: 11/13/24
 
 # TO DO:
 # - address inconsistencies in EVT vs Topo Landfire Paths
@@ -73,77 +73,11 @@ if(!is.na(target_prep_params_path)) {
 # Build constructed inputs (less likely to change)
 #----------------------------------------------------------#
 
-# load home, FIA, and tmp dirs 
-setdirs_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/setup_dirs.R')
-source(setdirs_path)
+# # load home, FIA, and tmp dirs 
+# setdirs_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/setup_dirs.R')
+# source(setdirs_path)
 
-# data directory - where source data are located
-data_dir <- glue::glue('{home_dir}/01_Data/')
 
-# set path to landfire rasters 
-#landfire_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version}/')
-landfire_veg_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_veg}/Vegetation/')
-landfire_topo_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_topo}/Topo/')
-landfire_disturbance_dir_1999_2014 <- glue::glue('{data_dir}02_Landfire/LF_USDIST/')
-landfire_disturbance_dir_2015_2020 <- glue::glue('{data_dir}02_Landfire/LF_220/Disturbance/')
-landfire_disturbance_dir_2021_2022 <- glue::glue('{data_dir}02_Landfire/LF_230/Disturbance/')
-
-# set path to landfire vector data
-lf_zones_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
-
-# set dir to lcms raw probability rasters
-lcms_dir <- glue::glue('{data_dir}05_LCMS/01_Threshold_Testing/01_Raw/02_Raw_Probabilities/')
-
-# Paths to specific Landfire rasters - not disturbance
-evc_path <- glue::glue('{landfire_veg_dir}/EVC/LF{landfire_year_veg}_EVC_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVC_{landfire_version_veg}.tif')
-evh_path <- glue::glue('{landfire_veg_dir}/EVH/LF{landfire_year_veg}_EVH_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVH_{landfire_version_veg}.tif')
-evt_path <- glue::glue('{landfire_veg_dir}/EVT/LF{landfire_year_veg}_EVT_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVT_{landfire_version_veg}.tif')
-
-elev_path <- glue::glue('{landfire_topo_dir}/Elev/LF{landfire_year_topo}_Elev_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Elev_{landfire_version_topo}.tif')
-# slopeP_path <- glue::glue('{landfire_topo_dir}/SlpP/LF{landfire_year_topo}_SlpP_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpP_{landfire_version_topo}.tif')
-slopeD_path <- glue::glue('{landfire_topo_dir}/SlpD/LF{landfire_year_topo}_SlpD_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpD_{landfire_version_topo}.tif')
-asp_path <- glue::glue('{landfire_topo_dir}/Asp/LF{landfire_year_topo}_Asp_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Asp_{landfire_version_topo}.tif')
-
-# set dir for input biophys rasters
-biophys_dir <- glue::glue('{data_dir}02_Landfire/BioPhys/')
-
-# Load various crs
-#--------------------------------#
-# load lcms projections
-lcms_crs <- terra::crs(glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj'))
-
-# load treemap projection
-tm16_crs <- terra::crs(glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj"))
-
-# lf200
-lf200_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_200/CRS/LF_200_crs.prj"))
-
-# lf220
-lf220_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_220/CRS/LF_220_crs.prj"))
-
-# lf230
-lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
-
-# determine which CRS will actually be used - 
-#   - specifically, used to project zone for cropping
-#   - used to define projection for all historic landfire disturbance
-
-lf_crs_version <- lf200_crs
-
-# load output crs
-lf_output_crs <- lf_crs_version
-
-# Export data directories
-#----------------------------------------------------#
-
-# where version-specific inputs and outputs will live
-project_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/')
-
-# Directory where target data lives
-target_dir <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/")
-
-# Directory where EVT_GP remap table will be located
-evt_gp_remap_table_path <- target_dir
 
 ##################################################################
 # CREATE ZONE-SPECIFIC VARIABLES AND PATHS
