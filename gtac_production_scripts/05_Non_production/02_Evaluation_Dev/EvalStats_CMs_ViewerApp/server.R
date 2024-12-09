@@ -142,6 +142,9 @@ server = function(input, output, session){
         output$percent_availablePlts_imputedInZone  <- renderText(paste0(evalTypeStatsRDS$percent_availablePlts_imputedInZone, "%"))
         output$oaSummaryTable <- renderTable(evalTypeStatsRDS$OA_table, rownames = FALSE)
         
+        xTable_subset <<- xTable_df_input %>% 
+                            dplyr::filter(Zone == zone)
+        
         loadEvalRDS_flag <<- "1"
         
         incProgress(1/n, message = paste("Eval RDS is loaded, please proceed to steps 2. and 3.!"))
@@ -344,8 +347,18 @@ server = function(input, output, session){
       
       if (eval_vars == "evt_gp"){
         
-        LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF23_EVT_240_forJoin.csv')
-        evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2022/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
+        if (project_name == "2020_Production"){
+          
+          LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF20_EVT_220_forJoin.csv')
+          evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2020/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
+          
+        } else if (project_name == "2022_Production"){
+          
+          LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF23_EVT_240_forJoin.csv')
+          evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2022/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
+          
+        }
+        
         
         LF_evt_gp_numName_joinTable <- as.data.frame(read.csv(LF_evt_gp_numNameCSV_path))
         evt_gp_remapTable <- as.data.frame(read.csv(evt_gp_remapTable_path))
@@ -420,5 +433,22 @@ server = function(input, output, session){
       })
     }
     
+  })
+  
+  observeEvent(input$getXTableRow, {
+    
+    rowOutput <- get_xTableRow(lookUp_Zone = input$zone_num, 
+                               lookUp_TM_ID = input$TM_ID, 
+                               xTable_df = xTable_subset)
+    if(is.null(rowOutput)){
+      showModal(modalDialog(title ="Function returned with zero (0) rows, please check for valid inputs!"))
+      
+    } else {
+      options(scipen = 50, digits=1)
+      rowOutput_pivot <- rowOutput %>% tidyr::pivot_longer(cols=names(rowOutput)) %>% as.data.frame()
+      names(rowOutput_pivot) <- c("Name","Value")
+      
+      output$getXTableRow_out <- renderTable(rowOutput_pivot, rownames = FALSE, striped = TRUE, bordered = TRUE, hover = TRUE)
+  }
   })
 }
