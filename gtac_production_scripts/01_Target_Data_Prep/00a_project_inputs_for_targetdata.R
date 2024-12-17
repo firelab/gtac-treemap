@@ -15,8 +15,7 @@
 # General inputs - specific to each project
 #-----------------------------------------------#
 
-#year <- year_input
-year <- 2020
+year <- year_input
 
 #project name
 project_name <- glue::glue("{year}_Production")

@@ -7,14 +7,18 @@ gc()
 #################################################################
 
 # Initialize projects (years) 
-years_list <- c(2022)
+#years_list <- c(2020, 2022)
+years_list <-c(2020, 2022)
 
 # List zones to run for
 # zones_list <- c(2, 16, 57) # testing
+# ###CONUS
 #zones_list <- c(seq(from = 1, to = 10, by = 1), 
 #                seq(from = 12, to = 66, by = 1), # skipping zone 11 
 #                98, 99)
-zones_list <- c(67)
+# ### AK and HI
+zones_list <- c(seq(67, 80, 1))
+
 
 # Initialize directories
 this_dir <- this.path::this.dir()
@@ -83,7 +87,7 @@ for (year_input in years_list){
   # LOOP by zones (inner loop)
   for (zone_input in zones_list){
    
-    # zone_input <- zones_list[1] # for testing
+    #zone_input <- zones_list[1] # for testing
     
     ptm_zone <- Sys.time()
    
@@ -128,6 +132,7 @@ for (year_input in years_list){
                             "ptm_zone",
                             "ptm_year", 
                             "ptm_start")))
+    gc()
     
   }
   

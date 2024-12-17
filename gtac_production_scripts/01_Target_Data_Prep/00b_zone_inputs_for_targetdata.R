@@ -183,6 +183,9 @@ if (file.exists(tmp_dir)){
   message(paste0("Creating temporary directory: ", tmp_dir))
 }
 
+# set temp directory - allows you to inspect files in progress more easily
+write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
+
 # create tmp dir folder for LCMS tiles
 # if (!file.exists(glue::glue('{tmp_dir}/lcms/'))) {
 #   dir.create(glue::glue('{tmp_dir}/lcms/'))
@@ -193,12 +196,9 @@ if (!file.exists(glue::glue('{tmp_dir}/lf/'))) {
   dir.create(glue::glue('{tmp_dir}/lf/'))
 }
 
-
 #empty temp dir
+message("empyting tmp dir")
 do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRUE)))
-
-# set temp directory - allows you to inspect files in progress more easily
-write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
 
 
 # Create all directories

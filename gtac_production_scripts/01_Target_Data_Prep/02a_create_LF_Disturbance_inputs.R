@@ -22,7 +22,7 @@
 break.up <- 5
 
 # set number of cores used for parallelization
-ncores <- 15
+ncores <- 8
 
 # get path to inputs script
 this_dir <- this.path::this.dir()
@@ -75,6 +75,7 @@ if(is.na(aoi_name)) {
 #-----------------------------------------------------#
 
 message("Identifying landfire data to load")
+
 # list landfire files 
 landfire_files_1999_2014 <- list.files(landfire_disturbance_dir_1999_2014, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
 landfire_files_2015_2016 <- list.files(landfire_disturbance_dir_2015_2016, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
@@ -105,30 +106,9 @@ landfire_files %<>%
 #message("Loading landfire data as VRT")
 lf_dist <- terra::vrt(landfire_files$path, filename = glue::glue("{tmp_dir}/lf_dist.vrt"), options = "-separate", overwrite = TRUE)
 
-# raster_files = list()
-# 
-# 
-# for(i in seq_along(landfire_files$path)) {
-#   
-#   message(glue::glue("loading layer {i}"))
-#   ras <- terra::rast(landfire_files$path[i])
-#   ras <- terra::crop(ras, zone)
-#   ras <- terra::extend(ras, zone)
-#   raster_files = c(raster_files, ras)
-#   rm(ras)
-#   gc()
-#   
-# }
-# 
-# landfire_dist <- terra::rast(raster_files)
-# 
-# landfire_dist <- terra::mask(landfire_dist, zone)
-# toc()
-# 
-# rm(raster_files)
-# gc()
 
-##### Build change codes to reclassify
+
+##### Get change codes to reclassify
 #--------------------------------------------------#
 
 # field info in metadata: https://apps.fs.usda.gov/fsgisx01/rest/services/RDW_Landfire/US_Disturbance_v200/ImageServer/info/metadata
@@ -174,7 +154,7 @@ rcl_ind[rcl_ind %in% ind_codes] <- 2 # not-fire code: 2
 rcl_ind[rcl_ind != 2] <- NA
 
 #####################################################
-# PREP and crop Landfire Disturbance
+# Prep Landfire Disturbance - in parallel
 ####################################################
 
 # Make tiles
@@ -199,8 +179,8 @@ agg <- terra::aggregate(zone_r, fact = c(h,v))
 agg[] <- 1:ncell(agg)
 
 # inspect tiles
-plot(agg, alpha = 0.5)
-plot(zone, add = TRUE)
+#plot(agg, alpha = 0.5)
+#plot(zone, add = TRUE)
 
 # subset the raster and create temporary files
 # tiles with only NA values are omitted
@@ -223,7 +203,6 @@ registerDoParallel(cl)
 # load packages to each cluster
 clusterCall(cl, function(){
   library(tidyverse);
-  library(magrittr);
   #library(glue);
   library(terra)
 })
