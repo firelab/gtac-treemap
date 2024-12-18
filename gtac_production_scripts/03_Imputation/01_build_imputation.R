@@ -60,7 +60,6 @@ plot_df <- xtable %>%
 #inspect - check that all points have coords
 message(glue::glue("number of plots without coordinates: {plot_df %>% filter(is.na(point_x)) %>% nrow()}"))
 
-
 # Prep EVT Group
 # ---------------------------------#
 
@@ -111,6 +110,25 @@ plot_df %<>%
 
 row.names(plot_df) <- NULL
 row.names(plot_df) <- plot_df$tm_id
+
+# Inspect input variables - check for values in expected ranges
+#-------------------------------------------------------------------#
+
+facet_n = sqrt(length(names(plot_df)))
+
+png(glue::glue("{tmp_dir}/{cur_zone_zero}_xtable.png"),
+    width =1250, height = 1250)
+
+par(mar=c(2,2,2,2),
+    mfrow = c(facet_n, facet_n))
+
+for(i in 2:length(names(plot_df))) {
+  
+  plot(plot_df[,i], 
+       main = names(plot_df)[i])
+  
+}
+dev.off()
 
 
 # Create X table - orig (aka training table)
