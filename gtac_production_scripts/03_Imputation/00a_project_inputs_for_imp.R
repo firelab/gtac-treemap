@@ -75,9 +75,12 @@ coords_path <- glue::glue("{FIA_dir}/06_Coordinates/select_TREEMAP2022_2send/sel
 # Dir for X table - relative to home_dir
 xtable_dir <- glue::glue("{home_dir}/03_Outputs/06_Reference_Data/{ref_data_version}/01_X_tables_by_zone/")
 
-# Raster Attribute table for evaluation
-# Currently only available for 2016!
+# Raster Attribute Table used in validation for attribute vars
 rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
+#rat_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}RAT_tmid.csv")
+
+# path to zone metadata
+zone_metadata_path <- glue::glue('{home_dir}/01_Data/02_Landfire/metadata/LF_zones_all_byStudyArea.csv')
 
 # Analysis settings
 #----------------------------------------------------------------#

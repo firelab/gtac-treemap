@@ -247,8 +247,7 @@ params_out <- data.frame(
   ref_data_version,
   model_path,
   xtable_path,
-  output_crs_name, 
-  output_crs
+  zone_output_crs
   ) %>%
     bind_rows() %>%
     t() %>%
