@@ -65,3 +65,10 @@ for(x in unique(x_table_complete$Zone)){
   x_table_zone <- x_table_complete[Zone == x,]
   write.csv(x_table_zone, paste0("X_tables_by_zone/x_table_", x, ".csv"), row.names = FALSE)
 }
+
+# Create the x table with unique national values.
+x_table_unique <- x_table_complete %>%
+  select(-Zone) %>%
+  unique()
+
+write.csv(x_table_unique, "x_table_unique_2020_2022.csv")
