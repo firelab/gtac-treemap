@@ -4,7 +4,7 @@
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # With contributions from Abhinav Shrestha (abhinav.shrestha@usda.gov) and Scott Zimmer (scott.zimmer@usda.gov)
 
-# Last updated: 8/28/2024
+# Last updated: 12/17/2024
 
 # This script accomplishes the following tasks: 
 # - BUILD and save x and y tables
@@ -39,7 +39,7 @@ coords <- read.csv(coords_path)
 
 # project coords into same coordinate system 
 coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:4269") %>%
-  terra::project(output_crs)
+  terra::project(zone_output_crs)
 
 # reassign to coords object
 coords <- cbind(data.frame(coords), data.frame(terra::geom(coords)))

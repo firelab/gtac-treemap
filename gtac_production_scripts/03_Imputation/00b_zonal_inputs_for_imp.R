@@ -3,7 +3,7 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 8/1/24
+# Last updated: 12/17/24
 
 # TO DO: what target data params can i pull in from target data RDS? 
 
@@ -56,20 +56,47 @@ aoi_name <- NA
 # }
 
 
-# Set zone_number
-# ----------------------------------------------#
+##################################################################
+# CREATE ZONE-SPECIFIC VARIABLES AND PATHS
+##################################################################
 
-zone_num <- as.numeric(zone)
+# Prep zone
+#-----------------------------------------#
 
-# Set zone name options
-cur_zone <- glue::glue('z{zone_num}')
+zone_num <- zone
+
+# Set zone identifiers 
+cur_zone <- glue::glue('z{zone_num}') 
 cur_zone_zero <- if(zone_num < 10) {
   glue::glue('z0{zone_num}') } else {
     cur_zone
-}
+  }
 
-if(is.na(aoi_name)) {
-  aoi_name <- ""
+# Load zone metadata
+#----------------------------------------#
+
+# load zone metadata
+LF_zone_metadata <- read.csv(zone_metadata_path)
+
+# identify which geographic area zone is in 
+study_area <- LF_zone_metadata %>%
+  dplyr::filter(ZONE_NUM == zone_num) %>%
+  dplyr::select(STUDY_AREA) %>%
+  toString()
+
+# conditionally set path to zones and projection, based on map area
+if(study_area == "CONUS") {
+  zones_path = lf_zones_path_CONUS
+  zone_output_crs = default_crs
+  file_pattern = "US"
+} else if(study_area == "AK") {
+  zones_path = lf_zones_path_AK
+  zone_output_crs = ak_crs
+  file_pattern = study_area
+} else if(study_area == "HI") {
+  zones_path = lf_zones_path_HI
+  zone_output_crs = hi_crs
+  file_pattern = study_area
 }
 
 
