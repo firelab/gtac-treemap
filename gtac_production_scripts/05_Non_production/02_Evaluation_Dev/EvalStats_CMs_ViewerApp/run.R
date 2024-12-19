@@ -30,6 +30,7 @@ get_xTableRow <- function(lookUp_Zone=NULL, lookUp_TM_ID=NULL, xTable_df=NULL){
 }
 
 # NOTE code assumes X table csv is in the app folder (copy csv from NAS drive //166.2.126.25/TreeMap/07_Documentation/01_Validation/02_Eval_tools/)
+
 xtable_path <- file.path(getwd(), "X_table_v2022_allZones.csv")
 xTable_df_input <<- data.frame(read.csv(xtable_path))
 
