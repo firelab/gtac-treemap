@@ -29,8 +29,7 @@ year_input <- 2020
 zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
                 seq(from = 12, to = 66, by = 1),
                 98, 99)
-#
-zones_list <- c(1,10,16,57,66)
+#zones_list <- zones_list[45:67]
  
 
 # Types of evaluation to run and prepare reports for 
@@ -47,8 +46,8 @@ this_proj <- this.path::this.proj()
 # Imputation scripts
 project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_imp.R")
 zone_inputScript <- glue::glue("{this_dir}/00b_zonal_inputs_for_imp.R")
-buildImputation_script <-  glue::glue("{this_dir}/101_build_imputation_model_stochasticity_test.R")
-runImputation_script <- glue::glue("{this_dir}/102_run_imputation_sample_model_stochasticity_test.R")
+buildImputation_script <-  glue::glue("{this_dir}/101_build_imputation_No_Ridealong_Fix.R")
+runImputation_script <- glue::glue("{this_dir}/102_run_imputation_sample_Ridealong_vs_Non_Ridealong.R")
 #assembleImputation_script <- glue::glue("{this_dir}/03_assemble_imputation_rasters.R")
 
 # Evaluation scripts
@@ -106,7 +105,7 @@ message(paste0("Running imputation preparation for year: ", year_input))
 
 # PASS variables to `00a_project_inputs_for_imp.R` to SET project directory for each year
 source(project_inputScript)
-zone_input=2
+zone_input=4
 
 # LOOP by zones (runs x66 for all zones in CONUS)
 for (zone_input in zones_list){
@@ -124,13 +123,14 @@ for (zone_input in zones_list){
   #### Run modified Imputation Script, running 
   
   
+  
   # SOURCE script 01 to build the imputation model for the zone
-  message(paste0("Building many imputation models for zone: ", zone_input))
+  message(paste0("Building non-ridealong fix imputation model for zone: ", zone_input))
   source(buildImputation_script)
   
   # SOURCE script 02 to run the imputation model for each zone
-  message(paste0("Applying imputation model for random sample of pixels in zone: ", zone_input))
-  source(runImputation_script)
+  #message(paste0("Applying imputation model for random sample of pixels in zone: ", zone_input))
+  #source(runImputation_script)
   
   #############################################################################
   message(paste0("Imputation complete for zone: ", zone_input))
