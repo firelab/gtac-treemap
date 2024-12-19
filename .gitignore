@@ -1,5 +1,5 @@
 # Setup Dirs file
-setup_dirs.R
+/gtac_production_scripts/00_Library/setup_dirs.R
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
@@ -139,3 +139,4 @@ dmypy.json
 *.Rhistory
 .Rhistory
 .Rapp.history
+gtac_production_scripts/00_Library/setup_dirs.R

@@ -1,16 +1,22 @@
 # Function to make new imputation predictions given a raster input
 # This function is applied on a DATA FRAME (representing one row of raster) INSTEAD OF RASTER
 
-impute_row <- function(dat, yai, test)  { 
+library(docstring)
+
+impute_row <- function(dat, yai, test = FALSE)  { 
   
+  #' Function to make new imputation predictions given a data frame input
+  #' 
+  #' @param dat The data frame, for TreeMap, represents one row of a multi-layer raster
+  #' Where each column in the data frame represents all values in the row for a given layer of the raster. Each column represents a different layer. 
+  #' @param yai model created by the `yaImpute` function
+  #' @param test default FALSE. test = TRUE skips the imputation portion and returns a data frame of the input ids
+  #' @return data frame of imputed ids in the same shape and size as the input `dat`
+  #' @export
+  #'
+  #' @examples 
   require(yaImpute)
   require(dplyr)
-  
-  # #for testing
-  #currow <- 400
-  #yai <- yai.treelist.bin
-  #ras <- ras
-  #test <- FALSE
   
   # Manage inputs
   #---------------------------------------#
@@ -18,35 +24,6 @@ impute_row <- function(dat, yai, test)  {
   #give dat the name we use in this function
   extract.currow <- data.frame(dat)
   
-  # handle missing test param
-  if(missing(test)) {
-    test <- FALSE
-  }
-  
-  # # handle a wrapped raster as input
-  # if(is(ras) == "PackedSpatRaster") {
-  #   ras <- terra::unwrap(ras)}
-  
-  
-  # # Get data from raster
-  # #------------------------------------------------#
-  # 
-  # #### Get dimensions of input raster stack
-  # nrows.out <- dim(ras)[1]
-  # ncols.out <- dim(ras)[2]
-  # 
-  # # get cell numbers and raster values for current row
-  # rsvals <- terra::cellFromRowCol(ras, row = currow, col = 1:ncols.out)
-  # rsmat <- ras[rsvals]
-  # extract.currow <- data.frame(rsmat)
-  # 
-  # #### Get coordinates from current row of raster
-  # xycoords <- terra::xyFromCell(ras, rsvals)
-  # xycoords <- data.frame(xycoords)
-  
-  # #### Get coords of current row
-  # extract.currow$POINT_X <- xycoords$x
-  # extract.currow$POINT_Y <-xycoords$y
   
   #### Get dimensions of current row
   colseq <- 1:length(extract.currow[,1])
@@ -77,10 +54,10 @@ impute_row <- function(dat, yai, test)  {
     maxrow <- max(id.table)
     
     # EVG handling - 
-    #### Identify EVGs in zone that don't appear in X.df   
+    #### Identify EVGs in zone that don't appear in X.df.tmp   
     #-------------------------------------------------------#
-    evg.orig <- levels(yai$xRefs$EVT_GP)
-    evg.val.temp <- X.df.temp$EVT_GP  
+    evg.orig <- levels(yai$xRefs$evt_gp_remap)
+    evg.val.temp <- X.df.temp$evt_gp_remap  
     n.evgs.orig <- length(sort(unique(evg.orig)))  
     
     nonappearing.evgs <- evg.orig[-sort(unique(as.numeric(as.character(evg.val.temp))))]  
@@ -88,13 +65,12 @@ impute_row <- function(dat, yai, test)  {
     
     # Create dummy rows for non-appearing EVGs
     # Question: are dummy rows necessary? 
-    if(n.dummy.rows > 0)
-    {    
+    if(n.dummy.rows > 0) {      
       dummy.rows <- X.df.temp[1:n.dummy.rows,]    
-      tempchar <- as.character(X.df.temp$EVT_GP)    
-      X.df.temp$EVT_GP <- tempchar    
-      dummy.rows$EVT_GP <- as.character(nonappearing.evgs) 
-      dummy.rows$disturb_code <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
+      tempchar <- as.character(X.df.temp$evt_gp_remap)    
+      X.df.temp$evt_gp_remap <- tempchar    
+      dummy.rows$evt_gp_remap <- as.character(nonappearing.evgs) 
+      dummy.rows$disturb_code_bin <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
       X.df.temp <- rbind(X.df.temp, dummy.rows)    
     }
     
@@ -103,8 +79,8 @@ impute_row <- function(dat, yai, test)  {
     #-------------------------------------------------------#
     X.df.temp <- 
       X.df.temp %>%
-      dplyr::mutate(EVT_GP = factor(EVT_GP, levels = levels(yai$xRefs$EVT_GP)),
-                    disturb_code = factor(disturb_code, levels = levels(yai$xRefs$disturb_code))) %>%
+      dplyr::mutate(evt_gp_remap = factor(evt_gp_remap, levels = levels(yai$xRefs$evt_gp_remap)),
+                    disturb_code_bin = factor(disturb_code_bin, levels = levels(yai$xRefs$disturb_code_bin))) %>%
       # put columns in order expected
       dplyr::select(names(yai$xRefs))
     
@@ -128,7 +104,7 @@ impute_row <- function(dat, yai, test)  {
       rownames(X.df.temp) <- paste0("T- ", rownames.all)
       
       ### Perform imputation
-      # take object from formed random forests model and use X.df.temp dataframe to make predictions
+      # take object from already-made yaImpute model and use X.df.temp dataframe to make predictions
       temp.newtargs <- yaImpute::newtargets(yai, newdata = X.df.temp)
       
       #### Get outputs of interest

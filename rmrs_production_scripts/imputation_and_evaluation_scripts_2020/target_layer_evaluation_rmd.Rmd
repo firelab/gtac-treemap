@@ -1,10 +1,10 @@
 ---
 params:
-  eval_type:
+  eval_type: 
   raster_name:
-  zone_num:
-  eval_vars:
-  cms_path:
+  zone_num: 
+  eval_vars: 
+  cms_path: 
 title: "TreeMap Zonal Validation: Zone `r params$zone_num` "
 subtitle: "`r params$raster_name` ; `r params$eval_type`"
 output:
@@ -19,14 +19,10 @@ date: "`r Sys.Date()`"
 
 library(flextable)
 library(knitr)
-
 # set chunk options
 knitr::opts_chunk$set(echo = FALSE)
 
-
 ```
-
-
 
 Landfire zone: `r params$zone_num`
 
@@ -36,72 +32,42 @@ Variables to evaluate: `r params$eval_type`
 
 Path for confusion matrices: `r params$cms_path`
 
+Unique plots imputed in zone: `r length(freq(raw_imputed_raster)$value)`
+
+Plots available in zone: `r nrow(plot.df)`
+
+Percent of available plots imputed: `r round(100*( length(freq(raw_imputed_raster)$value) / nrow(plot.df)), 2)`
+
 ```{r plot raster}
-# plt_time <- Sys.time()
-
-# plotTitle <- as.character(glue::glue("Raw Imputation: Zone {params$zone_num}"))
-plotTitle <- glue::glue("Raw Imputation: Zone {params$zone_num}")
-
-if (!exists("pltObj")) {
-  # plot raster 
-  terra::plot(ras, main = plotTitle, col=rev(terrain.colors(10)), colNA=NULL, legend = TRUE)
-  pltObj <- recordPlot()
-} else {
-  plot.new()
-  pltObj
-}
+# plot raster 
+plot(raw_imputed_raster, main = glue::glue("Raw Imputation: Zone {params$zone_num}"))
 ```
 
-
-
-```{r param table, results = 'asis', warning = F}
-
-if (include_paramTable == "Y"){
-
-    # TODO: un-comment when rest of the data is this structure, no only .RDS file available for `2016_GTAC_Test` project
-  #params_RDS_path <- glue::glue('{params_dir}/{output_name}_paramsTable.RDS')
-  
-  params_csv_path <- glue::glue('{params_dir}/{output_name}_paramsTable.csv')
-  
-  #params_RDS_path <- glue::glue("{home_dir}/03_Outputs/07_Projects/2016_GTAC_Test/01_Raw_model_outputs/z{zone_num}/params/z{zone_num}_2016_Orig_Test_params.RDS")
-  
-  #load(params_RDS_path)
-  
-  param_table <- read.csv(params_csv_path)
-  
-  #param_table <- RDS_toTable(params_RDS_path)
-  param_table <- paramsCSV_toFlexTable(param_table)
-  
-  cat("\n\n\\pagebreak\n")
-  cat("Run paramters:")
-  param_table
-  
-}
-
-
-```
-
-```{r choose single variable to start}
-#choose single variable
-# 
-# v <- 2
-# var_in <- eval_vars[v]
-```
 
 ```{r format and plot tables for each var, results = 'asis', warning = F}
-
 for(v in 1:length(eval_vars)){
-  
-  var_in <- eval_vars[v]
 
+  var_in <- eval_vars[v]
+  
   cat("\n\n\\pagebreak\n")
   print(glue("**Variable: {var_in}**
   
              "))
-
+  
   ##### LOOP OVER EACH VAR
   
   cms <- cms_all[[var_in]]
+  
+  if(var_in == "evt_gp"){
+    names(cms$classes)[2:(nrow(evg_reclass)+1)]<- evg_reclass$EVT_GP
+    cms$freq$class<- evg_reclass$EVT_GP
+    cms$freq_norm$class<- evg_reclass$EVT_GP
+    #
+    rownames(cms$raw)[1:nrow(evg_reclass)]<- evg_reclass$EVT_GP
+    colnames(cms$raw)[1:nrow(evg_reclass)]<- evg_reclass$EVT_GP
+    
+    }
+  
   
   # Initial Table formatting
   ###################################################################################
@@ -119,44 +85,52 @@ for(v in 1:length(eval_vars)){
   
   # Calculate normalized frequency table 
   #--------------------------------------------#
-
   # calc total to use in normalizing
   total_pred = sum(freq$pred)
   total_ref = sum(freq$ref)
   
   # add normalized frequency
   freq_norm <- freq %>%
-    dplyr::mutate(pred = pred/total_pred, 
+    mutate(pred = pred/total_pred, 
            ref = ref/total_ref)
+    # Work with reference data and join to normalized frequency
+  rat_z<- plot.df
+  
+  # Rename ID to PLOTID
+  #rat_z %<>% rename("PLOTID" = "ID")
+  
+  # Calc frequency for all vars in RAT
+  #------------------------------------------#
+  
+  rat_freq_all <- list()
+
+  # get frequency table
+  f_out <- rat_z %>%
+    select(all_of(var_in)) %>%
+    table() %>%
+    data.frame() 
+  
+  # add normalized frequency
+  f_out$Freq_norm = f_out$Freq/sum(f_out$Freq)
+  
+  # join with other outputs
+  rat_freq_all = c(rat_freq_all, list(f_out))
+  
   
   # Join normalized frequency table with reference
   #----------------------------------------------#
-  rat_freq <- rat_freq_all[[var_in]]
-  rat_freq_norm <- rat_freq
+  rat_freq <- f_out
   
   #prep rat frequency table
   rat_freq %<>% 
-    dplyr::rename(class = !!var_in, 
-           "aRAT" = Freq) %>%
-    dplyr::select(-Freq_norm)
-  
-  
-  #prep rat frequency table
-  rat_freq_norm %<>% 
-    dplyr::rename(class = !!var_in, 
+    rename(class = !!var_in, 
            "aRAT" = Freq_norm) %>%
-    dplyr::select(-Freq)
-
-  # join
-  freq %<>%
-    dplyr::full_join(rat_freq, by = join_by("class")) %>%
-    dplyr::arrange(class)
+    select(-Freq)
   
   # join
   freq_norm %<>%
-    dplyr::full_join(rat_freq_norm, by = join_by("class")) %>%
-    dplyr::arrange(class)
-  
+    full_join(rat_freq, by = join_by("class")) %>%
+    arrange(class)
   
   # Prep CM Classes
   #---------------------------------------------#
@@ -166,9 +140,9 @@ for(v in 1:length(eval_vars)){
   
   #manipulate
   cm_classes %<>%
-    tidyr::pivot_longer(!metric, names_to = "class") %>%
-    dplyr::mutate(class = factor(class)) %>%
-    dplyr::mutate(value = round(value, round_dig))
+    pivot_longer(!metric, names_to = "class") %>%
+    mutate(class = factor(class)) %>%
+    mutate(value = round(value, round_dig))
   
   # get number of classes
   nclass = length(unique(cm_classes$class))
@@ -183,71 +157,134 @@ for(v in 1:length(eval_vars)){
   #------------------------------------------------------#
   
   cm_overall <- cms$overall
-
+  
   #format
   cm_overall %<>% 
-    dplyr::mutate(value = round(value, round_dig))
+    mutate(value = round(value, round_dig))
   
   row.names(cm_overall) <- NULL
   
-  # Prepare data for plotting
+  # Plotting
   ##################################################################################
   
-  # Bar plot: Normalized frequency, observed vs. predicted vs. for each class
+  # Bar plot: Raw frequency, observed vs. predicted for each class 
+  # ---------------------------------------------------------#
+  
+  #format frequency table for plotting
+  freq_t1 <- freq %>%
+    pivot_longer(!class, names_to = "dataset") %>%
+    dplyr::rename(frequency = "value") %>%
+    arrange(dataset, class)
+  
+  #plot
+  barchart1 <- freq_t1 %>%
+    ggplot() +
+    geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
+    scale_fill_manual(name = "Dataset", labels = plot_labels,values = c("aquamarine3", "chartreuse4"))+
+    theme_bw() +
+    ggtitle(glue("Frequency of classes
+            Zone: z{zone_num} ; Attribute: {var_in}"))
+  
+  # conditionally flip axis text labeling
+  if(var_in == "EVT_GP") {
+    barchart1 <- barchart1 + 
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  }
+
+  
+  # Bar plot: Normalized frequency, observed vs. predicted vs. for each class 
   # ---------------------------------------------------------#
   
   #format frequency table for plotting
   freq_t2 <- freq_norm %>%
-    tidyr::pivot_longer(!class, names_to = "dataset") %>%
+    pivot_longer(!class, names_to = "dataset") %>%
     dplyr::rename(frequency = "value") %>%
-    dplyr::mutate(dataset= factor(dataset)) %>%
-    dplyr::arrange(dataset, class)
-    
-    
+    mutate(dataset= factor(dataset)) %>%
+    arrange(dataset, class)
+  
+  #plot
+  barchart2 <- freq_t2 %>%
+    ggplot() +
+    geom_col(aes(x = class, y = frequency, fill = factor(dataset)), position = "dodge") +
+    scale_fill_manual(name = "Dataset", labels = c("Ground (FIA)", plot_labels),values = c("springgreen4", "aquamarine3", "chartreuse4"))+
+    theme_bw() +
+    ggtitle(glue("Normalized frequency of classes
+            Zone: z{zone_num} ; Attribute: {var_in}"))
+  
+  # conditionally flip axis text labeling
+  if(var_in == "EVT_GP") {
+    barchart2 <- barchart2 + 
+      theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+  }
+  
   # Scatterplot: N of class in reference data vs. classwise accuracy
-  # -----------------------------------------------------------------
+  # -----------------------------------------------------------------#
   
   # get accuracy for each class
   acc <- cm_classes %>%
-    dplyr::filter(metric == "Balanced Accuracy")
+    filter(metric == "Balanced Accuracy")
   
-  n_acc <- X_df %>%
-    dplyr::select(PLOTID, CN, !!var_in) %>%
-    dplyr::rename("class" = !!var_in) %>%
-    dplyr::mutate(class = factor(class)) %>%
-    dplyr::group_by(class) %>%
-    dplyr::summarize(n = n()) %>%
-    dplyr::left_join(acc, by = "class")
+  n_acc <- plot.df %>%
+    select(plt_cn, ID, !!var_in) %>%
+    rename("class" = !!var_in) %>%
+    mutate(class = factor(class)) %>%
+    group_by(class) %>%
+    summarize(n = n()) %>%
+    left_join(acc, by = "class")
 
+  
+  # plot
+  scatter_plot1 <- n_acc %>%
+    ggplot()+
+    geom_point(aes(x = n, y = value), size = 2) + 
+    theme_bw() +
+    labs(x = "total N of class in reference data", y = "Balanced Accuracy") + 
+    ggtitle(glue("Accuracy vs. n Reference pts per class
+            Zone: z{zone_num} ; Attribute: {var_in}"))
+  
+  
   # Scatterplot: Total obs of class vs. classwise accuracy
   # -----------------------------------------------------------------#
   
   # get accuracy for each class
   acc <- cm_classes %>%
-    dplyr::filter(metric == "Balanced Accuracy")
+    filter(metric == "Balanced Accuracy")
   
   # join with total N for each class
   freq_acc <- freq %>%
     #select(-X) %>%
     #rename("class" = value) %>%
-    dplyr::group_by(class) %>%
-    dplyr::summarise(n = ref + pred) %>%
-    dplyr::left_join(acc, by = "class")
+    group_by(class) %>%
+    summarise(n = ref + pred) %>%
+    left_join(acc, by = "class")
   
-   
+  # plot
+  scatter_plot2 <- freq_acc %>%
+    ggplot()+
+    geom_point(aes(x = n, y = value), size = 2) + 
+    theme_bw() +
+    labs(x = "total N of class in Imputed observations", y = "Balanced Accuracy") + 
+    ggtitle(glue("Accuracy vs. N Imputed Obs per class
+            Zone: z{zone_num} ; Attribute: {var_in}"))
+  
+  
   # Prep confusion matrix for display
   # -------------------------------------------------#
   
   #get overall accuracy 
   oa <- cm_overall %>%
-    dplyr::filter(metric == "Accuracy") %>%
-    dplyr::select(value) 
- 
-   if (var_in != "disturb_code"){
-    print(glue::glue("*Overall accuracy: {round(oa*100,4)}%*"))
-    cat("\n\n")
+    filter(metric == "Accuracy") %>%
+    select(value) 
+  
+  if (var_in != "disturb_code"){
+    print(glue::glue("*Overall accuracy: {round(oa*100,4)}%*
+                   
+                  "))
   }
   
+  
+  oa %<>%
+    round(round_dig)
   
   if (var_in == "disturb_code"){
     cms_adjusted<- matrix(nrow=2,ncol=2)
@@ -260,86 +297,40 @@ for(v in 1:length(eval_vars)){
     adjusted_accuracy<- (cms_adjusted[1,1] + cms_adjusted[2,2]) / (cms_adjusted[1,1] + cms_adjusted[2,2] +
                                                                      cms_adjusted[2,1] + cms_adjusted[1,2]) 
     
-     print(glue::glue("*Overall accuracy: {round(oa*100,4)}%*  /  *Adjusted overall accuracy: {round(round(adjusted_accuracy,4)*100,4)}%*"))
-     cat("\n\n")
+     print(glue::glue("*Overall accuracy: {round(oa*100,4)}%*  /  *Adjusted overall accuracy: {round(round(adjusted_accuracy,4)*100,4)}%*
+                   
+                   "))
     
   }
-  
-  oa %<>%
-    round(round_dig)
-
-
-  # PLOTS
-  #------------------------------------------#
-
-  # Include plots based on options set in `04a_run_zonal_report_modularPlotting.R` script:
-  # Uses functions from the `evalPlottingFunctionLib.R` library
-
-  if(barPlot_raw == "Y"){
-    barchart1 <- plot_barchart_raw(df = freq, 
-                                    var_in = var_in, 
-                                    zone_num = zone_num, 
-                                    save_Plot = save_Plot, 
-                                    exportDir = exportDir)
     
+
     print(barchart1)
-  }
-  
-  if (barPlot_norm == "Y"){
-    
-    barchart2 <- plot_barchart_norm(df = freq_norm, 
-                                  var_in = var_in, 
-                                  zone_num = zone_num, 
-                                  save_Plot = save_Plot, 
-                                  exportDir = exportDir)
     print(barchart2)
-  } 
-
-  if (scatterPlot_refVClassAcc == "Y"){
-    
-    scatter_plot1 <- plot_scatter_refVClassAcc(df = n_acc, 
-                                              var_in = var_in, 
-                                              zone_num = zone_num, 
-                                              save_Plot = save_Plot, 
-                                              exportDir = exportDir)
-
     print(scatter_plot1)
-
-  }
-  
-  if (scatterPlot_obsVClassAcc == "Y"){
-    
-    scatter_plot2 <- plot_scatter_obsVClassAcc(df = freq_acc, 
-                                              var_in = var_in, 
-                                              zone_num = zone_num, 
-                                              save_Plot = save_Plot, 
-                                              exportDir = exportDir)
-    
     print(scatter_plot2)
-  }
-
-    
+  
+  
   # get producer's accuracy for each class - precision
   pa <- cm_classes %>%
-    dplyr::filter(metric == "Precision") %>%
-    dplyr::mutate(value = round(value, round_dig))  %>%
-    dplyr::select(value) %>%
+    filter(metric == "Precision") %>%
+    mutate(value = round(value, round_dig))  %>%
+    select(value) %>%
     # replace NA with character
-    dplyr::mutate(value = as.character(value)) %>%
-    tidyr::replace_na(list(value = "NA")) %>%
+    mutate(value = as.character(value)) %>%
+    replace_na(list(value = "NA")) %>%
     #rename
-    dplyr::rename("Prod. Acc" = value) %>%
+    rename("Prod. Acc" = value) %>%
     # add extra row to be able to bind
     rbind(c("NA"))
   
   # get user's accuracy for each class - recall
   ua <- cm_classes %>%
-    dplyr::filter(metric == "Recall") %>% 
-    dplyr::mutate(value = round(value, round_dig))  %>%
-    dplyr::select(value) %>%
+    filter(metric == "Recall") %>% 
+    mutate(value = round(value, round_dig))  %>%
+    select(value) %>%
     # replace NA with character
-    dplyr::mutate(value = as.character(value)) %>%
-    tidyr::replace_na(list(value = "NA")) 
+    mutate(value = as.character(value)) %>%
+    replace_na(list(value = "NA")) 
   
   # join producer's accuracy
   cm_display <- cbind(cm_raw, pa)
@@ -351,7 +342,7 @@ for(v in 1:length(eval_vars)){
     #c("User's Acc") %>%
     rbind(ua, b) %>%
     # rename
-    dplyr::rename("User's Acc" = value) %>%
+    rename("User's Acc" = value) %>%
     t() %>%
     data.frame()
   
@@ -396,13 +387,11 @@ for(v in 1:length(eval_vars)){
     set_caption(glue("Confusion Matrix  
              Zone: z{zone_num} ; Attribute: {var_in},
              {plot_labels}")) 
-
   # highlight diagonal values
   for (r in 1:(nrow(cm_display)-1)) {
     table_cm %<>%
-    surround(i = r, j = r+1, border = fp_border_default(color = "cornflowerblue", width = 1.5), part = "body")
-    }
-
+      surround(i = r, j = r+1, border = fp_border_default(color = "cornflowerblue", width = 1.5), part = "body")
+  }
   # fit to page
   
   table_cm <- FitFlextableToPage(ft = table_cm, 
@@ -415,7 +404,3 @@ for(v in 1:length(eval_vars)){
   # End loop
 }
 ```
-
-
-
-

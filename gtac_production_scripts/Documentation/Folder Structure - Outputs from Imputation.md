@@ -1,0 +1,94 @@
+```
+└── 📁2022_Production
+    └── 📁01_Raw_model_outputs
+        └── 📁z01
+            └── 📁model
+                └── z01_2022_Production_yai_treelist_bin.RDS
+            └── 📁model_eval
+                └── z01_2022_Production_CMs_ResponseVariables.RDS
+                └── z01_2022_Production_varImp.png
+            └── 📁params
+                └── z01_2022_Production_env.RDS
+                └── z01_2022_Production_paramsTable.csv
+            └── 📁raster
+                └── 📁tiles
+                    └── z01_2022_Production_tile1.tif
+                    └── ...
+                    └── z01_2022_Production_tile39.tif
+            └── 📁xytables
+                └── z01_2022_Production_Xdf_bin.csv
+                └── z01_2022_Production_Ydf_bin.csv
+        ...
+        └── 📁z99
+            
+    └── 📁02_Assembled_model_outputs
+        └── 📁z01
+            └── 📁01_Imputation
+                └── z01_2022_Production_Imputation.tif
+            └── 📁02_Assembled_vars
+                └── z01_2022_Production_disturb_code_bin.tif
+                └── z01_2022_Production_disturb_code.tif
+                └── z01_2022_Production_evc.tif
+                └── z01_2022_Production_evh.tif
+                └── z01_2022_Production_evt_gp_remap.tif
+                └── z01_2022_Production_evt_gp.tif
+        ...
+        └── 📁z99
+            
+    └── 📁03_Evaluation
+        └── 📁z01
+            └── 📁01_Target_Layer_Comparison
+                └── z01_2022_Production_CMs_TargetLayerComparison.RDS
+            └── 📁02_OOB_Evaluation
+                └── 📁figs
+                    └── z01_2022_OOB_BALIVE_scatter.png
+                    └── z01_2022_OOB_BALIVE_violin.png
+                    └── z01_2022_OOB_CANOPYPCT_scatter.png
+                    └── z01_2022_OOB_CANOPYPCT_violin.png
+                    └── z01_2022_OOB_CARBON_D_scatter.png
+                    └── z01_2022_OOB_CARBON_D_violin.png
+                    └── z01_2022_OOB_CARBON_DOWN_DEAD_scatter.png
+                    └── z01_2022_OOB_CARBON_DOWN_DEAD_violin.png
+                    └── z01_2022_OOB_CARBON_L_scatter.png
+                    └── z01_2022_OOB_CARBON_L_violin.png
+                    └── z01_2022_OOB_GSSTK_scatter.png
+                    └── z01_2022_OOB_GSSTK_violin.png
+                    └── z01_2022_OOB_QMD_RMRS_scatter.png
+                    └── z01_2022_OOB_QMD_RMRS_violin.png
+                    └── z01_2022_OOB_SDIPCT_RMRS_scatter.png
+                    └── z01_2022_OOB_SDIPCT_RMRS_violin.png
+                    └── z01_2022_OOB_TPA_DEAD_scatter.png
+                    └── z01_2022_OOB_TPA_DEAD_violin.png
+                    └── z01_2022_OOB_TPA_LIVE_scatter.png
+                    └── z01_2022_OOB_TPA_LIVE_violin.png
+                └── z01_2022_Production_CMs_OOB.RDS
+            └── 📁03_Cross_Validation
+                └── 📁figs
+                    └── z01_2022_CV_BALIVE_scatter.png
+                    └── z01_2022_CV_BALIVE_violin.png
+                    └── z01_2022_CV_CANOPYPCT_scatter.png
+                    └── z01_2022_CV_CANOPYPCT_violin.png
+                    └── z01_2022_CV_CARBON_D_scatter.png
+                    └── z01_2022_CV_CARBON_D_violin.png
+                    └── z01_2022_CV_CARBON_DOWN_DEAD_scatter.png
+                    └── z01_2022_CV_CARBON_DOWN_DEAD_violin.png
+                    └── z01_2022_CV_CARBON_L_scatter.png
+                    └── z01_2022_CV_CARBON_L_violin.png
+                    └── z01_2022_CV_GSSTK_scatter.png
+                    └── z01_2022_CV_GSSTK_violin.png
+                    └── z01_2022_CV_QMD_RMRS_scatter.png
+                    └── z01_2022_CV_QMD_RMRS_violin.png
+                    └── z01_2022_CV_SDIPCT_RMRS_scatter.png
+                    └── z01_2022_CV_SDIPCT_RMRS_violin.png
+                    └── z01_2022_CV_TPA_DEAD_scatter.png
+                    └── z01_2022_CV_TPA_DEAD_violin.png
+                    └── z01_2022_CV_TPA_LIVE_scatter.png
+                    └── z01_2022_CV_TPA_LIVE_violin.png
+                └── z01_2022_Production_CMs_CV.RDS
+            └── 📁04_Eval_Reports
+                └── z01_2022_Production_eval_report_CV.docx
+                └── z01_2022_Production_eval_report_OOB.docx
+                └── z01_2022_Production_eval_report_TargetLayerComparison.docx
+        ...
+        └── 📁z99
+    

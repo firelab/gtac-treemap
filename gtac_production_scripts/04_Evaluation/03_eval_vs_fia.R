@@ -1,3 +1,14 @@
+# Evaluates TreeMap outputs against the FIA data from the Raster Atrribute Table
+# Currently only updated for 2016 
+# Written by Lila Leatherman (Lila.Leatherman@usda.gov)
+# Updated by Abhi Shrestha (abhinav.shrestha@usda.gov)
+
+# Last updated: 8/15/2023
+
+#------------------------------------------------------------------#
+
+# Script outline
+
 # eval categorical vars - confusion matrices
 # eval continuous vars - extract imputed id at actual fia id points
 # then calc RMSE

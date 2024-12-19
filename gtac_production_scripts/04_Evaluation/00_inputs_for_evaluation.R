@@ -10,33 +10,35 @@
 # set path to save output rasters
 # this directory will be created if it does not already exist
 # raw_outputs_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
-tmp_output_dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # for testing
+#tmp_output_dir <- "C:/Users/abhinavshrestha/OneDrive - USDA/Documents/02_TreeMap/temp_dir" # for testing
 
 # Load 
 #-----------------------------------------------#
 # Id where THIS script is located
-this_proj <- this.path::this.proj()
+#this_proj <- this.path::this.proj()
 
-# get path to imputations input script
-inputs_for_imputation <- glue::glue('{this_proj}/gtac_production_scripts/03_Imputation/00b_zonal_inputs_for_imp.R')
-source(inputs_for_imputation)
+#lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+#source(lib_path)
 
-# path to RDS for imputation inputs
-#---------------------------------------------------------#
-save(list = ls(), file = glue::glue('{params_dir}/{output_name}_env.RDS'))
+# get path to imputation inputs RDS
+#inputs_for_imputation <- glue::glue("{params_dir}/{output_name}_env.RDS")
+#inputs_for_imputation <- glue::glue("{home_dir}03_Outputs/07_Projects/2020_ImputationPrep/01_Raw_model_outputs/z16/params/z16_2020_GTAC_ImputationPrep_env.RDS")
+#Sload(inputs_for_imputation)
+
+
 
 # General inputs
 #--------------------------------------------------#
 
 # set location of raster attribute table
-rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
+#rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/")
 
 # set number of digits to round to
-round_dig <- 4
+#round_dig <- 4
 
 # Path to X table used to make model
-xtable_path <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv")
-
+#xtable_path <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv")
+#ytable_path <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Ydf_bin.csv")
 
 # model to use - supply specific model to pull into imputation, or NA
 # if NA, uses default model name and path
@@ -79,22 +81,28 @@ xtable_path <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv"
 # Create directories
 #----------------------------------------------#
 
-# create eval dir if necessary
-if(!file.exists(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/'))) {
-  dir.create(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/'), recursive = TRUE)
-}
+# # create eval dir if necessary
+# if(!file.exists(glue::glue('{eval_dir}/01_Target_Layer_Comparison'))) {
+#   dir.create(glue::glue('{eval_dir}/01_Target_Layer_Comparison'), recursive = TRUE)
+# }
+# 
+# # create eval dir if necessary
+# if(!file.exists(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'))) {
+#   dir.create(glue::glue('{eval_dir}/02_OOB_Evaluation/figs/'), recursive = TRUE)
+# }
+# 
+# # create eval dir if necessary
+# if(!file.exists(glue::glue('{eval_dir}/03_Cross_Validation/figs/'))) {
+#   dir.create(glue::glue('{eval_dir}/03_Cross_Validation/figs/'), recursive = TRUE)
+# }
+# 
+# # # create eval dir if necessary
+# # if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'))) {
+# #   dir.create(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'), recursive = TRUE)
+# # }
+# 
+# # create eval dir if necessary
+# if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
+#   dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
+# }
 
-# create eval dir if necessary
-if(!file.exists(glue::glue('{eval_dir}/02_Target_Layer_Comparison'))) {
-  dir.create(glue::glue('{eval_dir}/02_Target_Layer_Comparison'), recursive = TRUE)
-}
-
-# create eval dir if necessary
-if(!file.exists(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'))) {
-  dir.create(glue::glue('{eval_dir}/03_FIA_Comparison/figs/'), recursive = TRUE)
-}
-
-# create eval dir if necessary
-if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
-  dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
-}
