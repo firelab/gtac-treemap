@@ -153,8 +153,7 @@ if(n.dummy.rows > 0)
   dummy.rows <- X.df.temp[1:n.dummy.rows,]    
   tempchar <- as.character(X.df.temp$evt_gp)    
   X.df.temp$evt_gp <- tempchar    
-  dummy.rows$evt_gp <- as.character(nonappearing.evgs) 
-  dummy.rows$disturb_code <- rep(0, n.dummy.rows) # make sure there's disturb code in the dummy rows
+  dummy.rows$evt_gp <- as.character(nonappearing.evgs)
   X.df.temp <- rbind(X.df.temp, dummy.rows)    
 }
 
