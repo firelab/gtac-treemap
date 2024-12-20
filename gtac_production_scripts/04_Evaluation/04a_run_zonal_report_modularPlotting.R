@@ -195,7 +195,7 @@ cms_all <- readRDS(cms_path)
 #------------------------------------------#
 
 # load LF zone data
-LF_zones <- terra::vect(lf_zones_path)
+LF_zones <- terra::vect(zones_path)
 
 # select single LF zone
 zone <- terra::subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
@@ -284,7 +284,7 @@ X_xy <- yai$xRefs %>%
   tibble::rownames_to_column(var = "tm_id")
 
 # convert xy data to spatial points
-X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = output_crs)
+X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = zone_output_crs)
 
 # mask to pts within zone
 zone_pts <- terra::mask(X_pts, zone)
