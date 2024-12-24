@@ -114,6 +114,8 @@ row.names(plot_df) <- plot_df$tm_id
 # Inspect input variables - check for values in expected ranges
 #-------------------------------------------------------------------#
 
+message("plotting x table variables for pre-model QA: exporting to tmp_dir")
+
 facet_n = sqrt(length(names(plot_df)))
 
 png(glue::glue("{tmp_dir}/{cur_zone_zero}_xtable.png"),
