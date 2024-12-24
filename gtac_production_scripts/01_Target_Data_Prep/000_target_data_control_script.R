@@ -8,7 +8,7 @@ gc()
 
 # Initialize projects (years) 
 #years_list <- c(2020, 2022)
-years_list <-c(2020, 2022)
+years_list <-c(2022)
 
 # List zones to run for
 # zones_list <- c(2, 16, 57) # testing
@@ -17,7 +17,7 @@ years_list <-c(2020, 2022)
 #                seq(from = 12, to = 66, by = 1), # skipping zone 11 
 #                98, 99)
 # ### AK and HI
-zones_list <- c(seq(67, 80, 1))
+zones_list <- c(seq(73, 80, 1))
 
 
 # Initialize directories
@@ -118,6 +118,9 @@ for (year_input in years_list){
                             "zone_input",
                             "years_list", 
                             "zones_list", 
+                            "lf_zones_path_CONUS",
+                            "lf_zones_path_AK",
+                            "lf_zones_path_HI",
                             "project_name", 
                             "target_data_version",
                             "year",
