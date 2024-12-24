@@ -469,7 +469,7 @@ eval_cm_function <- function(t, noDataVal = NA) {
 # Write function to reclass rasters from id field to variable field, and export
 ##################################################################
 
-assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
+assembleExport <- function(layer_field, raster, lookup, id_field, export_path, plot = FALSE, time = FALSE) {
   
   require(tictoc)
   
@@ -483,8 +483,19 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
               glue('{export_path}_{layer_field}.tif'),
               overwrite = TRUE,
               datatype="INT4U")
+  
+  # conditionally plot
+  if(plot == TRUE) {
+    plot(rout)
+  }
+  
   rm(rout)
-  toc()
+  
+  # conditionally report time
+  if(time == TRUE) {
+    print(toc())
+  }
+  
   gc()
   
 }
@@ -495,7 +506,10 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
 
 assembleCM <- function(layer_field, raster, lookup, id_field, 
                        stackin_compare, stackin_compare_name,  
-                       exportTF, export_path) {
+                       exportTF, export_path, 
+                       plot = FALSE, time = FALSE) {
+  
+  tic()
   
   print(glue::glue("assembleCM: {layer_field}"))
   print(glue::glue("export?: {exportTF}"))
@@ -562,6 +576,14 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   # levels(imp1) <- levels
   # levels(lf1) <- levels
   
+  # Conditionally plot
+  #---------------------------------------#
+  # conditionally plot
+  if(plot == TRUE) {
+    plot(imp1)
+  }
+
+  
   # Calculate confusion matrix
   #--------------------------------------#
   
@@ -587,7 +609,14 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   rm(imp1, lf1)
   gc()
   
+  # Conditionally report time
+  #-----------------------------------------------#
+  if(time == TRUE) {
+    print(toc())
+  }
+  
   return(cms)
+  
 }
 
 ######################################################################################

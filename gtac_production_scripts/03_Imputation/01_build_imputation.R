@@ -4,7 +4,7 @@
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # With contributions from Abhinav Shrestha (abhinav.shrestha@usda.gov) and Scott Zimmer (scott.zimmer@usda.gov)
 
-# Last updated: 8/28/2024
+# Last updated: 12/17/2024
 
 # This script accomplishes the following tasks: 
 # - BUILD and save x and y tables
@@ -39,7 +39,7 @@ coords <- read.csv(coords_path)
 
 # project coords into same coordinate system 
 coords <- terra::vect(coords, geom = c("ACTUAL_LON", "ACTUAL_LAT"), crs = "epsg:4269") %>%
-  terra::project(output_crs)
+  terra::project(zone_output_crs)
 
 # reassign to coords object
 coords <- cbind(data.frame(coords), data.frame(terra::geom(coords)))
@@ -59,7 +59,6 @@ plot_df <- xtable %>%
 
 #inspect - check that all points have coords
 message(glue::glue("number of plots without coordinates: {plot_df %>% filter(is.na(point_x)) %>% nrow()}"))
-
 
 # Prep EVT Group
 # ---------------------------------#
@@ -111,6 +110,27 @@ plot_df %<>%
 
 row.names(plot_df) <- NULL
 row.names(plot_df) <- plot_df$tm_id
+
+# Inspect input variables - check for values in expected ranges
+#-------------------------------------------------------------------#
+
+message("plotting x table variables for pre-model QA: exporting to tmp_dir")
+
+facet_n = sqrt(length(names(plot_df)))
+
+png(glue::glue("{tmp_dir}/{cur_zone_zero}_xtable.png"),
+    width =1250, height = 1250)
+
+par(mar=c(2,2,2,2),
+    mfrow = c(facet_n, facet_n))
+
+for(i in 2:length(names(plot_df))) {
+  
+  plot(plot_df[,i], 
+       main = names(plot_df)[i])
+  
+}
+dev.off()
 
 
 # Create X table - orig (aka training table)
