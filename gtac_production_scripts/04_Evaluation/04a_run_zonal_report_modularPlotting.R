@@ -12,7 +12,7 @@
 
 # IF RUNNING STANDALONE: 
 #------------------------------------------#
-standalone <- "N"
+standalone <- "Y"
 cur_zone_zero_standalone <- "z01"
 year_standalone <- 2020
 project_standalone <- glue::glue("{year_standalone}_Production_newXtable")
@@ -241,43 +241,26 @@ percent_avlbPlts_imputed <- round((100 * (unique_pltsZone/numPltsZone_XdfModel))
 #------------------------------------------#
 
 message("Importing raster attribute table...")
-rat <- terra::rast(rat_path)
-rat <- data.frame(cats(rat))
+# Using function in 00_Library/load_RAT.R
+rat <- load_RAT(rat_path, 
+                CN_column = "CN", 
+                ID_column = "tm_id")
 
+# Join RAT and X_df into rat_x
+#-----------------------------------------------------------#
 
-# Prep Raster Attribute Table
-#-----------------------------------------------------------------#
+X_df %<>% 
+  dplyr::rename("TM_ID" = tm_id)
 
-message("Preparing raster attribute table...")
-
-# identify eval_vars_cont that are not from RMRS - we handle NAs differently
-eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
-eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(is.numeric))), "RMRS", negate = TRUE)
-
-# prep rat table
-rat %<>%
-  # rename shortened field names
-  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
-                "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
-  # convert CN to numeric
-  dplyr::mutate(CN = as.numeric(CN)) %>%
-  # round and fix NA values for RMRS and non RMRS vars
-  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
-  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
-  dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
-  # calculate TPA_DEAD_LIVE_RATIO
-  dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
-  # remove columns
-  dplyr::select(-c(Value, tm_id))
-
-
-# join RAT with X df using CN
+# join RAT with X df using CN - because TM_ID varies between versions of TreeMap
+# joining by TM_ID will cause an error if joining with an older RAT
 rat_x <- rat %>%
+  select(-TM_ID) %>%
   right_join(X_df, by = "CN") %>%
-  select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
+  select(c(CN, TM_ID, all_of(eval_vars_cat_cont))) %>%
   # filter to plots with values
   #filter(!is.na(BALIVE)) %>%
-  arrange(tm_id)
+  arrange(TM_ID)
 
 # Spatial Filter for RAT - Include only points that fall within the zone
 #--------------------------------------------------------------------------#
@@ -288,18 +271,18 @@ yai <- readRDS(model_path)
 # get xy data from model
 X_xy <- yai$xRefs %>%
   dplyr::select(point_x, point_y) %>%
-  tibble::rownames_to_column(var = "tm_id")
+  tibble::rownames_to_column(var = "TM_ID")
 
 # convert xy data to spatial points
 X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = zone_output_crs)
 
 # mask to pts within zone
 zone_pts <- terra::mask(X_pts, zone)
-zone_pts$tm_id <- as.numeric(zone_pts$tm_id)
+zone_pts$TM_ID <- as.numeric(zone_pts$TM_ID)
 
 # filter to pts within zone
 rat_x <- rat_x %>%
-  dplyr::filter(tm_id %in% as.numeric(zone_pts$tm_id))
+  dplyr::filter(TM_ID %in% as.numeric(zone_pts$TM_ID))
 
 # Create a data.frame to store summaries of the categorical vars seen in `rat_x`
 rat_x_catVarsSummary_df <- data.frame(unclass(summary(rat_x[which((names(rat_x) %in% eval_vars_cat))])), check.names = FALSE, stringsAsFactors = TRUE, row.names = NULL)

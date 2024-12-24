@@ -24,22 +24,23 @@ evt_pct_thresh <- .3
 k = 10
 
 # list variables to evaluate
-#eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
+eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin", "disturb_year")
 #eval_vars_cat <- c(yvars, "disturb_code", "evt_gp")
 
-# eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
-#                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
-#                     "TPA_DEAD", "TPA_LIVE")
-eval_vars_cont <- attributevars
+eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
+                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
+                    "TPA_DEAD", "TPA_LIVE")
+#eval_vars_cont <- attributevars
 
 eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
 # Set inputs manually - if running standalone
 #-----------------------------------------------------#
 
-# cur_zone_zero_standalone <- "z08"
-# year_standalone <- 2022
-standalone <- "N"
+standalone <- "Y"
+cur_zone_zero_standalone <- "z01"
+year_standalone <- 2020
+project_name_standalone <- glue::glue("{year_standalone}_Production_newXtable")
 
 
 #####################################################################
@@ -63,7 +64,7 @@ if(standalone == 'Y') {
   source(lib_path)
   
   #load settings for zone
-  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_name_standalone}/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{project_name_standalone}_env.RDS")
   
   load(zone_settings)
   
@@ -118,41 +119,26 @@ row.names(Y_df) <- Y_df$tm_id
 # Load and prep Raster Attribute Table
 #-----------------------------------------------------------------#
 
-# load rat
-rat <- terra::rast(rat_path)
-rat <- data.frame(cats(rat))
-
-
-# identify eval_vars_cont that are not from RMRS - we handle NAs differently
-eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
-eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(is.numeric))), "RMRS", negate = TRUE)
-
-# prep rat table
-rat %<>%
-  # rename shortened field names
-  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
-                "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
-  # convert CN to numeric
-  dplyr::mutate(CN = as.numeric(CN)) %>%
-  # round and fix NA values for RMRS and non RMRS vars
-  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
-  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
-  dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
-  # calculate TPA_DEAD_LIVE_RATIO
-  dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
-  # remove columns
-  dplyr::select(-c(Value, tm_id))
+# Using function in 00_Library/load_RAT.R
+rat <- load_RAT(rat_path, 
+                CN_column = "CN", 
+                ID_column = "tm_id")
 
 # Join RAT and X_df into rat_x
 #-----------------------------------------------------------#
 
-# join RAT with  X df using CN
+X_df %<>% 
+  dplyr::rename("TM_ID" = tm_id)
+
+# join RAT with X df using CN - because TM_ID varies between versions of TreeMap
+# joining by TM_ID will cause an error if joining with an older RAT
 rat_x <- rat %>%
+  select(-TM_ID) %>%
   right_join(X_df, by = "CN") %>%
-  select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
+  select(c(CN, TM_ID, all_of(eval_vars_cat_cont))) %>%
   # filter to plots with values
   #filter(!is.na(BALIVE)) %>%
-  arrange(tm_id)
+  arrange(TM_ID)
 
 
 ######################################################################
