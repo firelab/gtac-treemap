@@ -2,7 +2,7 @@
 # Written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # Updated by Abhinav Shrestha (abhinav.shrestha@usda.gov)
 
-# Last updated: 08/14/2024
+# Last updated: 12/23/2024
 
 #==========================================================#
 #                                                          # 
@@ -12,10 +12,12 @@
 
 # IF RUNNING STANDALONE: 
 #------------------------------------------#
-cur_zone_zero_standalone <- "z08"
-year_standalone <- 2022
-eval_type_standalone <- "TargetLayerComparison"
 standalone <- "N"
+cur_zone_zero_standalone <- "z01"
+year_standalone <- 2020
+project_standalone <- glue::glue("{year_standalone}_Production_newXtable")
+eval_type_standalone <- "TargetLayerComparison"
+
 
 
 # VARIABLES TO EVALUATE
@@ -24,8 +26,11 @@ standalone <- "N"
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
 # eval_vars_cat <- yvars
-# eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code_bin", "disturb_code" )
-eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code_bin", "disturb_code" ) # without "evt_gp_remap"
+# list names of attribute vars to evaluate - these come from RAT table or similar; are not included in imputation
+attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
+                   "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
+                   "TPA_DEAD", "TPA_LIVE")
+eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code_bin", "disturb_code", "disturb_year" ) # without "evt_gp_remap"
 eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
 #eval_vars_cat_cont <- eval_vars_cat
 
@@ -116,13 +121,15 @@ if(standalone == 'Y') {
   lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
   source(lib_path)
   
+  # load(project_settings)
+  
   #load settings for zone
-  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_standalone}/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{project_standalone}_env.RDS")
   
   load(zone_settings)
   
   # load library again in case functions have been updated since initial creation of RDS
-  source(lib_path)
+  #source(lib_path)
 }
 
 # Prep constructed paths
