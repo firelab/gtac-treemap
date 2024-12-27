@@ -83,6 +83,9 @@ for (i in lf_zone_nums){
                                           res = res(evc),
                                           threads = TRUE),
                            evc, mask = TRUE, touches = TRUE)
+  # correct negative SWE values
+  swe_final[swe_final < 0]<- 0
+  
   #
   tmax_final<- terra::crop(terra::project(x = tmax_crop, 
                                           y = evc,
