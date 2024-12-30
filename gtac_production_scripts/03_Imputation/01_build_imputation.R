@@ -142,8 +142,7 @@ skim_out <- plot_df %>%
          disturb_code_bin = as.numeric(disturb_code_bin)) %>%
   skimr::skim()%>%
   select(skim_variable, 
-         numeric.mean, numeric.sd, numeric.p0, numeric.p25, numeric.p50, numeric.p75, numeric.p100, 
-         numeric.hist) %>%
+         numeric.mean, numeric.sd, numeric.p0, numeric.p25, numeric.p50, numeric.p75, numeric.p100) %>%
   filter(skim_variable %notin% c("tm_id", "zone", "plt_cn")) %>%
   as.tibble() %>%
   rename("variable" = skim_variable) %>%
@@ -151,7 +150,7 @@ skim_out <- plot_df %>%
 
 #str(skim_out)
 
-write.csv(skim_out, glue::glue("{raw_outputs_dir}/model_eval/{cur_zone_zero}_xtable_summary.csv"))
+write.csv(skim_out, glue::glue("{raw_outputs_dir}/model_eval/{cur_zone_zero}_xtable_summary.csv"), row.names = FALSE)
 
 # Create X table - orig (aka training table)
 # ---------------------------------------------------------#
