@@ -35,7 +35,7 @@ eval_type_list <- c("model_eval", "TargetLayerComparison", "CV")
 exportEvalReportStats <- TRUE # TRUE or FALSE
 
 # RUN EVAL ONLY (skips imputation -- assumes already done)
-skip_Imputation <-TRUE
+skip_Imputation <- FALSE
 
 # RUN EVAL REPORT GENERATION ONLY (skips evaluation script -- assumes eval RDS is already saved in zone folder)
 skip_Evaluation <- TRUE
@@ -70,7 +70,7 @@ assembleAttribute_script <- glue::glue("{this_proj}/gtac_production_scripts/04_E
 list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
                       "magrittr", "tictoc", "caret", "randomForest", 
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
-                      "stringr", "stringi", "devtools", "philentropy")
+                      "stringr", "stringi", "devtools", "philentropy", "skimr")
 
 ################################################################
 # END USER INPUTS

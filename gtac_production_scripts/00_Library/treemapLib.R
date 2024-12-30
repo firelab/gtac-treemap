@@ -9,7 +9,7 @@
 # Load required packages
 #################################################################
 
-# packages required
+# packages required for functions in this library
 list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
                       "magrittr", "tictoc", "caret", "randomForest", 
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
