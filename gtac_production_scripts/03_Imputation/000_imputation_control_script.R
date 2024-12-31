@@ -8,16 +8,15 @@ gc()
 #################################################################
 
 # Initialize projects (years) and zones
-year_input <- 2022
+year_input <- 2020
 
 
 # manually list zones
-zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-                seq(from = 12, to = 66, by = 1),
-                98, 99)
+# zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
+#                 seq(from = 12, to = 66, by = 1),
+#                 98, 99)
 
-# zones_list <- zones_list[zones_list %in% c(8)]
-
+zones_list <- c(1,10)
 
 ### Additional code for sub-setting zones list (for production)
 ## Filter out certain run zones (unordered list)
@@ -30,18 +29,19 @@ zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone
 
 # Types of evaluation to run and prepare reports for 
 # Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
-eval_type_list <- c("model_eval", "TargetLayerComparison")
-# eval_type_list <- c("model_eval")
+eval_type_list <- c("model_eval", "TargetLayerComparison", "CV")
 
 # Export evaluation report stats (parameters, metrics, and accuracies) 
 exportEvalReportStats <- TRUE # TRUE or FALSE
 
 # RUN EVAL ONLY (skips imputation -- assumes already done)
-skip_Imputation <- TRUE
+skip_Imputation <-TRUE
 
 # RUN EVAL REPORT GENERATION ONLY (skips evaluation script -- assumes eval RDS is already saved in zone folder)
 skip_Evaluation <- TRUE
 
+# Skip additional layer assembly - optional
+skip_Assembly <- TRUE
 # Script inputs - changed less frequently 
 ########################################################
 
@@ -57,12 +57,14 @@ runImputation_script <- glue::glue("{this_dir}/02_run_imputation.R")
 assembleImputation_script <- glue::glue("{this_dir}/03_assemble_imputation_rasters.R")
 
 # Evaluation scripts
-eval_inputScript <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/00_inputs_for_evaluation.R")
 targetLayerComparison_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/01_target_layer_comparison.R")
 OOBEvaluation_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/02_oob_evaluation.R")
 CV_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/03_cross_validation.R")
 
 reportGenerator_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/04a_run_zonal_report_modularPlotting.R")
+
+# Attribute layer assembly script
+assembleAttribute_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/05_assemble_attribute_layers.R")
 
 # packages required
 list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
@@ -112,10 +114,12 @@ message(paste0("Running imputation preparation for year: ", year_input))
 # PASS variables to `00a_project_inputs_for_imp.R` to SET project directory for each year
 source(project_inputScript)
 
-# LOOP by zones (runs x66 for all zones in CONUS)
+# LOOP by zones 
 for (zone_input in zones_list){
   
-  # zone_input <- zones_list[1] # for testing
+  #zone_input <- zones_list[1] # for testing
+  
+  message(glue::glue("current zone: {zone_input}"))
   
   ptm_zone_imp <- Sys.time()
   
@@ -193,14 +197,30 @@ for (zone_input in zones_list){
   }
   
   
+  message(paste0("Evaluation complete for zone: ", zone_input))
+  
+  #############################################################
+  # Assemble attribute layers
   #############################################################
   
-  message(paste0("Evaluation complete for zone: ", zone_input))
+  if (skip_Assembly == FALSE){
+    message("Assembling attribute layers...")
+    source(assembleAttribute_script)
+  } else {
+    message("---------------------------------------------------------------------------")
+    message("Skipping layer assembly as `skip_Assembly` was set to TRUE.")
+  }
+  
+  
+  #############################################################
+  message("---------------------------------------------------------------------------")
+  message("Processing complete for zone ", zone_input)
   print(Sys.time() - ptm_zone_eval)
   message("Total time for zone ", zone_input, ":")
   print(Sys.time() - ptm_zone_imp)
   message("===========================================================================")
   message("===========================================================================")
+  
   
   # Remove all variables except the ones in the list (described below)
   rm(list=setdiff(ls(), c("year_input",

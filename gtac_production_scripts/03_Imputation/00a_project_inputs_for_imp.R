@@ -3,7 +3,7 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 7/10/24
+# Last updated: 12/17/24
 
 ###########################################################################
 # Set inputs
@@ -29,7 +29,7 @@ dist_layer_type <- "LF"
 
 # # output crs - desired crs for output products
 # #options include: "lcms_crs", "lf200_crs", "lf220_crs", "lf230_crs", "tm16_crs"
-output_crs_name <- "lf230_crs"
+default_crs_name <- "lf230_crs"
 
 # list names of xvars in reference / x table used to build model
 #xvars <- c("SLOPE", "ELEV", "PARI", "PPTI", "RELHUMI", "TMAXI", "TMINI", "VPDI", "disturb_code", "disturb_year", "canopy_cover", "canopy_height", "EVT_GP", "NORTHING", "EASTING", "POINT_X", "POINT_Y") # 2016 version
@@ -75,9 +75,12 @@ coords_path <- glue::glue("{FIA_dir}/06_Coordinates/select_TREEMAP2022_2send/sel
 # Dir for X table - relative to home_dir
 xtable_dir <- glue::glue("{home_dir}/03_Outputs/06_Reference_Data/{ref_data_version}/01_X_tables_by_zone/")
 
-# Raster Attribute table for evaluation
-# Currently only available for 2016!
+# Raster Attribute Table used in validation for attribute vars
 rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
+#rat_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}RAT_tmid.csv")
+
+# path to zone metadata
+zone_metadata_path <- glue::glue('{home_dir}/01_Data/02_Landfire/metadata/LF_zones_all_byStudyArea.csv')
 
 # Analysis settings
 #----------------------------------------------------------------#
@@ -98,8 +101,11 @@ terra::terraOptions(memfrac = 0.8)
 # data directory - where source data are located
 data_dir <- glue::glue("{home_dir}/01_Data/")
 
-# set path to landfire vector data
-lf_zones_path <- glue::glue("{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp")
+# set paths to landfire vector data
+lf_zones_path_CONUS <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
+lf_zones_path_AK <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/alaska_mapzones.shp')
+lf_zones_path_HI <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/hawaii_mapzones.shp')
+
 
 # Directory where target rasters live
 target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/post_mask/")
@@ -129,8 +135,14 @@ lf220_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_220/CRS/LF
 # lf230
 lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
 
+#alaska
+ak_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_zones/Landfire_zones/alaska_mapzones.prj"))
+
+#hawaii
+hi_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_zones/Landfire_zones/hawaii_mapzones.prj"))
+
 # load output crs
-output_crs <- eval(parse(text = output_crs_name))
+default_crs <- eval(parse(text = default_crs_name))
 
 # Paths for exporting data
 #--------------------------------------#

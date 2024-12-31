@@ -3,7 +3,7 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 7/2/24
+# Last updated: 12/9/24
 
 # TO DO:
 # - address inconsistencies in EVT vs Topo Landfire Paths
@@ -15,13 +15,13 @@
 # Set user inputs
 ###########################################################################
 
-#zone = zone_input
-zone = 16
+zone = zone_input
+#zone = 71 # uncomment to run standalone
 
-# path to an RDS file containing parameters, or NA - NA runs 00a_inputs_for_target_data.R
+# path to an RDS file containing parameters, or NA - NA runs 00a_project_inputs_for_target_data.R
 # path is relative to script location
-target_prep_params_path <- glue::glue("/params/{target_data_version}_target_data_inputs.RDS")
-
+#target_prep_params_path <- glue::glue("/params/{target_data_version}_target_data_inputs.RDS")
+target_prep_params_path <- NA
 
 # Inputs for testing
 #-----------------------------------------------#
@@ -63,87 +63,12 @@ if(!is.na(target_prep_params_path)) {
 
   } else {
 
-    inputs_for_target_data <- glue::glue('{this_dir}/{00a_project_inputs_for_target_data.R')
+    inputs_for_target_data <- glue::glue('{this_dir}/00a_project_inputs_for_targetdata.R')
 
-    # source(inputs_for_target_data)
+    source(inputs_for_target_data)
 
 }
 
-
-# Build constructed inputs (less likely to change)
-#----------------------------------------------------------#
-
-# load home, FIA, and tmp dirs 
-setdirs_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/setup_dirs.R')
-source(setdirs_path)
-
-# data directory - where source data are located
-data_dir <- glue::glue('{home_dir}/01_Data/')
-
-# set path to landfire rasters 
-#landfire_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version}/')
-landfire_veg_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_veg}/Vegetation/')
-landfire_topo_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_topo}/Topo/')
-landfire_disturbance_dir_1999_2014 <- glue::glue('{data_dir}02_Landfire/LF_USDIST/')
-landfire_disturbance_dir_2015_2020 <- glue::glue('{data_dir}02_Landfire/LF_220/Disturbance/')
-landfire_disturbance_dir_2021_2022 <- glue::glue('{data_dir}02_Landfire/LF_230/Disturbance/')
-
-# set path to landfire vector data
-lf_zones_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
-
-# set dir to lcms raw probability rasters
-lcms_dir <- glue::glue('{data_dir}05_LCMS/01_Threshold_Testing/01_Raw/02_Raw_Probabilities/')
-
-# Paths to specific Landfire rasters - not disturbance
-evc_path <- glue::glue('{landfire_veg_dir}/EVC/LF{landfire_year_veg}_EVC_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVC_{landfire_version_veg}.tif')
-evh_path <- glue::glue('{landfire_veg_dir}/EVH/LF{landfire_year_veg}_EVH_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVH_{landfire_version_veg}.tif')
-evt_path <- glue::glue('{landfire_veg_dir}/EVT/LF{landfire_year_veg}_EVT_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVT_{landfire_version_veg}.tif')
-
-elev_path <- glue::glue('{landfire_topo_dir}/Elev/LF{landfire_year_topo}_Elev_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Elev_{landfire_version_topo}.tif')
-# slopeP_path <- glue::glue('{landfire_topo_dir}/SlpP/LF{landfire_year_topo}_SlpP_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpP_{landfire_version_topo}.tif')
-slopeD_path <- glue::glue('{landfire_topo_dir}/SlpD/LF{landfire_year_topo}_SlpD_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpD_{landfire_version_topo}.tif')
-asp_path <- glue::glue('{landfire_topo_dir}/Asp/LF{landfire_year_topo}_Asp_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Asp_{landfire_version_topo}.tif')
-
-# set dir for input biophys rasters
-biophys_dir <- glue::glue('{data_dir}02_Landfire/BioPhys/')
-
-# Load various crs
-#--------------------------------#
-# load lcms projections
-lcms_crs <- terra::crs(glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj'))
-
-# load treemap projection
-tm16_crs <- terra::crs(glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj"))
-
-# lf200
-lf200_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_200/CRS/LF_200_crs.prj"))
-
-# lf220
-lf220_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_220/CRS/LF_220_crs.prj"))
-
-# lf230
-lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
-
-# determine which CRS will actually be used - 
-#   - specifically, used to project zone for cropping
-#   - used to define projection for all historic landfire disturbance
-
-lf_crs_version <- lf200_crs
-
-# load output crs
-lf_output_crs <- lf_crs_version
-
-# Export data directories
-#----------------------------------------------------#
-
-# where version-specific inputs and outputs will live
-project_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/')
-
-# Directory where target data lives
-target_dir <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/")
-
-# Directory where EVT_GP remap table will be located
-evt_gp_remap_table_path <- target_dir
 
 ##################################################################
 # CREATE ZONE-SPECIFIC VARIABLES AND PATHS
@@ -154,22 +79,46 @@ evt_gp_remap_table_path <- target_dir
 
 zone_num <- zone
 
-#set zone identifiers
-cur_zone <- glue::glue('z{zone_num}')
+# Set zone identifiers 
+cur_zone <- glue::glue('z{zone_num}') 
 cur_zone_zero <- if(zone_num < 10) {
   glue::glue('z0{zone_num}') } else {
     cur_zone
   }
+
+# Load zone metadata
+#----------------------------------------#
+
+# load zone metadata
+LF_zone_metadata <- read.csv(zone_metadata_path)
+
+# identify which geographic area zone is in 
+study_area <- LF_zone_metadata %>%
+  dplyr::filter(ZONE_NUM == zone_num) %>%
+  dplyr::select(STUDY_AREA) %>%
+  toString()
+
+# conditionally set path to zones and projection, based on map area
+if(study_area == "CONUS") {
+  zones_path = lf_zones_path_CONUS
+  zone_output_crs = default_crs
+  file_pattern = "US"
+} else if(study_area == "AK") {
+  zones_path = lf_zones_path_AK
+  zone_output_crs = ak_crs
+  file_pattern = study_area
+} else if(study_area == "HI") {
+  zones_path = lf_zones_path_HI
+  zone_output_crs = hi_crs
+  file_pattern = study_area
+}
 
 # Update dirs with zone
 # -----------------------------------------#
 
 # Set folder paths
 target_dir_z = glue::glue('{target_dir}/{cur_zone_zero}/')
-target_dir_z_final = glue::glue("{target_dir_z}/{cur_zone_zero}_final_pre_mask")
-
-# update biophys path - biophys layers stored by zone
-biophys_dir_z <- glue::glue('{biophys_dir}/{cur_zone_zero}/')
+#target_dir_z_final = glue::glue("{target_dir_z}/{cur_zone_zero}_final_pre_mask")
 
 
 # set aoi_name field if it doesn't already exist via aoi subset
@@ -190,16 +139,15 @@ landfire_ind_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year
 lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
 lcms_slowloss_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
 
-lf_disturb_code_outpath <- glue::glue('{target_dir_z_final}/{end_year}_{cur_zone_zero}_disturb_code_LF.tif')
-lf_disturb_year_outpath <- glue::glue('{target_dir_z_final}/{end_year}_{cur_zone_zero}_disturb_year_LF.tif')
+lf_disturb_code_outpath <- glue::glue('{target_dir_z}/disturb_code_LF.tif')
+lf_disturb_year_outpath <- glue::glue('{target_dir_z}/disturb_year_LF.tif')
 
-lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/{end_year}_{cur_zone_zero}_disturb_code_LFLCMS.tif')
-lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/{end_year}_{cur_zone_zero}_disturb_year_LFLCMS.tif')
+lcms_disturb_code_outpath <- glue::glue('{target_dir_z}/disturb_code_LFLCMS.tif')
+lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/disturb_year_LFLCMS.tif')
 
 
 # Input parameters for LCMS Disturbance
 #-----------------------------------------------------------#
-
 
 # Set variables
 LCMS_NAvalue <- -32768
@@ -226,7 +174,7 @@ lcms_disturb_year_outpath <- glue::glue('{target_dir_z}/disturb_year_LFLCMS.tif'
 
 # check if tmp directory exists 
 
-print("Checking for temporary directory...")
+message("Checking for temporary directory...")
 if (file.exists(tmp_dir)){
   message(paste0("Temporary directory exists: ", tmp_dir))
 } else {
@@ -234,6 +182,9 @@ if (file.exists(tmp_dir)){
   dir.create(tmp_dir, recursive = TRUE)
   message(paste0("Creating temporary directory: ", tmp_dir))
 }
+
+# set temp directory - allows you to inspect files in progress more easily
+write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
 
 # create tmp dir folder for LCMS tiles
 # if (!file.exists(glue::glue('{tmp_dir}/lcms/'))) {
@@ -245,12 +196,9 @@ if (!file.exists(glue::glue('{tmp_dir}/lf/'))) {
   dir.create(glue::glue('{tmp_dir}/lf/'))
 }
 
-
 #empty temp dir
+message("empyting tmp dir")
 do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRUE)))
-
-# set temp directory - allows you to inspect files in progress more easily
-write(paste0("TMPDIR = ", tmp_dir), file=file.path(Sys.getenv('R_USER'), '.Renviron'))
 
 
 # Create all directories
@@ -265,13 +213,13 @@ if(!file.exists(target_dir_z)) {
   dir.create(target_dir_z, recursive = TRUE)
 }
 
-if(!file.exists(target_dir_z_final)) {
-  dir.create(target_dir_z_final, recursive = TRUE)
-}
+#if(!file.exists(target_dir_z_final)) {
+#  dir.create(target_dir_z_final, recursive = TRUE)
+#}
 
-if(!file.exists(glue::glue('{target_dir_z}/params/'))) {
-  dir.create(glue::glue('{target_dir_z}/params/'), recursive = TRUE)
-}
+#if(!file.exists(glue::glue('{target_dir_z}/params/'))) {
+#  dir.create(glue::glue('{target_dir_z}/params/'), recursive = TRUE)
+#}
 
 # # target dir
 # if (!file.exists(glue::glue('{target_dir_z}/00_prelim_dist'))) {
@@ -291,5 +239,5 @@ rm(list.of.packages, new.packages)
 
 # Make RDS of input parameters used
 #---------------------------------------------------------#
-save(list = ls(), file = glue::glue('{target_dir_z}/params/{cur_zone_zero}_env.RDS'))
+#save(list = ls(), file = glue::glue('{target_dir_z}/params/{cur_zone_zero}_env.RDS'))
 

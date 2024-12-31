@@ -9,4 +9,8 @@ This sub-directory consists files for an R shiny app developed for interactive v
     + If variables for a previous section are changed and run, then the remaining sections need to be re-run apply the change and display updated tables and plots. 
 * For troubleshooting, please open either the ui.R or server.R in RStudio and use the "Run App" option to run the app and view error messages in the RStudio console.
 
-**Please make sure the "setup_dirs.R" file in your local repository is set properly before running the app.**
+**TROUBLESHOOTING NOTES**:
+* Please make sure the "setup_dirs.R" file in your local repository is set properly before running the app.
+* If terminal automatically exits when executing the "RUN_APP.bat" file:
+    * Open the "RUN_APP.bat" file on a text editor to set the correct path to "Rscript.exe" in the .bat file (inconsistencies in the path might arise from the version of R that is currently installed on the machine).
+    * Open the "run.R" script in Rstudio and source the script. This will install all necessary libraries and launch the app. Once sourced, executing the .bat file to run the app should work for all consecutive runs.

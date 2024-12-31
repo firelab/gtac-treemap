@@ -58,34 +58,51 @@ plots <- length(unique(reference_data$PLT_CN))
 disturbance_data <- reference_data %>% 
   mutate(
     disturb_code = case_when(DSTRBCD1 %in% c(29, 30, 31) |
-                          DSTRBCD2 %in% c(29, 30, 31) | 
-                          DSTRBCD3 %in% c(29, 30, 31) ~ 1, ## Fire disturbance
-                          !DSTRBCD1 %in% c(29, 30, 31) &
-                          !DSTRBCD2 %in% c(29, 30, 31) & 
-                          !DSTRBCD3 %in% c(29, 30, 31) & 
-                          DSTRBCD1 %in% c(11, 12, 20, 21, 22) |
-                          DSTRBCD2 %in% c(11, 12, 20, 21, 22) | 
-                          DSTRBCD3 %in% c(11, 12, 20, 21, 22) ~ 2,
-                          TRUE ~ 0), ## Insect and disease disturbance
-    fire_time1 = case_when(DSTRBCD1 %in% c(29, 30, 31) ~ MEASYEAR - DSTRBYR1,
+                               DSTRBCD2 %in% c(29, 30, 31) | 
+                               DSTRBCD3 %in% c(29, 30, 31) ~ 1, ## Fire disturbance
+                             !DSTRBCD1 %in% c(29, 30, 31) &
+                               !DSTRBCD2 %in% c(29, 30, 31) & 
+                               !DSTRBCD3 %in% c(29, 30, 31) & 
+                               DSTRBCD1 %in% c(11, 12, 20, 21, 22) |
+                               DSTRBCD2 %in% c(11, 12, 20, 21, 22) | 
+                               DSTRBCD3 %in% c(11, 12, 20, 21, 22) ~ 2, ## Insect and disease disturbance without fire disturbance
+                             TRUE ~ 0), 
+    fire_time1 = case_when(DSTRBCD1 %in% c(29, 30, 31) & DSTRBYR1 != 9999 ~ MEASYEAR - DSTRBYR1,
+                           DSTRBCD1 %in% c(29, 30, 31) & DSTRBYR1 == 9999 ~ 0,
                            TRUE ~ 99),
     fire_time2 = case_when(DSTRBCD2 %in% c(29, 30, 31) ~ MEASYEAR - DSTRBYR2,
+                           DSTRBCD2 %in% c(29, 30, 31) & DSTRBYR2 == 9999 ~ 0,
                            TRUE ~ 99),
     fire_time3 = case_when(DSTRBCD3 %in% c(29, 30, 31) ~ MEASYEAR - DSTRBYR3,
+                           DSTRBCD3 %in% c(29, 30, 31) & DSTRBYR3 == 9999 ~ 0,
                            TRUE ~ 99),
-    insect_time1 = case_when(DSTRBCD1 %in% c(11, 12, 20, 21, 22) ~ MEASYEAR - DSTRBYR1,
-                           TRUE ~ 99),
-    insect_time2 = case_when(DSTRBCD2 %in% c(11, 12, 20, 21, 22) ~ MEASYEAR - DSTRBYR2,
-                           TRUE ~ 99),
-    insect_time3 = case_when(DSTRBCD3 %in% c(11, 12, 20, 21, 22) ~ MEASYEAR - DSTRBYR3,
-                           TRUE ~ 99),
-    disturb_year = case_when(disturb_code == 1 ~ pmax(pmin(fire_time1, fire_time2, fire_time3, rm.na = TRUE),0, rm.na = TRUE),
-                                 disturb_code == 2 ~ pmax(pmin(insect_time1, insect_time2, insect_time3, rm.na = TRUE),0, rm.na = TRUE),
-                                 disturb_code == 0 ~ 99)) %>%
-  select(-c(DSTRBCD1, DSTRBCD2, DSTRBCD3, DSTRBYR1, DSTRBYR2, DSTRBYR3, fire_time1, fire_time2, fire_time3,
-            insect_time1, insect_time2, insect_time3, INVYR, MEASYEAR))
+    insect_time1 = case_when(DSTRBCD1 %in% c(11, 12, 20, 21, 22) & DSTRBYR1 < 9999 ~ MEASYEAR - DSTRBYR1,
+                             DSTRBCD1 %in% c(11, 12, 20, 21, 22) & DSTRBYR1 == 9999 ~ 0,
+                             TRUE ~ 99),
+    insect_time2 = case_when(DSTRBCD2 %in% c(11, 12, 20, 21, 22) & DSTRBYR2 < 9999 ~ MEASYEAR - DSTRBYR2,
+                             DSTRBCD2 %in% c(11, 12, 20, 21, 22) & DSTRBYR2 == 9999 ~ 0,
+                             TRUE ~ 99),
+    insect_time3 = case_when(DSTRBCD3 %in% c(11, 12, 20, 21, 22) & DSTRBYR3 < 9999  ~ MEASYEAR - DSTRBYR3,
+                             DSTRBCD3 %in% c(11, 12, 20, 21, 22) & DSTRBYR3 == 9999  ~ 0,
+                             TRUE ~ 99))
 
-disturbance_data
+disturbance_data <- disturbance_data %>% 
+  select(-c(DSTRBCD1, DSTRBCD2, DSTRBCD3, DSTRBYR1, DSTRBYR2, DSTRBYR3,INVYR, MEASYEAR)) %>%
+  mutate(disturb_year = case_when(disturb_code == 1 ~ pmin(fire_time1, fire_time2, fire_time3),
+                                  disturb_code == 2 ~ pmin(insect_time1, insect_time2, insect_time3),
+                                  disturb_code == 0 ~ 99))
+
+# Remove plots that record a disturbance but have no disturbance year. 
+disturbance_data <- disturbance_data[!(disturb_code > 0 & fire_time1 == 99 & fire_time2 == 99 & 
+                                         fire_time3 == 99 & insect_time1 == 99 & 
+                                         insect_time2 == 99 & insect_time3 == 99),]
+
+disturbance_data <- disturbance_data %>%
+  select(-c(fire_time1, fire_time2, fire_time3,
+            insect_time1, insect_time2, insect_time3))
+
+
 
 write.csv(disturbance_data,"F:/TreeMap2020/XTable/FIA2020_Disturbance.csv")
+
 

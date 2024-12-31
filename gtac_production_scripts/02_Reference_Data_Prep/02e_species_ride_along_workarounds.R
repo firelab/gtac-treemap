@@ -25,7 +25,7 @@ evt_available <- evt_table[!is.na(EcoSysCd) & EcoSysCd > 0,]
 evt_available <- left_join(evt_available, plots_by_zone[,c("PLT_CN", "ZONE_NUM"),])
 
 # Crosswalk the EVT and EVG from LANDFIRE
-LF_EVT_crosswalk_2022 <- as.data.table(read.csv("F:/TreeMap2020/LC22_EVT_EVG_Crosswalk.csv"))
+LF_EVT_crosswalk_2022 <- as.data.table(read.csv("F:/TreeMap2022/LC23_EVT_EVG_Crosswalk.csv"))
 LF_EVT_crosswalk_2022 <- unique(LF_EVT_crosswalk_2022[,c("LFRDB", "EVT_GP"),])
 evt_available <- unique(as.data.table(left_join(evt_available, LF_EVT_crosswalk_2022, by = c("EcoSysCd" = "LFRDB"))))
 evg_available <- unique(as.data.table(evt_available[!is.na(EVT_GP), c("ZONE_NUM", "PLT_CN", "EcoSysCd", "EVT_GP")]))
@@ -77,9 +77,9 @@ plots_by_zone_adjacent_evt <- plots_by_zone_adjacent_evt[!is.na(EVT_GP),]
 zone_available_plots <- left_join(LF2022_EVT_Zones, plots_by_zone_adjacent_evt[,c("PLT_CN", "Zone", "EVT_GP")], by = c("LFZones" = "Zone", "EVT_GP" = "EVT_GP"))
 
 zone_available_plots <- left_join(zone_available_plots, unique(evt_available[,c("EcoSys", "EVT_GP")]), by = c("EVT_GP"))
-write.csv(zone_available_plots, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2020_EVT_GP_byZone_Workaround1.csv", row.names = FALSE)
+write.csv(zone_available_plots, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2022_EVT_GP_byZone_Workaround1.csv", row.names = FALSE)
 zones_EVT_missing <- unique(zone_available_plots[is.na(PLT_CN), c("LFZones", "EVT_GP")])
-write.csv(zones_EVT_missing, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2020_EVT_GP_Missing_byZone_Workaround1.csv", row.names = FALSE)
+write.csv(zones_EVT_missing, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2022_EVT_GP_Missing_byZone_Workaround1.csv", row.names = FALSE)
 
 ##################
 ## Workaround 2 ##
@@ -210,13 +210,13 @@ plots_by_zone_EVG_available <- left_join(unique(EVG_List), plots_by_zone_EVG_uni
 
 # Identify EVGs missing plots
 zones_EVT_missing <- unique(plots_by_zone_EVG_available[is.na(PLT_CN), c("LFZones", "EVT_GP")])
-write.csv(zones_EVT_missing, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2022_EVT_GP_Missing_byZone_Workaround2.csv", row.names = FALSE)
+write.csv(zones_EVT_missing, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2022_EVT_GP_Missing_byZone_Workaround2_check.csv", row.names = FALSE)
 
 # Remove the zones missing EVGs and remove the EVT column (LRFDB) to filter for unique plots.
 plots_by_zone_EVG_available <- plots_by_zone_EVG_available[!is.na(PLT_CN),] %>%
   select(-LFRDB) %>%
   unique()
-write.csv(plots_by_zone_EVG_available, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2022_EVT_GP_byZone_Workaround2.csv", row.names = FALSE)
+write.csv(plots_by_zone_EVG_available, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2022_EVT_GP_byZone_Workaround2_check.csv", row.names = FALSE)
 
 
 
@@ -281,11 +281,12 @@ additional_plots <- unique(plots_EVG708[LFZones %in% c(48, 53, 54, 59, 61)])
 additional_plots$LFZones <- 57
 
 workaround2_plots <- rbind(plots_by_zone_EVG_available, unique(plots_EVG708[LFZones %in% c(48, 53, 54, 59, 61)]))
-
-write.csv(workaround2_plots, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2020_EVT_GP_byZone_Workaround2_Final.csv", row.names = FALSE)                    
+workaround2_plots <- order_by(workaround2_plots,  Zone, EVT_GP, PLT_CN)
+write.csv(workaround2_plots, "F:/LANDFIRE_Autokey/FIA_DataTables/LF2022_EVT_GP_byZone_Workaround2_Final_check.csv", row.names = FALSE)                    
 
 # Create unique list of plots for spatial overlays
 
 unique_plots <- as.data.table(unique(workaround2_plots$PLT_CN))
 unique_plots <- rename(unique_plots, PLT_CN = V1)
 write.csv(unique_plots, "F:/LANDFIRE_Autokey/FIA_DataTables/TM_2020_X_table_Plots.csv", row.names = FALSE)
+

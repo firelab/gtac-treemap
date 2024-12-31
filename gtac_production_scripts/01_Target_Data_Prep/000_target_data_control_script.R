@@ -3,6 +3,31 @@ rm(list = ls())
 gc()
 
 #################################################################
+# Set Inputs
+#################################################################
+
+# Initialize projects (years) 
+years_list <-c(2020, 2022)
+
+# List zones to run for
+# zones_list <- c(2, 16, 57) # testing
+# ###CONUS
+#zones_list <- c(seq(from = 1, to = 10, by = 1), 
+#                seq(from = 12, to = 66, by = 1), # skipping zone 11 
+#                98, 99)
+# ### AK and HI
+zones_list <- c(seq(67, 80, 1))
+
+# Initialize directories
+this_dir <- this.path::this.dir()
+project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R")
+zone_inputScript <- glue::glue("{this_dir}/00b_zone_inputs_for_targetdata.R")
+createLFDist_inputs_02a_Script <- glue::glue("{this_dir}/02a_create_LF_Disturbance_inputs.R")
+mergeLFDist_layers_03a_Script <- glue::glue("{this_dir}/03a_merge_LF_disturbance_layers.R")
+
+
+
+#################################################################
 # Load required packages
 #################################################################
 
@@ -11,10 +36,6 @@ list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse",
                       "magrittr", "tictoc", "caret", "randomForest", 
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
                       "stringr", "stringi")
-
-# Install dev version of yaImpute - to make sure we get the option to retain OOB obs
-message("Installing dev version of yaImpute package")
-devtools::install_github("https://github.com/jeffreyevans/yaImpute") 
 
 # #check for packages and install if needed
 new.packages <- tryCatch(
@@ -49,22 +70,8 @@ rm(list.of.packages, new.packages)
 
 ptm_start <- Sys.time() # Processing time: Start
 
-# Initialize directories
-this_dir <- this.path::this.dir()
-project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R")
-zone_inputScript <- glue::glue("{this_dir}/00b_zone_inputs_for_targetdata.R")
-createLFDist_inputs_02a_Script <- glue::glue("{this_dir}/02a_create_LF_Disturbance_inputs.R")
-mergeLFDist_layers_03a_Script <- glue::glue("{this_dir}/03a_merge_LF_disturbance_layers.R")
 
-# Initialize projects (years) and zones
-years_list <- c(2020, 2022)
-
-# zones_list <- c(2, 16, 57) # testing
-zones_list <- c(seq(from = 1, to = 10, by = 1), 
-                seq(from = 12, to = 66, by = 1), # skipping zone 11 
-                98, 99)
-
-# LOOP by year (outer loop x2) 
+# LOOP by year (outer loop) 
 for (year_input in years_list){
   
   # year_input <- years_list[1] # for testing
@@ -75,10 +82,10 @@ for (year_input in years_list){
   # PASS variables to `00a_project_inputs_for_targetdata.R` to SET project directory for each year
   source(project_inputScript)
   
-  # LOOP by zones (inner loop x66 CONUS)
+  # LOOP by zones (inner loop)
   for (zone_input in zones_list){
    
-    # zone_input <- zones_list[1] # for testing
+    #zone_input <- zones_list[1] # for testing
     
     ptm_zone <- Sys.time()
    
@@ -109,6 +116,9 @@ for (year_input in years_list){
                             "zone_input",
                             "years_list", 
                             "zones_list", 
+                            "lf_zones_path_CONUS",
+                            "lf_zones_path_AK",
+                            "lf_zones_path_HI",
                             "project_name", 
                             "target_data_version",
                             "year",
@@ -123,6 +133,7 @@ for (year_input in years_list){
                             "ptm_zone",
                             "ptm_year", 
                             "ptm_start")))
+    gc()
     
   }
   

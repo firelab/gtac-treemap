@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 6/17/24
+# Last Updated: 12/12/24
 
 # Output rasters: 
 # - years since most recent disturbance
@@ -27,7 +27,7 @@ input_script_path <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 ###################################################
 
 # load LF zone data
-LF_zones <- vect(lf_zones_path)
+LF_zones <- vect(zones_path)
 
 # Prep zone
 #-----------------------------------------#
@@ -37,7 +37,7 @@ zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
 
 #project
 zone %<>%
-  terra::project(lf_output_crs)
+  terra::project(zone_output_crs)
 
 # get name of zone
 zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
@@ -53,9 +53,9 @@ if (!is.na(aoi_path)) {
   # reassign
   zone <- aoi
   zone_name <- aoi_name
-  print("using input shapefile as AOI")
+  message("using input shapefile as AOI")
 } else{
-  print("using landfire zone as AOI")
+  message("using landfire zone as AOI")
 }
 
 # set aoi_name field if it doesn't already exist via aoi subset
@@ -67,7 +67,7 @@ if(is.na(aoi_name)) {
 #-------------------------------------------#
 
 # bookkeeping
-print("combining Landfire fire and Landfire insect and disease")
+message("combining Landfire fire and Landfire insect and disease")
 
 # load input rasters back in - save memory
 landfire_fire_years <- terra::rast(landfire_fire_years_outpath)
@@ -108,7 +108,7 @@ dist_type <- terra::merge(landfire_fire_binary, landfire_ind_binary) %>% # merge
 # -------------------------------------------------#
 
 
-print("exporting disturbance year and disturbance type!")
+message("exporting disturbance year and disturbance type!")
 
 #export
 writeRaster(dist_year, lf_disturb_year_outpath,
@@ -119,9 +119,13 @@ writeRaster(dist_type, lf_disturb_code_outpath,
             datatype = "INT1U",
             overwrite = TRUE)
 
+# Remove unused files to start prep for next zone
 rm(dist_year, dist_type)
+rm(landfire_ind_binary, landfire_fire_binary, landfire_ind_years, landfire_fire_years)
+
 gc()
 
-# file.remove(landfire_fire_years_outpath, landfire_fire_binary_outpath, 
-#             landfire_ind_years_outpath, landfire_ind_binary_outpath)
+# remove preliminary files
+file.remove(landfire_fire_years_outpath, landfire_fire_binary_outpath,
+            landfire_ind_years_outpath, landfire_ind_binary_outpath)
 
