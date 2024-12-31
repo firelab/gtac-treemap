@@ -3,7 +3,7 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 6/21/24
+# Last updated: 8/1/24
 
 # TO DO: what target data params can i pull in from target data RDS? 
 
@@ -12,11 +12,11 @@
 ###########################################################################
 
 # zone to run
-zone = 19
+zone = zone_input
 
 # path to an RDS file containing parameters, or NA - NA runs 00a_project_inputs_for_imp.R
 # path is relative to script location
-imputation_params_path <- "/params/2016_GTAC_LCMSDist_imputation_inputs.RDS"
+#imputation_params_path <- glue::glue("/params/{project_name}_imputation_inputs.RDS")
 
 # model to use - supply path specific model to pull into imputation, or NA
 # path should be relative to home directory
@@ -28,8 +28,8 @@ model_path <- NA
 #-----------------------------------------#
 
 # # supply path to a shapefile to use as subset, or NA
-# aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
-# aoi_name <- "UT_Uintas_rect"
+#aoi_path <- "//166.2.126.25/TreeMap/01_Data/03_AOIs/UT_Uintas_rect_NAD1983.shp"
+#aoi_name <- "UT_Uintas_rect"
 aoi_path <- NA
 aoi_name <- NA
 
@@ -37,94 +37,24 @@ aoi_name <- NA
 # Run
 ##################################################################
 
-# Load pre-existing params, if available
-#--------------------------------------------#
+# # Load pre-existing params, if available
+# #--------------------------------------------#
+# 
+# this_dir <- this.path::this.dir()
+# 
+# if(!is.na(imputation_params_path)) {
+#   
+#   # load params
+#   params_script_path <- glue::glue('{this_dir}/{imputation_params_path}')
+#   load(params_script_path)
+#   
+# } else {
+#   
+#   inputs_for_imputation<- glue::glue('{this_dir}/00a_project_inputs_for_imputation.R')
+#   source(inputs_imputation)
+#   
+# }
 
-this_dir <- this.path::this.dir()
-
-if(!is.na(imputation_params_path)) {
-  
-  # load params
-  params_script_path <- glue::glue('{this_dir}/{imputation_params_path}')
-  load(params_script_path)
-  
-} else {
-  
-  inputs_for_imputation<- glue::glue('{this_dir}/{00a_project_inputs_for_imputation.R')
-  source(inputs_imputation)
-  
-}
-
-# Load TreeMap script library
-#--------------------------------------------------#
-
-# load library 
-this_proj = this.path::this.proj()
-lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
-source(lib_path)
-
-
-# Build constructed inputs - less likely to change
-#-----------------------------------------------------------------#
-# data directory - where source data are located
-data_dir <- glue::glue('{home_dir}/01_Data/')
-
-# set path to landfire vector data
-lf_zones_path <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
-
-# Path to X table
-xtable_path <- glue::glue("{home_dir}/{xtable_path}")
-
-# Directory where target rasters live
-target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/")
-
-# Directory where disturbance layers live 
-dist_raster_dir <- target_dir 
-#dist_raster_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/")
-
-# Directory where EVT_GP remap table is located
-evt_gp_remap_table_dir <- target_dir
-#evt_gp_remap_table_dir <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2016_GTAC/')
-
-# Plot coordinates
-coords_path <- glue::glue('{FIA_dir}/{coords_path}')
-
-# Paths for exporting data
-#--------------------------------------#
-
-# set path to save output rasters
-# this directory will be created if it does not already exist
-raw_outputs_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/')
-
-#set path for assembled rasters
-assembled_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/')
-
-# Evaluation dir
-eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/')
-
-
-# CRS paths
-#----------------------------------------------------#
-# set projection used for processing lcms rasters
-lcms_proj <- glue::glue('{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj')
-
-# path to projection used for processing landfire rasters
-landfire_proj <- glue::glue('{data_dir}02_Landfire/landfire_crs.prj')
-
-# path to desired projection for end outputs (tm = TreeMap)
-tm16_proj <- glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj")
-
-# load lcms projections
-lcms_crs <- terra::crs(lcms_proj)
-
-#load landfire projection
-landfire_crs <- terra::crs(landfire_proj)
-
-# load treemap projection
-tm16_crs <- terra::crs(tm16_proj)
-
-# load output crs
-output_crs <- eval(parse(text = output_crs_name))
 
 # Set zone_number
 # ----------------------------------------------#
@@ -148,23 +78,22 @@ if(is.na(aoi_name)) {
 
 output_name <- glue::glue("{cur_zone_zero}_{output_name}")  
 
-target_dir = glue::glue('{target_dir}/{cur_zone_zero}/')
-raw_outputs_dir = glue::glue('{raw_outputs_dir}/{cur_zone_zero}/')
-params_dir <- glue::glue('{raw_outputs_dir}/params/')
-assembled_dir = glue::glue('{assembled_dir}/{cur_zone_zero}')
-eval_dir <- glue::glue('{eval_dir}{cur_zone_zero}')
+xtable_path = glue::glue("{xtable_dir}/x_table_{zone_num}.csv")
 
-tile_dir <- glue::glue('{raw_outputs_dir}raster/tiles/')
-model_dir = glue::glue('{raw_outputs_dir}/model/')
+target_dir = glue::glue("{target_dir}/{cur_zone_zero}")
+raw_outputs_dir = glue::glue("{raw_outputs_dir}/{cur_zone_zero}/")
+params_dir <- glue::glue("{raw_outputs_dir}/params/")
+assembled_dir = glue::glue("{assembled_dir}/{cur_zone_zero}")
+eval_dir <- glue::glue("{eval_dir}{cur_zone_zero}")
 
-evt_gp_remap_table_path = glue::glue('{evt_gp_remap_table_dir}/{cur_zone_zero}/EVG_remap_table.csv')
-params_dir = glue::glue('{raw_outputs_dir}/params/')
+tile_dir <- glue::glue("{raw_outputs_dir}raster/tiles/")
+model_dir = glue::glue("{raw_outputs_dir}/model/")
 
-if (!is.na(dist_raster_dir)) {
-  dist_raster_dir = glue::glue('{dist_raster_dir}/{cur_zone_zero}/')
-}
+evt_gp_remap_table_path = glue::glue("{evt_gp_remap_table_dir}/{cur_zone_zero}/evt_gp_remap.csv")
+params_dir = glue::glue("{raw_outputs_dir}/params/")
 
-# Model inputs
+
+# Model inputs / outputs
 #----------------------------------#
 
 # build default model path
@@ -179,6 +108,9 @@ if(is.na(model_path)) {
   
 }
 
+# path to save x and y tables used in model
+xtable_path_model <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv")
+ytable_path_model <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Ydf_bin.csv")
 
 
 # Create all directories
@@ -229,8 +161,33 @@ if(!file.exists(glue::glue('{assembled_dir}/02_Assembled_vars/'))){
   dir.create(glue::glue('{assembled_dir}/02_Assembled_vars/'), recursive = TRUE)
 }
 
+# yai-model evaluation outputs
+if(!file.exists(glue::glue('{eval_dir}/00_Model_Evaluation'))) {
+  dir.create(glue::glue('{eval_dir}/00_Model_Evaluation'), recursive = TRUE)
+}
 
-# Set up temp directory 
+# Target Layer COmparison Outputs
+if(!file.exists(glue::glue('{eval_dir}/01_Target_Layer_Comparison'))) {
+  dir.create(glue::glue('{eval_dir}/01_Target_Layer_Comparison'), recursive = TRUE)
+}
+
+# OOB outputs
+if(!file.exists(glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/figs/'))) {
+  dir.create(glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/figs/'), recursive = TRUE)
+}
+
+# CV outputs
+if(!file.exists(glue::glue('{eval_dir}/03_Cross_Validation/figs/'))) {
+  dir.create(glue::glue('{eval_dir}/03_Cross_Validation/figs/'), recursive = TRUE)
+}
+
+# Evaluation reports
+if(!file.exists(glue::glue('{eval_dir}/04_Eval_Reports'))) {
+  dir.create(glue::glue('{eval_dir}/04_Eval_Reports'), recursive = TRUE)
+}
+
+
+# Set up temp directory
 #----------------------------------#
 
 # check if tmp directory exists ; create it if it doesn't
@@ -261,7 +218,6 @@ params_out <- data.frame(
   aoi_name,
   target_data_version,
   ref_data_version,
-  dist_raster_dir,
   model_path,
   xtable_path,
   output_crs_name, 
@@ -280,7 +236,12 @@ params_out <- data.frame(
 write.csv(params_out, 
           glue::glue('{params_dir}/{output_name}_paramsTable.csv'))
 
+rm(params_out)
+
 # Make RDS of input parameters used
 #---------------------------------------------------------#
 save(list = ls(), file = glue::glue('{params_dir}/{output_name}_env.RDS'))
+
+
+
 

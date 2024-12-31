@@ -16,8 +16,8 @@ list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse",
                       "stringr", "stringi")
 
 # Install dev version of yaImpute - to make sure we get the option to retain OOB obs
-message("Installing dev version of yaImpute package")
-devtools::install_github("https://github.com/jeffreyevans/yaImpute")
+#message("Installing dev version of yaImpute package")
+#devtools::install_github("https://github.com/jeffreyevans/yaImpute")
 
 # #check for packages and install if needed
 new.packages <- tryCatch(
@@ -91,6 +91,18 @@ rm(this_path, this_dir, snames)
 # make 'notin' function
 `%notin%` <- Negate('%in%')
 
+# make a mode function
+mode <- function(x, na.rm){
+  
+  if(missing(na.rm)) {
+    na.rm = FALSE
+  }
+  
+  if(na.rm == TRUE) {
+    x <- x[!is.na(x)]
+  }
+  which.max(tabulate(x))
+}
 
 # which.max analog
 # in the case of a tie, returns the index with the highest value
@@ -104,6 +116,29 @@ which.max.hightie <- function(x) {
   }
 }
 
+#####################################################
+# Parallel processing
+#####################################################
+#Progress combine function
+# use in foreach loop 
+# ex. 
+
+# # Run the loop in parallel
+# k <- foreach(i = icount(n), .final=sum, .combine=f()) %dopar% {
+#   log2(i)
+# }
+
+progress_foreach <- function(n){
+  pb <- txtProgressBar(min=1, max=n-1,style=3)
+  count <- 0
+  function(...) {
+    count <<- count + length(list(...)) - 1
+    setTxtProgressBar(pb,count)
+    Sys.sleep(0.01)
+    flush.console()
+    c(...)
+  }
+}
 
 
 #####################################################
@@ -113,7 +148,7 @@ which.max.hightie <- function(x) {
 # Load target rasters
 #####################################################
 
-load_target_rasters <- function(flist_tif, n) {
+load_and_name_rasters <- function(flist_tif, n) {
   
   require(terra)
   
@@ -152,8 +187,13 @@ filter_disturbance_rasters <- function(flist_tif, dist_layer_type){
   
   # get list of disturbance rasters
   flist_dist <- flist_tif %>%
-    str_subset("disturb") %>%
-    str_subset(dist_layer_type)
+    str_subset("disturb") 
+  
+  if(dist_layer_type == "LCMS") {
+  flist_dist %<>%
+      str_subset(glue::glue('{dist_layer_type}.tif'))  
+    }
+  
   
   # get list of all other rasters
   flist_nondist <- flist_tif %>%
@@ -200,7 +240,7 @@ fill_matrix_to_raster <- function(mout, ncol_r, nrow_r, row1) {
 # Get Predicted and Reference from a Random Forest object and the X table used to build it
 ###########################################################################################
 
-get_pr_RF <- function(rf_in, X_df) {
+get_pr_RF <- function(rf_in, X_df, var) {
 
   # get predictions from random forest model and convert to data frame
   preds <- rf_in[[1]]$predicted
@@ -212,29 +252,58 @@ get_pr_RF <- function(rf_in, X_df) {
   # get references from X_df
   refs_df <- X_df %>%
     dplyr::select(all_of(var)) %>%
-    dplyr::rename(ref = `var`) %>%
+    dplyr::rename(ref = any_of(var)) %>%
     rownames_to_column("ID")
   
   # join refs and preds
   p_r <- full_join(preds_df, refs_df, by = c("ID")) %>%
     select(-ID)
   
-  # if values are not unique, make a key
+  # if values are not identical, make a key
   
   if(!identical(sort(unique(p_r$pred)), sort(unique(p_r$ref)))) {
     
     # make a key for pred to ref
-    key_p <- p_r %>%
-      select(pred) %>%
-      rename(key_p = pred) %>%
-      distinct() %>%
-      arrange(key_p)
+    #--------------------------------#
     
+    # get reference vars
     key_r <- p_r %>%
       select(ref) %>%
       rename(key_r = ref) %>%
       distinct() %>%
+      filter(!is.na(key_r)) %>%
       arrange(key_r)
+    
+    # get pred vars
+    key_p <- p_r %>%
+      select(pred) %>%
+      rename(key_p = pred) %>%
+      distinct() %>%
+      filter(!is.na(key_p)) %>%
+      arrange(key_p)
+    
+    # make sure pred vars are the same  as ref vars
+    if(nrow(key_p) != nrow(key_r)) {
+      
+      # find rows that are not in key_p
+      diffs <- setdiff(key_r$key_r, key_p$key_p)
+      
+      # add each value that's each missing 
+      for(i in diffs){
+          val <- diffs[i]
+          key_p = rbind(key_p, val)
+      }
+    }
+    
+    # sort
+    key_p %<>%
+      arrange(key_p)
+    
+    # make sure preds are a factor if ref is a factor
+    if(is.factor(key_r$key_r)) {
+      p_r$pred <- factor(p_r$pred, levels = levels(key_r$key_r))
+      key_p$key_p <- factor(key_p$key_p, levels = levels(key_r$key_r))
+    } 
     
     key <- cbind(key_p, key_r)
     
@@ -243,11 +312,9 @@ get_pr_RF <- function(rf_in, X_df) {
       mutate(pred = key_r) %>%
       select(pred, ref)
     
-    p_r <- p_r_out
-    
-  } 
+    } else {p_r_out <- p_r} 
   
-  return(p_r)
+  return(p_r_out)
 
 }
 
@@ -260,14 +327,14 @@ get_pr_RF <- function(rf_in, X_df) {
 # Produces confusion matrix tables formatted the way I like them :)
 ########################################################################
 
-eval_cm_function <- function(t, noDataVal) {
+eval_cm_function <- function(t, noDataVal = NA) {
   
   #require(c(tidyverse, caret))
   
-  # handle missing param
-  if(missing(noDataVal)) {
-    noDataVal <- NA
-  }
+  # # handle missing param
+  # if(missing(noDataVal)) {
+  #   noDataVal <- NA
+  # }
   
   #apply column names
   names(t) <- c("pred", "ref")
@@ -288,7 +355,7 @@ eval_cm_function <- function(t, noDataVal) {
            ref = factor(ref, levels = levels_t)
     )  
   
-  # Get confusion  matrix
+  # Get confusion matrix
   #---------------------------------------------#
   
   # confusion matrix
@@ -300,14 +367,14 @@ eval_cm_function <- function(t, noDataVal) {
   #---------------------------------#
   
   # raw confusion matrix
-  cm_raw_out <- as.table(cm)
-  cm_raw_out <- addmargins(cm_raw_out)
+  cm_raw <- as.table(cm)
+  cm_raw <- addmargins(cm_raw)
   
   # make data frame of classes
   cm_t_classes <- data.frame(as.matrix(cm, what = "classes"))
   
   if(ncol(cm_t_classes) < 2) {
-    names(cm_t_classes) <- "1"
+    names(cm_t_classes) <- cm$positive
   } else {
     names(cm_t_classes) <- levels_t 
   }
@@ -331,7 +398,7 @@ eval_cm_function <- function(t, noDataVal) {
   tfreq$class <- factor(rownames(tfreq), levels = levels_t)
   rownames(tfreq) <- NULL
   
-  #Calculate normalized frequency table also
+  #Calculate normalized frequency table 
   #----------------------------------------------#
 
   # calc total to use in normalizing
@@ -343,9 +410,50 @@ eval_cm_function <- function(t, noDataVal) {
     mutate(pred = pred/total_pred, 
            ref = ref/total_ref)
   
-  # format output
+  # Calculate class-wise stats for a binary confusion matrix
+  # Currently only includes stats for: 
+  # - Precision
+  # - Recall
+  # - Balanced Accuracy 
+  #----------------------------------------------------------#
+  
+  if(length(levels_t) == 2) {
+  
+    
+    # calculate recall / users acc for class 1
+    rec1 <- (cm_raw[1,1]  / cm_raw[3,1] )
+    
+    # calculate precision / producers acc for class 1
+    prec1 <- (cm_raw[1,1] / cm_raw[1,3])
+    
+    # calculate recall / users acc for class2
+    rec2 <- (cm_raw[2,2]  / cm_raw[3,2])
+    
+    # calculate precision / producers acc for class 2
+    prec2 <- (cm_raw[2,2]  / cm_raw[2,3])
+    
+    # approximate balanced accuracy for class 1
+    ba1 <- (rec1 + prec1) / 2
+    
+    # approximate ba for class 2
+    ba2 <- (rec2 + prec2) / 2
+    
+    
+    # join classes
+    cm_t_classes <- data.frame(metric = c("Recall", "Precision", "Balanced Accuracy"),
+                               c1 = c(rec1, prec1, ba1),
+                               c2 = c(rec2, prec2, ba2))
+    
+    # apply field names
+    names(cm_t_classes) <- c("metric", levels_t)
+    
+    }
+  
+  
+
+  # format output into list 
   # ---------------------------- #
-  out_list <- list(cm_raw_out,
+  out_list <- list(cm_raw,
                    cm_t_classes,
                    cm_t_overall,
                    tfreq,
@@ -373,7 +481,8 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
   rout <- terra::classify(raster, lt)
   writeRaster(rout,
               glue('{export_path}_{layer_field}.tif'),
-              overwrite = TRUE)
+              overwrite = TRUE,
+              datatype="INT4U")
   rm(rout)
   toc()
   gc()
@@ -386,7 +495,6 @@ assembleExport <- function(layer_field, raster, lookup, id_field, export_path) {
 
 assembleCM <- function(layer_field, raster, lookup, id_field, 
                        stackin_compare, stackin_compare_name,  
-                       remapEVT_GP, EVT_GP_remap_table,
                        exportTF, export_path) {
   
   print(glue::glue("assembleCM: {layer_field}"))
@@ -407,15 +515,34 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   if(exportTF) {
     writeRaster(imp1,
                 glue::glue("{export_path}_{layer_field}.tif"),
-                overwrite = TRUE)
+                overwrite = TRUE,
+                datatype="INT4U")
   }
   
   gc()
   
   #print("get lf1")
-  # get single lf raster
+  # get single target layer raster
   lf1 <- stackin_compare[layer_field]
-  lf1 %<>% terra::trim() # remove NA values on borders
+  
+  # make sure to get disturb code ONLY, not disturb_code_bin
+  if(layer_field == "disturb_code") {
+    
+    if(!is.null(lf1$disturb_code_bin)) {
+      lf1$disturb_code_bin <- NULL
+    }
+  }
+  
+  # make sure to get evt_gp ONLY, not evt_gp_remap
+  if(layer_field == "evt_gp") {
+    
+    if(!is.null(lf1$evt_gp_remap)) {
+      lf1$evt_gp_remap <- NULL
+    }
+  }
+  
+  # remove NA values on borders
+  lf1 %<>% terra::trim() 
   
   # crop and mask reference raster with input raster
   # necessary for testing on subset 
@@ -423,25 +550,12 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
     lf1 <- terra::crop(lf1, imp1, mask = TRUE) # crop and mask 
   }
   
-  # Conditionally remap EVT
-  if(remapEVT_GP & layer_field == "EVT_GP") {
-    
-    # load remap table
-    lt_evg <- EVT_GP_remap_table
-    names(lt_evg) <- c("EVT_GP", "EVT_GP_remap")
-    lt_evg %<>%
-      select(EVT_GP_remap, EVT_GP)
-    
-    #remap
-    lf1 <- terra::classify(lf1, lt_evg)
-  } 
-
   gc()
   
   #print("get levels")
   # make both rasters categorical - get levels of layer field
-  levels <- data.frame(id = sort(unique(lt[,2])),
-                       levels = levels(as.factor(lt[,2])))
+  # levels <- data.frame(id = sort(unique(lt[,2])),
+  #                      levels = levels(as.factor(lt[,2])))
   
   # #print("set levels")
   # # set levels for rasters to make them categorical
@@ -458,9 +572,12 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
   #update names
   names(t) <- c("pred", "ref")
   
+  #inspect
+  #summary(t)
+  
   # replace any NaN with NA
   t %<>% mutate_all(~ifelse(is.nan(.), NA, .))
-  
+
   # remove rows that are only na
   t %<>% drop_na()
   
@@ -483,8 +600,7 @@ assembleCM <- function(layer_field, raster, lookup, id_field,
 
 
 assembleConcat <- function(layer_field, raster, lookup, id_field, 
-                         stackin_compare, stackin_compare_name, export_path, 
-                         remapEVT_GP, EVT_GP_remap_table) {
+                         stackin_compare, stackin_compare_name, export_path) {
   
   print(glue('assembleConcat: {layer_field}'))
   
@@ -504,19 +620,6 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   
   # mask reference raster with input raster - necessary for testing on subset 
   lf1 <- terra::crop(lf1, imp1, mask = TRUE)
-  
-  # Conditionally remap EVT
-  if(remapEVT_GP & layer_field == "EVT_GP") {
-    
-    # load remap table
-    lt_evg <- EVT_GP_remap_table
-    names(lt_evg) <- c("EVT_GP", "EVT_GP_remap")
-    lt_evg %<>%
-      select(EVT_GP_remap, EVT_GP)
-    
-    #remap
-    lf1 <- terra::classify(lf1, lt_evg)
-  } 
   
   #print("make diff")
   # get difference; set to NA where layers are the same
@@ -557,7 +660,8 @@ assembleConcat <- function(layer_field, raster, lookup, id_field,
   #export
   writeRaster(out1, 
               glue('{export_path}_{layer_field}_v{stackin_compare_name}.tif'),
-              overwrite = TRUE)
+              overwrite = TRUE,
+              datatype="INT4U")
   rm(out1)
   gc()
   

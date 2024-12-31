@@ -38,7 +38,7 @@ zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
 
 #project
 zone %<>%
-  terra::project(landfire_crs)
+  terra::project(lf_output_crs)
 
 # get name of zone
 zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
@@ -49,7 +49,7 @@ zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
 if (!is.na(aoi_path)) {
   # load aoi subset - utah uintas only
   aoi <- vect(aoi_path) %>%
-    project(landfire_crs)
+    project(lf_output_crs)
   
   # reassign
   zone <- aoi
@@ -89,10 +89,10 @@ landfire_ind_binary <- terra::rast(landfire_ind_binary_outpath)
 print("combining LCMS slow loss and Landfire fire")
 
 # ensure rasters are in the same projection
-lcms_slowloss_binary %<>% terra::project(landfire_crs)
-lcms_slowloss_years %<>% terra::project(landfire_crs)
-landfire_fire_binary %<>% terra::project(landfire_crs)
-landfire_fire_years %<>% terra::project(landfire_crs)
+# lcms_slowloss_binary %<>% terra::project(lf_output_crs)
+# lcms_slowloss_years %<>% terra::project(lf_output_crs)
+# landfire_fire_binary %<>% terra::project(lf_output_crs)
+# landfire_fire_years %<>% terra::project(lf_output_crs)
 
 gc()
 

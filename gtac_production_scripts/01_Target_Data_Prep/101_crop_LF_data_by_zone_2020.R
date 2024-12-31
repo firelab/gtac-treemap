@@ -105,9 +105,12 @@ for (i in lf_zone_nums){
   slope_zone<- terra::crop(slope, evc_zone, mask = TRUE)
   
   # Calculate northing and easting
-  
   northing_zone <- terra::app(aspect_zone, function(i) cos((pi/180)*i))
   easting_zone <- terra::app(aspect_zone, function(i) sin((pi/180)*i))
+  #
+  # Correct an issue with northing and easting. Where aspect = -1, these layers should be 0. So mask aspect = -1 pixels to 0 in easting and northing
+  northing_zone <- mask(northing_zone, aspect_zone, maskvalues=-1, updatevalue=0)
+  easting_zone <- mask(easting_zone, aspect_zone, maskvalues=-1, updatevalue=0)
 
   
   # Save the final rasters for the zone ----

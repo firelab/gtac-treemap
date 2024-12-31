@@ -1,49 +1,61 @@
-# TreeMap Imputation
-# Lila Leatherman, lila.leatherman@usda.gov
+# TreeMap Imputation Assembly
+# Written by Lila Leatherman, lila.leatherman@usda.gov
 
-# PART 3: 
+# This script accomplishes the following: 
 # - Load tiles from output
-# - assemble into one raster per zone
-
-# TO DO: 
+# - Assemble into one raster per zone
 
 
-# Last updated: 6/18/2024
+# Last updated: 9/17/2024
 
 ##################################################
 # Set inputs
 ###################################################
 
-# Set inputs - from input script
-#--------------------------------------------#
-
-this_dir <- this.path::this.dir()
-
-inputs_for_imputation<- glue::glue('{this_dir}/00b_zonal_inputs_for_imp.R')
-source(inputs_for_imputation)
-
 #------------------------------------------------#
-# input raster tile base name
-tile_name <- glue::glue('{output_name}')
+# # input raster tile base name
+tile_name <- output_name
 
 # desired name for output raster
-rout_name <- tile_name
+rout_name <- glue::glue("{output_name}_Imputation")
 
 
 #####################################################################
 # Load supporting data
 #####################################################################
 
-# Load target rasters - as reference data
-# --------------------------------------------------------------------#
+message("loading data for raster assembly")
+
+# Load target rasters - for reference and comparison
+# ---------------------------------------------------------- #
 
 # list raster files
 flist_tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
 
-# load a single raster as reference data = 2 = index of layer
-rs2 <- load_target_rasters(flist_tif, 2)
+# filter to target rasters of interest
+flist_tif <- filter_disturbance_rasters(flist_tif, dist_layer_type) # custom function
 
+# # remove aspect if it's present 
+# flist_tif %<>%
+#   str_subset("aspect", negate = TRUE)
 
+# load rasters using custom function
+rs2 <- load_and_name_rasters(flist_tif)
+
+# # Prep binary disturbance code layer
+# # ---------------------------------------------------------- #
+# # Reclass disturbance to binary
+# rs2$disturb_code_bin <- terra::classify(rs2$disturb_code, cbind(2, 1))
+# names(rs2$disturb_code_bin) <- "disturb_code_bin"
+# varnames(rs2$disturb_code_bin) <- "disturb_code_bin"
+# 
+# # remove original disturb code - model runs with binary
+# rs2$disturb_code <- NULL
+# 
+# # subset layers to target vars
+# rs2 <- subset(rs2, targetvars)
+
+gc()
 
 # FOR TESTING: Conditionally crop to aoi
 #---------------------------------------------------#
@@ -67,26 +79,59 @@ if (!is.na(aoi_path)) {
 # Run
 #######################################################################
 
+message("assembling imputed tiles")
+
 # list tiles from path
-tile.list <- list.files(path = tile_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
+tile_list <- list.files(path = tile_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
 
 # filter to tiles of interest - match tile name
-tile.list <- tile.list[str_detect(tile.list, tile_name)]
+tile_list <- tile_list[str_detect(tile_list, tile_name)]
 
 # load tiles as .vrt
-vrt <- terra::vrt(tile.list, filename = glue::glue('{tmp_dir}/t_assemble.tif'),
+vrt <- terra::vrt(tile_list, filename = glue::glue('{tmp_dir}/t_assemble.tif'),
                   overwrite = TRUE)
+
+# extend to match dimension / number of NAs in target raster
+vrt <- terra::extend(vrt, rs2)
+
 # inspect
-plot(vrt)
+plot(vrt,
+     main = glue::glue("Zone {zone_num}"))
+
+# check that imputed output has the same number of data pixels as the target layers
+#-------------------------------------------------------------------#
+# only checking one layer in the target data stack because at this point, they are ostensibly the same
+px_imputed <- global(vrt, fun = "notNA")[[1]]
+px_target <- global(rs2[[1]], fun = "notNA")[[1]]
+
+na_imputed <- global(vrt, fun = "isNA")[[1]]
+na_target <- global(rs2[[1]], fun = "isNA")[[1]]
+
+if (px_imputed == px_target) {
+  message("Imputed and target layers have the same number of valid pixels-- you are good to go!")
+} else {
+  stop(glue::glue("Imputed and target layers have different numbers of valid pixels:
+                  Imputed: {px_imputed}
+                  Target: {px_target}"))
+}
+
+if (na_imputed == na_target) {
+  message("Imputed and target layers have the same number of NA pixels-- you are good to go!")
+} else {
+  stop(glue::glue("Imputed and target layers have different numbers of NA pixels:
+                  Imputed: {na_imputed}
+                  Target: {na_target}"))
+}
 
 
 # export as single raster per zone
 writeRaster(vrt, 
             glue('{assembled_dir}/01_Imputation/{rout_name}.tif'),
-            overwrite = TRUE)
+            overwrite = TRUE,
+            datatype="INT4U")
 
 
 # clear unused memory
 gc()
 
-# do we want to remove the raster tiles after this is done? 
+rm(tile_list, vrt, px_imputed, px_target, na_imputed, na_target, rs2)

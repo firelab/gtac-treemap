@@ -19,39 +19,30 @@ lf_zone_nums<- sort(lf_zones$ZONE_NUM)
 
 # Set up EVT Groups needing reclassification ----
 
-# These EVT_GPs are reclassified to NA
-  # Developed, Agricultural, etc
-evt_gps_na <- c(
+# These EVT_GPs are reclassified to NA for all zones. These are Developed and Agricultural
+evt_gps_na <- c( 
   13,
   14,
   15,
-  26,
-  60,
-  730
+  60
 )
 
-# Read in the necessary zone-specific reclassification
-#zonal_evt_gp_reclass<- read.csv("")
-
-zonal_evt_gp_reclass_test<- data.frame("zone" = rep(NA, 5),
-                                       "original_evt_gp" = rep(NA,5),
-                                       "new_evt_gp" = rep(NA, 5))
-
-zonal_evt_gp_reclass_test$zone<- c(99,99,99,98,97)
-zonal_evt_gp_reclass_test$original_evt_gp<- c(675, 678, 679, 675, 675)
-zonal_evt_gp_reclass_test$new_evt_gp<- c(698, 602, 605, 698, 698)
+# Read in the necessary zone-specific reclassifications
+zonal_evt_gp_reclass<- read.csv("../01_Data/11_EVG/zonal_evt_gp_reclass_LF2020.csv")
 
 # 
-# Loop through each zone. Mask EVT-GP to set defined codes as NA. Then reclassify if needed ----
+# Loop through each zone. Mask EVT_GP to set defined codes as NA, and then reclassify EVT_GPs as necessary for the zone ----
 
 # First create output directory 
 dir.create("./03_Outputs/05_Target_Rasters/v2020/post_mask/")
+
+lf_zone_nums<- lf_zone_nums[which(lf_zone_nums==65):length(lf_zone_nums)]
 
 for (i in lf_zone_nums){
   
   lf_zone<- lf_zones[lf_zones$ZONE_NUM == i,]
   
-  # Make a directory for saving landfire data for the zone
+  # Make a directory for saving final masked data for the zone
   ifelse(i<10, 
          dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z0",i)),
          dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z",i)))
@@ -75,10 +66,10 @@ for (i in lf_zone_nums){
   
   # Then reclassify further groups if necessary in this zone
   
-  # Identify if the zone has any EVT GPs to relcassify
-  if(i %in%  unique(zonal_evt_gp_reclass_test$zone)){
-    zonal_evt_gp_reclass_test_sub<- zonal_evt_gp_reclass_test[zonal_evt_gp_reclass_test$zone == i,]  # limit the reclassify df to that zone
-    evt_gp<- terra::classify(evt_gp, zonal_evt_gp_reclass_test_sub[,c(2:3)]) # reclassify the remaining relevant codes for the zone
+  # Identify if the zone has any EVT GPs to reclassify, then reclassify
+  if(i %in%  unique(zonal_evt_gp_reclass$zone)){
+    zonal_evt_gp_reclass_sub<- zonal_evt_gp_reclass[zonal_evt_gp_reclass$zone == i,]  # limit the reclassify df to that zone
+    evt_gp<- terra::classify(evt_gp, zonal_evt_gp_reclass_sub[,c(2:3)]) # reclassify the remaining relevant codes for the zone
   }
   
   
@@ -88,48 +79,53 @@ for (i in lf_zone_nums){
                                 EVT_GP_remap = seq(1:nrow(evt_gp_list)))
   
   # Make EVT_GP remap raster
-  evt_gp <- terra::classify(evt_gp, evg_remap_table) 
+  evt_gp_remap <- terra::classify(evt_gp, evg_remap_table) 
   
   
   # Now mask all other LandFire and Daymet data by the final evt_gp layer
-  
   # Landfire
-  aspect<- terra::mask(rast(paste0(in_dir, "/aspect.tif")), evt_gp)
-  easting<- terra::mask(rast(paste0(in_dir, "/easting.tif")), evt_gp)
-  elevation<- terra::mask(rast(paste0(in_dir, "/elevation.tif")), evt_gp)
-  evc<- terra::mask(rast(paste0(in_dir, "/evc.tif")), evt_gp)
-  evh<- terra::mask(rast(paste0(in_dir, "/evh.tif")), evt_gp)
-  northing<- terra::mask(rast(paste0(in_dir, "/northing.tif")), evt_gp)
-  slope<- terra::mask(rast(paste0(in_dir, "/slope.tif")), evt_gp)
-                            
+  aspect<- terra::mask(rast(paste0(in_dir, "/aspect.tif")), evt_gp_remap)
+  disturb_code<- terra::mask(rast(paste0(in_dir, "/disturb_code_LF.tif")), evt_gp_remap)
+  disturb_year<- terra::mask(rast(paste0(in_dir, "/disturb_year_LF.tif")), evt_gp_remap)
+  easting<- terra::mask(rast(paste0(in_dir, "/easting.tif")), evt_gp_remap)
+  elevation<- terra::mask(rast(paste0(in_dir, "/elevation.tif")), evt_gp_remap)
+  evc<- terra::mask(rast(paste0(in_dir, "/evc.tif")), evt_gp_remap)
+  evh<- terra::mask(rast(paste0(in_dir, "/evh.tif")), evt_gp_remap)
+  northing<- terra::mask(rast(paste0(in_dir, "/northing.tif")), evt_gp_remap)
+  slope<- terra::mask(rast(paste0(in_dir, "/slope.tif")), evt_gp_remap)
+  
+  # Clear garbage
+  gc()
   
   # Daymet
-  prcp<- terra::mask(rast(paste0(in_dir, "/prcp_normal_1981to2020.tif")), evt_gp)
-  srad<- terra::mask(rast(paste0(in_dir, "/srad_normal_1981to2020.tif")), evt_gp)
-  swe<- terra::mask(rast(paste0(in_dir, "/swe_normal_1981to2020.tif")), evt_gp)
-  tmax<- terra::mask(rast(paste0(in_dir, "/tmax_normal_1981to2020.tif")), evt_gp)
-  tmin<- terra::mask(rast(paste0(in_dir, "/tmin_normal_1981to2020.tif")), evt_gp)
-  vp<- terra::mask(rast(paste0(in_dir, "/vp_normal_1981to2020.tif")), evt_gp)
-  vpd<- terra::mask(rast(paste0(in_dir, "/vpd_normal_1981to2020.tif")), evt_gp)
+  prcp<- terra::mask(rast(paste0(in_dir, "/prcp_normal_1981to2020.tif")), evt_gp_remap)
+  srad<- terra::mask(rast(paste0(in_dir, "/srad_normal_1981to2020.tif")), evt_gp_remap)
+  swe<- terra::mask(rast(paste0(in_dir, "/swe_normal_1981to2020.tif")), evt_gp_remap)
+  tmax<- terra::mask(rast(paste0(in_dir, "/tmax_normal_1981to2020.tif")), evt_gp_remap)
+  tmin<- terra::mask(rast(paste0(in_dir, "/tmin_normal_1981to2020.tif")), evt_gp_remap)
+  vp<- terra::mask(rast(paste0(in_dir, "/vp_normal_1981to2020.tif")), evt_gp_remap)
+  vpd<- terra::mask(rast(paste0(in_dir, "/vpd_normal_1981to2020.tif")), evt_gp_remap)
   
   
   # SAVE ----
   
   # Save the EVT GP Remap table for the zone 
-  write.csv(evg_remap_table, paste0(out_dir,"/evt_gp_remap.csv"), row.names = F, quote=F)
+  write.csv(evg_remap_table, paste0(out_dir,"/evt_gp_remap.csv"), row.names=F, quote=F)
 
   
-  # Save all of the final rasters for the zone ----
+  # Save all the final rasters for the zone ----
   
   # Landfire
-  writeRaster(aspect, paste0(out_dir, "/aspect.tif"), datatype = "FLT4S")
+  writeRaster(aspect, paste0(out_dir, "/aspect.tif"), datatype = "INT2S")
+  writeRaster(disturb_code, paste0(out_dir, "/disturb_code.tif"), datatype = "INT1U")
+  writeRaster(disturb_year, paste0(out_dir, "/disturb_year.tif"), datatype = "INT1U")
   writeRaster(easting, paste0(out_dir, "/easting.tif"), datatype = "FLT4S")
-  writeRaster(elevation, paste0(out_dir, "/elevation.tif"), datatype = "FLT4S")
-  writeRaster(evc, paste0(out_dir, "/evc.tif"), datatype = "FLT4S")
-  writeRaster(evh, paste0(out_dir, "/evh.tif"), datatype = "FLT4S")
-  writeRaster(evt_gp, paste0(out_dir, "/evt_gp.tif"), datatype = "FLT4S")
+  writeRaster(elevation, paste0(out_dir, "/elevation.tif"), datatype = "INT2S")
+  writeRaster(evc, paste0(out_dir, "/evc.tif"), datatype = "INT1U")
+  writeRaster(evh, paste0(out_dir, "/evh.tif"), datatype = "INT1U")
+  writeRaster(evt_gp_remap, paste0(out_dir, "/evt_gp_remap.tif"), datatype = "INT1U")
   writeRaster(northing, paste0(out_dir, "/northing.tif"), datatype = "FLT4S")
-  writeRaster(slope, paste0(out_dir, "/slope.tif"), datatype = "FLT4S")
+  writeRaster(slope, paste0(out_dir, "/slope.tif"), datatype = "INT1U")
   
   # Daymet
   writeRaster(prcp, paste0(out_dir, "/prcp.tif"), datatype = "FLT4S")
@@ -140,8 +136,12 @@ for (i in lf_zone_nums){
   writeRaster(vp, paste0(out_dir, "/vp.tif"), datatype = "FLT4S")
   writeRaster(vpd, paste0(out_dir, "/vpd.tif"), datatype = "FLT4S")
 
+  # Remove objects from memory
+  rm(list=setdiff(ls(), c("lf_raster", "lf_zones","lf_zone_nums", "evt_gps_na", "zonal_evt_gp_reclass")))
+  
   # Clear garbage
   gc()
+  
   
 }
 

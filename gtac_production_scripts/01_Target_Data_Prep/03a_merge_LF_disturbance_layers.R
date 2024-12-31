@@ -20,7 +20,7 @@ this_dir <- this.path::this.dir() # Id where THIS script is located
 # get path to input script
 input_script_path <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
 
-source(input_script_path)
+# source(input_script_path) # un-comment to run independently from the control script
 
 ###################################################
 # LOAD DATA
@@ -37,7 +37,7 @@ zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
 
 #project
 zone %<>%
-  terra::project(landfire_crs)
+  terra::project(lf_output_crs)
 
 # get name of zone
 zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
@@ -48,7 +48,7 @@ zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
 if (!is.na(aoi_path)) {
   # load aoi subset - utah uintas only
   aoi <- vect(aoi_path) %>%
-    project(landfire_crs)
+    project(lf_output_crs)
   
   # reassign
   zone <- aoi
@@ -89,13 +89,13 @@ landfire_ind_binary <- terra::rast(landfire_ind_binary_outpath)
 
 dist_year <- terra::merge(landfire_fire_years, landfire_ind_years) %>% # merge fire and slow loss 
   terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
-  terra::classify(cbind(NA,99)) %>% # set no data values 
-  terra::project(landfire_crs) #%>%
+  terra::classify(cbind(NA,99))  # set no data values 
+  #terra::project(landfire_crs) #%>%
   #terra::mask(evt_gp)
 
 dist_type <- terra::merge(landfire_fire_binary, landfire_ind_binary) %>% # merge fire and slow loss
-  terra::classify(cbind(NA, 0)) %>% # set no data values 
-  terra::project(landfire_crs) #%>%
+  terra::classify(cbind(NA, 0)) #%>% # set no data values 
+  #terra::project(landfire_crs) #%>%
   #terra::mask(evt_gp)
 
 # #inspect

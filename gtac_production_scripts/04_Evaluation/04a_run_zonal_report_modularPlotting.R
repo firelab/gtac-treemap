@@ -2,12 +2,7 @@
 # Written by Lila Leatherman (Lila.Leatherman@usda.gov)
 # Updated by Abhinav Shrestha (abhinav.shrestha@usda.gov)
 
-# Last updated: 06/21/2024
-
-
-# TODO:
-# add continuous vars to report - from plots already made 
-
+# Last updated: 08/14/2024
 
 #==========================================================#
 #                                                          # 
@@ -15,23 +10,32 @@
 #                                                          #    
 #==========================================================#
 
+# IF RUNNING STANDALONE: 
+#------------------------------------------#
+cur_zone_zero_standalone <- "z08"
+year_standalone <- 2022
+eval_type_standalone <- "TargetLayerComparison"
+standalone <- "N"
+
+
 # VARIABLES TO EVALUATE
 #------------------------------------------#
 
 # list variables to evaluate
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
-eval_vars <- c("canopy_cover", 
-               "canopy_height", 
-               "EVT_GP", 
-               "disturb_code")
+# eval_vars_cat <- yvars
+# eval_vars_cat <- c("evc", "evh", "evt_gp_remap", "evt_gp", "disturb_code_bin", "disturb_code" )
+eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code_bin", "disturb_code" ) # without "evt_gp_remap"
+eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
+#eval_vars_cat_cont <- eval_vars_cat
 
 # Eval report for OOB or derived vars
-# - options: "OOB" or "TargetLayerComparison" 
+# Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
 
-eval_type <- "TargetLayerComparison"
-# eval_type <- "OOB" 
-# FIXME: NO OOB RDS for 2016_GTAC_LCMSDist project
-
+eval_type <- eval_type_in
+#eval_type <- "TargetLayerComparison"
+#eval_type <- "OOB" 
+#eval_type <- "CV"
 
 # PLOTS and TABLES TO INCLUDE; EXPORT OPTIONS
 #---------------------------------------------#
@@ -72,20 +76,13 @@ document_formatExtensionDict <- c("pdf_document" = ".pdf",
                                   "word_document" = ".docx", 
                                   "html_document" = ".html")
 
+
 #-------------------------------------------#
 #                                           #
 # Standard inputs (less likely to change)   #
 #                 ~~~~~~~~~~~~~~~~~~~~~~    #
 #-------------------------------------------#
 
-
-# Set inputs - from input script used for imputation
-#-----------------------------------------------------#
-
-this_dir <- this.path::this.dir()
-
-inputs_for_evaluation <- glue::glue('{this_dir}/00_inputs_for_evaluation.R')
-source(inputs_for_evaluation)
 
 # Other settings
 #------------------------------------------#
@@ -101,19 +98,49 @@ round_dig <- 4
 
 options("scipen" = 100, "digits" = 8)
 
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
+
+if(standalone == 'Y') {
+  
+  # assign main variables
+  cur_zone_zero <- cur_zone_zero_standalone
+  year <- year_standalone
+  eval_type <- eval_type_standalone
+  
+  # load directories
+  this_proj <- this.path::this.proj()
+  this_dir <- this.path::this.dir()
+  
+  ## load treemap library
+  lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+  source(lib_path)
+  
+  #load settings for zone
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  
+  load(zone_settings)
+  
+  # load library again in case functions have been updated since initial creation of RDS
+  source(lib_path)
+}
+
 # Prep constructed paths
 #------------------------------------------#
 
 this_dir <- this.path::this.dir()
 
 # get path to rmd
-rmd_path <- glue::glue("{this_dir}/04b_zonal_eval_report_generator_modularPloting.Rmd")
+rmd_path <- glue::glue("{this_dir}/04b_zonal_eval_report_generator_modularPlotting.Rmd")
 
 # set dir for temporary outputs - needs to be a place w/ write permissions for R (network drives aren't allowed)
 tmpout_dir <- tmp_dir
 
+# set default plot labels - these will be updated for each evaluation type
 plot_labels <- c("Imputed", "Observed")
 
+# set default labels for confusion matrix - these will be updated for each evaluation type
+cm_labels <- c("Predicted", "Reference")
 
 
 #===========================================================#
@@ -126,76 +153,49 @@ plot_labels <- c("Imputed", "Observed")
 # Load evaluation data
 #------------------------------------------#
 
-# CACHING -- checking if the same raster was already imported
-if (exists("ras")){
-  
-  if(ras@ptr$get_sourcenames() == raster_nameCompare){
-  
-    message("Using preloaded raster from previous run...")
-  
-  } else {
-    
-    # ras exists but not the same as previous one
-    # load raw imputation output raster
-    ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}.tif"))
-    raster_nameCompare <- output_name
-  }
-} else {
-  
-  # load raw imputation output raster
-  ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}.tif"))
-  raster_nameCompare <- output_name
-  
-}
+# load raw imputation output raster
+ras <- terra::rast(glue::glue("{assembled_dir}/01_Imputation/{output_name}_Imputation.tif"))
+
+# Unique plots imputed in zone
+unique_pltsZone <- length(freq(ras)$value)
 
 # conditional loads and variables based on evaluation type: 
 
 #   - load RDS of cm files
 #   - label reference type
-#   - make labels for plots
+#   - make labels for plots - Predicted, Reference
 
-if(eval_type == "OOB") {
+if(eval_type == "TargetLayerComparison") {
+    
+    cms_path <- glue::glue("{eval_dir}/01_Target_Layer_Comparison/{output_name}_CMs_{eval_type}.RDS")
+    plot_labels <- c("Imputed", "Target")
+    cm_labels <- c("Imputed", "Target")
+    
+} else if(eval_type == "OOB_manual") {
   
-  cms_path <- glue::glue("{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_{eval_type}.RDS")
-  plot_labels <- c("Imputed", "Observed (Out-of-bag)")
-
-} else if(eval_type == "TargetLayerComparison") {
+  cms_path <- glue::glue("{eval_dir}/02_OOB_Manual_Evaluation/{output_name}_CMs_{eval_type}.RDS")
+  plot_labels <- c("Imputed (OOB)", "Observed (RAT; FIA)")
+  cm_labels <- c("Imputed (OOB)", "Observed (RAT; FIA)")
   
-  cms_path <- glue::glue("{eval_dir}/02_Target_Layer_Comparison/{output_name}_CMs_{eval_type}.RDS")
-  plot_labels <- c("Imputed", "Observed (Target Layers)")
-}
-
-cms_all <- readRDS(cms_path)
-
-# Load zone
-#------------------------------------------#
-
-if (exists("LF_zones")){
+} else if(eval_type == "model_eval") {
   
-  if(lf_zones_pathCompare == lf_zones_path) { # check if its the same rat as before
-    
-    message("Using previously loaded lf zones vector...")
-    
-  } else {
-    
-    message("`lf_zones` exists but not the same as previously loaded data, importing lf_zones...")
-    LF_zones <- terra::vect(lf_zones_path)
-    lf_zones_pathCompare <- lf_zones_path
-    
+  cms_path <- glue::glue("{raw_outputs_dir}/model_eval/{output_name}_CMs_ResponseVariables.RDS")
+  plot_labels <- c("Predicted - RF", "Reference - RF")
+  cm_labels <- c("Predicted - RF", "Reference - RF")
+  
+} else if(eval_type == "CV") {
+    cms_path <- glue::glue("{eval_dir}/03_Cross_Validation/{output_name}_CMs_{eval_type}.RDS")
+    plot_labels <- c("Imputed (CV)", "Observed (RAT; FIA)")
+    cm_labels <- c("Imputed (CV)", "Observed (RAT; FIA)")
   }
   
-} else {
-  
-  message("Importing lf_zones...")
-  LF_zones <- terra::vect(lf_zones_path)
-  lf_zones_pathCompare <- lf_zones_path
-  
-}
+cms_all <- readRDS(cms_path)
 
-
+# Load Landfire Zones
+#------------------------------------------#
 
 # load LF zone data
-# LF_zones <- terra::vect(lf_zones_path)
+LF_zones <- terra::vect(lf_zones_path)
 
 # select single LF zone
 zone <- terra::subset(LF_zones, LF_zones$ZONE_NUM == zone_num)
@@ -206,56 +206,42 @@ zone <- terra::project(zone, crs(ras))
 # get name of zone
 zone_name <- glue::glue("LFz{zone_num}_{gsub(' ', '', zone$ZONE_NAME)}")
 
+# Load EVT metadata
+#------------------------------------------#
+evt_gp_metadata <- read.csv(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/Vegetation/EVT/LF2022_EVT_230_CONUS/CSV_Data/LF22_EVT_230.csv")) %>% 
+  rename_with(tolower) %>%
+  dplyr::select(evt_gp, evt_gp_n) %>%
+  dplyr::mutate(evt_gp = factor(evt_gp),
+                # make a shortened evt_gp_name 
+                evt_gp_n_short = paste0(evt_gp, "-", substr(evt_gp_n, 1, 15)) ) %>% 
+  arrange(evt_gp) %>%
+  distinct()
+
+
 # Load X table
 #------------------------------------------#
 
-# load X_df
-X_df <- read.csv(xtable_path) %>%
-  dplyr::rename(PLOTID = X)
+# load X_df 
+X_df <- read.csv(xtable_path_model)
 
-# Reclass EVT_GP
-#------------------------------------------#
+# Plots available in zone
+numPltsZone_XdfModel <- nrow(X_df)
 
-#load evt_gp remap table
-evt_gp_remap_table <- read.csv(evt_gp_remap_table_path)
-
-# join to reclass 
-X_df %<>%
-  dplyr::rename(EVT_GP_remap = EVT_GP) %>%
-  dplyr::left_join(evt_gp_remap_table, by = c("EVT_GP_remap"))
+# Percent of available plots imputed
+percent_avlbPlts_imputed <- round((100 * (unique_pltsZone/numPltsZone_XdfModel)), 2)
 
 # Load raster attribute table and points
 #------------------------------------------#
 
-# load rat
- 
-if (exists("rat")){
-  
-  if(rat_pathCompare == rat_path) { # check if its the same rat as before
-    
-    message("Using previously loaded raster attribute table...")
-    
-  } else {
-    
-    message("`rat` exists but not the same as previously loaded data, importing rat...")
-    rat_tif <- terra::rast(glue::glue("{rat_path}TreeMap2016.tif"))
-    rat_pathCompare <- rat_path
-
-  }
-  
-} else {
-  
-  message("Importing raster attribute table...")
-  rat_tif <- terra::rast(glue::glue("{rat_path}TreeMap2016.tif"))
-  rat_pathCompare <- rat_path
-
-}
+message("Importing raster attribute table...")
+rat <- terra::rast(rat_path)
+rat <- data.frame(cats(rat))
 
 
-rat <- data.frame(cats(rat_tif)) %>%
-  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
-                "CARBON_DOWN_DEAD" = CARBON_DWN)
+# Prep Raster Attribute Table
+#-----------------------------------------------------------------#
 
+message("Preparing raster attribute table...")
 
 # identify eval_vars_cont that are not from RMRS - we handle NAs differently
 eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
@@ -263,32 +249,68 @@ eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(
 
 # prep rat table
 rat %<>%
+  # rename shortened field names
+  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
+                "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
+  # convert CN to numeric
   dplyr::mutate(CN = as.numeric(CN)) %>%
-  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = 3))) %>%
+  # round and fix NA values for RMRS and non RMRS vars
+  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
   dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
   dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
-  dplyr::select(-Value) %>%
-  dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE)
-
-# join with X df  - limit to plots in X df
-rat %<>%
-  dplyr::right_join(X_df, by = c("CN" = "CN", "tm_id" = "PLOTID")) 
+  # calculate TPA_DEAD_LIVE_RATIO
+  dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
+  # remove columns
+  dplyr::select(-c(Value, tm_id))
 
 
+# join RAT with X df using CN
+rat_x <- rat %>%
+  right_join(X_df, by = "CN") %>%
+  select(c(CN, tm_id, all_of(eval_vars_cat_cont))) %>%
+  # filter to plots with values
+  #filter(!is.na(BALIVE)) %>%
+  arrange(tm_id)
 
-# Calc frequency for all vars in RAT
+# Spatial Filter for RAT - Include only points that fall within the zone
+#--------------------------------------------------------------------------#
+
+# load model to get xy data
+yai <- readRDS(model_path)
+
+# get xy data from model
+X_xy <- yai$xRefs %>%
+  dplyr::select(point_x, point_y) %>%
+  tibble::rownames_to_column(var = "tm_id")
+
+# convert xy data to spatial points
+X_pts <- terra::vect(X_xy, geom = c("point_x", "point_y"), crs = output_crs)
+
+# mask to pts within zone
+zone_pts <- terra::mask(X_pts, zone)
+zone_pts$tm_id <- as.numeric(zone_pts$tm_id)
+
+# filter to pts within zone
+rat_x <- rat_x %>%
+  dplyr::filter(tm_id %in% as.numeric(zone_pts$tm_id))
+
+# Create a data.frame to store summaries of the categorical vars seen in `rat_x`
+rat_x_catVarsSummary_df <- data.frame(unclass(summary(rat_x[which((names(rat_x) %in% eval_vars_cat))])), check.names = FALSE, stringsAsFactors = TRUE, row.names = NULL)
+names(rat_x_catVarsSummary_df) <- str_replace_all(names(rat_x_catVarsSummary_df), c(" " = "")) #remove any spaces in column names
+
+
+# Calc frequency for all vars in RAT_x
 #------------------------------------------#
 
 rat_freq_all <- list()
 
-for (i in seq_along(eval_vars)) {
+for (i in seq_along(eval_vars_cat)) {
 
-#var = names(rat_z)[i]
-  var = eval_vars[i]
+  var_in = eval_vars_cat[i]
 
 # get frequency table
-  f_out <- rat %>%
-    dplyr::select(all_of(var)) %>%
+  f_out <- rat_x %>%
+    dplyr::select(all_of(var_in)) %>%
     table() %>%
     data.frame() 
   
@@ -300,10 +322,11 @@ for (i in seq_along(eval_vars)) {
   
 }
 
-names(rat_freq_all) <- eval_vars
+names(rat_freq_all) <- eval_vars_cat
 
 # # inspect
 # rat_freq_all
+
 
 # Render report
 #------------------------------------------#
@@ -316,9 +339,17 @@ rmarkdown::render(rmd_path,
                   params = list(raster_name = output_name,
                                 zone_num = zone_num,
                                 eval_type = eval_type,
-                                eval_vars= eval_vars,
-                                cms_path = cms_path)
+                                eval_vars= eval_vars_cat,
+                                cms_path = cms_path, 
+                                unique_pltsZone = unique_pltsZone, 
+                                numPltsZone_XdfModel = numPltsZone_XdfModel, 
+                                percent_avlbPlts_imputed = percent_avlbPlts_imputed, 
+                                rat_x_catVarsSummary_df = rat_x_catVarsSummary_df)
 )
+
+if(eval_type %in% c("OOB", "CV")){
+    file.remove(tmp_figs_list)
+}
 
 # File Organization
 #------------------------------------------#
@@ -326,9 +357,8 @@ rmarkdown::render(rmd_path,
 
 fileExtension <- document_formatExtensionDict[[report_format]]
 
-message("\n\nCopying rendered report from tmp directory to output directory...")
+message("\n\nMoving rendered report from tmp directory to output directory...")
 
-message(glue::glue("-- Output directory: {tmpout_dir}\n\n"))
 
 # move report from tmpout dir to desired out dir
 file.copy(from=glue::glue("{tmpout_dir}/{output_name}_eval_report_{eval_type}{fileExtension}"),
@@ -337,10 +367,10 @@ file.copy(from=glue::glue("{tmpout_dir}/{output_name}_eval_report_{eval_type}{fi
           overwrite = TRUE, recursive = FALSE,
           copy.mode = TRUE)
 
-message("Copied report, removing file from tmp directory...")
-
 # remove file from tmp location
 file.remove(glue::glue("{tmpout_dir}/{output_name}_eval_report_{eval_type}{fileExtension}"))
-message("Render complete!")
 
-Sys.time() - ptm
+message(glue::glue("Report render complete! Output file: {eval_dir}/04_Eval_Reports/{output_name}_eval_report_{eval_type}{fileExtension}\n\n"))
+
+#Sys.time() - ptm
+

@@ -1,16 +1,17 @@
-# TreeMap Evaluation
+# Zonal Treemap out-of-bag Evaluation
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
+# With contributions from Abhinav Shrestha (abhinav.shrestha@usda.gov)
 
 # Out-of-bag stats and validation
-# - Extract model validation stats from yai object
-# - Report out model accuracy for vars
+# - Use yaImpute::predict() to get putative "Out-of-bag" (OOB) Predictions
+# - We have not verified that these truly represent OOB prediction
+# - Assumption that these are OOB is following the logic present in the Random Forests predict.randomForest() function
+# - Returns confusion matrices for categorical response vars
+# - Returns scatterplots for continuous attributes
+# ### REQUIRES CURRENT RAT FOR COMPLETE ACCURACY OF CONTINUOUS ATTRIBUTES
 
-# TO DO:
-# - add continuous vars 
 
-# TALK MORE ABOUT OOB EVALUATION SO WE UNDERSTAND IT
-
-# Last updated: 4/19/2024
+# Last updated: 8/28/2024
 
 ###########################################################################
 # Set inputs
@@ -21,48 +22,54 @@
 
 # list variables to evaluate
 
-eval_vars_cat <- c("canopy_cover", "canopy_height", "EVT_GP", 
-                   "disturb_code")
+#eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin")
 
-eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
-                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
-                    "TPA_DEAD", "TPA_LIVE")
 
-eval_vars <- c(eval_vars_cat, eval_vars_cont)
+# eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS", 
+#                     "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
+#                     "TPA_DEAD", "TPA_LIVE")
+eval_vars_cont <- attributevars
 
-# Standard inputs
-#---------------------------------------------#
+eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
-# Set inputs - from input script
-thispath <- this.path::this.path() # Id where THIS script is located
+#Set inputs manually - if running standalone
+#-----------------------------------------------------#
 
-# get path to input script
-spl <- stringr::str_split(thispath, "/")[[1]]
-input_script_path <- paste(c(spl[c(1:(length(spl) - 1))],
-                             "00_inputs_for_evaluation.R"),
-                           collapse = "/")
-
-source(input_script_path)
-
-############################################################
-
-# Terra options
-# --------------------------------#
-
-#increase memory fraction available
-#terraOptions(memfrac = 0.8)
-
-# Other options
-# --------------------------------#
-
-# Allow for sufficient digits to differentiate plot cn numbers
-
-options("scipen" = 100, "digits" = 8)
+# cur_zone_zero_standalone <- "z08"
+# year_standalone <- 2022
+standalone <- "N"
 
 
 ####################################################################
 # Load data
 ####################################################################
+
+# Set inputs manually - if running standalone
+#-----------------------------------------------------#
+
+if(standalone == 'Y') {
+  
+  # assign main variables
+  cur_zone_zero <- cur_zone_zero_standalone
+  year <- year_standalone
+  
+  this_proj <- this.path::this.proj()
+  this_dir <- this.path::this.dir()
+  
+  ## load treemap library
+  lib_path = glue::glue('{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R')
+  source(lib_path)
+  
+  #load settings for zone
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}_Production/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{year}_Production_env.RDS")
+  
+  load(zone_settings)
+  
+  # load library again in case functions have been updated since initial creation of RDS
+  source(lib_path)
+}
+
+message("loading data for OOB evaluation")
 
 # Load imputation model
 # ---------------------------------------------------------- #
@@ -70,69 +77,92 @@ options("scipen" = 100, "digits" = 8)
 #load model
 yai <- readr::read_rds(model_path)
 
-# Load x table
-# ------------------------------------------------------------#
+# X - df
+#------------------------------------------#
+X_df <- read.csv(xtable_path_model)
 
-# load X_df
-X_df <- read.csv(xtable_path) %>%
-  mutate(PLOTID = ID)
+# apply row names - row names must be treemap id
+row.names(X_df) <- X_df$tm_id
 
-# Load raster attribute table 
-#-------------------------------------------------#
+
+# Load and prep Raster Attribute Table
+#-----------------------------------------------------------------#
 
 # load rat
-rat <- terra::rast(glue::glue("{rat_path}TreeMap2016.tif"))
+rat <- terra::rast(rat_path)
 rat <- data.frame(cats(rat))
 
-rat %<>%
-  rename("SDIPCT_RMRS" = SDIPCT_RMR,
-         "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
-  mutate(CN = as.numeric(CN)) %>%
-  # replace -99 (na value) with NA 
-  mutate_at(eval_vars_cont, ~na_if(.x, -99)) %>%
-  mutate_at(eval_vars_cont, ~na_if(.x, -99.00)) %>%
-  mutate_at(eval_vars_cont, ~na_if(.x, -99.00000)) %>%
-  select(-Value)
 
-# join with X df  
+# identify eval_vars_cont that are not from RMRS - we handle NAs differently
+eval_vars_cont_RMRS <- stringr::str_subset(names(rat), "RMRS")
+eval_vars_cont_nonRMRS <- stringr::str_subset(names(rat %>% dplyr::select(where(is.numeric))), "RMRS", negate = TRUE)
+
+# prep rat table
 rat %<>%
-  right_join(X_df, by = c("CN" = "CN", "tm_id" = "PLOTID")) %>%
-  rename("PLOTID" = tm_id)
+  # rename shortened field names
+  dplyr::rename("SDIPCT_RMRS" = SDIPCT_RMR,
+                "CARBON_DOWN_DEAD" = CARBON_DWN) %>%
+  # convert CN to numeric
+  dplyr::mutate(CN = as.numeric(CN)) %>%
+  # round and fix NA values for RMRS and non RMRS vars
+  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ round(.x, digits = round_dig))) %>%
+  dplyr::mutate(across(any_of(eval_vars_cont_nonRMRS), ~ ifelse(.x == -99.000, 0, .x))) %>%
+  dplyr::mutate(across(any_of(eval_vars_cont_RMRS), ~ dplyr::na_if(.x, -99))) %>%
+  # calculate TPA_DEAD_LIVE_RATIO
+  dplyr::mutate(TPA_DEAD_LIVE_RATIO = TPA_DEAD/TPA_LIVE) %>%
+  # remove columns
+  dplyr::select(-c(Value, tm_id))
+
+# Join RAT and X_df into rat_x
+#-----------------------------------------------------------#
+
+# join RAT with X df using CN
+rat_x <- rat %>%
+  right_join(X_df, by = "CN") %>%
+  select(c(CN, tm_id, any_of(eval_vars_cat_cont))) %>%
+  # filter to plots with values from RAT - limits available plots severely when using 2016 RAT
+  #filter(!is.na(BALIVE)) %>%
+  # make factors into numeric so that we can make a long data frame
+  mutate(across(c(evt_gp_remap), as.numeric))
 
 
 ######################################################################
-# Get and prep validation data - out of bag observations
+# Obtain and prep out-of-bag predictions
 ######################################################################
+
+# Get OOB Predictions
+#-------------------------------------------------#
+
+message("getting out-of-bag predictions")
 
 # Data dictionary for OOB predicted and reference: 
 # oob_id : row number of original oob observation
-# plotid_ref : treemap plot id for the reference plot in the imutation/tree
-# plotid_pred : treemap plotid for the predicted plot in the imputatio/tree
+# ref_id : treemap plot id for the reference plot 
+# pred_id : treemap plotid for the predicted plot 
 
-# run custom function to get out of bag observations
-# this takes some time to run - ~15 secs
-oobs <- get_OOBs_yai(yai) %>%
-  rename("ref_id" = ref,
-         "pred_id" = pred) %>%
+# run custom function to get out of bag predictions - 1 for each reference 
+# this takes some time to run 
+oobs <- get_OOBs_yai_predict(yai) 
+oobs %<>% 
   mutate(oob_id = row_number())
 
 
-# make Join OOB predicted and reference with Xdf and RAT to get layer values
-# --------------------------------------------#
+# make Join OOB predicted and reference with Xdf and RAT to get variable values
+# ----------------------------------------------------------------------------#
 
 # join oobs with x df - reference
 refs <-
-  left_join(oobs, rat,
-            by = c("ref_id" = "ID")) %>%
-  select(c(oob_id, ref_id, pred_id, inbag_count,
-           any_of(eval_vars))) %>%
+  left_join(oobs, rat_x,
+            by = c("ref_id" = "tm_id")) %>%
+  select(c(oob_id, ref_id, pred_id,
+           any_of(eval_vars_cat_cont))) %>%
   mutate(dataset = "ref")
   
 # join oobs with X_df - predicted
-preds <- left_join(oobs, rat,
-                   by = c("pred_id" = "ID")) %>%
-  select(c(oob_id, ref_id, pred_id, inbag_count,
-           any_of(eval_vars))) %>%
+preds <- left_join(oobs, rat_x,
+                   by = c("pred_id" = "tm_id")) %>%
+  select(c(oob_id, ref_id, pred_id,
+           any_of(eval_vars_cat_cont))) %>%
   mutate(dataset = "pred") 
 
 # clear memory
@@ -142,8 +172,6 @@ gc()
 #-----------------------------------------#
 
 p_r <- bind_rows(preds, refs) %>%
-  filter(inbag_count == 0) %>% # filter to only OOB
-  select(-inbag_count) %>%
   # pivot longer
   pivot_longer(!c(oob_id, ref_id, pred_id, dataset), 
                names_to = "var", values_to = "value") %>%
@@ -153,17 +181,23 @@ p_r <- bind_rows(preds, refs) %>%
   arrange(oob_id)
 
 
+######################################################################
+# Perform evaluation on OOB predictions
+######################################################################
+
 # Make confusion matrices for each categorical var
 #-----------------------------------------------#
 
-# loop over vars
-# using a for loop bc ¯\_(ツ)_/¯
+message("performing evaluation on OOB predictions")
 
+# make a container to hold output confusion matrices
 cms <- NULL
 
+# loop over variables named at the top of the script
 for (i in eval_vars_cat) {
   
   var_in <- i
+  #var_in <- "disturb_code"
   
   print(glue::glue("working on {var_in}"))
   
@@ -195,40 +229,50 @@ for (i in eval_vars_cat) {
 
 # save cms as RDS
 write_rds(cms, file = 
-            glue::glue('{eval_dir}/01_OOB_Evaluation/{output_name}_CMs_OOB.RDS'))
+            glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/{output_name}_CMs_OOB_manual.RDS'))
 
 gc()
 
 
-####################################################
-# CONTINUOUS VARS EVAL
-####################################################
-
-# PLOT CONTINUOUS VARS
+# PLOT continuous vars
 # ---------------------------------------------------#
 
-dodge <- position_dodge(width = 0.6)
+print("working on continuous variables")
 
-for(i in 1:(length(eval_vars_cont))) {
+# set parameters for continuous var plotting
+dodge <- position_dodge(width = 0.6)
+text_size <- 4 # 5 for indvidual plots 3 for all plots in grid
+percent_x_textPos <- 0.50 # 0.4 for individual plots
+percent_y_textPos1 <- 0.99 # 0.96 for individual plots
+percent_y_textPos2 <- 0.78 # 0.96 for individual plots
+textBoxFill_ratioX <- 0.25
+textBoxFill_ratioY <- 0.04
+alpha <- 0.1
+export_width <- 7 # in inches
+export_height <- 4.5 # in inches
+
+# loop over continuous vars 
+
+for (i in eval_vars_cont) {
   
   # for testing
-  i = 5
+  #i = 6
   
-  var_name <- eval_vars_cont[i]
+  var_in <- i
   
   # Violin plots
   #------------------#
   
   p <- 
     p_r %>%
-    filter(var == var_name) %>%
+    filter(var == var_in) %>%
     select(-c(ref_id, pred_id)) %>%
     drop_na() %>%
     ggplot(aes(x = dataset, y = value, fill = dataset))+
     geom_violin(position = dodge)+
     geom_boxplot(width=.1, outlier.colour=NA, position = dodge) + 
-    labs(title = glue::glue('Variation in {var_name} by dataset')) + 
-    xlab(var_name) + 
+    labs(title = glue::glue('{year_input} {cur_zone_zero}: Variation in {var_in} by dataset')) + 
+    xlab(var_in) + 
     theme_bw()
   
   print(p)
@@ -241,7 +285,7 @@ for(i in 1:(length(eval_vars_cont))) {
   # prep dataset
   p_r2 <- 
   p_r %>%
-    filter(var == var_name) %>%
+    filter(var == var_in) %>%
     select(-c(ref_id, pred_id, var)) %>%
     pivot_wider(id_cols = oob_id, 
                 names_from = dataset, 
@@ -250,10 +294,11 @@ for(i in 1:(length(eval_vars_cont))) {
   
   # build an LM
   lm <- lm(pred ~ ref, data = p_r2)
-  lm$coefficients
-  sum <- summary(lm)
   
-  sum$r.squared
+  # inspect LM
+  # lm$coefficients
+  # sum <- summary(lm)
+  # sum$r.squared
   
   
   # Parsing the information saved in the model to create the equation to be added to the scatterplot as an expression # https://r-graphics.org/recipe-scatter-fitlines-text
@@ -266,30 +311,38 @@ for(i in 1:(length(eval_vars_cont))) {
     mae(na.omit(p_r2$pred), predict(lm))
   )
   
-  eqn
   
   p2 <- p_r2 %>%
     ggplot(aes(x = ref, y = pred)) + 
     geom_abline(intercept = 0, color = "red", linewidth = 1, linetype = 2) + 
-    geom_point(alpha = 0.25) +
+    geom_point(alpha = alpha) +
     geom_smooth(method = "lm", formula = y~x) +
     labs() + 
     theme_bw() + 
-    ggtitle(glue::glue("OOB predicted vs. ref for {var_name}"))
+    ggtitle(glue::glue("{year_input} {cur_zone_zero}: OOB predicted vs. ref for {var_in}")) + 
+    annotate(geom="text",
+             x = (max(p_r2$ref)/2),
+             y = (percent_y_textPos1*max(p_r2$pred, na.rm = TRUE)),
+             label = as.character(eqn),
+             parse = TRUE,
+             color = "purple",
+             size = text_size) 
   
   print(p2)
   
   # save
-  ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_violin.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_violin.png'),
          plot = p,
-         width = 7, 
-         height = 4.5)    
+         width = export_width, 
+         height = export_height)    
   
   # save
-  ggsave(glue::glue('{eval_dir}/01_OOB_Evaluation/figs/OOB_Imputed_vs_ref_{var_name}_scatter.png'),
+  ggsave(glue::glue('{eval_dir}/02_OOB_Manual_Evaluation/figs/{year_input}_{cur_zone_zero}_OOB_{var_in}_scatter.png'),
          plot = p2,
-         width = 7, 
-         height = 4.5) 
+         width = export_width, 
+         height = export_height) 
   
   gc()
 }
+
+rm(lm, p, p2, refs, preds, p_r, cms, oobs)
