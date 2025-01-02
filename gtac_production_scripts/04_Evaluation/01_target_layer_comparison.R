@@ -26,9 +26,9 @@
 # Set inputs manually - if running standalone
 #-----------------------------------------------------#
 
+standalone <- "N"
 cur_zone_zero_standalone <- "z02"
 year_standalone <- 2022
-standalone <- "N"
 
 
 #####################################################################
