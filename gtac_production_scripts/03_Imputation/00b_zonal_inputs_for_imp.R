@@ -149,8 +149,8 @@ if (!file.exists(raw_outputs_dir)) {
 }
 
 #create output directory
-if(!file.exists(glue('{raw_outputs_dir}/xytables'))){
-  dir.create(glue('{raw_outputs_dir}/xytables'))
+if(!file.exists(glue('{raw_outputs_dir}/xytables/'))){
+  dir.create(glue('{raw_outputs_dir}/xytables/'))
 }
 
 #create output directory

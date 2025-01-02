@@ -27,17 +27,14 @@ k = 10
 eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code", "disturb_code_bin", "disturb_year")
 #eval_vars_cat <- c(yvars, "disturb_code", "evt_gp")
 
-eval_vars_cont <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
-                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
-                    "TPA_DEAD", "TPA_LIVE")
-#eval_vars_cont <- attributevars
+eval_vars_cont <- attributevars
 
 eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 
 # Set inputs manually - if running standalone
 #-----------------------------------------------------#
 
-standalone <- "Y"
+standalone <- "N"
 cur_zone_zero_standalone <- "z01"
 year_standalone <- 2020
 project_name_standalone <- glue::glue("{year_standalone}_Production_newXtable")

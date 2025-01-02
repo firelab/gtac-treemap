@@ -12,7 +12,7 @@
 
 # IF RUNNING STANDALONE: 
 #------------------------------------------#
-standalone <- "Y"
+standalone <- "N"
 cur_zone_zero_standalone <- "z01"
 year_standalone <- 2020
 project_standalone <- glue::glue("{year_standalone}_Production_newXtable")
@@ -27,9 +27,9 @@ eval_type_standalone <- "TargetLayerComparison"
 # - confusion matrices (CMs) for these variables are calculated in the 01-03 scripts
 # eval_vars_cat <- yvars
 # list names of attribute vars to evaluate - these come from RAT table or similar; are not included in imputation
-attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
-                   "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
-                   "TPA_DEAD", "TPA_LIVE")
+# attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
+#                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
+#                    "TPA_DEAD", "TPA_LIVE")
 eval_vars_cat <- c("evc", "evh", "evt_gp", "disturb_code_bin", "disturb_code", "disturb_year" ) # without "evt_gp_remap"
 eval_vars_cat_cont <- c(eval_vars_cat, attributevars) 
 #eval_vars_cat_cont <- eval_vars_cat
