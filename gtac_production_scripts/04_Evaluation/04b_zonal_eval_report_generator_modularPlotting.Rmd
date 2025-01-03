@@ -207,7 +207,7 @@ for(v in 1:length(eval_vars_cat)){
     dplyr::filter(metric == "Balanced Accuracy")
   
   n_acc <- X_df %>%
-    dplyr::select(tm_id, CN, !!var_in) %>%
+    dplyr::select(TM_ID, CN, !!var_in) %>%
     dplyr::rename("class" = !!var_in) %>%
     dplyr::mutate(class = factor(class)) %>%
     dplyr::group_by(class) %>%
