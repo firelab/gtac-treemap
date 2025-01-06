@@ -116,10 +116,11 @@ row.names(Y_df) <- Y_df$tm_id
 # Load and prep Raster Attribute Table
 #-----------------------------------------------------------------#
 
+message("Importing raster attribute table...")
 # Using function in 00_Library/load_RAT.R
 rat <- load_RAT(rat_path, 
-                CN_column = "CN", 
-                ID_column = "tm_id")
+                CN_column = "PLT_CN", 
+                ID_column = "TM_ID")
 
 # Join RAT and X_df into rat_x
 #-----------------------------------------------------------#
@@ -199,12 +200,12 @@ cv$cv_id = row.names(cv)
 # get predicted attributes
 cv_att_pred <- 
   left_join(cv, rat_x,
-            by = c("pred_id" = "tm_id")) %>%
+            by = c("pred_id" = "TM_ID")) %>%
   mutate(dataset = "pred")
 
 cv_att_ref <- 
   left_join(cv, rat_x,
-            by = c("ref_id" = "tm_id")) %>%
+            by = c("ref_id" = "TM_ID")) %>%
   mutate(dataset = "ref") 
 
 

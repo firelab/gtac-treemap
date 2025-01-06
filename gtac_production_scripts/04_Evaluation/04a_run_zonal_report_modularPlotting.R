@@ -243,8 +243,8 @@ percent_avlbPlts_imputed <- round((100 * (unique_pltsZone/numPltsZone_XdfModel))
 message("Importing raster attribute table...")
 # Using function in 00_Library/load_RAT.R
 rat <- load_RAT(rat_path, 
-                CN_column = "CN", 
-                ID_column = "tm_id")
+                CN_column = "PLT_CN", 
+                ID_column = "TM_ID")
 
 # Join RAT and X_df into rat_x
 #-----------------------------------------------------------#

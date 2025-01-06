@@ -144,7 +144,7 @@ skim_out <- plot_df %>%
   select(skim_variable, 
          numeric.mean, numeric.sd, numeric.p0, numeric.p25, numeric.p50, numeric.p75, numeric.p100) %>%
   filter(skim_variable %notin% c("tm_id", "zone", "plt_cn")) %>%
-  as.tibble() %>%
+  as_tibble() %>%
   rename("variable" = skim_variable) %>%
   rename_with(., ~ gsub("numeric.", "", .x))
 
