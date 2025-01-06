@@ -102,7 +102,7 @@ oaTable <- matrix(ncol = 2, nrow = 0)
 colnames(oaTable) <- c("Var", "OA")
 
 if (params$eval_type == "model_eval"){
-    eval_vars_cat <- eval_vars_cat[!eval_vars_cat %in% c("disturb_code")]
+   eval_vars_cat <- eval_vars_cat[!eval_vars_cat %in% c("disturb_code", "disturb_year")]
 }
 
 for(v in 1:length(eval_vars_cat)){
