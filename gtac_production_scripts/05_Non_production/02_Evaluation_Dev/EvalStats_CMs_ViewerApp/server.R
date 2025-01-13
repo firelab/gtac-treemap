@@ -27,6 +27,8 @@ server = function(input, output, session){
           output_name = project_name
         } else if (project_name == "2022_Production"){
           output_name = "2022_GTAC_Production"
+        } else if (project_name == "2022_Production_newXtable") {
+          output_name = "2022_Production"
         }
         
         # eval type
