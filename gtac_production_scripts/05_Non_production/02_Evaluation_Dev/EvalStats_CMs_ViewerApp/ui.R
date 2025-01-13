@@ -6,7 +6,7 @@ ui = fluidPage(
   sidebarLayout(
     sidebarPanel(h3(tags$b("1. Evaluation parameters:")), 
                  numericInput(inputId = "zone_num", label = "Select zone number:", value = 1, min = 1, max = 99), 
-                 selectInput(inputId = "project_name", label = "Select project name:", choices = c("2020_Production","2022_Production")),
+                 selectInput(inputId = "project_name", label = "Select project name:", choices = c("2020_Production","2022_Production", "2022_Production_newXtable")),
                  # selectInput(inputId = "output_Name", label = "Select output name:", choices = c("2022_GTAC_Production")),
                  selectInput(inputId = "eval_type", label = "Select evaluation type:", choices =  c("model_eval", "TargetLayerComparison"), selected = "TargetLayerComparison"), 
                  p(),
