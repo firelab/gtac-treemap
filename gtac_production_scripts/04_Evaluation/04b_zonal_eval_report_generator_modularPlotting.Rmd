@@ -345,7 +345,7 @@ for(v in 1:length(eval_vars_cat)){
   } 
 
   # Distribution Density
-  if(var_in %in% c("evc","evh","disturb_code_bin") & eval_type == "TargetLayerComparison") {
+  if(var_in %in% c("evc","evh","disturb_code_bin","disturb_code") & eval_type == "TargetLayerComparison") {
     
     density_plot<- plot_density(df=freq_t2,
                                 var_in = var_in, 
