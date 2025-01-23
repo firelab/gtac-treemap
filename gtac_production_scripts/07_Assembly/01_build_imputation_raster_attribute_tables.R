@@ -3,8 +3,8 @@ library(foreign)
 
 home_dir<- "//166.2.126.25/TreeMap/"
 
-year <- 2020
-project_name <- glue::glue("{year}_Production")
+year <- 2022
+project_name <- glue::glue("{year}_Production_newXtable")
 
 #set path to assembled rasters
 assembled_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
