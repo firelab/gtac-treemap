@@ -3,11 +3,14 @@ library(foreign)
 
 home_dir<- "//166.2.126.25/TreeMap/"
 
-year <- 2022
+year <- 2020
 project_name <- glue::glue("{year}_Production_newXtable")
 
 #set path to assembled rasters
 assembled_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
+
+# set path to attribute table 
+rat_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}RAT_tmid.csv")
 
 # Make folder for mosaicked model outputs
 dir.create("{home_dir}03_Outputs/07_Projects/{project_name}/04_Mosaic_assembled_model_outputs")
@@ -37,6 +40,12 @@ imputation<- rast("{home_dir}03_Outputs/07_Projects/{project_name}/04_Mosaic_ass
 # Build and save raster attribute table
 f<- freq(imputation)[,c(2:3)]
 names(f)<-c("Value","Count")
+
+# load additional raster attributes
+rat <- read.csv(rat_path)
+
+# join with frequency table
+
 
 #Write as dbf / attribute table
 foreign::write.dbf(f,"{home_dir}03_Outputs/07_Projects/{project_name}/04_Mosaic_assembled_model_outputs/imputation.tif.vat.dbf")
