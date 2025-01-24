@@ -17,7 +17,7 @@ This sub-directory consists files for an R shiny app developed for interactive v
     * Open the "RUN_APP.bat" file on a text editor to set the correct path to "Rscript.exe" in the .bat file (inconsistencies in the path might arise from the version of R that is currently installed on the machine).
     * Open the "run.R" script in Rstudio and source the script. This will install all necessary libraries and launch the app. Once sourced, executing the .bat file to run the app should work for all consecutive runs.
 3. The [server.R](./server.R) and [ui.R](./ui.R) scripts might need to be updated according to the naming conventions of the specific TreeMap product version (e.g., 2020, 2022, 2023) and folder paths. For the outputs to be evaluated: 
-    * Update the project name (folder name) of the outputs by updating the `choices` parameter of the `selectInput()` function for `inputID = "project_name"` in the [ui.R script](/ui.R#L9).  
+    * Update the project name (folder name) of the outputs by updating the `choices` parameter of the `selectInput()` function for `inputID = "project_name"` in the [ui.R script](./ui.R#L9).  
     * Update the output name (filename prefixes) of the outputs by updating the conditional `if/else if` conditional block in the [server.R script](./server.R#L26). Add a condition for the newly added project name to set the output name.  
         * For example, if the output name is the same as the newly added project name the added code block will look like this:
             ```
