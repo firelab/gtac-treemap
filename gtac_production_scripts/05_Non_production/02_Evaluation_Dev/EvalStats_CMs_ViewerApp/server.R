@@ -3,10 +3,16 @@ server = function(input, output, session){
   # Initialize flag variable to check if RDS is loaded
   loadEvalRDS_flag <- ""
   
+  ########################################################################################
+  #                                                                                      #
+  #                             1. Evaluation Parameters                                 # 
+  #                                                                                      #             
+  ########################################################################################
+  
   # LOAD EVAL DATA BASED ON EVAL PARAMS
   observeEvent(input$load, {
     
-    withProgress(
+  withProgress(
       
       message='LOADING EVALUATION DATA...',
       
@@ -81,6 +87,7 @@ server = function(input, output, session){
         
         raw_outputs_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/")
         
+    
         # Other settings
         #--------------------------------------------------#
         
@@ -111,48 +118,58 @@ server = function(input, output, session){
         # Load evaluation type statistics RDS
         evalTypeStatsRDS_Path <<- glue::glue("{eval_type_Dir_ofZone}{cur_zone_zero}_{output_name}_{eval_type}_STATS.RDS")
         
-        # Load evaluation CMs RDS
-        if (eval_type == "model_eval"){
-          evalTypeCMsRDS_Path <- glue::glue("{raw_outputs_dir}{cur_zone_zero}/model_eval/{cur_zone_zero}_{output_name}_CMs_ResponseVariables.RDS")
-          plot_labels <<- c("Predicted - RF", "Reference - RF")
-          cm_labels <<- c("Predicted - RF", "Reference - RF")
+        if(!file.exists(evalTypeStatsRDS_Path)){
+          showModal(modalDialog(title ="Warning!!!", "The evaluation data for the inputs do not exist, please review file paths!!!"))
         } else {
-          evalTypeCMsRDS_Path <- glue::glue("{eval_type_Dir_ofZone}{cur_zone_zero}_{output_name}_CMs_{eval_type}.RDS")
-          plot_labels <<- c("Imputed", "Target")
-          cm_labels <<- c("Imputed", "Target")
+        
+          # Load evaluation CMs RDS
+          if (eval_type == "model_eval"){
+            evalTypeCMsRDS_Path <- glue::glue("{raw_outputs_dir}{cur_zone_zero}/model_eval/{cur_zone_zero}_{output_name}_CMs_ResponseVariables.RDS")
+            plot_labels <<- c("Predicted - RF", "Reference - RF")
+            cm_labels <<- c("Predicted - RF", "Reference - RF")
+          } else {
+            evalTypeCMsRDS_Path <- glue::glue("{eval_type_Dir_ofZone}{cur_zone_zero}_{output_name}_CMs_{eval_type}.RDS")
+            plot_labels <<- c("Imputed", "Target")
+            cm_labels <<- c("Imputed", "Target")
+          }
+          
+          incProgress(1/n, message = paste("Inputs processed, loading eval RDS..."))
+          
+          evalTypeStatsRDS <<- readRDS(evalTypeStatsRDS_Path)
+          evalTypeCMsRDS_all <<- readRDS(evalTypeCMsRDS_Path)
+          
+          # incProgress(1/n, message = paste("RDS loaded, rendering var imp plot..."))
+          # # Load RF imp plot (.png)
+          # output$RF_varImpPlot <- renderImage({list(src = normalizePath(varImpPlot_path), 
+          #                                           alt = "Variable importance plot for imputation model", 
+          #                                           width = 800,
+          #                                           height = 600)
+          #                                     }, 
+          #                                     deleteFile = FALSE)
+          
+          # OUPUT general evaluation stats
+          
+          output$run_name                             <- renderText(evalTypeStatsRDS$run_name)
+          output$unique_pltsInZone                    <- renderText(evalTypeStatsRDS$unique_pltsInZone)
+          output$plts_availableInZone                 <- renderText(evalTypeStatsRDS$plts_availableInZone)
+          output$percent_availablePlts_imputedInZone  <- renderText(paste0(evalTypeStatsRDS$percent_availablePlts_imputedInZone, "%"))
+          output$oaSummaryTable <- renderTable(evalTypeStatsRDS$OA_table, rownames = FALSE)
+          
+          xTable_subset <<- xTable_df_input %>% 
+                              dplyr::filter(Zone == zone)
+          
+          loadEvalRDS_flag <<- "1"
+          
+          incProgress(1/n, message = paste("Eval RDS is loaded, please proceed to steps 2. and 3.!"))
         }
-        
-        incProgress(1/n, message = paste("Inputs processed, loading eval RDS..."))
-        
-        evalTypeStatsRDS <<- readRDS(evalTypeStatsRDS_Path)
-        evalTypeCMsRDS_all <<- readRDS(evalTypeCMsRDS_Path)
-        
-        # incProgress(1/n, message = paste("RDS loaded, rendering var imp plot..."))
-        # # Load RF imp plot (.png)
-        # output$RF_varImpPlot <- renderImage({list(src = normalizePath(varImpPlot_path), 
-        #                                           alt = "Variable importance plot for imputation model", 
-        #                                           width = 800,
-        #                                           height = 600)
-        #                                     }, 
-        #                                     deleteFile = FALSE)
-        
-        # OUPUT general evaluation stats
-        
-        output$run_name                             <- renderText(evalTypeStatsRDS$run_name)
-        output$unique_pltsInZone                    <- renderText(evalTypeStatsRDS$unique_pltsInZone)
-        output$plts_availableInZone                 <- renderText(evalTypeStatsRDS$plts_availableInZone)
-        output$percent_availablePlts_imputedInZone  <- renderText(paste0(evalTypeStatsRDS$percent_availablePlts_imputedInZone, "%"))
-        output$oaSummaryTable <- renderTable(evalTypeStatsRDS$OA_table, rownames = FALSE)
-        
-        xTable_subset <<- xTable_df_input %>% 
-                            dplyr::filter(Zone == zone)
-        
-        loadEvalRDS_flag <<- "1"
-        
-        incProgress(1/n, message = paste("Eval RDS is loaded, please proceed to steps 2. and 3.!"))
-      })
-    
-  })
+        })
+})
+
+  ########################################################################################
+  #                                                                                      #
+  #                       2. CONFUSION MATRIX GENERATOR (TABLE)                          # 
+  #                                                                                      #             
+  ########################################################################################
   
   # FILTER TO EVALUATION VARIABLE OF CHOICE
   observeEvent(input$create, {
@@ -354,7 +371,7 @@ server = function(input, output, session){
           LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF20_EVT_220_forJoin.csv')
           evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2020/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
           
-        } else if (project_name == "2022_Production"){
+        } else if (project_name == "2022_Production" | project_name == "2022_Production_newXtable"){
           
           LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF23_EVT_240_forJoin.csv')
           evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2022/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
@@ -388,6 +405,12 @@ server = function(input, output, session){
     }
   })
   
+  ########################################################################################
+  #                                                                                      #
+  #                    3. ADDITIONAL EVAL ATTRIBUTE GENERATOR (TABLE)                    # 
+  #                                                                                      #             
+  ########################################################################################
+  
   # DISPLAY ADDITIONAL DATA FROM SELECTED EVAL VARIABLE
   observeEvent(input$display, {
     if(loadEvalRDS_flag == ""){
@@ -419,6 +442,12 @@ server = function(input, output, session){
     }
   })
   
+  ########################################################################################
+  #                                                                                      #
+  #                    4. INTERACTIVE PLOT GENERATOR (PLOTLY PLOT)                       # 
+  #                                                                                      #             
+  ########################################################################################
+  
   observeEvent(input$generate, {
     if(input$metric != "classes"){
       showModal(modalDialog(title ="Warning!!!", "This feature is currently only available for the 'classes' option Please regenerate metric table with 'classes' to produce the interactive plot!!!"))
@@ -436,6 +465,12 @@ server = function(input, output, session){
     }
     
   })
+  
+  ########################################################################################
+  #                                                                                      #
+  #                             5. X TABLE ROW FINDER TOOL                               # 
+  #                                                                                      #             
+  ########################################################################################
   
   observeEvent(input$getXTableRow, {
     
