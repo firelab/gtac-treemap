@@ -25,4 +25,16 @@ This sub-directory consists files for an R shiny app developed for interactive v
             } else if (project_name == "new_project_name") {
                 output_name = "new_project_name"
             }  
+            ```  
+    * Update the `LF_evt_gp_numNameCSV_path` and `evt_gp_remapTable_path` by updating the conditional `if/else if` conditional block in the [server.R script](./server.R#L369) to produce the correct evt_gp number and name table (joined on-the-fly). This depends on the version (year) of TreeMap being evaluated. New code should be added to the if/else code block if a new version of TreeMap is available.   
+        * For example, if the TreeMap version being evaluated is for 2022 version, the code for 2022 `LF_evt_gp_numNameCSV_path` and `evt_gp_remapTable_path` variables look like this:
             ```
+            # existing if/else if conditional block...
+            } else if (project_name == "2022_Production" | project_name == "2022_Production_newXtable"){
+            
+            LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF23_EVT_240_forJoin.csv')
+            evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2022/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
+            
+            }
+            ```
+
