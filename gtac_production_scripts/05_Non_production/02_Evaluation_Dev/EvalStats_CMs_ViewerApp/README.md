@@ -17,7 +17,7 @@ This sub-directory consists files for an R shiny app developed for interactive v
     * Open the "RUN_APP.bat" file on a text editor to set the correct path to "Rscript.exe" in the .bat file (inconsistencies in the path might arise from the version of R that is currently installed on the machine).
     * Open the "run.R" script in Rstudio and source the script. This will install all necessary libraries and launch the app. Once sourced, executing the .bat file to run the app should work for all consecutive runs.
 3. The [server.R](./server.R) and [ui.R](./ui.R) scripts might need to be updated according to the naming conventions of the specific TreeMap product version (e.g., 2020, 2022, 2023) and folder paths. For the outputs to be evaluated: 
-    * Update the project name (folder name) of the outputs by updating the `choices` parameter of the `selectInput()` function for `inputID = "project_name"` in the [ui.R script](/ui.R#L9).  
+    * Update the project name (folder name) of the outputs by updating the `choices` parameter of the `selectInput()` function for `inputID = "project_name"` in the [ui.R script](./ui.R#L9).  
     * Update the output name (filename prefixes) of the outputs by updating the conditional `if/else if` conditional block in the [server.R script](./server.R#L26). Add a condition for the newly added project name to set the output name.  
         * For example, if the output name is the same as the newly added project name the added code block will look like this:
             ```
@@ -25,4 +25,16 @@ This sub-directory consists files for an R shiny app developed for interactive v
             } else if (project_name == "new_project_name") {
                 output_name = "new_project_name"
             }  
+            ```  
+    * Update the `LF_evt_gp_numNameCSV_path` and `evt_gp_remapTable_path` by updating the conditional `if/else if` conditional block in the [server.R script](./server.R#L369) to produce the correct evt_gp number and name table (joined on-the-fly). This depends on the version (year) of TreeMap being evaluated. New code should be added to the if/else code block if a new version of TreeMap is available.   
+        * For example, if the TreeMap version being evaluated is for 2022 version, the code for 2022 `LF_evt_gp_numNameCSV_path` and `evt_gp_remapTable_path` variables look like this:
             ```
+            # existing if/else if conditional block...
+            } else if (project_name == "2022_Production" | project_name == "2022_Production_newXtable"){
+            
+            LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF23_EVT_240_forJoin.csv')
+            evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2022/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
+            
+            }
+            ```
+
