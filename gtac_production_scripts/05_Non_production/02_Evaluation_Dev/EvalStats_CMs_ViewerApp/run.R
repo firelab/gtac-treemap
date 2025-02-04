@@ -10,6 +10,16 @@ vapply(list.of.packages, library, logical(1L),
        character.only = TRUE, logical.return = TRUE)
 
 get_xTableRow <<- function(lookUp_Zone=NULL, lookUp_TM_ID=NULL, xTable_df=NULL){
+  #' Get X Table row
+  #'
+  #' @param lookUp_Zone `numeric`. Zone number to filter the CONUS X table (reference table)
+  #' @param lookUp_TM_ID `numeric`. TreeMap ID (TM ID) used to extract row from filtered CONUS X table (reference table)
+  #' @param xTable_df `data.frame`. CONUS X table (reference table) read in and converted to a `data.frame`
+  #'
+  #' @return `data.frame`. Single row extracted from the CONUS X table (reference table) `data.frame` input
+  #' @export
+  #'
+  #' @examples
   
   if (any(sapply(list(lookUp_Zone,lookUp_TM_ID, xTable_df), is.null)) | !all(sapply(list(lookUp_Zone,lookUp_TM_ID), is.numeric))){
     message("Please enter valid lookUp_Zone, lookUp_TM_ID, and XTable_df. `lookUp_Zone` and `lookUp_TM_ID` must be numeric and `XTable_df` must be a `data.frame`.")
