@@ -21,7 +21,7 @@ print('**************************************************************\n*********
 ######################################################################
 # Import
 ######################################################################
-
+#%%
 import os
 import numpy as np
 from osgeo import gdal
@@ -37,7 +37,7 @@ import msvcrt
 import time
 
 gdal.UseExceptions()
-
+#%%
 ############################################################################
 # User Setup (Edit these values between versions + computing environments)
 ############################################################################
@@ -46,14 +46,14 @@ gdal.UseExceptions()
 chunk_size = 29060 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif"
-treeMapDbf = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif.vat.dbf"
+treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020.tif"
+treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020.tif.vat.dbf"
 
 # Specify output folder
-outputFolder = r"C:\Users\NicholasStorey\Desktop\tm_attribute_tifs"
+outputFolder = r"\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters\2020"
 
 # Specify no data value in main dataset dbf
-treeMapDatasetNoDataValue = -99.00000000000
+treeMapDatasetNoDataValue = np.nan # np.nan = NaN
 
 # Set creation options for GeoTIFF compression, tiling, and sparse file format
 creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
@@ -64,17 +64,27 @@ data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/inde
 # Column names to create individual attribute images of, their full names, and their data type
     # Columns whose full precision can only be contained within Float64: VOLCFNET_L, VOLCFNET_D, VOLBFNET_L, DRYBIO_L, DRYBIO_D, CARBON_L, CARBON_D
         # It was decided that 32 bit precision was sufficient for these attributes
-cols = [('FORTYPCD', gdal.GDT_UInt16), ('FLDTYPCD', gdal.GDT_UInt16),
-        ('STDSZCD', gdal.GDT_Byte), ('FLDSZCD', gdal.GDT_Byte), 
-        ('BALIVE', gdal.GDT_Float32), ('CANOPYPCT', gdal.GDT_Byte),
-        ('STANDHT', gdal.GDT_UInt16), ('ALSTK', gdal.GDT_Float32), 
-        ('GSSTK', gdal.GDT_Float32), ('QMD_RMRS', gdal.GDT_Float32),
-        ('SDIPCT_RMRS', gdal.GDT_Float32), ('TPA_LIVE', gdal.GDT_Float32),
-        ('TPA_DEAD', gdal.GDT_Float32), ('VOLCFNET_L', gdal.GDT_Float32), 
-        ('VOLCFNET_D', gdal.GDT_Float32), ('VOLBFNET_L', gdal.GDT_Float32),
-        ('DRYBIO_L', gdal.GDT_Float32), ('DRYBIO_D', gdal.GDT_Float32),
-        ('CARBON_L', gdal.GDT_Float32), ('CARBON_D', gdal.GDT_Float32), 
-        ('CARBON_DWN', gdal.GDT_Float32)]
+cols = [('FORTYPCD', gdal.GDT_UInt16), 
+        ('FLDTYPCD', gdal.GDT_UInt16),
+        ('STDSZCD', gdal.GDT_Byte), 
+        ('FLDSZCD', gdal.GDT_Byte), 
+        ('BALIVE', gdal.GDT_Float32), 
+        ('CANOPYPCT', gdal.GDT_Byte),
+        ('STANDHT', gdal.GDT_UInt16), 
+        ('ALSTK', gdal.GDT_Float32), 
+        ('GSSTK', gdal.GDT_Float32), 
+        ('QMDAll', gdal.GDT_Float32),
+        ('SDIsum', gdal.GDT_Float32), 
+        ('TPA_LIVE', gdal.GDT_Float32),
+        ('TPA_DEAD', gdal.GDT_Float32), 
+        ('VOLCFNET_L', gdal.GDT_Float32), 
+        ('VOLCFNET_D', gdal.GDT_Float32), 
+        ('VOLBFNET_L', gdal.GDT_Float32),
+        ('DRYBIO_L', gdal.GDT_Float32), 
+        ('DRYBIO_D', gdal.GDT_Float32),
+        ('CARBON_L', gdal.GDT_Float32), 
+        ('CARBON_D', gdal.GDT_Float32), 
+        ('CARBON_DOWN_DEAD', gdal.GDT_Float32)]
 
 # Column names with their associated descriptions
 col_descriptions = {
@@ -87,8 +97,8 @@ col_descriptions = {
     'STANDHT': 'height of dominant trees (ft.) estimated by FVS routine',
     'ALSTK': 'all live tree stocking (percent)',
     'GSSTK': 'growing-stock stocking (percent)',
-    'QMD_RMRS': 'stand quadratic mean diameter (in) (collected in RMRS only)',
-    'SDIPCT_RMRS': 'stand density index (percent of maximum) (collected in RMRS only)',
+    'QMDAll': 'stand quadratic mean diameter (in) ',
+    'SDIsum': 'stand density index',
     'TPA_LIVE': 'number of live trees per acre',
     'TPA_DEAD': 'number of standing dead trees per acre (DIA ≥ 5 inches)',
     'VOLCFNET_L': 'live volume (cubic ft. per acre)',
@@ -98,7 +108,7 @@ col_descriptions = {
     'DRYBIO_D': 'aboveground dry standing dead tree biomass (tons per acre)',
     'CARBON_L': 'live aboveground carbon (tons per acre)',
     'CARBON_D': 'standing dead carbon (tons per acre)',
-    'CARBON_DWN': 'down dead carbon > 3 inches diameter (tons per acre); estimated by FIA based on forest type, geographic area, and live tree carbon density.'
+    'CARBON_DOWN_DEAD': 'down dead carbon > 3 inches diameter (tons per acre); estimated by FIA based on forest type, geographic area, and live tree carbon density.'
     }
 
 # Discrete (thematic + ordinal) columns with their associated color information. FORTYPCD + FLDTYPCD do not get assigned colors from here and are thus listed as NA
@@ -120,8 +130,8 @@ col_units = {
     'STANDHT': 'ft',
     'ALSTK': 'percent',
     'GSSTK': 'percent',
-    'QMD_RMRS': 'in',
-    'SDIPCT_RMRS': 'percent',
+    'QMDAll': 'in',
+    'SDIsum': 'percent',
     'TPA_LIVE': 'trees/acre',
     'TPA_DEAD': 'trees/acre',
     'VOLCFNET_L': 'ft^3/acre',
@@ -131,10 +141,10 @@ col_units = {
     'DRYBIO_D': 'tons/acre',
     'CARBON_L': 'tons/acre',
     'CARBON_D': 'tons/acre',
-    'CARBON_DWN': 'tons/acre'
+    'CARBON_DOWN_DEAD': 'tons/acre'
 }
 
-
+#%%
 ######################################################################
 # Script Setup
 ######################################################################
@@ -143,7 +153,7 @@ col_units = {
 dbf = Dbf5(treeMapDbf)
 df = dbf.to_dataframe()
 ctrlValues = df.Value
-
+#%%
 # Load original tif, specify band, get raw no data value
 treeMapImage = gdal.Open(treeMapTif, gdal.GA_ReadOnly)
 og_band = treeMapImage.GetRasterBand(1)
@@ -183,11 +193,8 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
     print('CREATING IMAGE FOR ' + columnName)
     print('******************************************\n')
     
-    # Get values of specified attribute/column. Account for truncated name for SDIPCT_RMRS (10 character limit of dBASE field names)
-    if columnName == 'SDIPCT_RMRS':
-        attValues = df['SDIPCT_RMR'].values
-    else:
-        attValues = df[columnName].values
+    # Get values of specified attribute/column. 
+    attValues = df[columnName].values
 
     # Create a dictionary that maps original values to new values
     value_map = pd.Series(attValues, index=ctrlValues)
@@ -244,8 +251,12 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
             # Using the boolean mask, replace the corresponding positions in the new_band_data with the mapped values from value_map
             new_band_data[no_data_mask] = value_map[band_data[no_data_mask]].values
 
-            # Replace all -99 values with the newNoDataValue
-            new_band_data[np.isclose(new_band_data, treeMapDatasetNoDataValue, atol=1e-8)] = newNoDataValue
+            # Replace all noData Values
+            if(np.isnan(treeMapDatasetNoDataValue)):
+                np.nan_to_num(new_band_data, nan=treeMapDatasetNoDataValue, posinf=newNoDataValue)
+
+            else : 
+                new_band_data[np.isclose(new_band_data, treeMapDatasetNoDataValue, atol=1e-8)] = newNoDataValue
 
             # Write the processed data (new_band_data) to the output image at the same position as the original chunk
             newImageBand.WriteArray(new_band_data, j, i)
@@ -301,7 +312,7 @@ def create_basic_metadata(col_name):
         f.write(content)
 
     # HTML
-    with open(os.path.join(metd_template_dir, f'{tm_ver}_metadata_template.html'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(metd_template_dir,  f'{tm_ver}_metadata_template.html'), 'r', encoding='utf-8') as file:
         content = file.read()
    
     content = content.replace('{col_name}', col_name)
@@ -836,6 +847,7 @@ def create_ordinal_att_table(col_name, file_path):
     
     # Open the raster file for update
     image = gdal.Open(file_path, gdal.GA_Update)
+    #image = gdal.OpenEx(file_path, gdal.GA_Update, open_options={"IGNORE_COG_LAYOUT_BREAK": "YES"})
     
     # Get the first band from the raster
     band = image.GetRasterBand(1)
@@ -1260,6 +1272,7 @@ tm_ver = determine_version()
 
 # Determine the general metadata template folder
 metd_template_dir = find_folder(os.path.dirname(os.path.abspath(__file__)), 'metadata_templates')
+metd_template_dir = os.path.join(metd_template_dir, tm_ver)
 
 # Determine this TreeMap version's symbology folder
 symbology_dir = os.path.join(find_folder(os.path.dirname(os.path.abspath(__file__)), 'symbology_files'), tm_ver)
