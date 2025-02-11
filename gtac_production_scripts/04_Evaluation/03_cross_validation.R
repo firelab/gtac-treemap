@@ -37,7 +37,7 @@ eval_vars_cat_cont <- c(eval_vars_cat, eval_vars_cont)
 # Set inputs manually - if running standalone
 #-----------------------------------------------------#
 
-standalone <- "Y"
+standalone <- "N"
 cur_zone_zero_standalone <- "z01"
 year_standalone <- 2020
 project_name_standalone <- glue::glue("{year_standalone}_Production_newXtable")
