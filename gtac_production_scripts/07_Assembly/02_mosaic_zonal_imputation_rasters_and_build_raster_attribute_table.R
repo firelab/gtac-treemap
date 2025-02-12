@@ -5,38 +5,27 @@
 # This script takes the raster attribute table data, derived from FIA for each of the imputed ids in the
 # model run, and joins it to the .dbf file
 
-<<<<<<< Updated upstream
-=======
 # NOTE: Will need to be updated for AK and HI production
 
-# Last Updated: 2/6/2025
+# Last Updated: 2/12/2025
 
 #########################################################
 # Set Inputs
 #########################################################
 
 # project inputs
->>>>>>> Stashed changes
-year <- 2020
+year <- 2022
 project_name <- glue::glue("{year}_Production_newXtable")
 
 #set path to assembled rasters - relative to home_dir
 assembled_dir <- glue::glue("03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
 
-<<<<<<< Updated upstream
-# set path to attribute table 
-rat_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}RAT_tmid.csv")
-
-# Make folder for mosaicked model outputs
-dir.create("{home_dir}03_Outputs/07_Projects/{project_name}/04_Mosaic_assembled_model_outputs")
-=======
 # folder for mosaicked model outputs - relative to home_dir
 mosaic_dir <- glue::glue("03_Outputs/07_Projects/{project_name}/04_Mosaic_assembled_model_outputs")
->>>>>>> Stashed changes
 
-# paths to data
-dbf_table_path <- glue::glue("{mosaic_dir}/TreeMap{year}.tif.vat.dbf") #relative to home_dir
-attribute_table_path <- glue::glue("03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}RAT_tmid.csv") # relative to home_dir
+# paths to data - relative to home_dir
+dbf_table_path <- glue::glue("{mosaic_dir}/TreeMap{year}.tif.vat.dbf") 
+attribute_table_path <- glue::glue("03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}_RAT_tmid.csv") 
 
 
 # Load TreeMap script library
@@ -51,7 +40,7 @@ source(lib_path)
 
 library(foreign)
 
-# Update folder  and data paths
+# Update folder and data paths
 #-----------------------------------------------------#
 assembled_dir <-  glue::glue("{home_dir}/{assembled_dir}")
 mosaic_dir <- glue::glue("{home_dir}/{mosaic_dir}")
@@ -95,35 +84,32 @@ file.remove(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
 
 # Reload imputation from the tif output
 rm(imputation)
+
+# Delete any pre-existing dbf file so that we can overwrite and create a new one
 if(file.exists(glue::glue("{tif_out_path}.vat.dbf"))){
   message(glue::glue("Warning: dbf already exists: {tif_out_path}.vat.dbf"))
+  message("deleting existing dbf file")
+  file.remove(glue::glue("{tif_out_path}.vat.dbf"))
 }
 
-imputation<- rast(tif_out_path)
+imputation <- rast(tif_out_path)
 
-# Build and save raster attribute table
-f<- freq(imputation)[,c(2:3)]
-names(f)<-c("Value","Count")
+# Build raster attribute table - calculate frequencies
+f<- terra::freq(imputation)[,c(2:3)]
+names(f)<-c("TM_ID","Count")
 
-<<<<<<< Updated upstream
-# load additional raster attributes
-rat <- read.csv(rat_path)
-
-# join with frequency table
-
-=======
-# load attribute table csv
+# load attribute table csv - with remaining attributs
 rat <- read.csv(attribute_table_path)
-rat$X <- NULL
+#rat$X <- NULL
 
-# join csv to dbf
-out <- left_join(f, rat, by = c("Value" = "TM_ID")) %>%
-  dplyr::rename("QMD" = QMDAll) %>%
-  dplyr::mutate(TM_ID = Value)
+# join csv to frequency table
+out <- left_join(f, rat, by = "TM_ID") #%>%
+  #dplyr::rename("QMD" = QMDAll) %>%
+  #dplyr::mutate(TM_ID = Value)
 
 # inspect
 str(out)
->>>>>>> Stashed changes
 
 #Write as dbf / attribute table
-foreign::write.dbf(out,glue::glue("{tif_out_path}.vat.dbf"))
+foreign::write.dbf(out,
+                   glue::glue("{tif_out_path}.vat.dbf"))
