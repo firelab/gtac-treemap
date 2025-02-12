@@ -1,9 +1,9 @@
-### Generate attribute layers for evaluation and inspection
+### Generate attribute layers, for single zone, for evaluation and inspection
 ### Load RAT and build specific attribute layers of interest prior to final attribute layer generation
 
 # This script does the following: 
 
-# - Load preliminary imputation output rasters, with TMID
+# - Load preliminary imputation output rasters, with TM_ID
 # - Load RAT as a lookup table
 # - For specific attributes of interest, assemble attribute layers as raster layers 
 # - Export attribute rasters
