@@ -51,7 +51,7 @@ treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_new
 treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020.tif.vat.dbf"
 
 # Specify output folder
-outputFolder = r"D:\TreeMap\Outputs_New"
+outputFolder = r"\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters\2020"
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
@@ -150,10 +150,10 @@ col_units = {
 # Script Setup
 ######################################################################
 
-# Import dbf, convert to pandas DataFrame, isolate values
+# Import dbf, convert to pandas DataFrame, isolate id values
 dbf = Dbf5(treeMapDbf)
 df = dbf.to_dataframe()
-ctrlValues = df.Value
+ctrlValues = df.TM_ID
 #%%
 # Load original tif, specify band, get raw no data value
 treeMapImage = gdal.Open(treeMapTif, gdal.GA_ReadOnly)
