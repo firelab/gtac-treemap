@@ -19,12 +19,17 @@ project_name_base <- "Production_newXtable"
 zones <- 'all' # options: 'all' or list of zone numbers
 #zones <- c(seq(1,5,1))
 
-# list names of vars desired for evaluation
-eval_vars <- c("evc", "evh", "evt_gp", "disturb_code_bin", "disturb_code")
+# list names of vars desired for evaluation 
+response_vars <-  c("evc", "evh", "evt_gp", "disturb_code_bin")
+
+eval_vars <- c(response_vars, "disturb_code", "disturb_year")
 
 # Types of evaluation to run and prepare reports for 
-# Options: "model_eval", "TargetLayerComparison", "CV"
-eval_types <- c("TargetLayerComparison")
+# Options: "model_eval", "CV"
+eval_types <- c("model_eval", "TargetLayerComparison", "CV")
+
+# where to export results, relative to home_dir
+output_dir = '03_Outputs/08_Meta_Analysis/'
 
 # Load library
 ######################################################
@@ -87,46 +92,70 @@ for (year in years){
       
       message(glue::glue("working on zone {zone_num} + {eval_type} + {year}"))
       
-      # make string for eval type
+      # make path to RDS, specific to eval typ[e]
       if(eval_type == "model_eval"){
         eval_string = "00_Model_Evaluation"
+        
+        # build path to eval RDS
+        eval_path <- glue::glue('{home_dir}03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/{cur_zone_zero}/model_eval/{cur_zone_zero}_{project_name_path}_CMs_ResponseVariables.RDS')
+        
+        # limit eval_vars to only those in the model
+        eval_vars_in <- response_vars
+        
       } else if(eval_type == "TargetLayerComparison"){
         eval_string = "01_Target_Layer_Comparison"
+        
+        # build path to eval RDS
+        eval_path <- glue::glue('{eval_dir}/{cur_zone_zero}/{eval_string}/{cur_zone_zero}_{project_name_path}_CMs_{eval_type}.RDS')
+        
+        # keep eval vars
+        eval_vars_in = eval_vars
+        
       } else if(eval_type == "CV") {
         eval_string = "03_Cross_Validation"
+        
+        # build path to eval RDS
+        eval_path <- glue::glue('{eval_dir}/{cur_zone_zero}/{eval_string}/{cur_zone_zero}_{project_name_path}_CMs_{eval_type}.RDS')
+        # keep eval vars
+        eval_vars_in = eval_vars
+        
       } else { message("Enter a valid evaluation type")}
     
       
-      # build path to eval RDS
-      eval_path <- glue::glue('{eval_dir}/{cur_zone_zero}/{eval_string}/{cur_zone_zero}_{project_name_path}_CMs_{eval_type}.RDS')
       
-      # Read in RDS
-      dat <- read_rds(eval_path)
+      if(!file.exists(eval_path)) {
+        message(glue::glue("file does not exist: {eval_path}. moving on to next"))}
+      else{
+        
+        # Read in RDS
+        dat <- read_rds(eval_path)
     
-      # Pull out accuracy for attributes of interest
-      
-      # make an empty data frame to append data into
-      acc_df = data.frame(var = character(),
-                          acc = numeric())
-      
-      for (var in eval_vars) {
+        # Pull out accuracy for attributes of interest
         
-        #var = 'evc' # for testing
+        # make an empty data frame to append data into
+        acc_df = data.frame(var = character(),
+                            acc = numeric())
         
-        message(glue::glue('getting stats for {var}'))
-        
-        dat_var = dat[var][[1]]$overall
-        row.names(dat_var) <- NULL
-      
-        acc = dat_var %>%
-          dplyr::filter(metric == "Accuracy") %>%
-          dplyr::rename("acc" = value) %>%
-          dplyr::mutate(var = var) %>%
-          dplyr::select(var, acc) 
+        for (var in eval_vars_in) {
           
-        acc_df = rbind(acc_df, acc)
-        
-        } # end loop over vars
+          #var = 'evc' # for testing
+          
+          message(glue::glue('getting stats for {var}'))
+          
+          dat_var = dat[var][[1]]$overall
+          row.names(dat_var) <- NULL
+          
+          if(!is.null(dat_var)) {
+            acc = dat_var %>%
+              dplyr::filter(metric == "Accuracy") %>%
+              dplyr::rename("acc" = value) %>%
+              dplyr::mutate(var = var) %>%
+              dplyr::select(var, acc) 
+              
+            acc_df = rbind(acc_df, acc)
+          } else { message(glue::glue('{var} does not exist; moving on to next'))}
+          
+          } # end loop over vars
       
       acc_df %<>%
         dplyr::mutate(zone = zone_num,
@@ -137,20 +166,17 @@ for (year in years){
   # Join with table
   out_dat = rbind(out_dat, acc_df)
   
-}}}
+}}}}
 
-out_dat$rowid = seq(1, nrow(out_dat), 1)
 str(out_dat)
 
 # Prep out table for export
 out_years_long <- 
 out_dat %>%
-  select(-rowid) %>%
   pivot_wider(names_from = var, values_from = acc)
 
 out_years_wide <-
 out_dat %>%
-  select(-rowid) %>%
   pivot_wider(names_from = c(var, year), 
               values_from = acc,
               names_sort = TRUE)
@@ -158,14 +184,16 @@ out_dat %>%
 
 # Export tables
 
-eval_dir_combined = glue::glue('{eval_dir}/00_Combined')
+output_dir = glue::glue('{home_dir}/{output_dir}/')
 
-if(!file.exists(eval_dir_combined)){
-  dir.create(eval_dir_combined)
+if(!file.exists(output_dir)){
+  dir.create(output_dir)
 }
 
-write.csv(out_years_long, glue::glue('{eval_dir_combined}/{project_name}_eval_var_accuracy_allZones_yearsLong.csv'),
+output_years <- paste(years, collapse = "_")
+
+write.csv(out_years_long, glue::glue('{output_dir}/{output_years}_{project_name_base}_eval_var_accuracy_allZones_yearsLong.csv'),
           row.names = FALSE)
 
-write.csv(out_years_wide, glue::glue('{eval_dir_combined}/{project_name}_eval_var_accuracy_allZones_yearsWide.csv'),
+write.csv(out_years_wide, glue::glue('{output_dir}/{output_years}_{project_name_base}_eval_var_accuracy_allZones_yearsWide.csv'),
           row.names = FALSE)
