@@ -26,7 +26,7 @@ eval_vars <- c(response_vars, "disturb_code", "disturb_year")
 
 # Types of evaluation to run and prepare reports for 
 # Options: "model_eval", "CV"
-eval_types <- c("model_eval", "TargetLayerComparison", "CV")
+eval_types <- c("model_eval", "TargetLayerComparison")
 
 # where to export results, relative to home_dir
 output_dir = '03_Outputs/08_Meta_Analysis/'
