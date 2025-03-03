@@ -29,7 +29,7 @@ dist_layer_type <- "LF"
 
 # # output crs - desired crs for output products
 # #options include: "lcms_crs", "lf200_crs", "lf220_crs", "lf230_crs", "tm16_crs"
-output_crs_name <- "lf230_crs"
+default_crs_name <- "lf230_crs"
 
 # list names of xvars in reference / x table used to build model
 #xvars <- c("SLOPE", "ELEV", "PARI", "PPTI", "RELHUMI", "TMAXI", "TMINI", "VPDI", "disturb_code", "disturb_year", "canopy_cover", "canopy_height", "EVT_GP", "NORTHING", "EASTING", "POINT_X", "POINT_Y") # 2016 version
@@ -70,14 +70,17 @@ source(lib_path)
 #----------------------------------------------------------------#
 
 # Plot coordinates - relative to FIA_dir
-coords_path <- glue::glue("{FIA_dir}/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv")
+coords_path <- glue::glue("F:/TreeMap/select_TREEMAP2022_2send/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv")
 
 # Dir for X table - relative to home_dir
-xtable_dir <- glue::glue("{home_dir}/03_Outputs/06_Reference_Data/{ref_data_version}/01_X_tables_by_zone/")
+xtable_dir <- glue::glue("F:/TreeMap/{year_input}/01_X_tables_by_zone")
 
 # Raster Attribute table for evaluation
 # Currently only available for 2016!
-rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
+rat_path <- glue::glue("F:/treemap_2016_testing/treemap2016/TreeMap2016.tif")
+
+# path to zone metadata
+zone_metadata_path <- glue::glue('F:/treemap_transfer/01_Data/02_Landfire/metadata/LF_zones_all_byStudyArea.csv')
 
 # Analysis settings
 #----------------------------------------------------------------#
@@ -92,57 +95,71 @@ options("scipen" = 100, "digits" = 8)
 terra::terraOptions(memfrac = 0.8)
 
 
+
 # Build constructed inputs - less likely to change
 #-----------------------------------------------------------------#
 # data directory - where source data are located
 data_dir <- glue::glue("{home_dir}/01_Data/")
 
+# set paths to landfire vector data
+lf_zones_path_CONUS <- glue::glue('F:/TreeMap/landfire_mapzones/refreshGeoAreas_041210.shp')
+lf_zones_path_AK <- glue::glue('F:/TreeMap/landfire_mapzones/alaska_mapzones.shp')
+lf_zones_path_HI <- glue::glue('F:/TreeMap/landfire_mapzones/hawaii_mapzones.shp')
+
 # set path to landfire vector data
-lf_zones_path <- glue::glue("{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp")
+lf_zones_path <- glue::glue("F:/TreeMap/landfire_mapzones/refreshGeoAreas_041210.shp")
 
 # Directory where target rasters live
-target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/post_mask/")
+target_dir <- glue::glue("F:/TreeMap/TargetRasters/v{year_input}/post_mask/")
 
 # Directory where disturbance layers live 
-dist_raster_dir <- target_dir
+dist_raster_dir <- target_dir 
 
 # Directory where EVT_GP remap table is located
 evt_gp_remap_table_dir <- target_dir
+
+
 
 
 # Load CRS
 #----------------------------------------------------#
 
 # load lcms projections
-lcms_crs <- terra::crs(glue::glue("{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj"))
+lcms_crs <- terra::crs(glue::glue("F:/treemap_transfer/01_Data/05_LCMS/00_Supporting/lcms_crs_albers.prj"))
 
 # load treemap projection
-tm16_crs <- terra::crs(glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj"))
+tm16_crs <- terra::crs(glue::glue("F:/treemap_transfer/01_Data/01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj"))
 
 # lf200
-lf200_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_200/CRS/LF_200_crs.prj"))
+lf200_crs <- terra::crs(glue::glue("F:/treemap_transfer/01_Data/02_Landfire/LF_200/CRS/LF_200_crs.prj"))
 
 # lf220
-lf220_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_220/CRS/LF_220_crs.prj"))
+lf220_crs <- terra::crs(glue::glue("F:/treemap_transfer/01_Data/02_Landfire/LF_220/CRS/LF_220_crs.prj"))
 
 # lf230
-lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
+lf230_crs <- terra::crs(glue::glue("F:/treemap_transfer/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
+
+#alaska
+ak_crs <- terra::crs(glue::glue("F:/treemap_transfer/01_Data/02_Landfire/LF_zones/Landfire_zones/alaska_mapzones.prj"))
+
+#hawaii
+hi_crs <- terra::crs(glue::glue("F:/treemap_transfer/01_Data/02_Landfire/LF_zones/Landfire_zones/hawaii_mapzones.prj"))
 
 # load output crs
-output_crs <- eval(parse(text = output_crs_name))
+default_crs <- eval(parse(text = default_crs_name))
 
 # Paths for exporting data
 #--------------------------------------#
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
-raw_outputs_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/")
+raw_outputs_dir <- glue::glue("F:/TreeMap/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/")
 
 #set path for assembled rasters
-assembled_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
+assembled_dir <- glue::glue("F:/TreeMap/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
 
 # Evaluation dir
-eval_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/03_Evaluation/")
+eval_dir <- glue::glue("F:/TreeMap/03_Outputs/07_Projects/{project_name}/03_Evaluation/")
 
 
 # Make RDS of input parameters used
