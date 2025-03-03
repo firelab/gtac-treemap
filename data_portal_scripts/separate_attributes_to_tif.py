@@ -21,7 +21,7 @@ print('**************************************************************\n*********
 ######################################################################
 # Import
 ######################################################################
-
+#%%
 import os
 import numpy as np
 from osgeo import gdal
@@ -35,9 +35,10 @@ from datetime import datetime
 from zipfile import ZipFile
 import msvcrt
 import time
+import traceback
 
 gdal.UseExceptions()
-
+#%%
 ############################################################################
 # User Setup (Edit these values between versions + computing environments)
 ############################################################################
@@ -46,14 +47,14 @@ gdal.UseExceptions()
 chunk_size = 29060 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif"
-treeMapDbf = r"\\166.2.126.25\TreeMap\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif.vat.dbf"
+treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020.tif"
+treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020.tif.vat.dbf"
 
 # Specify output folder
-outputFolder = r"C:\Users\NicholasStorey\Desktop\tm_attribute_tifs"
+outputFolder = r"\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters\2020"
 
 # Specify no data value in main dataset dbf
-treeMapDatasetNoDataValue = -99.00000000000
+treeMapDatasetNoDataValue = np.nan # np.nan = NaN
 
 # Set creation options for GeoTIFF compression, tiling, and sparse file format
 creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
@@ -64,17 +65,27 @@ data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/inde
 # Column names to create individual attribute images of, their full names, and their data type
     # Columns whose full precision can only be contained within Float64: VOLCFNET_L, VOLCFNET_D, VOLBFNET_L, DRYBIO_L, DRYBIO_D, CARBON_L, CARBON_D
         # It was decided that 32 bit precision was sufficient for these attributes
-cols = [('FORTYPCD', gdal.GDT_UInt16), ('FLDTYPCD', gdal.GDT_UInt16),
-        ('STDSZCD', gdal.GDT_Byte), ('FLDSZCD', gdal.GDT_Byte), 
-        ('BALIVE', gdal.GDT_Float32), ('CANOPYPCT', gdal.GDT_Byte),
-        ('STANDHT', gdal.GDT_UInt16), ('ALSTK', gdal.GDT_Float32), 
-        ('GSSTK', gdal.GDT_Float32), ('QMD_RMRS', gdal.GDT_Float32),
-        ('SDIPCT_RMRS', gdal.GDT_Float32), ('TPA_LIVE', gdal.GDT_Float32),
-        ('TPA_DEAD', gdal.GDT_Float32), ('VOLCFNET_L', gdal.GDT_Float32), 
-        ('VOLCFNET_D', gdal.GDT_Float32), ('VOLBFNET_L', gdal.GDT_Float32),
-        ('DRYBIO_L', gdal.GDT_Float32), ('DRYBIO_D', gdal.GDT_Float32),
-        ('CARBON_L', gdal.GDT_Float32), ('CARBON_D', gdal.GDT_Float32), 
-        ('CARBON_DWN', gdal.GDT_Float32)]
+cols = [('FORTYPCD', gdal.GDT_UInt16), 
+        ('FLDTYPCD', gdal.GDT_UInt16),
+        ('STDSZCD', gdal.GDT_Byte), 
+        ('FLDSZCD', gdal.GDT_Byte), 
+        ('BALIVE', gdal.GDT_Float32), 
+        ('CANOPYPCT', gdal.GDT_Byte),
+        ('STANDHT', gdal.GDT_UInt16), 
+        ('ALSTK', gdal.GDT_Float32), 
+        ('GSSTK', gdal.GDT_Float32), 
+        ('QMD', gdal.GDT_Float32),
+        ('SDIsum', gdal.GDT_Float32), 
+        ('TPA_LIVE', gdal.GDT_Float32),
+        ('TPA_DEAD', gdal.GDT_Float32), 
+        ('VOLCFNET_L', gdal.GDT_Float32), 
+        ('VOLCFNET_D', gdal.GDT_Float32), 
+        ('VOLBFNET_L', gdal.GDT_Float32),
+        ('DRYBIO_L', gdal.GDT_Float32), 
+        ('DRYBIO_D', gdal.GDT_Float32),
+        ('CARBON_L', gdal.GDT_Float32), 
+        ('CARBON_D', gdal.GDT_Float32), 
+        ('CARBON_DOWN_DEAD', gdal.GDT_Float32)]
 
 # Column names with their associated descriptions
 col_descriptions = {
@@ -87,8 +98,8 @@ col_descriptions = {
     'STANDHT': 'height of dominant trees (ft.) estimated by FVS routine',
     'ALSTK': 'all live tree stocking (percent)',
     'GSSTK': 'growing-stock stocking (percent)',
-    'QMD_RMRS': 'stand quadratic mean diameter (in) (collected in RMRS only)',
-    'SDIPCT_RMRS': 'stand density index (percent of maximum) (collected in RMRS only)',
+    'QMD': 'stand quadratic mean diameter (in)',
+    'SDIsum': 'stand density index',
     'TPA_LIVE': 'number of live trees per acre',
     'TPA_DEAD': 'number of standing dead trees per acre (DIA ≥ 5 inches)',
     'VOLCFNET_L': 'live volume (cubic ft. per acre)',
@@ -98,7 +109,7 @@ col_descriptions = {
     'DRYBIO_D': 'aboveground dry standing dead tree biomass (tons per acre)',
     'CARBON_L': 'live aboveground carbon (tons per acre)',
     'CARBON_D': 'standing dead carbon (tons per acre)',
-    'CARBON_DWN': 'down dead carbon > 3 inches diameter (tons per acre); estimated by FIA based on forest type, geographic area, and live tree carbon density.'
+    'CARBON_DOWN_DEAD': 'down dead carbon > 3 inches diameter (tons per acre); estimated by FIA based on forest type, geographic area, and live tree carbon density.'
     }
 
 # Discrete (thematic + ordinal) columns with their associated color information. FORTYPCD + FLDTYPCD do not get assigned colors from here and are thus listed as NA
@@ -120,8 +131,8 @@ col_units = {
     'STANDHT': 'ft',
     'ALSTK': 'percent',
     'GSSTK': 'percent',
-    'QMD_RMRS': 'in',
-    'SDIPCT_RMRS': 'percent',
+    'QMD': 'in',
+    'SDIsum': 'percent',
     'TPA_LIVE': 'trees/acre',
     'TPA_DEAD': 'trees/acre',
     'VOLCFNET_L': 'ft^3/acre',
@@ -131,19 +142,19 @@ col_units = {
     'DRYBIO_D': 'tons/acre',
     'CARBON_L': 'tons/acre',
     'CARBON_D': 'tons/acre',
-    'CARBON_DWN': 'tons/acre'
+    'CARBON_DOWN_DEAD': 'tons/acre'
 }
 
-
+#%%
 ######################################################################
 # Script Setup
 ######################################################################
 
-# Import dbf, convert to pandas DataFrame, isolate values
+# Import dbf, convert to pandas DataFrame, isolate id values
 dbf = Dbf5(treeMapDbf)
 df = dbf.to_dataframe()
-ctrlValues = df.Value
-
+ctrlValues = df.TM_ID
+#%%
 # Load original tif, specify band, get raw no data value
 treeMapImage = gdal.Open(treeMapTif, gdal.GA_ReadOnly)
 og_band = treeMapImage.GetRasterBand(1)
@@ -160,8 +171,7 @@ driver = gdal.GetDriverByName('GTiff')
 
 def attributeToImage(columnName, gdal_dtype, processing_mode):
     '''
-    Creates a new COG formatted geotiff from the main TreeMap tif with pyramids, statistics, metadata, and attribute tables (if applicable).
-    Zips them all together in the output folder.
+    Creates a new COG formatted geotiff from the main TreeMap tif with pyramids, statistics, and attribute tables (if applicable).
     
     Args: 
         columnName (str): Name of attribute to be processed (e.g. CARBON_D).
@@ -182,21 +192,28 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
     print('\n******************************************')
     print('CREATING IMAGE FOR ' + columnName)
     print('******************************************\n')
-    
-    # Get values of specified attribute/column. Account for truncated name for SDIPCT_RMRS (10 character limit of dBASE field names)
-    if columnName == 'SDIPCT_RMRS':
-        attValues = df['SDIPCT_RMR'].values
+
+    # Account for DBF column names vs official attribute names
+    if columnName == 'CARBON_DOWN_DEAD':
+        df_column = df['CARBON_DOW']
     else:
-        attValues = df[columnName].values
-
-    # Create a dictionary that maps original values to new values
-    value_map = pd.Series(attValues, index=ctrlValues)
-
+        df_column = df[columnName]
+    
     # Convert gdal dtype to numpy dtype
     np_dtype = gdal_to_numpy_dtype(gdal_dtype)
 
     # Get maximum value for datatype (used as NoDataValue)
     newNoDataValue = np.iinfo(np_dtype).max if np.issubdtype(np_dtype, np.integer) else np.finfo(np_dtype).max
+
+    # Replace NoData values with the new value
+    df_column = df_column.fillna(newNoDataValue)
+    df_column = df_column.replace({treeMapDatasetNoDataValue: newNoDataValue})
+
+    # Get values of specified attribute/column.
+    attValues = df_column.values
+
+    # Create a dictionary that maps original values to new values
+    value_map = pd.Series(attValues, index=ctrlValues)
 
     # Create a temporary file to store the attribute image while building it
     tmp_file = '/vsimem/tmp.tif'
@@ -244,9 +261,6 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
             # Using the boolean mask, replace the corresponding positions in the new_band_data with the mapped values from value_map
             new_band_data[no_data_mask] = value_map[band_data[no_data_mask]].values
 
-            # Replace all -99 values with the newNoDataValue
-            new_band_data[np.isclose(new_band_data, treeMapDatasetNoDataValue, atol=1e-8)] = newNoDataValue
-
             # Write the processed data (new_band_data) to the output image at the same position as the original chunk
             newImageBand.WriteArray(new_band_data, j, i)
 
@@ -263,6 +277,12 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
 
     # Change the name of the raster band to the attribute's name
     change_band_name(tmp_file, columnName)
+
+    # Build the attribute table, if the column is discrete
+    if columnName in discrete_cols.keys():
+        print('Building attribute table...')
+        create_attribute_table(columnName, tmp_file, attValues)
+        save_attribute_table(os.path.join(outputFolder, f'TreeMap{tm_ver}_{columnName}.tif.aux.xml'))
     
     # Translate the temporary GeoTIFF to COG format and save to output folder
     print('Translating to COG format and saving tif...')
@@ -273,9 +293,15 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
     newImage = None
     gdal.Unlink(tmp_file)
 
-    # Generate metadata
-    generate_metadata(columnName, 'all')
+def save_attribute_table(output_file):
+    rat_file = "/vsimem/tmp.tif.aux.xml"
 
+    rat_data = gdal.VSIFOpenL(rat_file, "rb")
+    if rat_data:
+        content = gdal.VSIFReadL(1, gdal.VSIStatL(rat_file).size, rat_data)
+        gdal.VSIFCloseL(rat_data)
+    with open(output_file, "wb") as f:
+        f.write(content)
 
 def create_basic_metadata(col_name):
     '''
@@ -301,7 +327,7 @@ def create_basic_metadata(col_name):
         f.write(content)
 
     # HTML
-    with open(os.path.join(metd_template_dir, f'{tm_ver}_metadata_template.html'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(metd_template_dir,  f'{tm_ver}_metadata_template.html'), 'r', encoding='utf-8') as file:
         content = file.read()
    
     content = content.replace('{col_name}', col_name)
@@ -715,7 +741,7 @@ def change_band_name(file_path, col_name):
     band.SetDescription(col_name)
 
 
-def create_attribute_table(col_name, file_path):
+def create_attribute_table(col_name, file_path, vals):
     '''
     Creates a raster attribute table for the specified image.
     
@@ -728,14 +754,14 @@ def create_attribute_table(col_name, file_path):
     '''
 
     if col_name == 'FLDTYPCD' or col_name == 'FORTYPCD':
-        create_thematic_att_table(file_path)
+        create_thematic_att_table(file_path, vals)
     elif col_name == 'FLDSZCD' or col_name == 'STDSZCD':
-        create_ordinal_att_table(col_name, file_path)
+        create_ordinal_att_table(col_name, file_path, vals)
     else:
         print('Attribute table not applicable to ' + col_name)
 
 
-def create_thematic_att_table(file_path):
+def create_thematic_att_table(file_path, vals):
     '''
     Creates a raster attribute table for the specified image.
     
@@ -749,7 +775,7 @@ def create_thematic_att_table(file_path):
 
     # Path to the forest_type_palette_lookup JSON file in the repo
         # This json consists of a list of codes, a list of names, and a list hex colors. Corresponding values from the codes, names, and colors lists share the same indicies.
-    palettes_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'gee_viz_setup_scripts', 'forest_type_palette_lookup.json')
+    palettes_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'gee_viz_setup_scripts', 'forest_type_palette_lookup_UPDATED.json')
         
     # Open the color maps JSON file
     with open(palettes_file) as json_file:
@@ -769,8 +795,8 @@ def create_thematic_att_table(file_path):
     nodata_value = band.GetNoDataValue()
         
     # Retrieve the unique values from the raster excluding NoData
-    unique_values = np.unique(band.ReadAsArray())
-    unique_values_nodata_excluded = unique_values[unique_values != nodata_value]
+    unique_vals = np.unique(vals)
+    unique_values_nodata_excluded = unique_vals[unique_vals != nodata_value]
         
     # Create a new Raster Attribute Table (RAT)
     rat = gdal.RasterAttributeTable()
@@ -791,7 +817,7 @@ def create_thematic_att_table(file_path):
         rat.SetValueAsInt(i, 0, int(value))
         
         # Get index of the code
-        code_index = codes.index(value)
+        code_index = codes.index(int(value))
         
         # Set label value
         rat.SetValueAsString(i, 1, names[code_index])
@@ -806,7 +832,7 @@ def create_thematic_att_table(file_path):
     band.SetDefaultRAT(rat)
 
 
-def create_ordinal_att_table(col_name, file_path):
+def create_ordinal_att_table(col_name, file_path, vals):
     '''
     Creates a raster attribute table for the specified image.
     
@@ -836,6 +862,7 @@ def create_ordinal_att_table(col_name, file_path):
     
     # Open the raster file for update
     image = gdal.Open(file_path, gdal.GA_Update)
+    #image = gdal.OpenEx(file_path, gdal.GA_Update, open_options={"IGNORE_COG_LAYOUT_BREAK": "YES"})
     
     # Get the first band from the raster
     band = image.GetRasterBand(1)
@@ -844,8 +871,8 @@ def create_ordinal_att_table(col_name, file_path):
     nodata_value = band.GetNoDataValue()
         
     # Retrieve the unique values from the raster excluding NoData
-    unique_values = np.unique(band.ReadAsArray())
-    unique_values_nodata_excluded = unique_values[unique_values != nodata_value]
+    unique_vals = np.unique(vals)
+    unique_values_nodata_excluded = unique_vals[unique_vals != nodata_value]
         
     # Create a new Raster Attribute Table (RAT)
     rat = gdal.RasterAttributeTable()
@@ -1065,7 +1092,7 @@ def prompt_user():
 
     while(choosing):
         mode = input('''\nChoose Mode: 
-                'images' to generate attribute tifs AND associated metadata (.tif, .xml, .html, .aux.xml, .tif.xml)
+                'images' to generate attribute tifs (.tif)
                 'meta' to generate metadata (.xml, .html, .aux.xml, .tif.xml - separated attribute tifs must already exist)
                 'package' to package all necessary files for the raster data gateway (tif, metadata, symbology files - if they exist)
                      
@@ -1083,7 +1110,7 @@ def prompt_user():
                                 
                     Please type choice: ''')
                 
-                if second_mode.lower() != 'all' and (not any(col[0] == second_mode.upper() for col in cols)):
+                if second_mode.lower() != 'all' and (not any(col[0].upper() == second_mode.upper() for col in cols)):
                     print(f'\n{second_mode} is not a defined attribute. Please choose a valid option or update the attribute list in the script.')
                 else:
                     choosing2 = False
@@ -1092,7 +1119,6 @@ def prompt_user():
             print('Input tif: ' + treeMapTif)
             print('Input dbf: ' + treeMapDbf)
             print('Output folder: ' + outputFolder)
-            print('Metadata template folder: ' + metd_template_dir)
             print('****************************************************************************************************')
             print('Current chunk size:' + str(chunk_size))
             print('****************************************************************************************************')
@@ -1242,11 +1268,6 @@ def generate_metadata(col_name, meta_mode):
             create_arc_metadata(col_name, image_path)
             create_arc_stats(col_name, image_path)
 
-            # Build the attribute table, if the column is discrete
-            if col_name in discrete_cols.keys():
-                print('Building attribute table...')
-                create_attribute_table(col_name, image_path)
-
     else:
         print(f'Image for {col_name} does not exist in the output folder. Skipping...')
         
@@ -1260,6 +1281,7 @@ tm_ver = determine_version()
 
 # Determine the general metadata template folder
 metd_template_dir = find_folder(os.path.dirname(os.path.abspath(__file__)), 'metadata_templates')
+metd_template_dir = os.path.join(metd_template_dir, tm_ver)
 
 # Determine this TreeMap version's symbology folder
 symbology_dir = os.path.join(find_folder(os.path.dirname(os.path.abspath(__file__)), 'symbology_files'), tm_ver)
@@ -1274,7 +1296,10 @@ if mode == 'images':
         for col_name, gdal_dtype in cols:
             start_time = time.perf_counter()
 
-            attributeToImage(col_name, gdal_dtype, second_mode)
+            try:
+                attributeToImage(col_name, gdal_dtype, second_mode)
+            except Exception as e: 
+                print(f'ERROR: {e}\n{traceback.format_exc()}\n\nFailed to process {col_name}')
                 
             end_time = time.perf_counter()
             elapsed = (end_time - start_time)/60
@@ -1282,34 +1307,43 @@ if mode == 'images':
     # Else process the specific attribute they provided
     else:
         for col_name, gdal_dtype in cols:
-            if col_name == second_mode.upper():
+            if col_name.upper() == second_mode.upper():
                 start_time = time.perf_counter()
 
-                attributeToImage(col_name, gdal_dtype, second_mode)
+                try:
+                    attributeToImage(col_name, gdal_dtype, second_mode)
+                except Exception as e:
+                    print(f'ERROR: {e}\n{traceback.format_exc()}\n\nFailed to process {col_name}')
                 
                 end_time = time.perf_counter()
                 elapsed = (end_time - start_time)/60
                 print(f'Time to complete: {elapsed} minutes')
-
+# Metadata generation mode
 elif mode == 'meta':
     for col_name, gdal_dtype in cols:
         start_time = time.perf_counter()
 
-        generate_metadata(col_name, second_mode)
+        try:
+            generate_metadata(col_name, second_mode)
+        except Exception as e:
+            print(f'ERROR: {e}\n{traceback.format_exc()}\n\nFailed to process {col_name}')
 
         end_time = time.perf_counter()
         elapsed = (end_time - start_time)/60
         print(f'Time to complete: {elapsed} minutes')
-
+# Package in ZIP mode
 elif mode == 'package':
     for col_name, gdal_dtype in cols:
         start_time = time.perf_counter()
 
-        package_for_rdg(col_name)
+        try:
+            package_for_rdg(col_name)
+        except Exception as e:
+            print(f'ERROR: {e}\n{traceback.format_exc()}\n\nFailed to process {col_name}')
             
         end_time = time.perf_counter()
         elapsed = (end_time - start_time)/60
         print(f'Time to complete: {elapsed} minutes')
-
+# Otherwise they didn't provide a valid mode
 else:
     print(f'\n{mode} is not valid. Please restart the script and specify a valid mode.')

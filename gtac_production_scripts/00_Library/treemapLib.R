@@ -9,11 +9,11 @@
 # Load required packages
 #################################################################
 
-# packages required for functions in this library
+# packages required for this project
 list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
                       "magrittr", "tictoc", "caret", "randomForest", 
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
-                      "stringr", "stringi")
+                      "stringr", "stringi", "devtools", "philentropy", "skimr")
 
 # Install dev version of yaImpute - to make sure we get the option to retain OOB obs
 #message("Installing dev version of yaImpute package")

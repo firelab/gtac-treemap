@@ -6,6 +6,7 @@ This sub-directory consists files for an R shiny app developed for interactive v
  method of launching the R Shiny App.**  
     * Review the [App Configuration](#app-configuration) section of this README to correctly set up the app before launching.
 * The server and UI portions of the R shiny app in the [server.R](./server.R) and [ui.R](./ui.R) scripts (respectively).
+    * Review the [App Configuration](#app-configuration) section of this README to update the names of output data and evaluation data to be loaded. These updates might be necessary to use the app for newer versions of TreeMap with new products and/or new naming conventions.
 * The inputs in the app are supposed to be entered and loaded by section (as numbered in the shiny app; 1, 2, 3).
     + Running a latter section before executing the previous one will return an error message.
     + If variables for a previous section are changed and run, then the remaining sections need to be re-run apply the change and display updated tables and plots. 
@@ -13,11 +14,13 @@ This sub-directory consists files for an R shiny app developed for interactive v
 
 ## App Configuration
 1. Please make sure the "setup_dirs.R" file in your local repository is set properly before running the app.
-2. Review the errors (if any) displayed in the terminal while it executes the "RUN_APP.bat" file:
-    * Open the "RUN_APP.bat" file on a text editor to set the correct path to "Rscript.exe" in the .bat file (inconsistencies in the path might arise from the version of R that is currently installed on the machine).
-    * Open the "run.R" script in Rstudio and source the script. This will install all necessary libraries and launch the app. Once sourced, executing the .bat file to run the app should work for all consecutive runs.
-3. The [server.R](./server.R) and [ui.R](./ui.R) scripts might need to be updated according to the naming conventions of the specific TreeMap product version (e.g., 2020, 2022, 2023) and folder paths. For the outputs to be evaluated: 
-    * Update the project name (folder name) of the outputs by updating the `choices` parameter of the `selectInput()` function for `inputID = "project_name"` in the [ui.R script](/ui.R#L9).  
+2. Set the path to Rscript.exe file in the RUN_APP.bat file (open the .bat file in a text editor and set the `R_PATH` variable, see this [link](./RUN_APP.bat#L7)).  
+    * The Rscript.exe path is a path specific to your local machine, inconsistencies in the path might arise from the version of R that is currently installed on the machine.
+3. Review the errors (if any) displayed in the terminal while it executes the "RUN_APP.bat" file.
+    * For additional troubleshooting, open the "run.R" script in Rstudio and source the script. 
+    * This will install all necessary libraries, launch the app, and display detailed error messages.
+4. The [server.R](./server.R) and [ui.R](./ui.R) scripts might need to be updated according to the naming conventions of the specific TreeMap product version (e.g., 2020, 2022, 2023) and folder paths. For the outputs to be evaluated: 
+    * Update the project name (folder name) of the outputs by updating the `choices` parameter of the `selectInput()` function for `inputID = "project_name"` in the [ui.R script](./ui.R#L9).  
     * Update the output name (filename prefixes) of the outputs by updating the conditional `if/else if` conditional block in the [server.R script](./server.R#L26). Add a condition for the newly added project name to set the output name.  
         * For example, if the output name is the same as the newly added project name the added code block will look like this:
             ```
@@ -25,4 +28,15 @@ This sub-directory consists files for an R shiny app developed for interactive v
             } else if (project_name == "new_project_name") {
                 output_name = "new_project_name"
             }  
+            ```  
+    * Update the `LF_evt_gp_numNameCSV_path` and `evt_gp_remapTable_path` by updating the conditional `if/else if` conditional block in the [server.R script](./server.R#L369) to produce the correct evt_gp number and name table (joined on-the-fly). This depends on the version (year) of TreeMap being evaluated. New code should be added to the if/else code block if a new version of TreeMap is available.   
+        * For example, if the TreeMap version being evaluated is for 2022 version, the code for 2022 `LF_evt_gp_numNameCSV_path` and `evt_gp_remapTable_path` variables look like this:
+            ```
+            # existing if/else if conditional block...
+            } else if (project_name == "2022_Production" | project_name == "2022_Production_newXtable"){
+            
+            LF_evt_gp_numNameCSV_path <- glue::glue('{home_dir}07_Documentation/01_Validation/02_Eval_tools/LF23_EVT_240_forJoin.csv')
+            evt_gp_remapTable_path <- glue::glue('{home_dir}03_Outputs/05_Target_Rasters/v2022/post_mask/{cur_zone_zero}/evt_gp_remap.csv')
+            
+            }
             ```

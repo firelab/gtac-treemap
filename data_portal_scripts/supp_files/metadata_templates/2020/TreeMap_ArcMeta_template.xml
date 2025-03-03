@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xml:lang="en">
+   <Esri>
+      <CreaDate>PUBLICATION_DATE</CreaDate>
+      <CreaTime></CreaTime>
+      <ArcGISFormat>1.0</ArcGISFormat>
+      <ArcGISstyle>ISO 19139 Metadata Implementation Specification</ArcGISstyle>
+      <SyncOnce>FALSE</SyncOnce>
+      <DataProperties>
+         <itemProps>
+            <itemName Sync="TRUE">SHORT_FILE_NAME</itemName>
+            <itemLocation>
+               <linkage Sync="TRUE">file://SHORT_FILE_NAME</linkage>
+               <protocol Sync="TRUE">Local Area Network</protocol>
+            </itemLocation>
+            <nativeExtBox>
+               <westBL Sync="TRUE">XMIN_GEOG</westBL>
+               <eastBL Sync="TRUE">XMAX_GEOG</eastBL>
+               <southBL Sync="TRUE">YMIN_GEOG</southBL>
+               <northBL Sync="TRUE">YMAX_GEOG</northBL>
+               <exTypeCode Sync="TRUE">1</exTypeCode>
+            </nativeExtBox>
+            <imsContentType Sync="TRUE" export="False">002</imsContentType>
+         </itemProps>
+         <coordRef>
+            COORD_REF
+         </coordRef>
+         <RasterProperties>
+            <General>
+              <NumberofDimensions>2</NumberofDimensions>
+              <CellGeometry>Area</CellGeometry>
+              <AttributeDescription Sync="TRUE">PRODUCT_NAME</AttributeDescription>
+              <ContentType>Image</ContentType>
+              <BandMinValue Sync="TRUE">MIN_VALUE</BandMinValue>
+              <BandMaxValue Sync="TRUE">MAX_VALUE</BandMaxValue>
+              <BandUnits Sync="TRUE">Classification</BandUnits>
+              <BandBitsPerValue Sync="TRUE">BIT_DEPTH</BandBitsPerValue>
+              <NumberDimensions Sync="TRUE">2</NumberDimensions>
+              <CellGeometry>Area</CellGeometry>
+              <ContentType Sync="TRUE">Image</ContentType>
+               <HasColormap Sync="TRUE">HAS_COLOR_MAP</HasColormap>
+               <CompressionType Sync="TRUE">COMPRESSION_METHOD</CompressionType>
+               <NumBands Sync="TRUE">BAND_COUNT</NumBands>
+               <Format Sync="TRUE">FORMAT_TYPE</Format>
+               <HasPyramids Sync="TRUE">TRUE</HasPyramids>
+               <SourceType Sync="TRUE">DISCRETE_OR_CONTINUOUS</SourceType>
+               <PixelType Sync="TRUE">PIXEL_TYPE</PixelType>
+               <NoDataValue Sync="TRUE">NO_DATA_VALUE</NoDataValue>
+            </General>
+         </RasterProperties>
+      </DataProperties>
+      <SyncDate>PUBLICATION_DATE</SyncDate>
+      <SyncTime>CREATION_TIME</SyncTime>
+      <ModDate>PUBLICATION_DATE</ModDate>
+      <ModTime>12010700</ModTime>
+      <scaleRange>
+         <minScale>MIN_SCALE</minScale>
+         <maxScale>MAX_SCALE</maxScale>
+      </scaleRange>
+      <ArcGISProfile>FGDC</ArcGISProfile>
+   </Esri>
+   <mdLang>
+      <languageCode value="eng" />
+      <countryCode value="USA" Sync="TRUE" />
+   </mdLang>
+   <mdChar>
+      <CharSetCd value="004" />
+   </mdChar>
+   <mdHrLv>
+      <ScopeCd value="005" />
+   </mdHrLv>
+   <mdContact>
+      <rpIndName>CONTACT_NAME</rpIndName>
+      <rpOrgName>CONTACT_ORGANIZATION</rpOrgName>
+      <rpPosName>CONTACT_POSITION_TITLE</rpPosName>
+      <rpCntInfo>
+         <cntPhone>
+            <voiceNum tddtty="">CONTACT_PHONE</voiceNum>
+            <faxNum></faxNum>
+         </cntPhone>
+         <cntAddress addressType="both">
+            <delPoint>ADDRESS_STREET</delPoint>
+            <city>ADDRESS_CITY</city>
+            <adminArea>ADDRESS_STATE</adminArea>
+            <country>ADDRESS_COUNTRY</country>
+            <eMailAdd>ADDRESS_EMAIL</eMailAdd>
+            <postCode>ADDRESS_ZIPCODE</postCode>
+         </cntAddress>
+         <cntHours></cntHours>
+      </rpCntInfo>
+      <role>
+         <RoleCd value="007" />
+      </role>
+   </mdContact>
+   <mdDateSt Sync="TRUE">PUBLICATION_DATE</mdDateSt>
+   <mdStanName>ArcGIS Metadata</mdStanName>
+   <mdStanVer>1.0</mdStanVer>
+   <distInfo>
+      <distributor>
+         <distorCont>
+            <rpIndName></rpIndName>
+            <rpOrgName>CONTACT_ORGANIZATION</rpOrgName>
+            <rpPosName>CONTACT_POSITION_TITLE</rpPosName>
+            <rpCntInfo>
+               <cntPhone>
+                  <voiceNum tddtty="">CONTACT_PHONE</voiceNum>
+                  <faxNum></faxNum>
+               </cntPhone>
+               <cntAddress addressType="both">
+                  <delPoint>ADDRESS_STREET</delPoint>
+                  <city>ADDRESS_CITY</city>
+                  <adminArea>ADDRESS_STATE</adminArea>
+                  <country>ADDRESS_COUNTRY</country>
+                  <eMailAdd>ADDRESS_EMAIL</eMailAdd>
+                  <postCode>ADDRESS_ZIPCODE</postCode>
+               </cntAddress>
+               <cntHours></cntHours>
+            </rpCntInfo>
+            <role>
+               <RoleCd value="005" />
+            </role>
+         </distorCont>
+         <distorTran>
+            <onLineSrc>
+               <orDesc>Downloadable data</orDesc>
+            </onLineSrc>
+         </distorTran>
+      </distributor>
+      <distFormat>
+         <formatName Sync="TRUE">Raster Dataset</formatName>
+      </distFormat>
+   </distInfo>
+   <dataIdInfo>
+      <idCitation>
+         <resTitle Sync="FALSE">LONG_FILE_NAME</resTitle>
+         <date>
+            <pubDate>PUBLICATION_DATE</pubDate>
+         </date>
+         <resEd></resEd>
+         <presForm>
+            <PresFormCd value="005" />
+         </presForm>
+         <presForm>
+            <fgdcGeoform>raster digital data</fgdcGeoform>
+         </presForm>
+         <datasetSeries>
+            <seriesName>SERIES_NAME</seriesName>
+            <issId>none</issId>
+         </datasetSeries>
+         <collTitle>SERIES_NAME</collTitle>
+         <citRespParty>
+            <rpIndName>CONTACT_NAME</rpIndName>
+            <rpOrgName>CONTACT_ORGANIZATION</rpOrgName>
+            <rpPosName>CONTACT_POSITION_TITLE</rpPosName>
+            <rpCntInfo>
+               <cntPhone>
+                  <voiceNum tddtty="">CONTACT_PHONE</voiceNum>
+                  <faxNum></faxNum>
+               </cntPhone>
+               <cntAddress addressType="both">
+                  <delPoint>ADDRESS_STREET</delPoint>
+                  <city>ADDRESS_CITY</city>
+                  <adminArea>ADDRESS_STATE</adminArea>
+                  <country>ADDRESS_COUNTRY</country>
+                  <eMailAdd>ADDRESS_EMAIL</eMailAdd>
+                  <postCode>ADDRESS_ZIPCODE</postCode>
+               </cntAddress>
+               <cntHours></cntHours>
+            </rpCntInfo>
+            <role>
+               <RoleCd value="006" />
+            </role>
+            <displayName>CONTACT_NAME</displayName>
+         </citRespParty>
+      </idCitation>
+      <idAbs>PRODUCT_ABSTRACT</idAbs>
+      <idPurp>PRODUCT_PURPOSE</idPurp>
+      <idCredit>PRODUCT_CREDITS</idCredit>
+      <idPoC>
+         <rpIndName>CONTACT_NAME</rpIndName>
+         <rpOrgName>CONTACT_ORGANIZATION</rpOrgName>
+         <rpPosName>CONTACT_POSITION_TITLE</rpPosName>
+         <rpCntInfo>
+            <cntPhone>
+               <voiceNum tddtty="">CONTACT_PHONE</voiceNum>
+               <faxNum></faxNum>
+            </cntPhone>
+            <cntAddress addressType="both">
+               <delPoint>ADDRESS_STREET</delPoint>
+               <city>ADDRESS_CITY</city>
+               <adminArea>ADDRESS_STATE</adminArea>
+               <country>ADDRESS_COUNTRY</country>
+               <eMailAdd>ADDRESS_EMAIL</eMailAdd>
+               <postCode>ADDRESS_ZIPCODE</postCode>
+            </cntAddress>
+            <cntHours></cntHours>
+         </rpCntInfo>
+         <role>
+            <RoleCd value="007" />
+         </role>
+      </idPoC>
+      <resMaint>
+         <maintFreq>
+            <MaintFreqCd value="009" />
+         </maintFreq>
+      </resMaint>
+      <placeKeys>
+      </placeKeys>
+      <themeKeys>
+         <thesaName>
+            <resTitle>THEME_TITLE</resTitle>
+         </thesaName>
+      </themeKeys>
+      <themeKeys>
+         <thesaName>
+            <resTitle>THEME_TITLE</resTitle>
+         </thesaName>
+      </themeKeys>
+      <themeKeys>
+         <thesaName>
+            <resTitle>THEME_TITLE</resTitle>
+         </thesaName>
+      </themeKeys>
+      <searchKeys></searchKeys>
+      <resConst>
+         <LegConsts>
+            <useLimit>The USDA Forest Service makes no warranty, expressed or implied, including the warranties of merchantability and fitness for a particular purpose, nor assumes any legal liability or responsibility for the accuracy, reliability, completeness or utility of these geospatial data, or for the improper or incorrect use of these geospatial data. These geospatial data and related maps or graphics are not legal documents and are not intended to be used as such. The data and maps may not be used to determine title, ownership, legal descriptions or boundaries, legal jurisdiction, or restrictions that may be in place on either public or private land. Natural hazards may or may not be depicted on the data and maps, and land users should exercise due caution. The data are dynamic and may change over time. The user is responsible to verify the limitations of the geospatial data and to use the data accordingly.</useLimit>
+         </LegConsts>
+      </resConst>
+      <resConst>
+         <SecConsts>
+            <class>
+               <ClasscationCd value="001" />
+            </class>
+            <classSys>none</classSys>
+            <handDesc>n/a</handDesc>
+         </SecConsts>
+      </resConst>
+      <resConst>
+         <Consts>
+            <useLimit>PRODUCT_USE_LIMITATIONS</useLimit>
+         </Consts>
+      </resConst>
+      <dataLang>
+         <languageCode value="eng" />
+         <countryCode value="USA" Sync="TRUE" />
+      </dataLang>
+      <suppInfo>Corner Coordinates (center of pixel, meters): upper left: {XMIN_ORIG} (X), {YMAX_ORIG} (Y); lower right: {XMAX_ORIG} (X), {YMIN_ORIG} (Y).</suppInfo>
+      <dataChar>
+         <CharSetCd value="004" />
+      </dataChar>
+      <envirDesc Sync="TRUE">PROCESSING_ENVIRONMENT</envirDesc>
+      <spatRpType>
+         <SpatRepTypCd value="002" Sync="TRUE" />
+      </spatRpType>
+      <idStatus>
+         <ProgCd value="001" />
+      </idStatus>
+      <dataExt>
+         <exDesc>STUDY_AREA_DESCRIPTION</exDesc>
+         <geoEle>
+            <GeoBndBox esriExtentType="search">
+               <exTypeCode>1</exTypeCode>
+               <westBL>XMIN_GEOG</westBL>
+               <eastBL>XMAX_GEOG</eastBL>
+               <southBL>YMIN_GEOG</southBL>
+               <northBL>YMAX_GEOG</northBL>
+            </GeoBndBox>
+         </geoEle>
+         <tempEle>
+            <TempExtent>
+               <exTemp>
+                  <TM_Period>
+                     <tmBegin>START_DATE</tmBegin>
+                     <tmEnd>END_DATE</tmEnd>
+                  </TM_Period>
+               </exTemp>
+            </TempExtent>
+         </tempEle>
+      </dataExt>
+      <tpCat>
+         <TopicCatCd value="007" />
+      </tpCat>
+      <tpCat>
+         <TopicCatCd value="010" />
+      </tpCat>
+   </dataIdInfo>
+   <mdConst>
+      <LegConsts>
+         <accessConsts>
+            <RestrictCd value="008" />
+         </accessConsts>
+         <othConsts>LEGAL_CONSTRAINTS</othConsts>
+      </LegConsts>
+   </mdConst>
+   <dqInfo>
+      <dqScope>
+         <scpLvl>
+            <ScopeCd value="005" />
+         </scpLvl>
+      </dqScope>
+      <dataLineage>
+         PROCESSING_STEPS
+         <statement></statement>
+      </dataLineage>
+      <report type="DQCompOm" dimension="">
+         <measDesc>COMPLETENESS_REPORT_DESCRIPTION</measDesc>
+      </report>
+      <report type="DQQuanAttAcc" dimension="">
+         <measDesc>ACCURACY_MEASURE</measDesc>
+         <evalMethDesc>ACCURACY_METHODS</evalMethDesc>
+         <measResult>
+            <ConResult>
+               <conSpec>
+                  <resTitle></resTitle>
+                  <date>
+                     <createDate></createDate>
+                     <pubDate></pubDate>
+                     <reviseDate></reviseDate>
+                  </date>
+               </conSpec>
+               <conExpl>ACCURACY_RESULTS</conExpl>
+               <conPass>1</conPass>
+            </ConResult>
+         </measResult>
+      </report>
+   </dqInfo>
+   <spatRepInfo>
+      <Georect>
+         <axisDimension type="001">
+            <dimSize Sync="TRUE">PRODUCT_WIDTH</dimSize>
+            <dimResol>
+               <value Sync="TRUE" uom="m">PRODUCT_RES</value>
+            </dimResol>
+         </axisDimension>
+         <axisDimension type="002">
+            <dimSize Sync="TRUE">PRODUCT_HEIGHT</dimSize>
+            <dimResol>
+               <value Sync="TRUE" uom="m">PRODUCT_RES</value>
+            </dimResol>
+         </axisDimension>
+         <cellGeo>
+            <CellGeoCd Sync="TRUE" value="002" />
+         </cellGeo>
+         <numDims Sync="TRUE">2</numDims>
+         <tranParaAv Sync="TRUE">1</tranParaAv>
+         <chkPtAv Sync="TRUE">0</chkPtAv>
+         <cornerPts>
+            <pos Sync="TRUE">{XMIN_ORIG} {YMIN_ORIG}</pos>
+         </cornerPts>
+         <cornerPts>
+            <pos Sync="TRUE">{XMIN_ORIG} {YMAX_ORIG}</pos>
+         </cornerPts>
+         <cornerPts>
+            <pos Sync="TRUE">{XMAX_ORIG} {YMAX_ORIG}</pos>
+         </cornerPts>
+         <cornerPts>
+            <pos Sync="TRUE">{XMAX_ORIG} {YMIN_ORIG}</pos>
+         </cornerPts>
+         <centerPt>
+            <pos Sync="TRUE">{CENTER_X} {CENTER_Y}</pos>
+         </centerPt>
+         <ptInPixel>
+            <PixOrientCd Sync="TRUE" value="001" />
+         </ptInPixel>
+      </Georect>
+   </spatRepInfo>
+   <contInfo>
+      <ImgDesc>
+         <covDim>
+            <Band>
+               <valUnit>
+                  <UOM type="length" gmlID="" />
+               </valUnit>
+               <dimDescrp Sync="TRUE">Band_1</dimDescrp>
+               <maxVal Sync="TRUE">MAX_VALUE</maxVal>
+               <minVal Sync="TRUE">MIN_VALUE</minVal>
+               <bitsPerVal Sync="TRUE">BIT_DEPTH</bitsPerVal>
+            </Band>
+         </covDim>
+         <contentTyp>
+            <ContentTypCd Sync="TRUE" value="002" />
+         </contentTyp>
+         <!-- <attDesc>ENTITY_ATTRIBUTE_LABEL<hr /><hr />ENTITY_ATTRIBUTE_DESCRIPTION<hr /><hr />ENTITY_ATTRIBUTE_DEFINITIONS</attDesc> -->
+         <trianInd>False</trianInd>
+         <radCalDatAv>False</radCalDatAv>
+         <camCalInAv>False</camCalInAv>
+         <filmDistInAv>False</filmDistInAv>
+         <lensDistInAv>False</lensDistInAv>
+      </ImgDesc>
+   </contInfo>
+   <eainfo>
+      <detailed>
+         <enttyp>
+            <enttypl>ENTITY_ATTRIBUTE_LABEL</enttypl>
+            <enttypd>ENTITY_ATTRIBUTE_DESCRIPTION</enttypd>
+            <enttypds>ENTITY_ATTRIBUTE_DEFINITIONS</enttypds>
+         </enttyp>
+      </detailed>
+   </eainfo>
+   <mdHrLvName Sync="TRUE">dataset</mdHrLvName>
+   <refSysInfo>
+      <RefSystem>
+         <refSysID>
+            <identCode code="0" Sync="TRUE" />
+         </refSysID>
+      </RefSystem>
+   </refSysInfo>
+</metadata>
