@@ -56,7 +56,7 @@ attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
                    "TPA_DEAD", "TPA_LIVE") # 2016 version
 
-attributevars <- c("BALIVE", "GSSTKCD", "QMDAll", "SDIsum",	"CANOPYPCT",
+attributevars <- c("BALIVE", "GSSTKCD", "QMD", "SDIsum",	"CANOPYPCT",
                    "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
                    "TPA_DEAD", "TPA_LIVE")	# 2020/2022 version
 
