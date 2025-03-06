@@ -75,9 +75,10 @@ if(file.exists(tif_out_path)) {
   message(glue::glue("Warning: overwriting existing tif: {tif_out_path}"))
 }
 
-writeRaster(imputation, tif_out_path,
+terra::writeRaster(imputation, tif_out_path,
             gdal=c("COMPRESS=LZW"),
-            overwrite = TRUE)
+            overwrite = TRUE
+            )
 
 # Delete the VRT
 file.remove(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
