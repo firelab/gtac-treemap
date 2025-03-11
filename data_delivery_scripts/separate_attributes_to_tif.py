@@ -51,7 +51,10 @@ treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_new
 treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020.tif.vat.dbf"
 
 # Specify output folder
-outputFolder = r"\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters\2020"
+outputFolder = r"\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute_Rasters\2020"
+
+# Specify project area
+projectArea = "CONUS"
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
