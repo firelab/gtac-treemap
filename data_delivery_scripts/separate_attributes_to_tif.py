@@ -47,14 +47,14 @@ gdal.UseExceptions()
 chunk_size = 29060 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020.tif"
-treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020.tif.vat.dbf"
-
-# Specify output folder
-outputFolder = r"\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute_Rasters\2020"
+treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap_CONUS_2020.tif"
+treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap_CONUS_2020.tif.vat.dbf"
 
 # Specify project area
 projectArea = "CONUS"
+
+# specify project year
+projectYear = 2020
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
@@ -64,6 +64,10 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 
 # Specify data access link, used in metadata
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
+
+# Specify output folder
+outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/"
+
 
 # Column names to create individual attribute images of, their full names, and their data type
     # Columns whose full precision can only be contained within Float64: VOLCFNET_L, VOLCFNET_D, VOLBFNET_L, DRYBIO_L, DRYBIO_D, CARBON_L, CARBON_D
@@ -166,7 +170,9 @@ rawTreeMapNoDataValue = og_band.GetNoDataValue()
 # Get GeoTIFF GDAL driver
 driver = gdal.GetDriverByName('GTiff')
 
-
+# Set output name
+outputFileName = 'TreeMap_'+projectArea+ '_'+str(projectYear)
+#%%
 ######################################################################
 # Functions
 ######################################################################
@@ -184,10 +190,12 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
         None
     '''
     
+
     # If the image mode is 
     if processing_mode == 'all':
+
         # Check if attribute image already exists in the output folder and skip if so
-        if os.path.isfile(outputFolder + f'\TreeMap{tm_ver}_{columnName}.tif'):
+        if os.path.isfile(os.path.join(outputFolder, f'{outputFileName}_{columnName}.tif')):
             print(f'\n File for {columnName} already exists. Skipping...')
             return
     
@@ -285,11 +293,11 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
     if columnName in discrete_cols.keys():
         print('Building attribute table...')
         create_attribute_table(columnName, tmp_file, attValues)
-        save_attribute_table(os.path.join(outputFolder, f'TreeMap{tm_ver}_{columnName}.tif.aux.xml'))
+        save_attribute_table(os.path.join(outputFolder, f'{outputFileName}_{columnName}.tif.aux.xml'))
     
     # Translate the temporary GeoTIFF to COG format and save to output folder
     print('Translating to COG format and saving tif...')
-    output_file = os.path.join(outputFolder, f'TreeMap{tm_ver}_{columnName}.tif')
+    output_file = os.path.join(outputFolder, outputFileName + '.tif')
     gdal.Translate(output_file, newImage, format = 'COG', creationOptions = creation_options)
 
     # Remove temporary files
@@ -318,7 +326,7 @@ def create_basic_metadata(col_name):
     '''
 
     # XML
-    with open(os.path.join(metd_template_dir, f'{tm_ver}_metadata_template.xml'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(metd_template_dir, f'{projectYear}_{projectArea}_metadata_template.xml'), 'r', encoding='utf-8') as file:
         content = file.read()
    
     content = content.replace('{col_name}', col_name)
@@ -326,11 +334,11 @@ def create_basic_metadata(col_name):
     content = content.replace('{date}', datetime.now().strftime('%Y%m%d'))
     content = content.replace('{data_gateway_link}', data_gateway_link)
 
-    with open(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.xml'), 'w', encoding='utf-8') as f:
+    with open(os.path.join(outputFolder, f'{outputFileName}_{col_name}.xml'), 'w', encoding='utf-8') as f:
         f.write(content)
 
     # HTML
-    with open(os.path.join(metd_template_dir,  f'{tm_ver}_metadata_template.html'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(metd_template_dir,  f'{projectYear}_metadata_template.html'), 'r', encoding='utf-8') as file:
         content = file.read()
    
     content = content.replace('{col_name}', col_name)
@@ -338,7 +346,7 @@ def create_basic_metadata(col_name):
     content = content.replace('{date}', datetime.now().strftime('%Y%m%d'))
     content = content.replace('{data_gateway_link}', data_gateway_link)
 
-    with open(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.html'), 'w', encoding='utf-8') as f:
+    with open(os.path.join(outputFolder, f'{outputFileName}_{col_name}.html'), 'w', encoding='utf-8') as f:
         f.write(BeautifulSoup(content, 'html.parser').prettify())
 
 
@@ -354,10 +362,10 @@ def create_arc_metadata(col_name, tif_path):
     '''
     
     # Filepath for attribute's base xml file
-    att_xml_metadata = os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.xml')
+    att_xml_metadata = os.path.join(outputFolder, f'{outputFileName}_{col_name}.xml')
     
     # Construct filepath for new xml based on the provided attribute xml 
-    new_meta_file = os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif.xml')
+    new_meta_file = os.path.join(outputFolder, f'{outputFileName}_{col_name}.tif.xml')
     
     # Open existing attribute xml
     source_tree = ET.parse(att_xml_metadata)
@@ -505,8 +513,8 @@ def create_arc_metadata(col_name, tif_path):
                     
     # Set values not found in the source xml
         # General items
-    template_root.find('.//DataProperties//itemName').text = f'TreeMap{tm_ver}_{col_name}.tif'
-    template_root.find('.//DataProperties//itemLocation//linkage').text = str(check_file_in_folder(att_xml_metadata, f'TreeMap{tm_ver}_{col_name}.tif'))
+    template_root.find('.//DataProperties//itemName').text = f'outputFileName_{col_name}.tif'
+    template_root.find('.//DataProperties//itemLocation//linkage').text = str(check_file_in_folder(att_xml_metadata, f'{outputFileName}_{col_name}.tif'))
     template_root.find('.//SyncDate').text = datetime.now().strftime('%Y%m%d')
     template_root.find('.//SyncTime').text = datetime.now().strftime('%M%S%H')
     template_root.find('.//ModDate').text = datetime.now().strftime('%Y%m%d')
@@ -724,7 +732,7 @@ def create_arc_stats(col_name, tif_path):
             mdi.text = str((valid_data.size / band_data.size) * 100)
 
     # Write the file
-    stats_template_tree.write(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif.aux.xml'))
+    stats_template_tree.write(os.path.join(outputFolder, f'{outputFileName}_{col_name}.tif.aux.xml'))
 
 
 def change_band_name(file_path, col_name):
@@ -933,12 +941,12 @@ def get_readme_text(col_name, zip_only=True):
     '''
 
     # Define additional text to be added to the readme if the attribute is continuous
-    additional_toptext = f'Instructions for applying the official TreeMap{tm_ver} symbology in ArcGIS Pro and QGIS are also included.'
+    additional_toptext = f'Instructions for applying the official {outputFileName} symbology in ArcGIS Pro and QGIS are also included.'
     additional_filedescriptions = f'''
-	TreeMap{tm_ver}_{col_name}.tif.lyrx - An ArcGIS layer file containing the official symbology for the attribute.
+	{outputFileName}_{col_name}.tif.lyrx - An ArcGIS layer file containing the official symbology for the attribute.
 						    	    Please see "Applying Official Symbology" in this document.
 
-	TreeMap{tm_ver}_{col_name}.tif.qml - A QGIS layer file containing the official symbology for the attribute.
+	{outputFileName}_{col_name}.tif.qml - A QGIS layer file containing the official symbology for the attribute.
 						   	   Please see "Applying Official Symbology" in this document.
     '''
     continuous_symbologyinstructions = f'''\nApplying Official Symbology:
@@ -947,13 +955,13 @@ def get_readme_text(col_name, zip_only=True):
 		1. Once the raster has been added to your project, in the "Raster Layer" ribbon at the top of the window select "Symbology"
 			Or navigate to the "Symbology" pane another way
 		2. In the top right corner of the "Symbology" pane, click on the 3 horizontal lines and select "Import from layer file"
-		3. Navigate to and select the layer file, TreeMap{tm_ver}_{col_name}.tif.lyrx
+		3. Navigate to and select the layer file, {outputFileName}_{col_name}.tif.lyrx
     
 	QGIS:
 		1. Once the raster has been added to your project, in the right click on the layer and select "Properties..."
 		2. On the left hand side of the "Properties" window, select "Symbology"
 		3. Click on "Style" at the bottom of the window and select "Load Style..."
-		4. Navigate to and select the layer file, TreeMap{tm_ver}_{col_name}.tif.qml
+		4. Navigate to and select the layer file, {outputFileName}_{col_name}.tif.qml
     '''
     thematic_symbologyinstructions = f'''\nApplying Official Symbology:
 
@@ -975,22 +983,25 @@ def get_readme_text(col_name, zip_only=True):
     
     # Insert additional text if the attributes are continuous or if they are thematic, else remove the placeholders in the .txt
     if col_name not in discrete_cols.keys():
-        readme_text = readme_text.format(tm_ver=tm_ver, col_name=col_name,
+        readme_text = readme_text.format(projectYear = projectYear, 
+                                         projectArea = projectArea, col_name=col_name,
                                         additional_toptext=additional_toptext, additional_filedescriptions=additional_filedescriptions, 
                                         continuous_symbologyinstructions=continuous_symbologyinstructions,
                                         thematic_symbologyinstructions='')
     elif col_name == 'FLDTYPCD' or col_name == 'FORTYPCD':
-        readme_text = readme_text.format(tm_ver=tm_ver, col_name=col_name, additional_toptext=additional_toptext, 
+        readme_text = readme_text.format(projectYear = projectYear, 
+                                         projectArea = projectArea, col_name=col_name, additional_toptext=additional_toptext, 
                                         additional_filedescriptions='', continuous_symbologyinstructions='',
                                         thematic_symbologyinstructions=thematic_symbologyinstructions)
     else:
-        readme_text = readme_text.format(tm_ver=tm_ver, col_name=col_name, additional_toptext='', 
+        readme_text = readme_text.format(projectYear = projectYear, 
+                                         projectArea = projectArea, col_name=col_name, additional_toptext='', 
                                         additional_filedescriptions='', continuous_symbologyinstructions='',
                                         thematic_symbologyinstructions='')
 
     # If directed to write the file to the output folder, do so (if zip_only is False, write a file to the output folder and temp memory, if zip_only is True, only write to temp memory)
     if not zip_only:
-        new_filepath = os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}_readme.txt')
+        new_filepath = os.path.join(outputFolder, f'{outputFileName}_{col_name}_readme.txt')
         with open(new_filepath, 'w') as new_file:
             new_file.write(readme_text)
 
@@ -1017,7 +1028,7 @@ def zip_files(files, col_name):
         os.makedirs(zip_directory)
         
     # Append the name of the directory to the zip file name
-    full_zip_filepath = os.path.join(zip_directory, f'TreeMap{tm_ver}_{col_name}.zip')
+    full_zip_filepath = os.path.join(zip_directory, f'{outputFileName}_{col_name}.zip')
     
     # Create a ZipFile object in write mode
     with ZipFile(full_zip_filepath, 'w') as zipf:
@@ -1029,26 +1040,26 @@ def zip_files(files, col_name):
             zipf.write(file, os.path.basename(file))
 
     
-def determine_version():
-    '''
-    Determines the version of the TreeMap dataset based on its filename
-    Args:
-        None.
-    Returns:
-        str: The tm_ver of the dataset
-    '''
+# def determine_version():
+#     '''
+#     Determines the version of the TreeMap dataset based on its filename
+#     Args:
+#         None.
+#     Returns:
+#         str: The tm_ver of the dataset
+#     '''
     
-    # Get name of file
-    filename = os.path.basename(treeMapTif)
+#     # Get name of file
+#     filename = os.path.basename(treeMapTif)
     
-    # Grab everything in the filename between 'TreeMap' and '.tif'
-    match = re.search('TreeMap(.+?).tif', filename)
+#     # Grab everything in the filename between 'TreeMap' and '.tif'
+#     match = re.search('TreeMap(.+?).tif', filename)
     
-    # If there's a match, return the string
-    if match:
-        return match.group(1)
-    else:
-        raise ValueError('Could not determine TreeMap version. Please update the main dataset filepath or implement changes to the determine_version() function in the script.')
+#     # If there's a match, return the string
+#     if match:
+#         return match.group(1)
+#     else:
+#         raise ValueError('Could not determine TreeMap version. Please update the main dataset filepath or implement changes to the determine_version() function in the script.')
 
 
 def gdal_to_numpy_dtype(gdal_dtype):
@@ -1126,11 +1137,13 @@ def prompt_user():
             print('Current chunk size:' + str(chunk_size))
             print('****************************************************************************************************')
             print('****************************************************************************************************')
-            print('TreeMap version: ' + tm_ver)
+            print('Project Year: ' + projectYear)
+            print('****************************************************************************************************\n')
+            print('Project Area: ' + projectArea)
             print('****************************************************************************************************\n')
             
             # Check with user if inputs are correct
-            print("If paths, chunk size, and TreeMap version are correct press 'enter', otherwise press 'q' to quit and correct in script")
+            print("If paths, chunk size, Project Year, and Project Area are correct press 'enter', otherwise press 'q' to quit and correct in script")
             key = msvcrt.getch()
             if key.lower() == b'q':
                 quit()
@@ -1158,12 +1171,13 @@ def prompt_user():
             print('Output folder (must contain attribute tifs): ' + outputFolder)
             print('Metadata template folder: ' + metd_template_dir)
             print('****************************************************************************************************')
-            print('****************************************************************************************************')
-            print('TreeMap version: ' + tm_ver)
+            print('Project Year: ' + projectYear)
+            print('****************************************************************************************************\n')
+            print('Project Area: ' + projectArea)
             print('****************************************************************************************************\n')
 
             # Check with user if inputs are correct
-            print("If paths and TreeMap version are correct press 'enter', otherwise press 'q' to quit and correct in script")
+            print("If paths, Project Year, and Project Area are correct press 'enter', otherwise press 'q' to quit and correct in script")
             key = msvcrt.getch()
             if key.lower() == b'q':
                 quit()
@@ -1175,12 +1189,13 @@ def prompt_user():
             print('Attribute tifs and metadata folder: ' + outputFolder)
             print('Symbology files: ' + symbology_dir)
             print('****************************************************************************************************')
-            print('****************************************************************************************************')
-            print('TreeMap version: ' + tm_ver)
+            print('Project Year: ' + projectYear)
+            print('****************************************************************************************************\n')
+            print('Project Area: ' + projectArea)
             print('****************************************************************************************************\n')
 
             # Check with user if inputs are correct
-            print("If paths and TreeMap version are correct press 'enter', otherwise press 'q' to quit and correct in script")
+            print("If paths, Project Year, and Project Area are correct press 'enter', otherwise press 'q' to quit and correct in script")
             key = msvcrt.getch()
             if key.lower() == b'q':
                 quit()
@@ -1218,33 +1233,33 @@ def package_for_rdg(col_name):
         None.
     '''
 
-    if not os.path.exists(os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif')):
+    if not os.path.exists(os.path.join(outputFolder, f'{outputFileName}_{col_name}.tif')):
         print(f'\nThe tif for {col_name} was not found. Skipping...')
         return
 
     # Define files to be zipped
     print(f'\nPackaging {col_name}...')
-    tif_file = os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif')
-    xml_file = os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.xml')
-    html_file = os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.html')
-    arcxml_file = os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif.xml')
-    arcstats_file = os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif.aux.xml')
+    tif_file = os.path.join(outputFolder, f'{outputFileName}_{col_name}.tif')
+    xml_file = os.path.join(outputFolder, f'{outputFileName}_{col_name}.xml')
+    html_file = os.path.join(outputFolder, f'{outputFileName}_{col_name}.html')
+    arcxml_file = os.path.join(outputFolder, f'{outputFileName}_{col_name}.tif.xml')
+    arcstats_file = os.path.join(outputFolder, f'{outputFileName}_{col_name}.tif.aux.xml')
 
     files_to_zip = [tif_file, xml_file, html_file, arcxml_file, arcstats_file]
     
     # If the attribute is not discrete, add arcgis + qgis symbology files to the list of files to be zipped
     if col_name not in discrete_cols.keys():
-        arc_lyrx_file = os.path.join(symbology_dir, f'TreeMap{tm_ver}_{col_name}.tif.lyrx')
-        qgis_qml_file = os.path.join(symbology_dir, f'TreeMap{tm_ver}_{col_name}.tif.qml')
+        arc_lyrx_file = os.path.join(symbology_dir, f'{outputFileName}_{col_name}.tif.lyrx')
+        qgis_qml_file = os.path.join(symbology_dir, f'{outputFileName}_{col_name}.tif.qml')
 
         # Check if the files exist and inform user if not
         if not os.path.exists(arc_lyrx_file):
-            print(f'ArcGIS Pro layer file, TreeMap{tm_ver}_{col_name}.tif.lyrx, does not exist in {symbology_dir} and was not packaged.')
+            print(f'ArcGIS Pro layer file, {outputFileName}_{col_name}.tif.lyrx, does not exist in {symbology_dir} and was not packaged.')
         else:
             files_to_zip.append(arc_lyrx_file)
         
         if not os.path.exists(qgis_qml_file):
-            print(f'QGIS layer file, TreeMap{tm_ver}_{col_name}.tif.qml, does not exist in {symbology_dir} and was not packaged.')
+            print(f'QGIS layer file, {outputFileName}_{col_name}.tif.qml, does not exist in {symbology_dir} and was not packaged.')
         else:
             files_to_zip.append(qgis_qml_file)
         
@@ -1254,7 +1269,7 @@ def package_for_rdg(col_name):
 
 def generate_metadata(col_name, meta_mode):
     # Get path to the separated attribute image
-    image_path = os.path.join(outputFolder, f'TreeMap{tm_ver}_{col_name}.tif')
+    image_path = os.path.join(outputFolder, f'{outputFileName}_{col_name}.tif')
 
     if os.path.exists(image_path):
         # Print the column being processed
@@ -1280,14 +1295,14 @@ def generate_metadata(col_name, meta_mode):
 ######################################################################
 
 # Determine the TreeMap version
-tm_ver = determine_version()
+#tm_ver = determine_version()
 
 # Determine the general metadata template folder
 metd_template_dir = find_folder(os.path.dirname(os.path.abspath(__file__)), 'metadata_templates')
-metd_template_dir = os.path.join(metd_template_dir, tm_ver)
+metd_template_dir = os.path.join(metd_template_dir, str(projectYear))
 
 # Determine this TreeMap version's symbology folder
-symbology_dir = os.path.join(find_folder(os.path.dirname(os.path.abspath(__file__)), 'symbology_files'), tm_ver)
+symbology_dir = os.path.join(find_folder(os.path.dirname(os.path.abspath(__file__)), 'symbology_files'), projectYear)
 
 # Inform user of assigned inputs + outputs and get input on modes to run
 mode, second_mode = prompt_user()
@@ -1350,3 +1365,4 @@ elif mode == 'package':
 # Otherwise they didn't provide a valid mode
 else:
     print(f'\n{mode} is not valid. Please restart the script and specify a valid mode.')
+# %%
