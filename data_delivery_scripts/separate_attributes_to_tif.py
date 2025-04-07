@@ -513,7 +513,7 @@ def create_arc_metadata(col_name, tif_path):
                     
     # Set values not found in the source xml
         # General items
-    template_root.find('.//DataProperties//itemName').text = f'outputFileName_{col_name}.tif'
+    template_root.find('.//DataProperties//itemName').text = f'{outputFileName}_{col_name}.tif'
     template_root.find('.//DataProperties//itemLocation//linkage').text = str(check_file_in_folder(att_xml_metadata, f'{outputFileName}_{col_name}.tif'))
     template_root.find('.//SyncDate').text = datetime.now().strftime('%Y%m%d')
     template_root.find('.//SyncTime').text = datetime.now().strftime('%M%S%H')
@@ -983,21 +983,25 @@ def get_readme_text(col_name, zip_only=True):
     
     # Insert additional text if the attributes are continuous or if they are thematic, else remove the placeholders in the .txt
     if col_name not in discrete_cols.keys():
-        readme_text = readme_text.format(projectYear = projectYear, 
+        readme_text = readme_text.format(
+                                        outputFileName = outputFileName,
+                                        projectYear = projectYear, 
                                          projectArea = projectArea, col_name=col_name,
-                                        additional_toptext=additional_toptext, additional_filedescriptions=additional_filedescriptions, 
-                                        continuous_symbologyinstructions=continuous_symbologyinstructions,
-                                        thematic_symbologyinstructions='')
+                                         additional_toptext=additional_toptext, additional_filedescriptions=additional_filedescriptions,
+                                         continuous_symbologyinstructions=continuous_symbologyinstructions,
+                                         thematic_symbologyinstructions='')
     elif col_name == 'FLDTYPCD' or col_name == 'FORTYPCD':
-        readme_text = readme_text.format(projectYear = projectYear, 
+        readme_text = readme_text.format(outputFileName = outputFileName,
+                                         projectYear = projectYear, 
                                          projectArea = projectArea, col_name=col_name, additional_toptext=additional_toptext, 
-                                        additional_filedescriptions='', continuous_symbologyinstructions='',
-                                        thematic_symbologyinstructions=thematic_symbologyinstructions)
+                                         additional_filedescriptions='', continuous_symbologyinstructions='',
+                                         thematic_symbologyinstructions=thematic_symbologyinstructions)
     else:
-        readme_text = readme_text.format(projectYear = projectYear, 
+        readme_text = readme_text.format(outputFileName = outputFileName,
+                                         projectYear = projectYear, 
                                          projectArea = projectArea, col_name=col_name, additional_toptext='', 
-                                        additional_filedescriptions='', continuous_symbologyinstructions='',
-                                        thematic_symbologyinstructions='')
+                                         additional_filedescriptions='', continuous_symbologyinstructions='',
+                                         thematic_symbologyinstructions='')
 
     # If directed to write the file to the output folder, do so (if zip_only is False, write a file to the output folder and temp memory, if zip_only is True, only write to temp memory)
     if not zip_only:
