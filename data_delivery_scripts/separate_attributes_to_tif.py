@@ -297,7 +297,7 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
     
     # Translate the temporary GeoTIFF to COG format and save to output folder
     print('Translating to COG format and saving tif...')
-    output_file = os.path.join(outputFolder, outputFileName + '.tif')
+    output_file = os.path.join(outputFolder, f'{outputFileName}_{columnName}.tif')
     gdal.Translate(output_file, newImage, format = 'COG', creationOptions = creation_options)
 
     # Remove temporary files
@@ -326,7 +326,7 @@ def create_basic_metadata(col_name):
     '''
 
     # XML
-    with open(os.path.join(metd_template_dir, f'{projectYear}_{projectArea}_metadata_template.xml'), 'r', encoding='utf-8') as file:
+    with open(os.path.join(metd_template_dir, f'{projectYear}_metadata_template.xml'), 'r', encoding='utf-8') as file:
         content = file.read()
    
     content = content.replace('{col_name}', col_name)
@@ -1137,7 +1137,7 @@ def prompt_user():
             print('Current chunk size:' + str(chunk_size))
             print('****************************************************************************************************')
             print('****************************************************************************************************')
-            print('Project Year: ' + projectYear)
+            print('Project Year: ' + str(projectYear))
             print('****************************************************************************************************\n')
             print('Project Area: ' + projectArea)
             print('****************************************************************************************************\n')
@@ -1171,7 +1171,7 @@ def prompt_user():
             print('Output folder (must contain attribute tifs): ' + outputFolder)
             print('Metadata template folder: ' + metd_template_dir)
             print('****************************************************************************************************')
-            print('Project Year: ' + projectYear)
+            print('Project Year: ' + str(projectYear))
             print('****************************************************************************************************\n')
             print('Project Area: ' + projectArea)
             print('****************************************************************************************************\n')
@@ -1189,7 +1189,7 @@ def prompt_user():
             print('Attribute tifs and metadata folder: ' + outputFolder)
             print('Symbology files: ' + symbology_dir)
             print('****************************************************************************************************')
-            print('Project Year: ' + projectYear)
+            print('Project Year: ' + str(projectYear))
             print('****************************************************************************************************\n')
             print('Project Area: ' + projectArea)
             print('****************************************************************************************************\n')
@@ -1302,7 +1302,7 @@ metd_template_dir = find_folder(os.path.dirname(os.path.abspath(__file__)), 'met
 metd_template_dir = os.path.join(metd_template_dir, str(projectYear))
 
 # Determine this TreeMap version's symbology folder
-symbology_dir = os.path.join(find_folder(os.path.dirname(os.path.abspath(__file__)), 'symbology_files'), projectYear)
+symbology_dir = os.path.join(find_folder(os.path.dirname(os.path.abspath(__file__)), 'symbology_files'), str(projectYear))
 
 # Inform user of assigned inputs + outputs and get input on modes to run
 mode, second_mode = prompt_user()
