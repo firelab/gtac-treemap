@@ -68,6 +68,8 @@ data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/inde
 # Specify output folder
 outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/"
 
+# Name of TreeMap ID column in Raster Attribute Table
+tmid_col_name = "TM_ID"
 
 # Column names to create individual attribute images of, their full names, and their data type
     # Columns whose full precision can only be contained within Float64: VOLCFNET_L, VOLCFNET_D, VOLBFNET_L, DRYBIO_L, DRYBIO_D, CARBON_L, CARBON_D
@@ -160,7 +162,7 @@ col_units = {
 # Import dbf, convert to pandas DataFrame, isolate id values
 dbf = Dbf5(treeMapDbf)
 df = dbf.to_dataframe()
-ctrlValues = df.TM_ID
+ctrlValues = df[tmid_col_name]
 #%%
 # Load original tif, specify band, get raw no data value
 treeMapImage = gdal.Open(treeMapTif, gdal.GA_ReadOnly)
