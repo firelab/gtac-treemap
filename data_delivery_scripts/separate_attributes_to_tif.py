@@ -44,17 +44,17 @@ gdal.UseExceptions()
 ############################################################################
 
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
-chunk_size = 29060 * 2
+chunk_size = 48000 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap_CONUS_2020.tif"
-treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap_CONUS_2020.tif.vat.dbf"
+treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap_CONUS_2022.tif"
+treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap_CONUS_2022.tif.vat.dbf"
 
 # Specify project area
 projectArea = "CONUS"
 
 # specify project year
-projectYear = 2020
+projectYear = 2022
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
@@ -106,7 +106,7 @@ col_descriptions = {
     'ALSTK': 'all live tree stocking (percent)',
     'GSSTK': 'growing-stock stocking (percent)',
     'QMD': 'stand quadratic mean diameter (in)',
-    'SDIsum': 'stand density index',
+    'SDIsum': 'Sum of stand density index',
     'TPA_LIVE': 'number of live trees per acre',
     'TPA_DEAD': 'number of standing dead trees per acre (DIA ≥ 5 inches)',
     'VOLCFNET_L': 'live volume (cubic ft. per acre)',
@@ -139,7 +139,7 @@ col_units = {
     'ALSTK': 'percent',
     'GSSTK': 'percent',
     'QMD': 'in',
-    'SDIsum': 'percent',
+    'SDIsum': 'NA',
     'TPA_LIVE': 'trees/acre',
     'TPA_DEAD': 'trees/acre',
     'VOLCFNET_L': 'ft^3/acre',
