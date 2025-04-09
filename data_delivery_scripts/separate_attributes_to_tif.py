@@ -94,7 +94,8 @@ cols = [('FORTYPCD', gdal.GDT_UInt16),
         ('DRYBIO_D', gdal.GDT_Float32),
         ('CARBON_L', gdal.GDT_Float32), 
         ('CARBON_D', gdal.GDT_Float32), 
-        ('CARBON_DOWN_DEAD', gdal.GDT_Float32)]
+        ('CARBON_DOWN_DEAD', gdal.GDT_Float32),
+        ('TREEMAP_ID', gdal.GDT_UInt16)]
 
 # Column names with their associated descriptions
 col_descriptions = {
@@ -118,7 +119,8 @@ col_descriptions = {
     'DRYBIO_D': 'aboveground dry standing dead tree biomass (tons per acre)',
     'CARBON_L': 'live aboveground carbon (tons per acre)',
     'CARBON_D': 'standing dead carbon (tons per acre)',
-    'CARBON_DOWN_DEAD': 'down dead carbon > 3 inches diameter (tons per acre); estimated by FIA based on forest type, geographic area, and live tree carbon density.'
+    'CARBON_DOWN_DEAD': 'down dead carbon > 3 inches diameter (tons per acre); estimated by FIA based on forest type, geographic area, and live tree carbon density.',
+    'TREEMAP_ID': 'unique identifier assigned to each plot; corresponds to FIA PLT_CN'
     }
 
 # Discrete (thematic + ordinal) columns with their associated color information. FORTYPCD + FLDTYPCD do not get assigned colors from here and are thus listed as NA
@@ -151,7 +153,8 @@ col_units = {
     'DRYBIO_D': 'tons/acre',
     'CARBON_L': 'tons/acre',
     'CARBON_D': 'tons/acre',
-    'CARBON_DOWN_DEAD': 'tons/acre'
+    'CARBON_DOWN_DEAD': 'tons/acre',
+    'TREEMAP_ID': 'NA'
 }
 
 #%%
@@ -209,6 +212,8 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
     # Account for DBF column names vs official attribute names
     if columnName == 'CARBON_DOWN_DEAD':
         df_column = df['CARBON_DOW']
+    elif columnName == 'TREEMAP_ID':
+        df_column = df[tmid_col_name]
     else:
         df_column = df[columnName]
     
