@@ -57,8 +57,8 @@ if (length(zones) == 1) {
 #############################################
 
 # Create destination table
-t = data.frame()
-
+t_unique = data.frame()
+unique_out = data.frame()
 
 out_dat <- c()
 
@@ -91,14 +91,38 @@ for (year in years){
         cur_zone
       }
     
+    # Load raster and count unique px
+    #####################################################
+    
+    message(glue::glue('working on zone {zone_num} + {year}; counting unique pixels'))
+    
+    r_path <- glue::glue('{home_dir}03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/{cur_zone_zero}/01_Imputation/{cur_zone_zero}_{project_name_path}_Imputation.tif')
+    
+    if(!file.exists(r_path)){
+      r_path <- glue::glue('{home_dir}03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/{cur_zone_zero}/01_Imputation/{cur_zone_zero}_{project_name}_Imputation.tif')
+    }
+    
+    # load raster
+    r <- terra::rast(r_path)
+    
+    # get unique values
+    unique_vals <- unique(r)
+    
+    # bind to data frame for export
+    t_unique <- rbind(t_unique, unique_vals)
+    
+    #Pull in eval data 
+    ###########################################################################
+    
+    # Load eval data
     for (eval_type in eval_types) {
       
       # set eval type for testing
       #eval_type = "TargetLayerComparison"
       
-      message(glue::glue("working on zone {zone_num} + {eval_type} + {year}"))
+      message(glue::glue("getting eval stats for {zone_num} + {eval_type} + {year}"))
       
-      # make path to RDS, specific to eval typ[e]
+      # make path to RDS, specific to eval type
       if(eval_type == "model_eval"){
         eval_string = "00_Model_Evaluation"
         
@@ -172,11 +196,37 @@ for (year in years){
   # Join with table
   out_dat = rbind(out_dat, acc_df)
   
-}}}}
+      }}}
+  
+  # get # unique ids in x table
+  
+  
+  # get # unique ids in year
+  num_unique <- nrow(unique(t_unique))
+  print(glue::glue('{num_unique} unique ids in {year} imputation'))
+  d <- data.frame('num_unique' = c(num_unique),
+                  'year' = c(year))
+  
+  # bind with output data frame
+  unique_out <- rbind(unique_out, d)
+  
+  }
 
 str(out_dat)
 
-# Prep out table for export
+# Prep unique values table for export
+###################################################
+
+# load overall x table
+xtable <- read.csv(glue::glue('{home_dir}/03_Outputs/06_Reference_Data/v2020/02_X_table_CONUS/x_table_complete_CONUS_2022.csv'))
+
+nplots = length(unique(xtable$TM_ID))
+
+unique_out$totalplots = nplots
+unique_out$pct_imputed = unique_out$num_unique / unique_out$totalplots
+
+# Prep out accuracy table for export
+######################################################
 out_years_long <- 
 out_dat %>%
   pivot_wider(names_from = var, values_from = acc)
@@ -213,28 +263,9 @@ national_acc <-
               evh = mean(evh),
               evt_gp = mean(evt_gp)) 
 
-# Get total number of unique plots imputed
-##################################################
+write.csv(national_acc, glue::glue('{output_dir}/{output_years}_{project_name_base}_national_accuracy.csv'),
+          row.names = FALSE)
 
-for(year in years) {
-  
-  message(glue::glue('calculating number of unique plots in {year} imputation'))
-  
-  # load tif
-  ras <- terra::rast(glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/04_Mosaic_assembled_model_outputs/TreeMap_CONUS_{year}.tif')
-  
-  # load overall x table
-  xtable <- read.csv(glue::glue('{home_dir}/03_Outputs/06_Reference_Data/v{year}/02_X_table_CONUS/x_table_complete_CONUS_{year}.csv')
+write.csv(unique_out, glue::glue('{output_dir}/{output_years}_{project_name_base}_uniqueplots.csv'),
+          row.names = FALSE)
 
-  # Unique plots imputed in zone
-  unique_plts <- length(freq(ras)$value)
-
-  # total # plots available
-  total_plts <- nrow(xtable)
-
-  # of total available plots imputed
-  pct = unique_plots / total_plts
-
-
-
-}
