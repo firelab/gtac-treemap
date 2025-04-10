@@ -64,6 +64,7 @@ out_dat <- c()
 
 # Loop over years
 for (year in years){
+  year = 2022
 
   # make string for project name
   project_name <- glue::glue('{year}_{project_name_base}')
@@ -79,7 +80,7 @@ for (year in years){
   for (zone_num in zones_list){
     
     # set zone
-    #zone_num = 1
+    zone_num = 1
     
     # Set zone identifiers 
     cur_zone <- glue::glue('z{zone_num}') 
@@ -89,6 +90,9 @@ for (year in years){
       }
     
     for (eval_type in eval_types) {
+      
+      # set eval type for testing
+      eval_type = "TargetLayerComparison"
       
       message(glue::glue("working on zone {zone_num} + {eval_type} + {year}"))
       

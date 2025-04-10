@@ -47,14 +47,14 @@ gdal.UseExceptions()
 chunk_size = 48000 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap_CONUS_2022.tif"
-treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap_CONUS_2022.tif.vat.dbf"
+treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif"
+treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif.vat.dbf"
 
 # Specify project area
 projectArea = "CONUS"
 
 # specify project year
-projectYear = 2022
+projectYear = 2020
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
@@ -65,7 +65,7 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 # Specify data access link, used in metadata
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
-# Specify output folder
+# Specify output folder - will be created if it doesn't already exist
 outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/"
 
 # Name of TreeMap ID column in Raster Attribute Table
@@ -176,7 +176,12 @@ rawTreeMapNoDataValue = og_band.GetNoDataValue()
 driver = gdal.GetDriverByName('GTiff')
 
 # Set output name
-outputFileName = 'TreeMap_'+projectArea+ '_'+str(projectYear)
+outputFileName = 'TreeMap'+str(projectYear)+"_"+projectArea
+
+# Make sure output folder exists
+if not os.path.exists(outputFolder):
+    os.makedirs(outputFolder)
+
 #%%
 ######################################################################
 # Functions
