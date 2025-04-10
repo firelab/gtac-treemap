@@ -4,17 +4,23 @@ This script is a work-in-progress.
 It takes all tifs in the format 'TreeMap{year}_*.tif' and uses the assetManagerLib.py from geeViz 
 to upload to gcloud and manifest an asset into earth engine.
 '''
+#%%
 
 import os
+import geeViz
 from glob import glob
 from geeViz import assetManagerLib as aml
+year = '2022'
 tm_ver = '2022'
+landfire_ver = '2.0.0'
 image_folder = r'\\166.2.126.25\TreeMap\03_Outputs\04_Separated_Attribute_Rasters\2022'
 gcs_bucket = 'separated-attributes/2022/'
 gee_asset_path = 'treemap-386222/assets/Final_Outputs/2022/TreeMap_CONUS_2022_SeparatedAttributes'
 
 # Get all the images
 images = glob(os.path.join(image_folder, f'TreeMap_CONUS_{tm_ver}_*.tif'))
+
+#%%
 
 # Band names
 band_names_pyramids = [
@@ -43,7 +49,8 @@ band_names_pyramids = [
 
 properties = {
     'studyArea': 'CONUS',
-    'year': tm_ver,
+    'year': year,
+    'landfire_ver':landfire_ver
 }
 
 # Take many images and combine into one via geeViz 
