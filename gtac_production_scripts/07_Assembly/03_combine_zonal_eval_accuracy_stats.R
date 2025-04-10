@@ -268,7 +268,8 @@ national_acc <-
       group_by(year) %>%
     summarise(evc = mean(evc),
               evh = mean(evh),
-              evt_gp = mean(evt_gp)) 
+              evt_gp = mean(evt_gp),
+              disturb_code = mean(disturb_code)) 
 
 write.csv(national_acc, glue::glue('{output_dir}/{output_years}_{project_name_base}_national_accuracy.csv'),
           row.names = FALSE)
