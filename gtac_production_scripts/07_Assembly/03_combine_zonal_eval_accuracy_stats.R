@@ -57,6 +57,7 @@ if (length(zones) == 1) {
 #############################################
 
 # Create destination table
+
 t_unique = data.frame()
 unique_out = data.frame()
 
@@ -82,8 +83,9 @@ for (year in years){
   for (zone_num in zones_list){
     
     # set zone
+
     #zone_num = 1
-    
+   
     # Set zone identifiers 
     cur_zone <- glue::glue('z{zone_num}') 
     cur_zone_zero <- if(zone_num < 10) {
@@ -91,6 +93,7 @@ for (year in years){
         cur_zone
       }
     
+
     # Load raster and count unique px
     #####################################################
     
@@ -123,6 +126,7 @@ for (year in years){
       message(glue::glue("getting eval stats for {zone_num} + {eval_type} + {year}"))
       
       # make path to RDS, specific to eval type
+
       if(eval_type == "model_eval"){
         eval_string = "00_Model_Evaluation"
         
@@ -196,6 +200,7 @@ for (year in years){
   # Join with table
   out_dat = rbind(out_dat, acc_df)
   
+
       }}}
   
   # get # unique ids in x table
@@ -227,6 +232,7 @@ unique_out$pct_imputed = unique_out$num_unique / unique_out$totalplots
 
 # Prep out accuracy table for export
 ######################################################
+
 out_years_long <- 
 out_dat %>%
   pivot_wider(names_from = var, values_from = acc)
@@ -253,6 +259,7 @@ write.csv(out_years_long, glue::glue('{output_dir}/{output_years}_{project_name_
 
 write.csv(out_years_wide, glue::glue('{output_dir}/{output_years}_{project_name_base}_eval_var_accuracy_allZones_yearsWide.csv'),
           row.names = FALSE)
+
 
 # Summarize to national level
 national_acc <- 
