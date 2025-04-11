@@ -64,9 +64,6 @@ out_dat_all <- c()
 
 
 
-t_unique = data.frame()
-unique_out = data.frame()
-
 # Loop over years
 for (year in years){
 
@@ -253,16 +250,6 @@ out_dat_all |>
   dplyr::summarise(n = dplyr::n(), .by = c(zone, cur_zone_zero, eval_type, year, var)) |>
   dplyr::filter(n > 1L) 
 
-# Prep unique values table for export
-###################################################
-
-# load overall x table
-xtable <- read.csv(glue::glue('{home_dir}/03_Outputs/06_Reference_Data/v2020/02_X_table_CONUS/x_table_complete_CONUS_2022.csv'))
-
-nplots = length(unique(xtable$TM_ID))
-
-unique_out$totalplots = nplots
-unique_out$pct_imputed = unique_out$num_unique / unique_out$totalplots
 
 # Prep out accuracy table for export
 ######################################################
