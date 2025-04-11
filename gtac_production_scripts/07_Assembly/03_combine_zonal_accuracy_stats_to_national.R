@@ -13,6 +13,9 @@
 #years
 years <- c(2020, 2022)
 
+# study area(s) - currently only takes 'CONUS'
+studyArea <- 'CONUS'
+
 # project name structure
 project_name_base <- "Production_newXtable"
 
@@ -53,21 +56,23 @@ if (length(zones) == 1) {
   zones_list = zones
 }
 
+# Create destination table
+out_dat_all <- c()
+
 # Do the work - looping
 #############################################
 
-# Create destination table
+
 
 t_unique = data.frame()
 unique_out = data.frame()
 
-out_dat <- c()
-
 # Loop over years
 for (year in years){
-  
-  # set year for testing
+
   #year = 2022
+  
+  out_dat_year <- c()
 
   # make string for project name
   project_name <- glue::glue('{year}_{project_name_base}')
@@ -78,6 +83,38 @@ for (year in years){
   # set evaluation directory
   eval_dir <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/")
   
+  # make national eval folder if it doesn't exist yet
+  if(!file.exists(glue::glue('{eval_dir}/National/'))) {
+    dir.create(glue::glue('{eval_dir}/National/'))
+  }
+  
+  # Load rat and xtable; and count unique px
+  #####################################################
+  
+  message(glue::glue('working on {year}; counting unique pixels'))
+  
+  r_path <- glue::glue('{home_dir}03_Outputs/07_Projects/{project_name}/04_Mosaic_assembled_model_outputs/TreeMap{year}_{studyArea}.tif')
+  
+  r <- terra::rast(r_path)
+  
+  #get rat
+  rat <- data.frame(cats(r))
+  
+  # get # unique ids in x table
+  xtable <- read.csv(glue::glue("{home_dir}/03_Outputs/06_Reference_Data/v{year}/02_X_table_{studyArea}/x_table_complete_{studyArea}_2022.csv"))
+  
+  #get all data 
+  unique_ids <- data.frame(n_unique = nrow(rat), # how many unique ids were imputed to the zone?
+                           n_available = nrow(xtable), # how many unique ids were available?
+                           pct_imputed = nrow(rat)/nrow(xtable)) # pct of available ids imputed? 
+  
+  # export
+  write.csv(unique_ids, 
+            glue::glue("{eval_dir}/National/Treemap{year}_{studyArea}_uniqueIdsImputed.csv"),
+            row.names = FALSE)
+  
+  # clean up
+  rm(rat, xtable)
   
   # Loop over zones
   for (zone_num in zones_list){
@@ -85,7 +122,7 @@ for (year in years){
     # set zone
 
     #zone_num = 1
-   
+    
     # Set zone identifiers 
     cur_zone <- glue::glue('z{zone_num}') 
     cur_zone_zero <- if(zone_num < 10) {
@@ -94,26 +131,6 @@ for (year in years){
       }
     
 
-    # Load raster and count unique px
-    #####################################################
-    
-    message(glue::glue('working on zone {zone_num} + {year}; counting unique pixels'))
-    
-    r_path <- glue::glue('{home_dir}03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/{cur_zone_zero}/01_Imputation/{cur_zone_zero}_{project_name_path}_Imputation.tif')
-    
-    if(!file.exists(r_path)){
-      r_path <- glue::glue('{home_dir}03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/{cur_zone_zero}/01_Imputation/{cur_zone_zero}_{project_name}_Imputation.tif')
-    }
-    
-    # load raster
-    r <- terra::rast(r_path)
-    
-    # get unique values
-    unique_vals <- unique(r)
-    
-    # bind to data frame for export
-    t_unique <- rbind(t_unique, unique_vals)
-    
     #Pull in eval data 
     ###########################################################################
     
@@ -196,28 +213,45 @@ for (year in years){
                       cur_zone_zero = cur_zone_zero,
                       eval_type = eval_type,
                       year = year)
+      
+      
+      }
   
-  # Join with table
-  out_dat = rbind(out_dat, acc_df)
+  # Join with year table
+  out_dat_year = rbind(out_dat_year, acc_df)
   
-
-      }}}
+  # Join with overall table
+  out_dat_all = rbind(out_dat_all, acc_df)
   
-  # get # unique ids in x table
+    }}
   
+  # calculation national average for each year
+  out_dat_year_avg <- 
+    out_dat_year %>%
+    group_by(var, eval_type) %>%
+    dplyr::summarize(national_avg_acc = mean(acc, na.rm = TRUE)) %>%
+    dplyr::arrange(eval_type)
   
-  # get # unique ids in year
-  num_unique <- nrow(unique(t_unique))
-  print(glue::glue('{num_unique} unique ids in {year} imputation'))
-  d <- data.frame('num_unique' = c(num_unique),
-                  'year' = c(year))
+  # export tables for each year
+  write.csv(out_dat_year,
+             glue::glue('{eval_dir}/National/Treemap{year}_{studyArea}_zonalAccuracy.csv'),
+             row.names = FALSE)
   
-  # bind with output data frame
-  unique_out <- rbind(unique_out, d)
+  #
+  write.csv(out_dat_year_avg,
+            glue::glue('{eval_dir}/National/Treemap{year}_{studyArea}_nationalAvgAccuracy.csv'),
+            row.names = FALSE)
   
   }
+  
+  
 
-str(out_dat)
+str(out_dat_all)
+
+# check for duplicates
+out_dat_all |>
+  dplyr::summarise(n = dplyr::n(), .by = c(zone, cur_zone_zero, eval_type, year, var)) |>
+  dplyr::filter(n > 1L) 
 
 # Prep unique values table for export
 ###################################################
@@ -234,11 +268,11 @@ unique_out$pct_imputed = unique_out$num_unique / unique_out$totalplots
 ######################################################
 
 out_years_long <- 
-out_dat %>%
+out_dat_all %>%
   pivot_wider(names_from = var, values_from = acc)
 
 out_years_wide <-
-out_dat %>%
+out_dat_all %>%
   pivot_wider(names_from = c(var, year), 
               values_from = acc,
               names_sort = TRUE)
@@ -274,6 +308,4 @@ national_acc <-
 write.csv(national_acc, glue::glue('{output_dir}/{output_years}_{project_name_base}_national_accuracy.csv'),
           row.names = FALSE)
 
-write.csv(unique_out, glue::glue('{output_dir}/{output_years}_{project_name_base}_uniqueplots.csv'),
-          row.names = FALSE)
 
