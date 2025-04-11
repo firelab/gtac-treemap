@@ -1,6 +1,8 @@
 '''
 This script is a work-in-progress.
 
+Go back to Nick Storey for support on getting multiple images into a single image with multiple bands.
+
 It takes all tifs in the format 'TreeMap{year}_*.tif' and uses the assetManagerLib.py from geeViz 
 to upload to gcloud and manifest an asset into earth engine.
 '''
