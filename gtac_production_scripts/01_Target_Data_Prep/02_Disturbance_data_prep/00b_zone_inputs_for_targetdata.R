@@ -6,7 +6,7 @@
 # Last updated: 12/9/24
 
 # TO DO:
-# - address inconsistencies in EVT vs Topo Landfire Paths
+# - address inconsistencies in EVT vs Topo lf Paths
 # - add a switch for LCMS+LF disturbance vs LF only disturbance? 
 # - export file showing input data and parameters: 
 # - model year, years of data, versions of input data used, lcms thresholds
@@ -49,25 +49,25 @@ source(lib_path)
 #increase memory fraction available
 terraOptions(memfrac = 0.8)
 
-# Load pre-existing params, if available
-#--------------------------------------------#
-
-this_dir <- this.path::this.dir()
-
-if(!is.na(target_prep_params_path)) {
-  # load params
-
-  params_script_path <- glue::glue('{this_dir}/{target_prep_params_path}')
-
-  # load(params_script_path) # un-comment to run independently from the control script
-
-  } else {
-
-    inputs_for_target_data <- glue::glue('{this_dir}/00a_project_inputs_for_targetdata.R')
-
-    source(inputs_for_target_data)
-
-}
+# # Load pre-existing params, if available
+# #--------------------------------------------#
+# 
+# this_dir <- this.path::this.dir()
+# 
+# if(!is.na(target_prep_params_path)) {
+#   # load params
+# 
+#   params_script_path <- glue::glue('{this_dir}/{target_prep_params_path}')
+# 
+#   # load(params_script_path) # un-comment to run independently from the control script
+# 
+#   } else {
+# 
+#     inputs_for_target_data <- glue::glue('{this_dir}/00a_project_inputs_for_targetdata.R')
+# 
+#     source(inputs_for_target_data)
+# 
+# }
 
 
 ##################################################################
@@ -129,11 +129,11 @@ if(is.na(aoi_name)) {
 # Export data paths- disturbance
 #---------------------------------------------------------------#
 # create output file names
-landfire_fire_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_Fire_Years.tif')
-landfire_fire_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_Fire_Binary.tif')
+LF_fire_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Years.tif')
+LF_fire_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Binary.tif')
 
-landfire_ind_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_InsectDisease_Years.tif')
-landfire_ind_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LandfireDist_InsectDisease_Binary.tif')
+LF_ind_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Years.tif')
+LF_ind_binary_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Binary.tif')
 
 
 lcms_slowloss_years_outpath <- glue::glue('{target_dir_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
@@ -234,7 +234,7 @@ if(!file.exists(target_dir_z)) {
 
 # Remove unused objects
 #------------------------------------------------#
-rm(list.of.packages, new.packages)
+#rm(list.of.packages, new.packages)
 
 
 # Make RDS of input parameters used

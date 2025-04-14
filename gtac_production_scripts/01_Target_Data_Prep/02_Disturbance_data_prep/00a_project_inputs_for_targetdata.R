@@ -37,18 +37,17 @@ default_crs_name <- "lf230_crs"
 
 # set landfire version
 
-# # TOPO
-# landfire_version_topo <- 220
-# landfire_year_topo <- 2020
-# 
-# # VEG
-# LFveg_yearDict <- list("2016" = 200, 
-#                        "2020" = 220, 
-#                        "2022" = 230,
-#                        "2023" = 240)
-# 
-# landfire_year_veg <- year
-# landfire_version_veg <- LFveg_yearDict[[as.character(landfire_year_veg)]]
+# VEG
+LFveg_yearDict <- list("2016" = 200,
+                       "2020" = 220,
+                       "2022" = 230,
+                       "2023" = 240)
+
+LF_year <- year
+LF_version <- LFveg_yearDict[[as.character(LF_year)]]
+
+# Create abbreviations that will be used in making paths
+year_short <- substr(year, 3, 4)
 
 # Load TreeMap script library
 #--------------------------------------------------#
@@ -74,35 +73,42 @@ data_dir <- glue::glue('{home_dir}/01_Data/')
 # relative to home_dir
 zone_metadata_path <- glue::glue('{data_dir}02_Landfire/metadata/LF_zones_all_byStudyArea.csv')
 
-
-# set path to landfire rasters 
-landfire_disturbance_dir_1999_2014 <- glue::glue('{data_dir}02_Landfire/Historic_Disturbance/')
-landfire_disturbance_dir_2015_2016 <- glue::glue('{data_dir}02_Landfire/LF_200/Disturbance/')
-landfire_disturbance_dir_2017_2020 <- glue::glue('{data_dir}02_Landfire/LF_220/Disturbance/')
-landfire_disturbance_dir_2021_2022 <- glue::glue('{data_dir}02_Landfire/LF_230/Disturbance/')
-
-#landfire_veg_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_veg}/Vegetation/')
-#landfire_topo_dir <- glue::glue('{data_dir}02_Landfire/LF_{landfire_version_topo}/Topo/')
-
-
 # set path to landfire vector data
 lf_zones_path_CONUS <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp')
 lf_zones_path_AK <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/alaska_mapzones.shp')
 lf_zones_path_HI <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/hawaii_mapzones.shp')
 
+if(study_area == 'CONUS'){
+  lf_zones_path = lf_zones_path_CONUS
+} else if(study_area == 'AK') {
+  lf_zones_path = lf_zones_path_AK
+} else if(study_area == 'HI') {
+  lf_zones_path = lf_zones_path_HI
+} else {message("enter a valid field for 'study_area'. Options are: 'CONUS', 'HI', 'AK'")}
+
+
+# set path to landfire rasters 
+lf_dist_dir <- glue::glue('{data_dir}02_Landfire/Annual_Disturbance/')
+lf_veg_dir <- glue::glue("{data_dir}/02_Landfire/LF_{LF_version}/Vegetation/")
+lf_topo_dir <- glue::glue("{data_dir}/02_Landfire/LF_220/Topo/")
+
 # set dir to lcms raw probability rasters
 lcms_dir <- glue::glue('{data_dir}05_LCMS/01_Threshold_Testing/01_Raw/02_Raw_Probabilities/')
 
-# Paths to specific Landfire rasters - not disturbance
-# evc_path <- glue::glue('{landfire_veg_dir}/EVC/LF{landfire_year_veg}_EVC_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVC_{landfire_version_veg}.tif')
-# evh_path <- glue::glue('{landfire_veg_dir}/EVH/LF{landfire_year_veg}_EVH_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVH_{landfire_version_veg}.tif')
-# evt_path <- glue::glue('{landfire_veg_dir}/EVT/LF{landfire_year_veg}_EVT_{landfire_version_veg}_CONUS/Tif/LC{substr(landfire_year_veg, 3,4)}_EVT_{landfire_version_veg}.tif')
+###########################################################
 
-#elev_path <- glue::glue('{landfire_topo_dir}/Elev/LF{landfire_year_topo}_Elev_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Elev_{landfire_version_topo}.tif')
-# slopeP_path <- glue::glue('{landfire_topo_dir}/SlpP/LF{landfire_year_topo}_SlpP_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpP_{landfire_version_topo}.tif')
-# slopeD_path <- glue::glue('{landfire_topo_dir}/SlpD/LF{landfire_year_topo}_SlpD_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_SlpD_{landfire_version_topo}.tif')
-# asp_path <- glue::glue('{landfire_topo_dir}/Asp/LF{landfire_year_topo}_Asp_{landfire_version_topo}_CONUS/Tif/LC{substr(landfire_year_topo, 3,4)}_Asp_{landfire_version_topo}.tif')
+# paths to specific landfire rasters
 
+evc_path <- glue::glue("{lf_veg_dir}/EVC/LF{year}_EVC_{LF_version}_{study_area}/Tif/LC{year_short}_EVC_{LF_version}.tif")
+evh_path <- glue::glue("{lf_veg_dir}/EVH/LF{year}_EVH_{LF_version}_{study_area}/Tif/LC{year_short}_EVH_{LF_version}.tif")
+evt_path <- glue::glue("{lf_veg_dir}/EVT/LF{year}_EVT_{LF_version}_{study_area}/Tif/LC{year_short}_EVT_{LF_version}.tif")
+
+elev_path <- glue::glue('{lf_topo_dir}/Elev/LF2020_Elev_220_CONUS/Tif/LC20_Elev_220.tif')
+slopeP_path <- glue::glue('{lf_topo_dir}/SlpP/LF2020_SlpP_220_CONUS/Tif/LC20_SlpP_220.tif')
+slopeD_path <- glue::glue('{lf_topo_dir}/SlpD/LF2020_SlpD_220_CONUS/Tif/LC20_SlpD_220.tif')
+asp_path <- glue::glue('{lf_topo_dir}/Asp/LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.tif')
+
+###################################################################
 
 # Load CRS
 #----------------------------------------------------#
@@ -121,6 +127,10 @@ lf220_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_220/CRS/LF
 
 # lf230
 lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
+
+# lf240
+lf240_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_240/CRS/LF_240_crs.prj"))
+
 
 #alaska
 ak_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_zones/Landfire_zones/alaska_mapzones.prj"))
@@ -142,7 +152,7 @@ project_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/')
 target_dir <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/pre_mask/")
 
 # Directory where EVT_GP remap table will be located
-#evt_gp_remap_table_path <- target_dir
+evt_gp_remap_table_path <- target_dir
 
 # Make RDS of input parameters used
 #---------------------------------------------------------#
