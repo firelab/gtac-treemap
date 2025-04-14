@@ -17,12 +17,15 @@ all_states<- data.frame("CN" = "CN",
 all_states<- all_states[-1,]
 
 
+# Loop through states, limiting to columns of relevance and CN's in complete x-table
+
 for(i in seq_along(plot_tables)){
   state<- read_csv(plot_tables[i], col_select = columns_to_keep)
-  # only keep the needed csv's
+  
+  # only keep the needed cn's
   state<- state[state$CN %in% all_cns,]
   
-  # bind this state to the others
+  # bind the plots from this state to the others assembled so far
   all_states<- rbind(all_states, state)
   
   #
