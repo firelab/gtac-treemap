@@ -3,19 +3,40 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "rmrs_production_scripts/00_USDA_TreeMap_2014/reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 12/17/24
+# Last Updated: 4/14/25
 
+# Final Output Rasters: 
+# - disturbance code (0/1/2 for none/Fire/Other)
+# - disturbance year - years since disturbance
 
-# Output rasters: 
+# Intermediate Output Rasters: 
 # - landfire fire years 
 # - landfire fire binary
 # - landfire insect and disease years
 # - landfire insect and disease binary
 
 
-##############################
-# SET Inputs
-###############################
+#################################################################
+# Set Inputs
+#################################################################
+
+# define year
+year_input <- 2023
+
+# define project area
+study_area <- "CONUS"
+
+# landfire version - formatted as "LF_{###}"
+LF_version <- 'LF_240' 
+
+# Initialize directories
+this_dir <- this.path::this.dir()
+project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R")
+zone_inputScript <- glue::glue("{this_dir}/00b_zone_inputs_for_targetdata.R")
+
+#######################################################
+# Parallelization settings - within zone
+#######################################################
 
 # breakup factor - how many tiles to break the area into? as a factor of area px 
 # 1 = 1 tile, 5 = many tiles
@@ -24,73 +45,30 @@ break.up <- 5
 # set number of cores used for parallelization
 ncores <- 8
 
-# get path to inputs script
-this_dir <- this.path::this.dir()
-inputs_script <- glue::glue('{this_dir}/00b_zone_inputs_for_targetdata.R')
-
-#source(inputs_script) # un-comment to run independently from the control script
-
 
 ###################################################
-# LOAD
+# LOAD DATA
 ###################################################
 
-# load LF zone data
-LF_zones <- terra::vect(zones_path)
+source(project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R"))
 
-# select single LF zone
-zone <- subset(LF_zones, LF_zones$ZONE_NUM == zone_num) 
+# Load the landfire zones 
+lf_zones <- terra::vect(lf_zones_path)
 
-#project
-zone <- terra::project(zone, zone_output_crs)
-
-# get name of zone
-zone_name <- glue::glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
-
-
-# Optional subset
-#---------------------------------------#
-
-if (!is.na(aoi_path)) {
-  # load aoi subset - utah uintas only
-  aoi <- vect(aoi_path) %>%
-    project(landfire_crs)
-  
-  # reassign
-  zone <- aoi
-  zone_name <- aoi_name
-  message("using input shapefile as AOI")
-} else{
-  message("using landfire zone as AOI")
-}
-
-# Final zone prep
-#-------------------------------------------#
-# set aoi_name field if it doesn't already exist via aoi subset
-if(is.na(aoi_name)) {
-  aoi_name <- ""
-}
+# Reproject the landfire zones to match the desired CRS
+lf_zones<- terra::project(lf_zones, output_crs)
+lf_zone_nums<- sort(lf_zones$ZONE_NUM)
 
 # Load Landfire disturbance data
 #-----------------------------------------------------#
 
-message("Identifying landfire data to load")
+message("Identifying landfire disturbance data to load")
 
-# list landfire files 
-landfire_files_1999_2014 <- list.files(landfire_disturbance_dir_1999_2014, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
-landfire_files_2015_2016 <- list.files(landfire_disturbance_dir_2015_2016, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
-landfire_files_2017_2020 <- list.files(landfire_disturbance_dir_2017_2020, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
-landfire_files_2021_2022 <- list.files(landfire_disturbance_dir_2021_2022, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
-
-# join all
-landfire_files = c(landfire_files_1999_2014,
-                   landfire_files_2015_2016,
-                   landfire_files_2017_2020,
-                   landfire_files_2021_2022)
+lf_files <- list.files(lf_dist_dir, full.names = TRUE, recursive = TRUE, pattern = ".tif$")
 
 # filter files to only files we're interested in 
-landfire_files %<>% 
-  str_subset(pattern = "HDst", negate = TRUE)  %>% # remove historic disturbance
+lf_files %<>% 
+  #str_subset(pattern = "HDst", negate = TRUE)  %>% # remove historic disturbance
   str_subset(pattern = file_pattern) %>% # select only files from the map area of choice
   cbind(str_extract(., "[1-2][0,9][0-9][0-9]")) %>% # bind with year
   as.data.frame() %>% # convert the list to a data.frame
@@ -100,16 +78,18 @@ landfire_files %<>%
   arrange(year) %>% # sort by year
   filter(year %in% year_list) # filter to years of interest
 
-#inspect
-#landfire_files$path
+# #inspect
+# lf_files$path
+# terra::rast(lf_files[25,1])
 
 #message("Loading landfire data as VRT")
-lf_dist <- terra::vrt(landfire_files$path, filename = glue::glue("{tmp_dir}/lf_dist.vrt"), options = "-separate", overwrite = TRUE)
+lf_dist <- terra::vrt(lf_files$path, filename = glue::glue("{tmp_dir}/lf_dist.vrt"), options = "-separate", overwrite = TRUE)
 
-
+#inspect
+#lf_dist[[20:25]]
 
 ##### Get change codes to reclassify
-#--------------------------------------------------#
+##############################################################
 
 # field info in metadata: https://apps.fs.usda.gov/fsgisx01/rest/services/RDW_Landfire/US_Disturbance_v200/ImageServer/info/metadata
 # for landfire: classes of change are denoted by middle digit
@@ -157,182 +137,258 @@ rcl_ind[rcl_ind != 2] <- NA
 # Prep Landfire Disturbance - in parallel
 ####################################################
 
-# Make tiles
-#----------------------------------------------------#
-
-message("making tiles")
-
-# how big is the zone? 
-# maybe: if zone > size, then tile
-#expanse <- terra::expanse(zone, unit = "km")
-
-# convert zone shp to raster
-bbox <- terra::rast(zone, crs = terra::crs(zone), resolution = terra::res(lf_dist))
-zone_r <- terra::rasterize(zone, bbox)
-
-# break up zone into multiple sections to speed up processing
-h <- base::ceiling(ncol(zone_r)/break.up)
-v <- base::ceiling(nrow(zone_r)/break.up)
-
-# aggregate - template for making tiles to divvy up zone
-agg <- terra::aggregate(zone_r, fact = c(h,v))
-agg[] <- 1:ncell(agg)
-
-# inspect tiles
-#plot(agg, alpha = 0.5)
-#plot(zone, add = TRUE)
-
-# subset the raster and create temporary files
-# tiles with only NA values are omitted
-# the function returns file names for the temporary files
-tiles <- zone_r %>%
-  terra::makeTiles(agg, paste0(tempfile(), '_.tif'), na.rm = TRUE)
-
-rm(lf_dist, agg, bbox)
-gc()
-
-# Loop over tiles
-#---------------------------------------------------------------#
-message("Getting most recent year of change from Landfire stack")
-
-# set up dopar
-cl <- makeCluster(ncores, outfile = glue::glue("{tmp_dir}/cl_report.txt"))
-registerDoParallel(cl)
-#registerDoSEQ() # option to register sequentially - for testing
-
-# load packages to each cluster
-clusterCall(cl, function(){
-  library(tidyverse);
-  #library(glue);
-  library(terra)
-})
-
-tic()
-
-# foreach loop dopar over tiles
-f <- foreach(i = 1:length(tiles),
-             .packages= c("tidyverse", "terra", "doParallel", "foreach"),
-             .export = c("landfire_files") # export list of files to each cluster
-) %dopar% {
+#for(zone_input in lf_zone_nums){
   
   # for testing
-  #i = 20
+  zone_input = 1
   
-  fn <- tiles[i]
+  message(glue::glue("Creating disturbance layers for zone {zone_input}"))
+  source(zone_inputScript)
+  tic()
   
-  # read raster tile into memory
-  tile <- terra::rast(fn) %>%
-    terra::trim()
+  # Subset to zone
+  #----------------------------------------------------#
   
-  # read landfire data as vrt
-  lf_dist <- terra::vrt(landfire_files$path, filename = glue::glue("{tmp_dir}/lf_dist.vrt"), options = "-separate", overwrite = TRUE)
+  lf_zone <- lf_zones[lf_zones$ZONE_NUM == zone_input,]
   
-  # Crop and mask landfire disturbance layers to tile
-  #---------------------------------------------#
-  tile_r <- terra::crop(lf_dist, tile, mask = TRUE)
   
-  # Prep Landfire fire layers
-  # --------------------------------------------#
-  # get year of most recent fire
-  landfire_fire_years_tile <- 
-    tile_r %>%
-    terra::classify(cbind(nums, rcl_fire)) %>% # reclass fire codes to binary indicator for each year
-    terra::app(which.max.hightie) %>% # get most recent year
-    terra::classify(cbind(c(seq(1:length(landfire_files$year))), landfire_files$year)) # reclassify index values to years
+  # Make tiles
+  #----------------------------------------------------#
   
-  # Export
-  #---------------------------------------#
-  writeRaster(landfire_fire_years_tile, 
-              filename = paste0(tmp_dir, "/lf/fire_years_tile", i, ".tif"),
-              datatype = "INT2U",
-              overwrite = TRUE)
-
+  message("making tiles")
   
-  # remove unused files
-  rm(landfire_fire_years_tile)
+  # how big is the zone? 
+  # maybe: if zone > size, then tile
+  #expanse <- terra::expanse(zone, unit = "km")
+  
+  # convert zone shp to raster
+  bbox <- terra::rast(lf_zone, crs = terra::crs(lf_zone), resolution = terra::res(lf_dist))
+  lf_zone_r <- terra::rasterize(lf_zone, bbox)
+  
+  # break up zone into multiple sections to speed up processing
+  h <- base::ceiling(ncol(lf_zone_r)/break.up)
+  v <- base::ceiling(nrow(lf_zone_r)/break.up)
+  
+  # aggregate - template for making tiles to divvy up zone
+  agg <- terra::aggregate(lf_zone_r, fact = c(h,v))
+  agg[] <- 1:ncell(agg)
+  
+  # inspect tiles
+  #plot(agg, alpha = 0.5)
+  #plot(lf_zone, add = TRUE)
+  
+  # subset the raster and create temporary files
+  # tiles with only NA values are omitted
+  # the function returns file names for the temporary files
+  tiles <- lf_zone_r %>%
+    terra::makeTiles(agg, paste0(tempfile(), '_.tif'), na.rm = TRUE)
+  
+  message(glue::glue('n tiles = {length(tiles)}; tile size = {h}px x {v}px'))
+  
+  rm(agg, bbox)
   gc()
   
-  # Prep Landfire insect and disease
-  # -----------------------------------------#
+  # Loop over tiles
+  #---------------------------------------------------------------#
+  message("Looping over tiles: Getting most recent year of change from Landfire stack")
   
-  # get year of most recent insect and disease
-  landfire_ind_years_tile <- 
-    tile_r %>%
-    terra::classify(cbind(nums, rcl_ind)) %>% # reclass disturbance codes to binary for each year
-    terra::app(which.max.hightie) %>% # get most recent year of disturbance
-    terra::classify(cbind(c(seq(1:length(landfire_files$year))), landfire_files$year)) # reclassify index values to years
+  # set up dopar
+  cl <- makeCluster(ncores, outfile = glue::glue("{tmp_dir}/cl_report.txt"))
+  registerDoParallel(cl)
+  #registerDoSEQ() # option to register sequentially - for testing
   
-  # Export
-  #---------------------------------------#
+  # load packages to each cluster
+  clusterCall(cl, function(){
+    library(tidyverse);
+    #library(glue);
+    library(terra)
+  })
   
-  writeRaster(landfire_ind_years_tile, 
-              filename = paste0(tmp_dir, "/lf/ind_years_tile", i, ".tif"),
+  # foreach loop dopar over tiles
+  f <- foreach(i = 1:length(tiles),
+               .packages= c("tidyverse", "terra", "doParallel", "foreach"),
+               .export=c("lf_files", "lf_zone")
+  ) %dopar% {
+    
+    # for testing
+    #i = 4
+    #message(glue::glue("working on tile {i}"))
+    
+    fn <- tiles[i]
+    
+    # read raster tile into memory
+    tile <- terra::rast(fn) %>%
+      terra::trim()
+    
+    # read landfire data as vrt
+    lf_dist <- terra::vrt(lf_files$path, filename = glue::glue("{tmp_dir}/lf_dist.vrt"), options = "-separate", overwrite = TRUE)
+    
+    # Crop landfire disturbance layers to tile
+    #---------------------------------------------#
+    tile_r <- terra::crop(lf_dist, tile)
+    
+    # Prep Landfire fire layers
+    # --------------------------------------------#
+    # get year of most recent fire
+    LF_fire_years_tile <- 
+      tile_r %>%
+      terra::classify(cbind(nums, rcl_fire)) %>% # reclass fire codes to binary indicator for each year
+      terra::app(which.max.hightie) %>% # get most recent year
+      terra::classify(cbind(c(seq(1:length(lf_files$year))), lf_files$year)) # reclassify index values to years
+    
+    # Export
+    #---------------------------------------#
+    writeRaster(LF_fire_years_tile, 
+                filename = glue::glue('{tmp_dir}/lf/fire_years_tile{i}.tif'),
+                datatype = "INT2U",
+                overwrite = TRUE)
+    
+    
+    # remove unused files
+    rm(LF_fire_years_tile)
+    gc()
+    
+    # Prep Landfire insect and disease
+    # -----------------------------------------#
+    
+    # get year of most recent insect and disease
+    LF_ind_years_tile <- 
+      tile_r %>%
+      terra::classify(cbind(nums, rcl_ind)) %>% # reclass disturbance codes to binary for each year
+      terra::app(which.max.hightie) %>% # get most recent year of disturbance
+      terra::classify(cbind(c(seq(1:length(lf_files$year))), lf_files$year)) # reclassify index values to years
+    
+    # Export tiles
+    #---------------------------------------#
+    
+    writeRaster(LF_ind_years_tile, 
+                filename = paste0(tmp_dir, "/lf/ind_years_tile", i, ".tif"),
+                datatype = "INT2U",
+                overwrite = TRUE)
+    
+    # remove unused files
+    rm(LF_ind_years_tile)
+    rm(tile, tile_r)
+    gc()
+    
+  } # end loop over tiles
+  
+  
+  #############################################
+  # MERGE TILES TO ZONE 
+  #############################################
+  
+  message("merging tiles to zone")
+  
+  # list fire tiles
+  fire_tiles <- list.files(path = glue::glue('{tmp_dir}/lf/'), 
+                           pattern = "fire",
+                           full.names = TRUE)
+  
+  # list ind tiles
+  ind_tiles <- list.files(path = glue::glue('{tmp_dir}/lf/'), 
+                          pattern = "ind",
+                          full.names = TRUE)
+  
+  # Read in tiles as vrt and mask to zone
+  lf_fire_years <- terra::vrt(fire_tiles,  glue('{tmp_dir}/lf_fire.vrt'), overwrite = TRUE) %>%
+    terra::mask(lf_zone)
+  lf_ind_years <- terra::vrt(ind_tiles, glue('{tmp_dir}/lf_ind.vrt'), overwrite = TRUE) %>%
+    terra::mask(lf_zone)
+  
+  # Reclass to binary 
+  #----------------------------------------_---#
+  
+  # reclassify to binary indicator of fire over all years
+  fire_code = 1
+  lf_fire_binary <-
+    lf_fire_years %>%
+    terra::classify(cbind(year_list, fire_code)) %>%
+    terra::mask(lf_zone)
+  
+  # reclassify to binary indicator of insect and disease (ind) over all years
+  ind_code = 2
+  lf_ind_binary <-
+    lf_ind_years %>%
+    terra::classify(cbind(year_list, ind_code)) %>%
+    terra::mask(lf_zone)
+  
+  # Export intermediate files
+  #-------------------------------------------------#
+  message("Exporting LF fire years and binary raster...")
+  # write these files out
+  writeRaster(lf_fire_years, LF_fire_years_outpath,
               datatype = "INT2U",
               overwrite = TRUE)
+  writeRaster(lf_fire_binary, LF_fire_binary_outpath,
+              datatype = "INT1U",
+              overwrite = TRUE)
   
-  # remove unused files
-  rm(landfire_ind_years_tile)
-  rm(tile, tile_r)
+  message("Exporting LF insect-disease years and binary raster....")
+  # write these files out
+  writeRaster(lf_ind_years, LF_ind_years_outpath,
+              datatype = "INT2U",
+              overwrite = TRUE)
+  writeRaster(lf_ind_binary, LF_ind_binary_outpath,
+              datatype = "INT1U",
+              overwrite = TRUE)
+  
+  #rm(lf_ind_binary, lf_ind_years, lf_fire_binary, lf_fire_years)
+  
   gc()
   
-} # end loop over tiles
+  #####################################################
+  # MERGE DISTURBANCE TYPE TO FINAL DISTURBANCE LAYERS
+  ######################################################
+  
+  message("creating final disturbance layers")
+  
+  # for existing disturbance layer: 
+  # fire code: 1
+  # slow loss code: 2
+  
+  dist_year <- terra::merge(LF_fire_years, LF_ind_years) %>% # merge fire and slow loss 
+    terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
+    terra::classify(cbind(NA,99)) %>%  # set no data values 
+    terra::project(output_crs) # make sure it's in the correct crs
+  
+  dist_code <- terra::merge(LF_fire_binary, LF_ind_binary) %>% # merge fire and slow loss
+    terra::classify(cbind(NA, 0)) %>% # set no data values 
+    terra::project(output_crs)  # make sure it's in the correct crs
+  
+  #inspect
+  plot(LF_fire_years)
+  plot(dist_year)
+  plot(LF_fire_binary)
+  plot(dist_code)
+  
+  # Export
+  # -------------------------------------------------#
+  
+  
+  message("exporting disturbance year and disturbance type")
+  
+  #export
+  writeRaster(dist_year, lf_disturb_year_outpath,
+              datatype = "INT1U",
+              overwrite = TRUE)
+  
+  writeRaster(dist_code, lf_disturb_code_outpath,
+              datatype = "INT1U",
+              overwrite = TRUE)
+  
+  # Remove unused files to start prep for next zone
+  rm(dist_year, dist_code)
+  rm(LF_ind_binary, LF_fire_binary, LF_ind_years, LF_fire_years)
+  
+  gc()
+  
+  # remove preliminary files
+  file.remove(LF_fire_years_outpath, LF_fire_binary_outpath,
+              LF_ind_years_outpath, LF_ind_binary_outpath)
+  
+  message(glue::glue('done with zone {i} - total time: {toc()}'))
 
-toc()
-
-#############################################
-# MERGE TILES
-#############################################
-
-# list fire tiles
-fire_tiles <- list.files(path = glue::glue('{tmp_dir}/lf/'), 
-                         pattern = "fire",
-                         full.names = TRUE)
-
-# list ind tiles
-ind_tiles <- list.files(path = glue::glue('{tmp_dir}/lf/'), 
-                        pattern = "ind",
-                        full.names = TRUE)
-
-# Read in tiles as vrt
-lf_fire_years <- terra::vrt(fire_tiles,  glue('{tmp_dir}/lf_fire.vrt'), overwrite = TRUE)
-lf_ind_years <- terra::vrt(ind_tiles, glue('{tmp_dir}/lf_ind.vrt'), overwrite = TRUE)
-
-# Reclass to binary 
-#----------------------------------------_---#
-
-# reclassify to binary indicator of fire over all years
-# fire code = 1
-lf_fire_binary <-
-  lf_fire_years %>%
-  terra::classify(cbind(year_list, 1))
-
-# reclassify to binary indicator of ind over all years
-#insect and disease code = 2
-lf_ind_binary <-
-  lf_ind_years %>%
-  terra::classify(cbind(year_list, 2))
-
-# Export
-#-------------------------------------------------#
-message("Exporting LF fire years and binary raster...")
-# write these files out
-writeRaster(lf_fire_years, landfire_fire_years_outpath,
-            datatype = "INT2U",
-            overwrite = TRUE)
-writeRaster(lf_fire_binary, landfire_fire_binary_outpath,
-            datatype = "INT1U",
-            overwrite = TRUE)
-
-message("Exporting LF insect-disease years and binary raster....")
-# write these files out
-writeRaster(lf_ind_years, landfire_ind_years_outpath,
-            datatype = "INT2U",
-            overwrite = TRUE)
-writeRaster(lf_ind_binary, landfire_ind_binary_outpath,
-            datatype = "INT1U",
-            overwrite = TRUE)
-
-rm(lf_ind_binary, lf_ind_years, lf_fire_binary, lf_fire_years)
-
-gc()
+  
+  }
 
