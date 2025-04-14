@@ -3,7 +3,7 @@
 
 # Written by Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 12/9/24
+# Last updated: 4/14/25
 
 # TO DO:
 # - add a switch for LF only disturbance vs LCMS+LF disturbance ? 
@@ -28,12 +28,9 @@ target_data_version <- glue::glue("v{year}")
 start_year <- 1999
 end_year <- year
 
-# set current modeling year (for years since disturbance)
-model_year <- as.integer(end_year)
-
 # # default crs for output products - for CONUS
 # #options include: "lcms_crs", "lf200_crs", "lf220_crs", "lf230_crs", "tm16_crs"
-default_crs_name <- "lf230_crs"
+default_crs_name <- "lf240_crs"
 
 # set landfire version
 
@@ -43,8 +40,11 @@ LFveg_yearDict <- list("2016" = 200,
                        "2022" = 230,
                        "2023" = 240)
 
-LF_year <- year
+LF_year <- as.character(year)
 LF_version <- LFveg_yearDict[[as.character(LF_year)]]
+
+# set current modeling year (for years since disturbance)
+model_year <- as.integer(end_year)
 
 # Create abbreviations that will be used in making paths
 year_short <- substr(year, 3, 4)
@@ -78,14 +78,7 @@ lf_zones_path_CONUS <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zone
 lf_zones_path_AK <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/alaska_mapzones.shp')
 lf_zones_path_HI <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/hawaii_mapzones.shp')
 
-if(study_area == 'CONUS'){
-  lf_zones_path = lf_zones_path_CONUS
-} else if(study_area == 'AK') {
-  lf_zones_path = lf_zones_path_AK
-} else if(study_area == 'HI') {
-  lf_zones_path = lf_zones_path_HI
-} else {message("enter a valid field for 'study_area'. Options are: 'CONUS', 'HI', 'AK'")}
-
+###################################################################################
 
 # set path to landfire rasters 
 lf_dist_dir <- glue::glue('{data_dir}02_Landfire/Annual_Disturbance/')
@@ -115,31 +108,34 @@ asp_path <- glue::glue('{lf_topo_dir}/Asp/LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.
 
 # load lcms projections
 lcms_crs <- terra::crs(glue::glue("{data_dir}05_LCMS/00_Supporting/lcms_crs_albers.prj"))
-
-# load treemap projection
+# load treemap projections
 tm16_crs <- terra::crs(glue::glue("{data_dir}01_TreeMap2016_RDA/04_CRS/TreeMap2016_crs.prj"))
-
-# lf200
 lf200_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_200/CRS/LF_200_crs.prj"))
-
-# lf220
 lf220_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_220/CRS/LF_220_crs.prj"))
-
-# lf230
 lf230_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_230/CRS/LF_230_crs.prj"))
-
-# lf240
 lf240_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_240/CRS/LF_240_crs.prj"))
-
-
-#alaska
 ak_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_zones/Landfire_zones/alaska_mapzones.prj"))
-
-#hawaii
 hi_crs <- terra::crs(glue::glue("{home_dir}/01_Data/02_Landfire/LF_zones/Landfire_zones/hawaii_mapzones.prj"))
-
-# load output crs
 default_crs <- eval(parse(text = default_crs_name))
+
+
+#########################################################################
+
+#set paths to zones and projection, based on map area
+if(study_area == "CONUS") {
+  lf_zones_path = lf_zones_path_CONUS
+  output_crs = default_crs
+  file_pattern = "US"
+} else if(study_area == "AK") {
+  lf_zones_path = lf_zones_path_AK
+  output_crs = ak_crs
+  file_pattern = study_area
+} else if(study_area == "HI") {
+  lf_zones_path = lf_zones_path_HI
+  output_crs = hi_crs
+  file_pattern = study_area
+} else {message("enter a valid field for 'study_area'. Options are: 'CONUS', 'HI', 'AK'")}
+
 
 
 # Export data directories

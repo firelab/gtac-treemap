@@ -98,21 +98,6 @@ study_area <- LF_zone_metadata %>%
   dplyr::select(STUDY_AREA) %>%
   toString()
 
-# conditionally set path to zones and projection, based on map area
-if(study_area == "CONUS") {
-  zones_path = lf_zones_path_CONUS
-  zone_output_crs = default_crs
-  file_pattern = "US"
-} else if(study_area == "AK") {
-  zones_path = lf_zones_path_AK
-  zone_output_crs = ak_crs
-  file_pattern = study_area
-} else if(study_area == "HI") {
-  zones_path = lf_zones_path_HI
-  zone_output_crs = hi_crs
-  file_pattern = study_area
-}
-
 # Update dirs with zone
 # -----------------------------------------#
 
