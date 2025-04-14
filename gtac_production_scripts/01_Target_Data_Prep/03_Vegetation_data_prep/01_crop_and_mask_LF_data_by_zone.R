@@ -65,12 +65,18 @@ aspect<- terra::rast(asp_path)
 elevation<- terra::rast(elev_path)
 slope<- terra::rast(slopeD_path)
 
+# Settings for Landfire Rasters
+activeCat(evc) <- 'Value'
+activeCat(evh) <- 'Value'
+activeCat(evt) <- 'EVT_GP'
+
 ##########################################################
 
 # Set up variables to reclassify ----
 
 # EVC codes that represent forest
 # represented as range start, range end, desired end value
+# Attribute table: https://landfire.gov/sites/default/files/DataDictionary/2024/LF24_EVCADD.pdf
 evc_forest_codes_mat <- matrix(c(
   -9999,100,NA,
   110,119,15, 
@@ -85,8 +91,23 @@ evc_forest_codes_mat <- matrix(c(
   200,399,NA), 
   nrow = 11, ncol = 3, byrow = TRUE)
 
-# EVT_GPs that are reclassed to NA
-# because there are only a few of these evt_gps
+# EVH classes to reclass
+# data dictionary: https://landfire.gov/sites/default/files/DataDictionary/2024/LF24_EVHADD.pdf
+evh_class_mat <- matrix(c(
+  -9999,100,NA, # noData or non-tree land cover
+  101,105,3, # 1-5m tree height: gets class = 3
+  106,110,8, # 6-10m tree height: gets class = 8
+  111,125,18, # 11-25m tree height: gets class = 18
+  126,150,38, # 26-50m tree height: gets class = 38
+  151,199, NA, # 51m - 99 m tree height: NA
+  200,500, NA), 
+  nrow = 7, ncol = 3, byrow = TRUE)
+
+# get evt levels - to reclassify evt to evt_gp
+evt_levels <- levels(evt)[[1]] %>%
+  mutate(EVT_GP = as.numeric(EVT_GP))
+
+# These EVT_GPs are reclassified to NA for all zones. These are Developed and Agricultural
 evt_gps_na <- c(
   13,
   14,
@@ -96,28 +117,11 @@ evt_gps_na <- c(
   730
 )
 
-# EVH classes to reclass
-evh_class_mat <- matrix(c(
-  101,105,3,
-  106,110,8,
-  111,125,18,
-  126,150,38),
-  nrow = 4, ncol = 3, byrow = TRUE)
-
-
-# set EVT to display EVT_GP
-activeCat(evt) <- 7
-
-# get evt levels - to reclassify evt to evt_gp
-evt_levels <- levels(evt)[[1]] %>%
-  mutate(EVT_GP = as.numeric(EVT_GP))
-
-
 
 # Loop through landfire zones, creating a folder for masked LF data ----
 
 # First create output directory 
-if(!file.exists(!target_dir)){
+if(!file.exists(target_dir)){
   dir.create(target_dir)
 }
 
@@ -126,23 +130,29 @@ for (zone_input in lf_zone_nums){
   
   zone_input = 1
   
+  print(glue::glue('working on target veg and topo data for zone {zone_input}'))
+  
   # run zone setup script
   source(zone_input_script)
   
-  lf_zone<- lf_zones[lf_zones$ZONE_NUM == i,]
+  lf_zone<- lf_zones[lf_zones$ZONE_NUM == zone_input,]
   
   # Crop and mask layers to each landfire zone---
   
-  # Crop and Reclassify EVC
+  # Crop and Reclassify EVC to forested areas
   evc_zone<- terra::classify(terra::crop(evc, lf_zone, mask = TRUE),
                              evc_forest_codes_mat, right = NA)
-  # Crop and Reclassify EVH
-  evh_zone<- terra::classify(terra::crop(evh, lf_zone, mask = TRUE),
+  
+  # Crop and Reclassify EVH to classes
+  evh_zone<- terra::classify(terra::crop(evh, evc_zone, mask = TRUE),
                              evh_class_mat, right = NA)
   
-  # Crop EVT and Reclassify to EVT-GP
-  evt_gp_zone<- terra::classify(terra::crop(evt, evc_zone, mask = TRUE),
-                                evt_levels)
+  # Crop EVT, Reclassify to EVT_GP, and Reclassify some gps to NA
+  evt_gp_zone <- terra::classify(
+    terra::classify(
+      terra::crop(evt, evc_zone, mask = TRUE),
+      evt_levels),
+    cbind(evt_gps_na, NA))
   
   # For topo layers, crop and mask to zone
   aspect_zone<- terra::crop(aspect, evc_zone, mask = TRUE)
@@ -158,22 +168,21 @@ for (zone_input in lf_zone_nums){
   easting_zone <- mask(easting_zone, aspect_zone, maskvalues=-1, updatevalue=0)
   
   
-  # Save the final rasters for the zone ----
-  writeRaster(evc_zone, glue::glue("{target_dir_z}/evc.tif"), datatype = "FLT4S")
-  writeRaster(evh_zone, glue::glue("{target_dir_z}/evh.tif"), datatype = "FLT4S")
-  writeRaster(evt_gp_zone, glue::glue("{target_dir_z}/evt_gp.tif"), datatype = "FLT4S")
+  # Save the intermediate rasters for the zone ----
+  writeRaster(evc_zone, glue::glue("{target_dir_z}/evc.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evh_zone, glue::glue("{target_dir_z}/evh.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evt_gp_zone, glue::glue("{target_dir_z}/evt_gp.tif"), datatype = "FLT4S",  overwrite = TRUE)
   #
-  writeRaster(aspect_zone, glue::glue("{target_dir_z}/aspect.tif"), datatype = "FLT4S")
-  writeRaster(elevation_zone, glue::glue("{target_dir_z}/elevation.tif"), datatype = "FLT4S")
-  writeRaster(slope_zone, glue::glue("{target_dir_z}/slope.tif"), datatype = "FLT4S")
+  writeRaster(aspect_zone, glue::glue("{target_dir_z}/aspect.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(elevation_zone, glue::glue("{target_dir_z}/elevation.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(slope_zone, glue::glue("{target_dir_z}/slope.tif"), datatype = "FLT4S",  overwrite = TRUE)
   #
-  writeRaster(northing_zone, glue::glue("{target_dir_z}/northing.tif"), datatype = "FLT4S")
-  writeRaster(easting_zone, glue::glue("{target_dir_z}/easting.tif"), datatype = "FLT4S")
+  writeRaster(northing_zone, glue::glue("{target_dir_z}/northing.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(easting_zone, glue::glue("{target_dir_z}/easting.tif"), datatype = "FLT4S",  overwrite = TRUE)
   
   
   # Clear garbage
   gc()
 
-  gc()
 
 }
