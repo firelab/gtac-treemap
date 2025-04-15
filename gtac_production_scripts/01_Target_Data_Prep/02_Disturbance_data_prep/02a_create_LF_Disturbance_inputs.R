@@ -26,8 +26,8 @@ year_input <- 2023
 # define project area
 study_area <- "CONUS"
 
-# landfire version - formatted as "LF_{###}"
-LF_version <- 'LF_240' 
+# landfire version - formatted as "lf_{###}"
+lf_version <- 'lf_240' 
 
 # Initialize directories
 this_dir <- this.path::this.dir()
@@ -134,13 +134,13 @@ rcl_ind[rcl_ind %in% ind_codes] <- 2 # not-fire code: 2
 rcl_ind[rcl_ind != 2] <- NA
 
 #####################################################
-# Prep Landfire Disturbance - in parallel
+# Prep Landfire Disturbance - by zone
 ####################################################
 
-#for(zone_input in lf_zone_nums){
+for(zone_input in lf_zone_nums){
   
   # for testing
-  zone_input = 1
+  #zone_input = 1
   
   message(glue::glue("Creating disturbance layers for zone {zone_input}"))
   source(zone_inputScript)
@@ -230,7 +230,7 @@ rcl_ind[rcl_ind != 2] <- NA
     # Prep Landfire fire layers
     # --------------------------------------------#
     # get year of most recent fire
-    LF_fire_years_tile <- 
+    lf_fire_years_tile <- 
       tile_r %>%
       terra::classify(cbind(nums, rcl_fire)) %>% # reclass fire codes to binary indicator for each year
       terra::app(which.max.hightie) %>% # get most recent year
@@ -238,21 +238,21 @@ rcl_ind[rcl_ind != 2] <- NA
     
     # Export
     #---------------------------------------#
-    writeRaster(LF_fire_years_tile, 
+    writeRaster(lf_fire_years_tile, 
                 filename = glue::glue('{tmp_dir}/lf/fire_years_tile{i}.tif'),
                 datatype = "INT2U",
                 overwrite = TRUE)
     
     
     # remove unused files
-    rm(LF_fire_years_tile)
+    rm(lf_fire_years_tile)
     gc()
     
     # Prep Landfire insect and disease
     # -----------------------------------------#
     
     # get year of most recent insect and disease
-    LF_ind_years_tile <- 
+    lf_ind_years_tile <- 
       tile_r %>%
       terra::classify(cbind(nums, rcl_ind)) %>% # reclass disturbance codes to binary for each year
       terra::app(which.max.hightie) %>% # get most recent year of disturbance
@@ -261,13 +261,13 @@ rcl_ind[rcl_ind != 2] <- NA
     # Export tiles
     #---------------------------------------#
     
-    writeRaster(LF_ind_years_tile, 
+    writeRaster(lf_ind_years_tile, 
                 filename = paste0(tmp_dir, "/lf/ind_years_tile", i, ".tif"),
                 datatype = "INT2U",
                 overwrite = TRUE)
     
     # remove unused files
-    rm(LF_ind_years_tile)
+    rm(lf_ind_years_tile)
     rm(tile, tile_r)
     gc()
     
@@ -313,25 +313,25 @@ rcl_ind[rcl_ind != 2] <- NA
     terra::classify(cbind(year_list, ind_code)) %>%
     terra::mask(lf_zone)
   
-  # Export intermediate files
-  #-------------------------------------------------#
-  message("Exporting LF fire years and binary raster...")
-  # write these files out
-  writeRaster(lf_fire_years, LF_fire_years_outpath,
-              datatype = "INT2U",
-              overwrite = TRUE)
-  writeRaster(lf_fire_binary, LF_fire_binary_outpath,
-              datatype = "INT1U",
-              overwrite = TRUE)
-  
-  message("Exporting LF insect-disease years and binary raster....")
-  # write these files out
-  writeRaster(lf_ind_years, LF_ind_years_outpath,
-              datatype = "INT2U",
-              overwrite = TRUE)
-  writeRaster(lf_ind_binary, LF_ind_binary_outpath,
-              datatype = "INT1U",
-              overwrite = TRUE)
+  # # Export intermediate files
+  # #-------------------------------------------------#
+  # message("Exporting lf fire years and binary raster...")
+  # # write these files out
+  # writeRaster(lf_fire_years, lf_fire_years_outpath,
+  #             datatype = "INT2U",
+  #             overwrite = TRUE)
+  # writeRaster(lf_fire_binary, lf_fire_binary_outpath,
+  #             datatype = "INT1U",
+  #             overwrite = TRUE)
+  # 
+  # message("Exporting lf insect-disease years and binary raster....")
+  # # write these files out
+  # writeRaster(lf_ind_years, lf_ind_years_outpath,
+  #             datatype = "INT2U",
+  #             overwrite = TRUE)
+  # writeRaster(lf_ind_binary, lf_ind_binary_outpath,
+  #             datatype = "INT1U",
+  #             overwrite = TRUE)
   
   #rm(lf_ind_binary, lf_ind_years, lf_fire_binary, lf_fire_years)
   
@@ -347,20 +347,23 @@ rcl_ind[rcl_ind != 2] <- NA
   # fire code: 1
   # slow loss code: 2
   
-  dist_year <- terra::merge(LF_fire_years, LF_ind_years) %>% # merge fire and slow loss 
+  dist_year <- terra::merge(lf_fire_years, lf_ind_years) %>% # merge fire and slow loss 
     terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
     terra::classify(cbind(NA,99)) %>%  # set no data values 
     terra::project(output_crs) # make sure it's in the correct crs
   
-  dist_code <- terra::merge(LF_fire_binary, LF_ind_binary) %>% # merge fire and slow loss
+  dist_code <- terra::merge(lf_fire_binary, lf_ind_binary) %>% # merge fire and slow loss
     terra::classify(cbind(NA, 0)) %>% # set no data values 
     terra::project(output_crs)  # make sure it's in the correct crs
   
-  #inspect
-  plot(LF_fire_years)
-  plot(dist_year)
-  plot(LF_fire_binary)
-  plot(dist_code)
+  gc()
+  
+  # #inspect
+  # plot(lf_fire_years)
+  # plot(dist_year)
+  # plot(lf_fire_binary)
+  # plot(dist_code)
+  
   
   # Export
   # -------------------------------------------------#
@@ -377,17 +380,18 @@ rcl_ind[rcl_ind != 2] <- NA
               datatype = "INT1U",
               overwrite = TRUE)
   
-  # Remove unused files to start prep for next zone
+  # Remove unused and files to start prep for next zone
+  rm(lf_ind_binary, lf_fire_binary, lf_ind_years, lf_fire_years)
   rm(dist_year, dist_code)
-  rm(LF_ind_binary, LF_fire_binary, LF_ind_years, LF_fire_years)
   
   gc()
   
-  # remove preliminary files
-  file.remove(LF_fire_years_outpath, LF_fire_binary_outpath,
-              LF_ind_years_outpath, LF_ind_binary_outpath)
+  # remove intermediate files from folder
+  # file.remove(lf_fire_years_outpath, lf_fire_binary_outpath,
+  #             lf_ind_years_outpath, lf_ind_binary_outpath)
   
-  message(glue::glue('done with zone {i} - total time: {toc()}'))
+  message(glue::glue('done with zone {zone_input}'))
+  toc()
 
   
   }
