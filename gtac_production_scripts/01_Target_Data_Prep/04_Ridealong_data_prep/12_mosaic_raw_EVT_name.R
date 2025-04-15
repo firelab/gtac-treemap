@@ -1,12 +1,13 @@
 # Set up
-setwd("\\166.2126.25")
+home_dir = "//166.2.126.25/TreeMap/"
+year = 2023
 
 library(terra)
 
 # Direct to files
-evt_files<- list.files("./03_Outputs/05_Target_Rasters/v2020/landfire_data_by_zone",
+evt_files<- list.files(glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v{year}/pre_mask/"),
                         recursive = T,
-                        pattern = "raw_evt_name.tif$",
+                        pattern = "evt_name.tif$",
                         full.names = T)
 evt_vrt<- vrt(evt_files)
 

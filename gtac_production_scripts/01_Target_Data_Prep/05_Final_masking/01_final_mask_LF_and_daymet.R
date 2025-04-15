@@ -1,17 +1,41 @@
-#Load libraries
-library(terra)
-library(dplyr)
+###### Script description
 
-# Set up
-home_dir  <<- "//166.2.126.25/TreeMap/"
-setwd(home_dir)
+# Written by Scott Zimmer (scott.zimmer@usda.gov) and Lila Leatherman (lila.leatherman@usda.gov)
 
+# Last updated: 4/15/25
+
+#############################################
+
+#################################################
+# Set script inputs
+##################################################
+
+# year
+year_input <- 2023
+study_area <- "CONUS"
+
+###################################################
+
+# load library 
+this_proj = this.path::this.proj()
+lib_path = glue::glue("{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R")
+source(lib_path)
+
+# Load project inputs for target data
+project_input_script = glue::glue("{this_proj}/gtac_production_scripts/01_Target_Data_Prep/02_Disturbance_data_prep/00a_project_inputs_for_targetdata.R")
+
+zone_input_script = glue::glue("{this_proj}/gtac_production_scripts/01_Target_Data_Prep/02_Disturbance_data_prep/00b_zone_inputs_for_targetdata.R")
+
+# run project input script now; save zone input script for later
+source(project_input_script)
+
+#---------------------------------------------------------------------------------
 
 # Load a landfire raster as a template to match
-lf_raster<- rast("./01_Data/02_Landfire/LF_220/Vegetation/EVC/LF2022_EVC_220_CONUS/Tif/LC22_EVC_220.tif")
+lf_raster<- terra::rast(evc_path)
 
 # Load the landfire zones 
-lf_zones<- vect("./01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp")
+lf_zones<- terra::vect(lf_zones_path)
 
 # Reproject the landfire zones to match the lf raster
 lf_zones<- terra::project(lf_zones, lf_raster)
@@ -28,34 +52,42 @@ evt_gps_na <- c(
 )
 
 # Read in the necessary zone-specific reclassifications
-zonal_evt_gp_reclass<- read.csv("../01_Data/11_EVG/zonal_evt_gp_reclass_LF2020.csv")
+zonal_evt_gp_reclass <- read.csv(glue::glue("{data_dir}/11_EVG/zonal_evt_gp_reclass_LF2020.csv"))
 
 # 
 # Loop through each zone. Mask EVT_GP to set defined codes as NA, and then reclassify EVT_GPs as necessary for the zone ----
 
 # First create output directory 
-dir.create("./03_Outputs/05_Target_Rasters/v2020/post_mask/")
+#dir.create("./03_Outputs/05_Target_Rasters/v2020/post_mask/")
 
-lf_zone_nums<- lf_zone_nums[which(lf_zone_nums==65):length(lf_zone_nums)]
 
-for (i in lf_zone_nums){
+#for (zone_input in lf_zone_nums){
+
+  # for testing
+  zone_input = 1
   
-  lf_zone<- lf_zones[lf_zones$ZONE_NUM == i,]
+  # source zonal input script
+  source(zone_input_script)
   
-  # Make a directory for saving final masked data for the zone
-  ifelse(i<10, 
-         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z0",i)),
-         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z",i)))
+  lf_zone<- lf_zones[lf_zones$ZONE_NUM == zone_in,]
   
-  # Save that directory path as a string
-  ifelse(i<10, 
-         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z0",i),
-         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z",i))
+  # # Make a directory for saving final masked data for the zone
+  # ifelse(i<10, 
+  #        dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z0",i)),
+  #        dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z",i)))
+  # 
+  # # Save that directory path as a string
+  # ifelse(i<10, 
+  #        out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z0",i),
+  #        out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/post_mask/z",i))
+  # 
+  # # Get the in_dir for reading in pre-mask data
+  # ifelse(i<10, 
+  #        in_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z0",i),
+  #        in_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z",i))
   
-  # Get the in_dir for reading in pre-mask data
-  ifelse(i<10, 
-         in_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z0",i),
-         in_dir<- paste0("./03_Outputs/05_Target_Rasters/v2020/pre_mask/z",i))
+  in_dir <- target_dir_premask_z
+  out_dir <- target_dir_postmask_z
   
   # EVT GP  ----
   
