@@ -145,10 +145,12 @@ if(study_area == "CONUS") {
 project_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/')
 
 # Directory where target data lives
-target_dir <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/pre_mask/")
+target_dir_premask <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/pre_mask/")
+
+target_dir_postmask <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/post_mask/")
 
 # Directory where EVT_GP remap table will be located
-evt_gp_remap_table_path <- target_dir
+evt_gp_remap_table_path <- target_dir_postmask
 
 # Make RDS of input parameters used
 #---------------------------------------------------------#
