@@ -191,10 +191,10 @@ do.call(file.remove, list(list.files(tmp_dir, full.names = TRUE, recursive = TRU
 # Create all directories
 # ----------------------------------#
 
-# target dir
-if (!file.exists(target_dir)) {
-  dir.create(target_dir, recursive = TRUE)
-}
+# # target dir
+# if (!file.exists(target_dir)) {
+#   dir.create(target_dir, recursive = TRUE)
+# }
 
 if(!file.exists(target_dir_premask_z)) {
   dir.create(target_dir_premask_z, recursive = TRUE)
