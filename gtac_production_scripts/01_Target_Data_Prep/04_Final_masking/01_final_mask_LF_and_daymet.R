@@ -170,7 +170,7 @@ if(!file.exists(target_dir_postmask)) {
   writeRaster(vpd, paste0(out_dir, "/vpd.tif"), datatype = "FLT4S")
 
   # Remove objects from memory
-  rm(list=setdiff(ls(), c("lf_raster", "lf_zones","lf_zone_nums", "evt_gps_na", "zonal_evt_gp_reclass")))
+  #rm(list=setdiff(ls(), c("lf_raster", "lf_zones","lf_zone_nums", "evt_gps_na", "zonal_evt_gp_reclass")))
   
   # Clear garbage
   gc()
