@@ -1,8 +1,22 @@
 # Script summary
+# For Landfire data to be used as target rasters to TreeMap: 
+# - Loads Landfire data from local machine
+#     - Layers include: EVC, EVH, EVT, slope, aspect, elevation
+# - Runs over each Landfire zone in study area
+#     - Crop EVC to zone and reclassify EVC to represent tree cover >10% - a preliminary forest mask
+#     - Crop and mask remaining layers to zone using EVC
+#     - Reclassify EVT to EVT_GP, using the attribute table in the layer
+#     - Calculate northing and easting from aspect
+#     - Fix no-aspect issue with northing and easting
+#     - Export .tifs for each layer (clipped to zone, masked using EVC) to "pre_mask" folder
+# - Next step: 
+#     - Confirm reference data prep
+#     - Run "final masking" script, after confirming any EVT_GPs to reclass based on EVT_GPs present in the x-table
+
 # Written by Scott Zimmer (szimmer@usda.gov) and Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last Updated: 
-# 4/13/2023
+# 4/15/2025
 
 #####################################################################################
 # Script inputs
@@ -126,9 +140,9 @@ if(!file.exists(target_dir)){
 }
 
 
-#for (zone_input in lf_zone_nums){
+for (zone_input in lf_zone_nums){
   
-  zone_input = 1
+  #zone_input = 1
   
   print(glue::glue('working on target veg and topo data for zone {zone_input}'))
   
@@ -195,4 +209,4 @@ if(!file.exists(target_dir)){
   gc()
 
 
-#}
+}
