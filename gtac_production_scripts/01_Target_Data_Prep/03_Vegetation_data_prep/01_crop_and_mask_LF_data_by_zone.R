@@ -134,10 +134,10 @@ evt_gps_na <- c(
 
 # Loop through landfire zones, creating a folder for masked LF data ----
 
-# First create output directory 
-if(!file.exists(target_dir)){
-  dir.create(target_dir)
-}
+# # First create output directory 
+# if(!file.exists(target_dir_premask)){
+#   dir.create(target_dir_premask)
+# }
 
 
 for (zone_input in lf_zone_nums){
@@ -194,15 +194,15 @@ for (zone_input in lf_zone_nums){
   
   # Save the intermediate rasters for the zone ----
   message("exporting layers")
-  writeRaster(evc_zone, glue::glue("{target_dir_z}/evc.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(evh_zone, glue::glue("{target_dir_z}/evh.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(evt_gp_zone, glue::glue("{target_dir_z}/evt_gp.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(evt_name_zone, glue::glue("{target_dir_z}/evt_name.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(aspect_zone, glue::glue("{target_dir_z}/aspect.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(elevation_zone, glue::glue("{target_dir_z}/elevation.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(slope_zone, glue::glue("{target_dir_z}/slope.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(northing_zone, glue::glue("{target_dir_z}/northing.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(easting_zone, glue::glue("{target_dir_z}/easting.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evc_zone, glue::glue("{target_dir_premask_z}/evc.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evh_zone, glue::glue("{target_dir_premask_z}/evh.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evt_gp_zone, glue::glue("{target_dir_premask_z}/evt_gp.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evt_name_zone, glue::glue("{target_dir_premask_z}/evt_name.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(aspect_zone, glue::glue("{target_dir_premask_z}/aspect.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(elevation_zone, glue::glue("{target_dir_premask_z}/elevation.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(slope_zone, glue::glue("{target_dir_premask_z}/slope.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(northing_zone, glue::glue("{target_dir_premask_z}/northing.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(easting_zone, glue::glue("{target_dir_premask_z}/easting.tif"), datatype = "FLT4S",  overwrite = TRUE)
   
   
   # Clear garbage
