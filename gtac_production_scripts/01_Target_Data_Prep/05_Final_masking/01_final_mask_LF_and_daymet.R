@@ -58,7 +58,8 @@ zonal_evt_gp_reclass <- read.csv(glue::glue("{data_dir}/11_EVG/zonal_evt_gp_recl
 # Loop through each zone. Mask EVT_GP to set defined codes as NA, and then reclassify EVT_GPs as necessary for the zone ----
 
 # First create output directory 
-#dir.create("./03_Outputs/05_Target_Rasters/v2020/post_mask/")
+if(!file.exists(target_dir_postmask)) {
+  dir.create(target_dir_postmask)}
 
 
 #for (zone_input in lf_zone_nums){
@@ -69,7 +70,7 @@ zonal_evt_gp_reclass <- read.csv(glue::glue("{data_dir}/11_EVG/zonal_evt_gp_recl
   # source zonal input script
   source(zone_input_script)
   
-  lf_zone<- lf_zones[lf_zones$ZONE_NUM == zone_in,]
+  lf_zone<- lf_zones[lf_zones$ZONE_NUM == zone_input,]
   
   # # Make a directory for saving final masked data for the zone
   # ifelse(i<10, 
@@ -99,19 +100,19 @@ zonal_evt_gp_reclass <- read.csv(glue::glue("{data_dir}/11_EVG/zonal_evt_gp_recl
   # Then reclassify further groups if necessary in this zone
   
   # Identify if the zone has any EVT GPs to reclassify, then reclassify
-  if(i %in%  unique(zonal_evt_gp_reclass$zone)){
-    zonal_evt_gp_reclass_sub<- zonal_evt_gp_reclass[zonal_evt_gp_reclass$zone == i,]  # limit the reclassify df to that zone
+  if(zone_input %in%  unique(zonal_evt_gp_reclass$zone)){
+    zonal_evt_gp_reclass_sub<- zonal_evt_gp_reclass[zonal_evt_gp_reclass$zone == zone_input,]  # limit the reclassify df to that zone
     evt_gp<- terra::classify(evt_gp, zonal_evt_gp_reclass_sub[,c(2:3)]) # reclassify the remaining relevant codes for the zone
   }
   
   
   # Create the EVT GP Remap table to track how EVT GP gets remapped to 1,2,3,4,etc
   evt_gp_list <- unique(evt_gp)
-  evg_remap_table <- data.frame(EVT_GP = evt_gp_list, 
+  evt_gp_remap_table <- data.frame(EVT_GP = evt_gp_list, 
                                 EVT_GP_remap = seq(1:nrow(evt_gp_list)))
   
   # Make EVT_GP remap raster
-  evt_gp_remap <- terra::classify(evt_gp, evg_remap_table) 
+  evt_gp_remap <- terra::classify(evt_gp, evt_gp_remap_table) 
   
   
   # Now mask all other LandFire and Daymet data by the final evt_gp layer
@@ -175,5 +176,5 @@ zonal_evt_gp_reclass <- read.csv(glue::glue("{data_dir}/11_EVG/zonal_evt_gp_recl
   gc()
   
   
-}
+#}
 
