@@ -10,6 +10,8 @@ Map attribute data refers to those FIA-derived attributes that are not modeled d
 
 ## Target Data Prep
 
+Target layers include
+
 ### Topo layer prep 
 - Minimal changes from 2016 Method
 - For 2020/2022: Used topographic layers from Landfire: Elevation, Slope, and Aspect from Landfire2020
@@ -67,35 +69,57 @@ This EVC layer is used as a preliminary forest mask.
 
 - We start with the Landfire Existing Vegetation Type (EVT) layer. We reclassify EVT to the corresponding Existing Vegetation Type Group (EVT_GP), which is a broader category that we use for modeling. There are several EVT_GPs that we convert to NA. 
 
-evt_gps_na <- c(
-  13,
-  14,
-  15,
-  26,
-  60,
-  730
-)
+| EVT GP   | Reclass Value| Class Description |
+|----------|--------------|-------------------|
+|  13      |              |                   |
+|  14      |              |                   |
+|  15      |              |                   |
+|  26      |              |                   |
+|  60      |              |                   |
+|  730     |              |                   |
 
-All 
 
 #### 'Ride-along problem' and fix
 
+- Describe the ride-along problem
+- Fix: Limit plots available for imputation in each zone to those plots with species that are present in the zone being imputed, or any of the landfire zones that border the zone being imputed. 
+- Insert a map of landfire zones for context
+- Example: If we are imputing Landfire zone 1, (PNW, North Cascades). Within zone 1 and its bordering zones, say 18 EVT groups are present. Only plots that contain one of those 18 EVT groups will be included in the zone-specific x-table for that zone.
+- This also requires that every EVT group in a zone is present in both the Landfire EVT layer and the X table. If there are any EVT gps that re not present in either dataset, the unmatched EVT groups are reclassified to nearest-matching appropriate groups based on expert opinion. 
+
+- Table of reclassed evt groups, for final mask and reclass stage
 
 ### Climate Layer Prep
+- List of climate vars: 
+  Maximum temperature
+  Minimum temperature
+  Precipitation
+  Vapour Pressure Deficit
+  Vapour Pressure Deficit
+  Soil Water Equivalent (SWE)
+  Solar Radiation
+  
+
+- Download data from Daymet
 
 ### Disturbance Layer Prep
 
-- Changes from 2016 method: NA
+- Changes from 2016 (or 2014) method: NA
+- FSIC GO refactored code to make it more modular
 
-
+### Final masking
+- Each zone is applied a tree mask der
 
 ## Imputation
 
 ### Build imputation model 
 
-- Changes from 2016 method:  
+Changes from 2016 method:  
+- refactored code base for efficiency and modularity
 
 ### Apply imputation model and assemble tiles
+Changes from 2016 method:
+
 
 ### Assemble imputation output to CONUS-wide
 
@@ -113,3 +137,7 @@ All
 - All-new method for 2020/2022
 - k-fold cross-validation with 10 folds
 - to evaluate accuracy / stability of imputed attribute variables
+
+#### CV Methods
+- Drop any plots with that have EVT_GPs that are present in <0.3% of plots: these EVT_GPs are too rare to be represented in cross-validation
+- 
