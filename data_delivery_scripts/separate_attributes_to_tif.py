@@ -50,6 +50,9 @@ chunk_size = 48000 * 2
 treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif"
 treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif.vat.dbf"
 
+# Specify the character limit for column names in the DBF (DBFs typically have a 10 character limit, so CARBON_DOWN_DEAD would appear as CARBON_DOW in the DBF)
+dbfColumnCharLimit = 10
+
 # Specify project area
 projectArea = "CONUS"
 
@@ -215,12 +218,10 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
     print('******************************************\n')
 
     # Account for DBF column names vs official attribute names
-    if columnName == 'CARBON_DOWN_DEAD':
-        df_column = df['CARBON_DOW']
-    elif columnName == 'TREEMAP_ID':
+    if columnName == 'TREEMAP_ID':
         df_column = df[tmid_col_name]
     else:
-        df_column = df[columnName]
+        df_column = df[columnName[:dbfColumnCharLimit]]
     
     # Convert gdal dtype to numpy dtype
     np_dtype = gdal_to_numpy_dtype(gdal_dtype)
