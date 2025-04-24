@@ -5,17 +5,15 @@
 # Last Updated:
 # 4/15/2025
 
-library(docstring)
-
 #################################################################
 # Load required packages
 #################################################################
 
 # packages required for this project
 list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
-                      "magrittr", "tictoc", "caret", "randomForest", 
+                      "magrittr", "tictoc", "caret", "randomForest", "ggplot2",
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
-                      "stringr", "stringi", "devtools", "philentropy", "skimr", "docstring",
+                      "stringr", "stringi", "devtools", "philentropy", "skimr",
                       "data.table", "RSQLite", "sqldf")
 
 
@@ -64,6 +62,8 @@ terraOptions(memfrac = 0.8)
 
 # Allow for sufficient digits to differentiate plot cn numbers
 options("scipen" = 100, "digits" = 8)
+
+library(docstring)
 
 ###########################
 # Run other scripts in this folder
