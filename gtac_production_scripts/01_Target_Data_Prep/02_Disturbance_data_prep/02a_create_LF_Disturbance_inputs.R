@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "rmrs_production_scripts/00_USDA_TreeMap_2014/reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 4/14/25
+# Last Updated: 4/24/25
 
 # Final Output Rasters: 
 # - disturbance code (0/1/2 for none/Fire/Other)
@@ -29,6 +29,9 @@ study_area <- "CONUS"
 # landfire version - formatted as "lf_{###}"
 lf_version <- 'lf_240' 
 
+# which zone to start on?
+lf_zone_num_start <- 31
+
 # Initialize directories
 this_dir <- this.path::this.dir()
 project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R")
@@ -43,7 +46,7 @@ zone_inputScript <- glue::glue("{this_dir}/00b_zone_inputs_for_targetdata.R")
 break.up <- 5
 
 # set number of cores used for parallelization
-ncores <- 8
+ncores <- 4
 
 
 ###################################################
@@ -58,6 +61,8 @@ lf_zones <- terra::vect(lf_zones_path)
 # Reproject the landfire zones to match the desired CRS
 lf_zones<- terra::project(lf_zones, output_crs)
 lf_zone_nums<- sort(lf_zones$ZONE_NUM)
+z = which(lf_zone_num_start==lf_zone_nums)[1] # get index of starting zone
+lf_zone_nums <- lf_zone_nums[z:length(lf_zone_nums)] # list zones to run
 
 # Load Landfire disturbance data
 #-----------------------------------------------------#
@@ -140,7 +145,7 @@ rcl_ind[rcl_ind != 2] <- NA
 for(zone_input in lf_zone_nums){
   
   # for testing
-  #zone_input = 1
+  #zone_input = 29
   
   message(glue::glue("Creating disturbance layers for zone {zone_input}"))
   source(zone_inputScript)
@@ -174,8 +179,8 @@ for(zone_input in lf_zone_nums){
   agg[] <- 1:ncell(agg)
   
   # inspect tiles
-  #plot(agg, alpha = 0.5)
-  #plot(lf_zone, add = TRUE)
+  plot(agg)
+  plot(lf_zone, add = TRUE, main = glue::glue('tiles for zone {zone_num}'))
   
   # subset the raster and create temporary files
   # tiles with only NA values are omitted
@@ -200,19 +205,19 @@ for(zone_input in lf_zone_nums){
   # load packages to each cluster
   clusterCall(cl, function(){
     library(tidyverse);
-    #library(glue);
+    library(glue);
     library(terra)
   })
   
   # foreach loop dopar over tiles
   f <- foreach(i = 1:length(tiles),
-               .packages= c("tidyverse", "terra", "doParallel", "foreach"),
-               .export=c("lf_files", "lf_zone")
+               .packages= c("tidyverse", "terra", "doParallel", "foreach", "glue"),
+               .export=c("lf_files", "lf_zone", "tmp_dir")
   ) %dopar% {
     
     # for testing
-    #i = 4
-    #message(glue::glue("working on tile {i}"))
+    #i = 1
+    message(glue::glue("working on tile {i}"))
     
     fn <- tiles[i]
     
@@ -226,6 +231,7 @@ for(zone_input in lf_zone_nums){
     # Crop landfire disturbance layers to tile
     #---------------------------------------------#
     tile_r <- terra::crop(lf_dist, tile)
+    rm(lf_dist)
     
     # Prep Landfire fire layers
     # --------------------------------------------#
@@ -268,8 +274,10 @@ for(zone_input in lf_zone_nums){
     
     # remove unused files
     rm(lf_ind_years_tile)
-    rm(tile, tile_r)
+    #rm(tile, tile_r)
     gc()
+    
+    #stopCluster(cl)
     
   } # end loop over tiles
   
@@ -352,6 +360,8 @@ for(zone_input in lf_zone_nums){
     terra::classify(cbind(NA,99)) %>%  # set no data values 
     terra::project(output_crs) # make sure it's in the correct crs
   
+  gc()
+  
   dist_code <- terra::merge(lf_fire_binary, lf_ind_binary) %>% # merge fire and slow loss
     terra::classify(cbind(NA, 0)) %>% # set no data values 
     terra::project(output_crs)  # make sure it's in the correct crs
@@ -363,7 +373,7 @@ for(zone_input in lf_zone_nums){
   # plot(dist_year)
   # plot(lf_fire_binary)
   # plot(dist_code)
-  
+
   
   # Export
   # -------------------------------------------------#
