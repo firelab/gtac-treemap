@@ -103,6 +103,10 @@ asp_path <- glue::glue('{lf_topo_dir}/Asp/LF2020_Asp_220_CONUS/Tif/LC20_Asp_220.
 
 ###################################################################
 
+# Read in the necessary zone-specific reclassifications
+zonal_evt_gp_reclass_path <- glue::glue("{data_dir}/11_EVG/zonal_evt_gp_reclass_LF2020.csv") # currently this file is used for 2020,2022,and2023
+
+
 # Load CRS
 #----------------------------------------------------#
 
