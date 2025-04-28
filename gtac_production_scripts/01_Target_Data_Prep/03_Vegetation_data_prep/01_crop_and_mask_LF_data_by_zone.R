@@ -4,7 +4,9 @@
 #     - Layers include: EVC, EVH, EVT, slope, aspect, elevation
 # - Runs over each Landfire zone in study area
 #     - Crop EVC to zone and reclassify EVC to represent tree cover >10% - a preliminary forest mask
-#     - Crop and mask remaining layers to zone using EVC
+#     - Mask EVT_GP by EVC, classify desired EVT_GPs to NA, remap specific EVT_GPs in zones 
+#     - Remap EVT_GP 
+#     - Crop and mask remaining layers to zone using EVT-GP
 #     - Reclassify EVT to EVT_GP, using the attribute table in the layer
 #     - Calculate northing and easting from aspect
 #     - Fix no-aspect issue with northing and easting
@@ -16,7 +18,7 @@
 # Written by Scott Zimmer (szimmer@usda.gov) and Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last Updated: 
-# 4/15/2025
+# 4/25/2025
 
 #####################################################################################
 # Script inputs
@@ -29,7 +31,7 @@ year_input <- "2023"
 study_area <- "CONUS"
 
 # landfire version - formatted as "LF_{###}"
-LF_version <- 'LF_240' 
+#LF_version <- 'LF_240' 
 
 
 ################################################################
@@ -49,12 +51,15 @@ source(lib_path)
 ##############################################
 
 # Load project inputs for target data
-project_input_script = glue::glue("{this_proj}/gtac_production_scripts/01_Target_Data_Prep/02_Disturbance_data_prep/00a_project_inputs_for_targetdata.R")
+#project_input_script = glue::glue("{this_proj}/gtac_production_scripts/00_Inputs/02_Disturbance_data_prep/00a_project_inputs_for_targetdata.R")
 
-zone_input_script = glue::glue("{this_proj}/gtac_production_scripts/01_Target_Data_Prep/02_Disturbance_data_prep/00b_zone_inputs_for_targetdata.R")
+#zone_input_script = glue::glue("{this_proj}/gtac_production_scripts/01_Target_Data_Prep/02_Disturbance_data_prep/00b_zone_inputs_for_targetdata.R")
 
 # run project input script now; save zone input script for later
-source(project_input_script)
+#source(project_input_script)
+
+targetDataProjectInputs(year_input = year_input,
+                        study_area = study_area)
 
 
 #####################################################
@@ -131,6 +136,8 @@ evt_gps_na <- c(
   730
 )
 
+# Load table of zone-specific EVT GP reclasses
+zonal_evt_gp_reclass <- read.csv(zonal_evt_gp_reclass_path)
 
 # Loop through landfire zones, creating a folder for masked LF data ----
 
@@ -146,32 +153,67 @@ for (zone_input in lf_zone_nums){
   
   print(glue::glue('working on target veg and topo data for zone {zone_input}'))
   
-  # run zone setup script
-  source(zone_input_script)
+  # # run zone setup script
+  # source(zone_input_script)
+  
+  targetDataZonalInputs(zone_input)
   
   lf_zone<- lf_zones[lf_zones$ZONE_NUM == zone_input,]
   
+  #######################################################################
   # Crop and mask layers to each landfire zone---
+  ########################################################################
   
   message("cropping, masking, and pre-processing layers")
+  
+  # EVC and EVT GP prep
+  ########################################################################
   
   # Crop and Reclassify EVC to forested areas
   evc_zone<- terra::classify(terra::crop(evc, lf_zone, mask = TRUE),
                              evc_forest_codes_mat, right = NA)
   
-  # Crop and Reclassify EVH to classes
-  evh_zone<- terra::classify(terra::crop(evh, evc_zone, mask = TRUE),
-                             evh_class_mat, right = NA)
-  
-  # Crop EVT, Reclassify to EVT_GP, and Reclassify some gps to NA
+
+  # Crop EVT, mask by EVC, Reclassify to EVT_GP, and Reclassify some gps to NA
   evt_gp_zone <- terra::classify(
     terra::classify(
       terra::crop(evt, evc_zone, mask = TRUE),
       evt_levels),
     cbind(evt_gps_na, NA))
   
+  # Then reclassify further groups if necessary in this zone
+  
+  # Identify if the zone has any EVT GPs to reclassify, then reclassify
+  if(zone_input %in%  unique(zonal_evt_gp_reclass$zone)){
+    zonal_evt_gp_reclass_sub<- zonal_evt_gp_reclass[zonal_evt_gp_reclass$zone == zone_input,]  # limit the reclassify df to that zone
+    evt_gp_zone<- terra::classify(evt_gp_zone, zonal_evt_gp_reclass_sub[,c(2:3)]) # reclassify the remaining relevant codes for the zone
+  }
+  
+  
+  # Create the EVT GP Remap table to track how EVT GP gets remapped to 1,2,3,4,etc
+  evt_gp_list <- unique(evt_gp_zone)
+  evt_gp_remap_table <- data.frame(EVT_GP = evt_gp_list, 
+                                   EVT_GP_remap = seq(1:nrow(evt_gp_list)))
+  
+  # Make EVT_GP remap raster
+  evt_gp_remap <- terra::classify(evt_gp_zone, evt_gp_remap_table) 
+  
+  # Save the EVT GP Remap table for the zone 
+  write.csv(evt_gp_remap_table, glue::glue('{evt_gp_remap_table_path}/evt_gp_remap_table.csv'), row.names=F, quote=F)
+  
+  # Apply new mask to EVC
+  evc_zone <- terra::crop(evc, evt_gp_remap, mask = TRUE)
+  
+  # Masking subsequent layers with EVT_GP mask
+  ############################################################################
+  
+  # Crop and Reclassify EVH to classes
+  evh_zone<- terra::classify(terra::crop(evh, evt_gp_remap, mask = TRUE),
+                             evh_class_mat, right = NA)
+  
+  
   # Crop and mask EVT, set as EVT_NAME
-  evt_name_zone<- terra::crop(evt, evc_zone, mask = TRUE)
+  evt_name_zone<- terra::crop(evt, evt_gp_remap, mask = TRUE)
   activeCat(evt_name_zone) <- 'EVT_NAME'
   
   # Update the EVT categories so only valid categories are still present
@@ -179,9 +221,9 @@ for (zone_input in lf_zone_nums){
   set.cats(x=evt_name_zone, value=cats_update)
   
   # For topo layers, crop and mask to zone
-  aspect_zone<- terra::crop(aspect, evc_zone, mask = TRUE)
-  elevation_zone<- terra::crop(elevation, evc_zone, mask = TRUE)
-  slope_zone<- terra::crop(slope, evc_zone, mask = TRUE)
+  aspect_zone<- terra::crop(aspect, evt_gp_remap, mask = TRUE)
+  elevation_zone<- terra::crop(elevation, evt_gp_remap, mask = TRUE)
+  slope_zone<- terra::crop(slope, evt_gp_remap, mask = TRUE)
   
   # Calculate northing and easting
   northing_zone <- terra::app(aspect_zone, function(i) cos((pi/180)*i))
@@ -197,6 +239,7 @@ for (zone_input in lf_zone_nums){
   writeRaster(evc_zone, glue::glue("{target_dir_premask_z}/evc.tif"), datatype = "FLT4S",  overwrite = TRUE)
   writeRaster(evh_zone, glue::glue("{target_dir_premask_z}/evh.tif"), datatype = "FLT4S",  overwrite = TRUE)
   writeRaster(evt_gp_zone, glue::glue("{target_dir_premask_z}/evt_gp.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evt_gp_remap, glue::glue("{target_dir_premask_z}/evt_gp_remap.tif"), datatype = "FLT4S",  overwrite = TRUE)
   writeRaster(evt_name_zone, glue::glue("{target_dir_premask_z}/evt_name.tif"), datatype = "FLT4S",  overwrite = TRUE)
   writeRaster(aspect_zone, glue::glue("{target_dir_premask_z}/aspect.tif"), datatype = "FLT4S",  overwrite = TRUE)
   writeRaster(elevation_zone, glue::glue("{target_dir_premask_z}/elevation.tif"), datatype = "FLT4S",  overwrite = TRUE)
@@ -210,3 +253,4 @@ for (zone_input in lf_zone_nums){
 
 
 }
+
