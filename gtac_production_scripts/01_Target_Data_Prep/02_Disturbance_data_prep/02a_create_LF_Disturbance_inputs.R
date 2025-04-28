@@ -30,12 +30,21 @@ study_area <- "CONUS"
 lf_version <- 'lf_240' 
 
 # which zone to start on?
-lf_zone_num_start <- 31
+lf_zone_num_start <- 44
 
-# Initialize directories
-this_dir <- this.path::this.dir()
-project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R")
-zone_inputScript <- glue::glue("{this_dir}/00b_zone_inputs_for_targetdata.R")
+################################################################
+# Load Library
+################################################################
+
+# Load TreeMap script library
+#--------------------------------------------------#
+
+# necessary to load this before calling any of the home_dir, fia_dir, or data_dir objects
+
+# load library 
+this_proj = this.path::this.proj()
+lib_path = glue::glue("{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R")
+source(lib_path)
 
 #######################################################
 # Parallelization settings - within zone
@@ -53,7 +62,9 @@ ncores <- 4
 # LOAD DATA
 ###################################################
 
-source(project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R"))
+#source(project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R"))
+targetDataProjectInputs(year_input = year_input,
+                        study_area = study_area)
 
 # Load the landfire zones 
 lf_zones <- terra::vect(lf_zones_path)
@@ -144,11 +155,14 @@ rcl_ind[rcl_ind != 2] <- NA
 
 for(zone_input in lf_zone_nums){
   
+  zone_num = zone_input
+  
   # for testing
   #zone_input = 29
   
   message(glue::glue("Creating disturbance layers for zone {zone_input}"))
-  source(zone_inputScript)
+  targetDataZonalInputs(zone_input)
+  
   tic()
   
   # Subset to zone
