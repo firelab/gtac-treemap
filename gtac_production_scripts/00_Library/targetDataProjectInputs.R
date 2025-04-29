@@ -207,9 +207,9 @@ targetDataProjectInputs <- function(year_input,
   # Directory where target data lives
   target_dir <<- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/")
   
-  target_dir_premask <<- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/one_mask/")
+  target_dir_mask <<- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/one_mask/")
   
-  target_dir_postmask <<- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/post_mask/")
+  #target_dir_postmask <<- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/post_mask/")
   
   #target_dir_onemask <<- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/one_mask/")
   

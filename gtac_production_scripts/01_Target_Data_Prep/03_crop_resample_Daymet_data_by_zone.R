@@ -112,7 +112,7 @@ for (i in lf_zone_nums){
   # }
   
   # load desired mask for cropping and masking
-  zmask <- terra::rast(glue::glue('{target_dir_premask_z}/evt_gp.tif'))
+  zmask <- terra::rast(glue::glue('{target_dir_mask_z}/evt_gp.tif'))
   
   # set focal width for potential resampling in final step
   # setting focal width here keeps it the same for all clim variables in a zone
@@ -220,7 +220,7 @@ for (i in lf_zone_nums){
     # Save the final raster for each zone ----
     
     # writeRaster(clim_zone, 
-    #             glue::glue('{target_dir_premask_z}/{var}.tif'), 
+    #             glue::glue('{target_dir_mask_z}/{var}.tif'), 
     #             datatype = "FLT4S", overwrite = TRUE)
     
     # writeRaster(prcp_zone, paste0(out_dir, "/prcp_normal_1981to2020.tif"), datatype = "FLT4S", overwrite = TRUE)
@@ -232,7 +232,7 @@ for (i in lf_zone_nums){
     # writeRaster(vpd_zone, paste0(out_dir, "/vpd_normal_1981to2020.tif"), datatype = "FLT4S", overwrite = TRUE)
   
     # Load final post-mask evc for the zone
-    #evc<- terra::rast(glue::glue('{target_dir_premask_z}/evc.tif'))
+    #evc<- terra::rast(glue::glue('{target_dir_mask_z}/evc.tif'))
     
     # Load prcp and srad
     #prcp<- terra::rast(paste0(in_dir,"/prcp.tif"))
@@ -269,7 +269,7 @@ for (i in lf_zone_nums){
       
       #If zmask pixels = clim px, then export
       writeRaster(clim_zone,
-                  glue::glue('{target_dir_premask_z}/{var}.tif'),
+                  glue::glue('{target_dir_mask_z}/{var}.tif'),
                   datatype = "FLT4S", overwrite = TRUE)
       
     } else {
@@ -309,7 +309,7 @@ for (i in lf_zone_nums){
          
           #If zmask pixels = clim px, then export
           writeRaster(clim_zone,
-                        glue::glue('{target_dir_premask_z}/{var}.tif'),
+                        glue::glue('{target_dir_mask_z}/{var}.tif'),
                         datatype = "FLT4S", overwrite = TRUE) 
           
           break

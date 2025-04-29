@@ -18,7 +18,7 @@
 # Written by Scott Zimmer (szimmer@usda.gov) and Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last Updated: 
-# 4/25/2025
+# 4/29/2025
 
 #####################################################################################
 # Script inputs
@@ -142,8 +142,8 @@ zonal_evt_gp_reclass <- read.csv(zonal_evt_gp_reclass_path)
 # Loop through landfire zones, creating a folder for masked LF data ----
 
 # # First create output directory 
-# if(!file.exists(target_dir_premask)){
-#   dir.create(target_dir_premask)
+# if(!file.exists(target_dir_mask)){
+#   dir.create(target_dir_mask)
 # }
 
 
@@ -202,7 +202,7 @@ for (zone_input in lf_zone_nums){
   write.csv(evt_gp_remap_table, glue::glue('{evt_gp_remap_table_path}/evt_gp_remap_table.csv'), row.names=F, quote=F)
   
   # Apply new mask to EVC
-  evc_zone<- terra::classify(terra::crop(evc, evt_gp_rmap, mask = TRUE),
+  evc_zone<- terra::classify(terra::crop(evc, evt_gp_remap, mask = TRUE),
                              evc_forest_codes_mat, right = NA)
   
   # Masking subsequent layers with EVT_GP mask
@@ -237,16 +237,16 @@ for (zone_input in lf_zone_nums){
   
   # Save the intermediate rasters for the zone ----
   message("exporting layers")
-  writeRaster(evc_zone, glue::glue("{target_dir_premask_z}/evc.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(evh_zone, glue::glue("{target_dir_premask_z}/evh.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(evt_gp_zone, glue::glue("{target_dir_premask_z}/evt_gp.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(evt_gp_remap, glue::glue("{target_dir_premask_z}/evt_gp_remap.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(evt_name_zone, glue::glue("{target_dir_premask_z}/evt_name.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(aspect_zone, glue::glue("{target_dir_premask_z}/aspect.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(elevation_zone, glue::glue("{target_dir_premask_z}/elevation.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(slope_zone, glue::glue("{target_dir_premask_z}/slope.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(northing_zone, glue::glue("{target_dir_premask_z}/northing.tif"), datatype = "FLT4S",  overwrite = TRUE)
-  writeRaster(easting_zone, glue::glue("{target_dir_premask_z}/easting.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evc_zone, glue::glue("{target_dir_mask_z}/evc.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evh_zone, glue::glue("{target_dir_mask_z}/evh.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evt_gp_zone, glue::glue("{target_dir_mask_z}/evt_gp.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evt_gp_remap, glue::glue("{target_dir_mask_z}/evt_gp_remap.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(evt_name_zone, glue::glue("{target_dir_mask_z}/evt_name.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(aspect_zone, glue::glue("{target_dir_mask_z}/aspect.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(elevation_zone, glue::glue("{target_dir_mask_z}/elevation.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(slope_zone, glue::glue("{target_dir_mask_z}/slope.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(northing_zone, glue::glue("{target_dir_mask_z}/northing.tif"), datatype = "FLT4S",  overwrite = TRUE)
+  writeRaster(easting_zone, glue::glue("{target_dir_mask_z}/easting.tif"), datatype = "FLT4S",  overwrite = TRUE)
   
   
   # Clear garbage

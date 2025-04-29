@@ -138,12 +138,12 @@ targetDataZonalInputs <- function(zone_input,
   # -----------------------------------------#
   
   # Set folder paths
-  target_dir_premask_z <<- glue::glue('{target_dir_premask}/{cur_zone_zero}/')
+  target_dir_mask_z <<- glue::glue('{target_dir_mask}/{cur_zone_zero}/')
   # Set folder paths
   target_dir_postmask_z <<- glue::glue('{target_dir_postmask}/{cur_zone_zero}/')
   
   # Directory where EVT_GP remap table will be located
-  evt_gp_remap_table_path <<- target_dir_premask_z
+  evt_gp_remap_table_path <<- target_dir_mask_z
   
   # set aoi_name field if it doesn't already exist via aoi subset
   if(is.na(aoi_name)) {
@@ -153,21 +153,21 @@ targetDataZonalInputs <- function(zone_input,
   # Export data paths- disturbance
   #---------------------------------------------------------------#
   # # create output file names
-  # LF_fire_years_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Years.tif')
-  # LF_fire_binary_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Binary.tif')
+  # LF_fire_years_outpath <<- glue::glue('{target_dir_mask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Years.tif')
+  # LF_fire_binary_outpath <<- glue::glue('{target_dir_mask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Binary.tif')
   # 
-  # LF_ind_years_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Years.tif')
-  # LF_ind_binary_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Binary.tif')
+  # LF_ind_years_outpath <<- glue::glue('{target_dir_mask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Years.tif')
+  # LF_ind_binary_outpath <<- glue::glue('{target_dir_mask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Binary.tif')
   # 
   # 
-  # lcms_slowloss_years_outpath <- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
-  # lcms_slowloss_binary_outpath <- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
+  # lcms_slowloss_years_outpath <- glue::glue('{target_dir_mask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
+  # lcms_slowloss_binary_outpath <- glue::glue('{target_dir_mask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
   
-  # lf_disturb_code_outpath <<- glue::glue('{target_dir_premask_z}/disturb_code_LF.tif')
-  # lf_disturb_year_outpath <<- glue::glue('{target_dir_premask_z}/disturb_year_LF.tif')
+  # lf_disturb_code_outpath <<- glue::glue('{target_dir_mask_z}/disturb_code_LF.tif')
+  # lf_disturb_year_outpath <<- glue::glue('{target_dir_mask_z}/disturb_year_LF.tif')
   # 
-  # lcms_disturb_code_outpath <- glue::glue('{target_dir_premask_z}/disturb_code_LFLCMS.tif')
-  # lcms_disturb_year_outpath <- glue::glue('{target_dir_premask_z}/disturb_year_LFLCMS.tif')
+  # lcms_disturb_code_outpath <- glue::glue('{target_dir_mask_z}/disturb_code_LFLCMS.tif')
+  # lcms_disturb_year_outpath <- glue::glue('{target_dir_mask_z}/disturb_year_LFLCMS.tif')
   
   
   # Input parameters for LCMS Disturbance
@@ -187,11 +187,11 @@ targetDataZonalInputs <- function(zone_input,
   
   # LCMS file paths
   #---------------------------------------------------------------#
-  lcms_slowloss_years_outpath <- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
-  lcms_slowloss_binary_outpath <- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
+  lcms_slowloss_years_outpath <- glue::glue('{target_dir_mask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
+  lcms_slowloss_binary_outpath <- glue::glue('{target_dir_mask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
   
-  lcms_disturb_code_outpath <- glue::glue('{target_dir_premask_z}/disturb_code_LFLCMS.tif')
-  lcms_disturb_year_outpath <- glue::glue('{target_dir_premask_z}/disturb_year_LFLCMS.tif')
+  lcms_disturb_code_outpath <- glue::glue('{target_dir_mask_z}/disturb_code_LFLCMS.tif')
+  lcms_disturb_year_outpath <- glue::glue('{target_dir_mask_z}/disturb_year_LFLCMS.tif')
   
   # Temp directories 
   #----------------------------------#
@@ -228,8 +228,8 @@ targetDataZonalInputs <- function(zone_input,
   # Create all directories
   # ----------------------------------#
   
-  if(!file.exists(target_dir_premask_z)) {
-    dir.create(target_dir_premask_z, recursive = TRUE)
+  if(!file.exists(target_dir_mask_z)) {
+    dir.create(target_dir_mask_z, recursive = TRUE)
   }
   
   if(!file.exists(target_dir_postmask_z)) {
