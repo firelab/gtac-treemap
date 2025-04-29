@@ -152,22 +152,22 @@ targetDataZonalInputs <- function(zone_input,
   
   # Export data paths- disturbance
   #---------------------------------------------------------------#
-  # create output file names
-  LF_fire_years_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Years.tif')
-  LF_fire_binary_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Binary.tif')
+  # # create output file names
+  # LF_fire_years_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Years.tif')
+  # LF_fire_binary_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_Fire_Binary.tif')
+  # 
+  # LF_ind_years_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Years.tif')
+  # LF_ind_binary_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Binary.tif')
+  # 
+  # 
+  # lcms_slowloss_years_outpath <- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
+  # lcms_slowloss_binary_outpath <- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
   
-  LF_ind_years_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Years.tif')
-  LF_ind_binary_outpath <<- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LFDist_InsectDisease_Binary.tif')
-  
-  
-  lcms_slowloss_years_outpath <- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Years.tif')
-  lcms_slowloss_binary_outpath <- glue::glue('{target_dir_premask_z}/{start_year}_{end_year}_{cur_zone_zero}_{aoi_name}LCMSDist_SlowLoss_Binary.tif')
-  
-  lf_disturb_code_outpath <<- glue::glue('{target_dir_premask_z}/disturb_code_LF.tif')
-  lf_disturb_year_outpath <<- glue::glue('{target_dir_premask_z}/disturb_year_LF.tif')
-  
-  lcms_disturb_code_outpath <- glue::glue('{target_dir_premask_z}/disturb_code_LFLCMS.tif')
-  lcms_disturb_year_outpath <- glue::glue('{target_dir_premask_z}/disturb_year_LFLCMS.tif')
+  # lf_disturb_code_outpath <<- glue::glue('{target_dir_premask_z}/disturb_code_LF.tif')
+  # lf_disturb_year_outpath <<- glue::glue('{target_dir_premask_z}/disturb_year_LF.tif')
+  # 
+  # lcms_disturb_code_outpath <- glue::glue('{target_dir_premask_z}/disturb_code_LFLCMS.tif')
+  # lcms_disturb_year_outpath <- glue::glue('{target_dir_premask_z}/disturb_year_LFLCMS.tif')
   
   
   # Input parameters for LCMS Disturbance
