@@ -40,7 +40,7 @@ import traceback
 gdal.UseExceptions()
 #%%
 ############################################################################
-# User Setup (Edit these values between versions + computing environments)
+# User Variables (Edit these values between versions + computing environments)
 ############################################################################
 
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
@@ -385,7 +385,7 @@ def create_arc_metadata(col_name, tif_path):
     source_root = source_tree.getroot()
     
     # Open template xml
-    template_file = os.path.join(metd_template_dir, 'TreeMap_ArcMeta_template.xml')
+    template_file = os.path.join(os.path.dirname(metd_template_dir), 'TreeMap_ArcMeta_template.xml')
     template_tree = ET.parse(template_file)
     template_root = template_tree.getroot()
     
@@ -700,7 +700,7 @@ def create_arc_stats(col_name, tif_path):
     
     # Create statistics metadata (*.tif.aux.xml)
         # Open template file
-    stats_template_file = os.path.join(metd_template_dir, 'TreeMap_ArcStats_template.xml')
+    stats_template_file = os.path.join(os.path.dirname(metd_template_dir), 'TreeMap_ArcStats_template.xml')
     stats_template_tree = ET.parse(stats_template_file)
     stats_template_root = stats_template_tree.getroot()
     
