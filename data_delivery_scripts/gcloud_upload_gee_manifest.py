@@ -11,17 +11,16 @@ from geeViz import assetManagerLib as aml
 from glob import glob
 from osgeo import gdal
 
-
 #################################################
 # User Variables (edit these)
 #################################################
 
-# Year of the dataset and landfire version used
-year = '2022'
+# Year of the dataset and associated landfire version
+year = '2020'
 landfire_ver = '2.0.0'
 
-# The folder in which to look for images, and the format of the file names to select.
-image_folder = r'\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute_Rasters\2022'
+# The folder in which to look for images, and the format of the file names to select
+image_folder = rf'\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute_Rasters\{year}'
 name_format = f'TreeMap{year}_CONUS_*.tif'
 
 # Google Cloud bucket to upload the attributes to and the project id
@@ -77,7 +76,6 @@ image_properties = {
     'system:time_end': ee.Date(f'{int(year)+1}-01-01')
 }
 
-
 #################################################
 # Script Setup
 #################################################
@@ -86,7 +84,7 @@ image_properties = {
 ee.Authenticate()
 ee.Initialize(project=project_id)
 
-# For each image in the directory that matches the name format, add it to a dictionary and save its pyramiding policy, band name, and no data value.
+# For each image in the directory that matches the name format, add it to a dictionary and save its pyramiding policy, band name, and no data value
 image_dict = {}
 for image in glob(os.path.join(image_folder, name_format)):
     image_dict[image] = {}
@@ -96,24 +94,25 @@ for image in glob(os.path.join(image_folder, name_format)):
             image_dict[image]['pyramidingPolicy'] = pyramidPolicy_lookup[attribute]
             image_dict[image]['bandName'] = attribute
 
-    # Get the noDataValue via gdal
+    # Get the noDataValue via gdal. Store NoData value for correct masking during upload 
     ds = gdal.Open(image)
     band = ds.GetRasterBand(1)
     no_data_val = band.GetNoDataValue()
     image_dict[image]['noDataValue'] = no_data_val
 
 #################################################
-# Main
+# Main process: create collection and upload
 #################################################
 
-# Create the image collection
+# Create the image collection in EE assets
 aml.create_image_collection(f'{gee_folder}/{gee_image_collection_name}', image_collection_properties)
 
-# Create the image (single image, multiple bands of imagery)
+# Upload each attribute raster as a band in a single EE image
 aml.uploadToGEEAssetImagesAsBands(
     image_dict,
     gcs_bucket,
     f'{gee_folder}/{gee_image_collection_name}/{gee_image_name}',
-    overwrite=False,
+    overwrite=True,
     properties=image_properties
     )
+
