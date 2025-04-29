@@ -30,7 +30,7 @@ study_area <- "CONUS"
 lf_version <- 'lf_240' 
 
 # which zone to start on?
-lf_zone_num_start <- 44
+lf_zone_num_start <- 1
 
 ################################################################
 # Load Library
@@ -387,7 +387,14 @@ for(zone_input in lf_zone_nums){
   # plot(dist_year)
   # plot(lf_fire_binary)
   # plot(dist_code)
-
+  
+  # Apply Forest Mask
+  #-------------------------------------------------#
+  zmask <- terra::rast(glue::glue('{target_dir_premask_z}/evt_gp.tif'))
+  
+  dist_year <- terra::mask(dist_year, zmask)
+  dist_code <- terra::mask(dist_code, zmask)
+  
   
   # Export
   # -------------------------------------------------#
@@ -395,12 +402,15 @@ for(zone_input in lf_zone_nums){
   
   message("exporting disturbance year and disturbance type")
   
+  
   #export
-  writeRaster(dist_year, lf_disturb_year_outpath,
+  writeRaster(dist_year, 
+              glue::glue('{target_dir_premask_z}/disturb_year_LF.tif'),
               datatype = "INT1U",
               overwrite = TRUE)
   
-  writeRaster(dist_code, lf_disturb_code_outpath,
+  writeRaster(dist_code, 
+              glue::glue('{target_dir_premask_z}/disturb_code_LF.tif'),
               datatype = "INT1U",
               overwrite = TRUE)
   
