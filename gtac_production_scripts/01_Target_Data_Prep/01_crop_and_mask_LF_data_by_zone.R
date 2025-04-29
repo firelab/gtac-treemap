@@ -202,7 +202,8 @@ for (zone_input in lf_zone_nums){
   write.csv(evt_gp_remap_table, glue::glue('{evt_gp_remap_table_path}/evt_gp_remap_table.csv'), row.names=F, quote=F)
   
   # Apply new mask to EVC
-  evc_zone <- terra::crop(evc, evt_gp_remap, mask = TRUE)
+  evc_zone<- terra::classify(terra::crop(evc, evt_gp_rmap, mask = TRUE),
+                             evc_forest_codes_mat, right = NA)
   
   # Masking subsequent layers with EVT_GP mask
   ############################################################################
