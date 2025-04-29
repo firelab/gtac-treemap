@@ -16,12 +16,13 @@ from osgeo import gdal
 #################################################
 
 # Year of the dataset and associated landfire version
-year = '2020'
+year = '2022'
+study_area = 'CONUS'
 landfire_ver = '2.0.0'
 
 # The folder in which to look for images, and the format of the file names to select
 image_folder = rf'\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute_Rasters\{year}'
-name_format = f'TreeMap{year}_CONUS_*.tif'
+name_format = f'TreeMap{year}_{study_area}_*.tif'
 
 # Google Cloud bucket to upload the attributes to and the project id
 gcs_bucket = f'gs://separated-attributes/{year}'
@@ -33,7 +34,7 @@ gee_folder = f'projects/treemap-386222/assets/Final_Outputs/{year}'
     # The name of the image collection to create
 gee_image_collection_name = f'TreeMap{year}'
     # The name of the image to create
-gee_image_name = f'TreeMap{year}_CONUS'
+gee_image_name = f'TreeMap{year}_{study_area}'
 
 # pyramidPolicy lookup for attributes
 pyramidPolicy_lookup = {
@@ -57,7 +58,8 @@ pyramidPolicy_lookup = {
     'DRYBIO_D':'MEAN',
     'CARBON_L':'MEAN',
     'CARBON_D':'MEAN',
-    'CARBON_DOWN_DEAD':'MEAN'
+    'CARBON_DOWN_DEAD':'MEAN',
+    'TREEMAP_ID' : 'MODE'
 }
 
 # Properties for the image collection
@@ -69,7 +71,7 @@ image_collection_properties = {
     # time_start and time_end should be a span of one year (e.g., 2022-01-01, 2023-01-01)
     # Properties can be changed and new ones can be added manually in Earth Engine if needed
 image_properties = {
-    'studyArea': 'CONUS',
+    'study_area': study_area, 
     'year': year,
     'landfire_ver': landfire_ver,
     'system:time_start': ee.Date(f'{year}-01-01'),
