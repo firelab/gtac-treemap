@@ -30,7 +30,7 @@ study_area <- "CONUS"
 lf_version <- 'lf_240' 
 
 # which zone to start on?
-lf_zone_num_start <- 1
+lf_zone_num_start <- 2
 
 ################################################################
 # Load Library
@@ -371,14 +371,14 @@ for(zone_input in lf_zone_nums){
   
   dist_year <- terra::merge(lf_fire_years, lf_ind_years) %>% # merge fire and slow loss 
     terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
-    terra::classify(cbind(NA,99)) %>%  # set no data values 
-    terra::project(output_crs) # make sure it's in the correct crs
+    terra::classify(cbind(NA,99))  # set no data values 
+   
   
   gc()
   
   dist_code <- terra::merge(lf_fire_binary, lf_ind_binary) %>% # merge fire and slow loss
-    terra::classify(cbind(NA, 0)) %>% # set no data values 
-    terra::project(output_crs)  # make sure it's in the correct crs
+    terra::classify(cbind(NA, 0)) # set no data values 
+  
   
   gc()
   
@@ -390,10 +390,17 @@ for(zone_input in lf_zone_nums){
   
   # Apply Forest Mask
   #-------------------------------------------------#
-  zmask <- terra::rast(glue::glue('{target_dir_mask_z}/evt_gp.tif'))
+  zmask <- terra::rast(glue::glue('{target_dir_mask_z}/evt_gp.tif')) %>%
+    terra::project(crs(dist_year))
   
-  dist_year <- terra::mask(dist_year, zmask)
-  dist_code <- terra::mask(dist_code, zmask)
+  # make sure extents match-- disturbance layers may have lost some px due to NAs in some of the tiles
+  dist_year <- terra::extend(dist_year, zmask) %>% 
+    terra::mask(zmask) %>%
+    terra::project(output_crs) # make sure it's in the correct crs
+  
+  dist_code <- terra::extend(dist_code, zmask) %>% 
+    terra::mask(zmask) %>%
+    terra::project(output_crs) # make sure it's in the correct crs
   
   
   # Export
