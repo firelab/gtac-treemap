@@ -214,7 +214,7 @@ targetDataProjectInputs <- function(year_input,
   #target_dir_onemask <<- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/one_mask/")
   
   # Directory where EVT_GP remap table will be located
-  evt_gp_remap_table_path <<- target_dir_postmask
+  evt_gp_remap_table_path <<- target_dir_mask
   
   # Make RDS of input parameters used
   #---------------------------------------------------------#
@@ -231,13 +231,17 @@ targetDataProjectInputs <- function(year_input,
     dir.create(target_dir, recursive = TRUE)
   }
   
-  if(!file.exists(target_dir_premask)) {
+  if(!file.exists(target_dir_mask)) {
     dir.create(target_dir_premask, recursive = TRUE)
   }
   
-  if(!file.exists(target_dir_postmask)) {
-    dir.create(target_dir_postmask, recursive = TRUE)
-  }
+  # if(!file.exists(target_dir_premask)) {
+  #   dir.create(target_dir_premask, recursive = TRUE)
+  # }
+  # 
+  # if(!file.exists(target_dir_postmask)) {
+  #   dir.create(target_dir_postmask, recursive = TRUE)
+  #}
   
 
 

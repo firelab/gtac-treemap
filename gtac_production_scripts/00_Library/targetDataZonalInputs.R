@@ -140,7 +140,7 @@ targetDataZonalInputs <- function(zone_input,
   # Set folder paths
   target_dir_mask_z <<- glue::glue('{target_dir_mask}/{cur_zone_zero}/')
   # Set folder paths
-  target_dir_postmask_z <<- glue::glue('{target_dir_postmask}/{cur_zone_zero}/')
+  #target_dir_postmask_z <<- glue::glue('{target_dir_postmask}/{cur_zone_zero}/')
   
   # Directory where EVT_GP remap table will be located
   evt_gp_remap_table_path <<- target_dir_mask_z
@@ -232,9 +232,9 @@ targetDataZonalInputs <- function(zone_input,
     dir.create(target_dir_mask_z, recursive = TRUE)
   }
   
-  if(!file.exists(target_dir_postmask_z)) {
-    dir.create(target_dir_postmask_z, recursive = TRUE)
-  }
+  # if(!file.exists(target_dir_postmask_z)) {
+  #   dir.create(target_dir_postmask_z, recursive = TRUE)
+  # }
   
   
   
