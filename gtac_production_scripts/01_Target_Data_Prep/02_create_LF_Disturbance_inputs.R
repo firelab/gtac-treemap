@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "rmrs_production_scripts/00_USDA_TreeMap_2014/reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 4/24/25
+# Last Updated: 5/6/25
 
 # Final Output Rasters: 
 # - disturbance code (0/1/2 for none/Fire/Other)
@@ -27,10 +27,10 @@ year_input <- 2023
 study_area <- "CONUS"
 
 # landfire version - formatted as "lf_{###}"
-lf_version <- 'lf_240' 
+#lf_version <- 'lf_240' 
 
 # which zone to start on?
-lf_zone_num_start <- 2
+lf_zone_num_start <- 40
 
 ################################################################
 # Load Library
@@ -365,20 +365,32 @@ for(zone_input in lf_zone_nums){
   
   message("creating final disturbance layers")
   
+  # load forest mask for matching extent
+  zmask <- terra::rast(glue::glue('{target_dir_mask_z}/evt_gp.tif')) %>%
+    terra::project(output_crs)
+  
   # for existing disturbance layer: 
   # fire code: 1
   # slow loss code: 2
   
   dist_year <- terra::merge(lf_fire_years, lf_ind_years) %>% # merge fire and slow loss 
-    terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
-    terra::classify(cbind(NA,99))  # set no data values 
-   
+    terra::app(function(x) model_year - x ) %>% # calculate years since disturbance 
+    terra::project(output_crs) %>% # make sure it's in the desired projection
+    terra::extend(zmask) %>% # make sure extents match
+    terra::crop(zmask) %>%
+    terra::mask(zmask) %>% # apply mask
+    terra::classify(cbind(NA,99)) # set no data values
+    
   
   gc()
   
   dist_code <- terra::merge(lf_fire_binary, lf_ind_binary) %>% # merge fire and slow loss
-    terra::classify(cbind(NA, 0)) # set no data values 
-  
+    terra::project(output_crs) %>% # make sure it's in the desired projection
+    terra::extend(zmask) %>% # make sure extents match
+    terra::crop(zmask) %>%
+    terra::mask(zmask) %>% # apply mask
+    terra::classify(cbind(NA, 0)) #%>% # set no data values 
+     
   
   gc()
   
@@ -387,21 +399,6 @@ for(zone_input in lf_zone_nums){
   # plot(dist_year)
   # plot(lf_fire_binary)
   # plot(dist_code)
-  
-  # Apply Forest Mask
-  #-------------------------------------------------#
-  zmask <- terra::rast(glue::glue('{target_dir_mask_z}/evt_gp.tif')) %>%
-    terra::project(crs(dist_year))
-  
-  # make sure extents match-- disturbance layers may have lost some px due to NAs in some of the tiles
-  dist_year <- terra::extend(dist_year, zmask) %>% 
-    terra::mask(zmask) %>%
-    terra::project(output_crs) # make sure it's in the correct crs
-  
-  dist_code <- terra::extend(dist_code, zmask) %>% 
-    terra::mask(zmask) %>%
-    terra::project(output_crs) # make sure it's in the correct crs
-  
   
   # Export
   # -------------------------------------------------#
@@ -423,7 +420,7 @@ for(zone_input in lf_zone_nums){
   
   # Remove unused and files to start prep for next zone
   rm(lf_ind_binary, lf_fire_binary, lf_ind_years, lf_fire_years)
-  rm(dist_year, dist_code)
+  rm(dist_year, dist_code, zmask)
   
   gc()
   
