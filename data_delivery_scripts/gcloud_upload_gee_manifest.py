@@ -16,7 +16,7 @@ from osgeo import gdal
 #################################################
 
 # Year of the dataset and associated landfire version
-year = '2022'
+year = '2020'
 study_area = 'CONUS'
 landfire_ver = '2.0.0'
 
@@ -105,7 +105,7 @@ for image in glob(os.path.join(image_folder, name_format)):
 #################################################
 # Main process: create collection and upload
 #################################################
-
+#%%
 # Create the image collection in EE assets
 aml.create_image_collection(f'{gee_folder}/{gee_image_collection_name}', image_collection_properties)
 
@@ -114,7 +114,9 @@ aml.uploadToGEEAssetImagesAsBands(
     image_dict,
     gcs_bucket,
     f'{gee_folder}/{gee_image_collection_name}/{gee_image_name}',
-    overwrite=True,
+    overwrite=False,
     properties=image_properties
     )
+
+
 
