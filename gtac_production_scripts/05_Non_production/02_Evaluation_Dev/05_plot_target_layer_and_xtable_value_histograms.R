@@ -150,7 +150,7 @@ plot<- easting_df %>%
   ggplot() +
   geom_density(aes(group=Variable,x=Value, color=Variable), alpha=0.2, fill="grey75")+
   theme_bw(base_size=16)+
-  labs(x="Easting")+
+  labs(x="Easting",y="Density")+
   xtable_min+
   target_min+
   xtable_max+
