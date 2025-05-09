@@ -1,4 +1,4 @@
-local id = 'USFS/GTAC/TreeMap/CONUS/v2020';
+local id = 'USFS/GTAC/TreeMap/v2020';
 local subdir = 'USFS';
 
 local ee_const = import 'earthengine_const.libsonnet';
@@ -22,7 +22,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     ee_const.ext_ver,
   ],
   id: id,
-  title: 'USFS TreeMap2020 (Conterminous United States)',
+  title: 'USFS TreeMap2020',
   version: '2020',
   'gee:type': ee_const.gee_type.image_collection,
   description: |||
@@ -31,8 +31,8 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     biomass, and carbon across the entire forested extent of the United States in 
     2020.
 
-    TreeMap2020 contains one image, a 22-band 30 x 30m resolution gridded map
-    of the forests of the continental United States circa 2016, with each band
+    TreeMap2020 contains 22-band 30 x 30m resolution gridded map images per study area,
+    of the forests of the United States circa 2020, with each band
     representing an attribute derived from select FIA data (and one band
     representing the TreeMap ID). Examples of attributes include forest type,
     canopy cover percent, live tree stocking, live/dead tree biomass, and carbon
