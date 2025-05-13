@@ -1,5 +1,5 @@
 # For each zone:
-# Compare all target layers to make sure they have the same number of pixels
+# Compare all target layers to make sure they have the same number of pixels, extents match, etc 
 
 #################################################################
 # Set Inputs
@@ -12,7 +12,7 @@ year_input <- 2023
 study_area <- "CONUS"
 
 # which zone to start on?
-lf_zone_num_start <- 1
+lf_zone_num_start <- 2
 
 ################################################################
 # Load Library
@@ -57,7 +57,7 @@ for(zone_input in lf_zone_nums){
   targetDataZonalInputs(zone_input)
   
   # list all tifs in target folder
-  layer_fns <- list.files(target_dir_premask_z, pattern = ".tif$", full.names = TRUE)
+  layer_fns <- list.files(target_dir_mask_z, pattern = ".tif$", full.names = TRUE)
   
   # we don't care about evt_name
   layer_fns <- layer_fns[(str_detect(layer_fns,"evt_name", negate = TRUE))]
@@ -77,7 +77,7 @@ for(zone_input in lf_zone_nums){
   target_stack <- terra::vrt(layer_fns, filename = glue::glue("{tmp_dir}/target_layers.vrt"), options = "-separate", overwrite = TRUE)
   names(target_stack) = layer_info$name
   
-  print("counting pixel numbers in each layer")
+  message("counting pixel numbers in each layer")
   
   # loop over each layer
   for (i in seq_along(names(target_stack))){
@@ -88,10 +88,12 @@ for(zone_input in lf_zone_nums){
     
   }
   
+  gc()
+  
   # look at data frame; report out if any layers don't have the same # of px   
   
   if(n_distinct(layer_info$numpx) == 1) {
-    print("all target layers have the same number of px")
+    print(glue::glue("zone {zone_input} - all target layers have the same number of px"))
   } else if(n_distinct(layer_info$numpx > 1)){
     print(layer_info)
     stop(glue::glue("zone {zone_input} - target layers have different numbers of pixels, see table"))
