@@ -1,4 +1,4 @@
-local id = 'USFS/GTAC/TreeMap/CONUS/v2020';
+local id = 'USFS/GTAC/TreeMap/v2020';
 local subdir = 'USFS';
 
 local ee_const = import 'earthengine_const.libsonnet';
@@ -22,17 +22,17 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     ee_const.ext_ver,
   ],
   id: id,
-  title: 'USFS TreeMap CONUS v2020 (Conterminous United States)',
+  title: 'USFS TreeMap2020',
   version: '2020',
   'gee:type': ee_const.gee_type.image_collection,
   description: |||
     This product is part of the TreeMap data suite. It provides detailed spatial
     information on forest characteristics including number of live and dead trees,
-    biomass, and carbon across the entire forested extent of the continental United
-    States in 2020.
+    biomass, and carbon across the entire forested extent of the United States in 
+    2020.
 
-    TreeMap CONUS v2020 contains one image, a 22-band 30 x 30m resolution gridded map
-    of the forests of the continental United States circa 2016, with each band
+    TreeMap2020 contains 22-band 30 x 30m resolution gridded map images per study area,
+    of the forests of the United States circa 2020, with each band
     representing an attribute derived from select FIA data (and one band
     representing the TreeMap ID). Examples of attributes include forest type,
     canopy cover percent, live tree stocking, live/dead tree biomass, and carbon
@@ -56,7 +56,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     for each tree and plot in the FIA DataMart, FIA's public repository of plot
     information (Forest Inventory Analysis 2022a).
 
-    TreeMap CONUS v2020 was produced using the methods described in [Riley et al. (2021)](https://www.fs.usda.gov/research/treesearch/65597) but differ in two significant ways: 
+    TreeMap2020 was produced using the methods described in [Riley et al. (2021)](https://www.fs.usda.gov/research/treesearch/65597) but differ in two significant ways: 
     1) The climatic variables were obtained from DayMet, rather than pre-computed variables used with LandFire, to improve ease of access and transparency. The climatic variables used in v2020 included precipitation, solar radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit. 
     2) Previous iterations of TreeMap experienced a "ride-along" problem, as a result of having every plot available for the imputation in each zone. In the "ride-along" problem, plots were imputed to areas that were not appropriate for their vegetation type; e.g. a plot with a Wisconsin-specific tree species was imputed to a pixel in California. To address this issue, we limited the plots available for imputation. The imputation is run by Landfire zone, and available plots for each zone comprised those plots that had a vegetation type that was present in the target zone, or in any zone bordering the target zone, according to the Landfire Existing Vegetation Type Layer.
 
@@ -65,7 +65,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     * Please see the [TreeMap 2016 Publication](https://www.fs.usda.gov/research/treesearch/65597)
       for more detailed information regarding methods and accuracy assessment.
 
-    * The [TreeMap 2016 Data Explorer](https://apps.fs.usda.gov/lcms-viewer/treemap.html)
+    * The [TreeMap Data Explorer](https://apps.fs.usda.gov/lcms-viewer/treemap.html)
       is a web-based application that provides users the ability to view and
       download TreeMap attribute data.
 
@@ -75,7 +75,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     * [TreeMap Raster Data Gateway](https://data.fs.usda.gov/geodata/rastergateway/treemap/)
       for TreeMap attribute data downloads, metadata, and support documents.
 
-    * [FIA Database Manual version 8](https://www.fia.fs.usda.gov/library/database-documentation/current/ver80/FIADB%20User%20Guide%20P2_8-0.pdf)
+    * [FIA Database Manual version 9.3](https://research.fs.usda.gov/sites/default/files/2024-12/wo-v9-3_dec2024_ug_fiadb_database_description_nfi.pdf)
       for more detailed information on the attributes included in TreeMap 2020.
 
     Contact [sm.fs.treemaphelp@usda.gov](mailto:sm.fs.treemaphelp@usda.gov) with any
@@ -118,6 +118,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     'conus',
     'forest',
     'forest_type',
+    'fsic_go',
     'gtac',
     'go',
     'rmrs',
@@ -132,7 +133,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     'forest_inventory_and_analysis',
   ],
   providers: [
-    ee.producer_provider('USDA Forest Service (USFS) Geospatial Technology and Applications Center (GTAC)', 'https://data.fs.usda.gov/geodata/rastergateway/treemap/'),
+    ee.producer_provider('USDA Forest Service (USFS)  Field Services and Innovation Center – Geospatial Office (FSIC-GO)', 'https://data.fs.usda.gov/geodata/rastergateway/treemap/'),
     ee.host_provider(self_ee_catalog_url),
   ],
   extent: ee.extent(-128.97722, 22.76862, -65.25445, 51.64968,
