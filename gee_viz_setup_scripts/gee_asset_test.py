@@ -28,22 +28,28 @@ ee = getImagesLib.ee
 Map = getImagesLib.Map
 Map.clearMap()
 ####################################################################################################
+
+# Specify year of TreeMap product
+treeMapYear = '2016'
+study_area = 'CONUS'
+
 # Specify local RDS TreeMap tif and attribute table
 treeMapTif = r"X:\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif"
 treeMapDbf = r"X:\01_Data\01_TreeMap2016_RDA\RDS-2021-0074_Data\Data\TreeMap2016.tif.vat.dbf"
+
+#treeMapTif = rf"V:\03_Outputs\07_Projects\{treeMapYear}_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap{treeMapYear}_{study_area}.tif"
+#treeMapDbf = rf"V:\03_Outputs\07_Projects\{treeMapYear}_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap{treeMapYear}_{study_area}.tif.vat.dbf"
+
 
 # Specify json version of dbf that will be created for a less proprietary lookup table format
 treeMapJson = os.path.splitext(treeMapDbf)[0]+'.json'
 
 # Specify no data value in RDS dataset
-rawTreeMapNoDataValue = 2147483647
-
-# Specify year of TreeMap product
-treeMapYear = 2016
+rawTreeMapNoDataValue = 2147483647     #TreeMap2016
 
 # GCS bucket raw RDS dataset will first be uploaded to (must already exist and have write permissions)
 gcs_bucket = 'gs://treemap-test'
-assetFolder = 'projects/treemap-386222/assets/Final_Outputs/TreeMap_2016'
+assetFolder = f'projects/treemap-386222/assets/Final_Outputs/{treeMapYear}/TreeMap_{treeMapYear}'
 rawTreeMapAssetPath = assetFolder+'/'+'TreeMap_RDS_2016'
 
 # Collection all individual attribute images will be exported to
@@ -221,7 +227,19 @@ def getAttributeImage(columnNameNumbers,columnNameNames=None,randomColors=True,c
 # dfToJSON(df,treeMapJson)
 
 # # First upload RDS to EE asset
-aml.uploadToGEEImageAsset(treeMapTif,gcs_bucket,rawTreeMapAssetPath,overwrite = False,bandNames = ['Value'],properties = {'attribute':'Value','year':treeMapYear,'version':treeMapYear,'system:time_start':ee.Date.fromYMD(treeMapYear,6,1)},pyramidingPolicy='MODE',noDataValues=rawTreeMapNoDataValue)
+aml.uploadToGEEImageAsset(
+   treeMapTif,
+   gcs_bucket,
+   rawTreeMapAssetPath,
+   overwrite = False,
+   bandNames = ['Value'],
+   properties = {'attribute':'Value',
+                 'year':treeMapYear,
+                 'version':treeMapYear,
+                 'system:time_start':ee.Date.fromYMD(treeMapYear,6,1)},
+   pyramidingPolicy='MODE',
+   noDataValues=rawTreeMapNoDataValue
+   )
 tml.trackTasks2()
 
 # Get some info about RDS dataset
