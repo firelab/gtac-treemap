@@ -30,7 +30,7 @@ study_area <- "CONUS"
 #lf_version <- 'lf_240' 
 
 # which zone to start on?
-lf_zone_num_start <- 40
+lf_zone_num_start <- 1
 
 ################################################################
 # Load Library
@@ -154,7 +154,7 @@ rcl_ind[rcl_ind != 2] <- NA
 ####################################################
 
 for(zone_input in lf_zone_nums){
-  
+  #zone_input = 7 
   zone_num = zone_input
   
   # for testing
@@ -375,21 +375,22 @@ for(zone_input in lf_zone_nums){
   
   dist_year <- terra::merge(lf_fire_years, lf_ind_years) %>% # merge fire and slow loss 
     terra::app(function(x) model_year - x ) %>% # calculate years since disturbance 
+    terra::classify(cbind(NA,99)) %>% # set no data values
     terra::project(output_crs) %>% # make sure it's in the desired projection
     terra::extend(zmask) %>% # make sure extents match
     terra::crop(zmask) %>%
-    terra::mask(zmask) %>% # apply mask
-    terra::classify(cbind(NA,99)) # set no data values
+    terra::mask(zmask)  # apply mask
+    
     
   
   gc()
   
   dist_code <- terra::merge(lf_fire_binary, lf_ind_binary) %>% # merge fire and slow loss
+    terra::classify(cbind(NA,99)) %>% # set no data values
     terra::project(output_crs) %>% # make sure it's in the desired projection
     terra::extend(zmask) %>% # make sure extents match
     terra::crop(zmask) %>%
-    terra::mask(zmask) %>% # apply mask
-    terra::classify(cbind(NA, 0)) #%>% # set no data values 
+    terra::mask(zmask)# apply mask
      
   
   gc()
