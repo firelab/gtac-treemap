@@ -1,8 +1,8 @@
 
-//var dataset = ee.ImageCollection('projects/treemap-386222/assets/Final_Outputs/2022/TreeMap2020');
-var dataset = ee.ImageCollection('USFS/GTAC/TreeMap/v2020');
+//var dataset = ee.ImageCollection('projects/treemap-386222/assets/Final_Outputs/2022/TreeMap2022');
+var dataset = ee.ImageCollection('USFS/GTAC/TreeMap/v2022');
 
-var tm2022 = dataset.filterDate('2020', '2021')
+var tm2022 = dataset.filterDate('2022', '2023')
                     .filter('study_area == "CONUS"') 
                     .first();
 
