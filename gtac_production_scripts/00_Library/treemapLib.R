@@ -3,7 +3,7 @@
 # Author: Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last Updated:
-# 6/17/2024
+# 4/15/2025
 
 #################################################################
 # Load required packages
@@ -11,9 +11,11 @@
 
 # packages required for this project
 list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
-                      "magrittr", "tictoc", "caret", "randomForest", 
+                      "magrittr", "tictoc", "caret", "randomForest", "ggplot2",
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
-                      "stringr", "stringi", "devtools", "philentropy", "skimr")
+                      "stringr", "stringi", "devtools", "philentropy", "skimr",
+                      "data.table", "RSQLite", "sqldf")
+
 
 # Install dev version of yaImpute - to make sure we get the option to retain OOB obs
 #message("Installing dev version of yaImpute package")
@@ -60,6 +62,8 @@ terraOptions(memfrac = 0.8)
 
 # Allow for sufficient digits to differentiate plot cn numbers
 options("scipen" = 100, "digits" = 8)
+
+library(docstring)
 
 ###########################
 # Run other scripts in this folder
@@ -115,6 +119,77 @@ which.max.hightie <- function(x) {
     as.integer(z[length(z)])
   }
 }
+
+#######################################################
+# Data download
+#######################################################
+
+download_attempt <- function(url,
+                             dir,
+                             maxDownload_count = 5,
+                             unzip = FALSE
+                             ) {
+  
+  
+  # set error and download counts to 0
+  error_count = 0
+  downloadcount = 0
+  
+  # get name of file from url
+  s = strsplit(url, "/")[[1]]
+  filename = s[length(s)]
+  
+  # set path for downloaded file
+  filepath = glue::glue('{dir}/{filename}')
+  
+  message(glue::glue("output file: {filepath}"))
+  
+  repeat{
+    tryCatch({download.file(url, filepath, mode = "wb", quiet = FALSE)
+      downloadcount <- downloadcount + 1}, # successful download
+      error = function(e){error_count <-error_count + 1 # unsuccessful download, add to error count
+      print("Downloading did not work.")
+      return(e)})
+    if (downloadcount > 0){
+      break # stop repeat loop due to successful download
+    }
+    
+    if (error_count == maxDownload_count){
+      print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+      print(paste0("Tried downloading ", maxDownload_count, " times. Please check URL, internet connection, and system."))
+      print("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~")
+      break # stop repeat loop due to maximum download tries reached
+    }
+    print("Retrying...") # error count still less than max download count, repeat loop to retry
+    Sys.sleep(0.5)
+  }
+  
+  print(paste0("successful download (Y = 1, N = 0): ", downloadcount))
+  print(paste("number of download errors: ", error_count))
+  
+  print("Download complete!")
+  
+  ##########################################################################
+  # Unzip downloaded file if desired
+  
+  if(unzip == TRUE & grepl(".zip$", filepath)) {
+    
+    print("-- unzipping file")
+    
+    zipfilename = filepath
+    
+    #unzip
+    unzip(zipfilename, exdir = dir, overwrite = TRUE)
+  
+    print("-- extraction complete")
+  
+    #remove zipped files
+    print(paste0("- removing compressed (.zip) folder: ", gsub(dir, "", zipfilename)))
+    file.remove(zipfilename)
+    print(paste0("-- removed ", gsub(dir, "", zipfilename)))
+  
+    }
+  }
 
 #####################################################
 # Parallel processing
