@@ -1,4 +1,4 @@
-local id = 'USFS/GTAC/TreeMap/v2020';
+local id = 'USFS/GTAC/TreeMap/v2020/TreeMap2020'; 
 local subdir = 'USFS';
 
 local ee_const = import 'earthengine_const.libsonnet';
@@ -22,7 +22,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     ee_const.ext_ver,
   ],
   id: id,
-  title: 'USFS TreeMap2020',
+  title: 'USFS TreeMap v2020',
   version: '2020',
   'gee:type': ee_const.gee_type.image_collection,
   description: |||
@@ -31,7 +31,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     biomass, and carbon across the entire forested extent of the United States in 
     2020.
 
-    TreeMap2020 contains 22-band 30 x 30m resolution gridded map images per study area,
+    TreeMap v2020 contains 22-band 30 x 30m resolution gridded map images per study area,
     of the forests of the United States circa 2020, with each band
     representing an attribute derived from select FIA data (and one band
     representing the TreeMap ID). Examples of attributes include forest type,
@@ -56,9 +56,11 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     for each tree and plot in the FIA DataMart, FIA's public repository of plot
     information (Forest Inventory Analysis 2022a).
 
-    TreeMap2020 was produced using the methods described in [Riley et al. (2021)](https://www.fs.usda.gov/research/treesearch/65597) but differ in two significant ways: 
-    1) The climatic variables were obtained from DayMet, rather than pre-computed variables used with LandFire, to improve ease of access and transparency. The climatic variables used in v2020 included precipitation, solar radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit. 
-    2) Previous iterations of TreeMap experienced a "ride-along" problem, as a result of having every plot available for the imputation in each zone. In the "ride-along" problem, plots were imputed to areas that were not appropriate for their vegetation type; e.g. a plot with a Wisconsin-specific tree species was imputed to a pixel in California. To address this issue, we limited the plots available for imputation. The imputation is run by Landfire zone, and available plots for each zone comprised those plots that had a vegetation type that was present in the target zone, or in any zone bordering the target zone, according to the Landfire Existing Vegetation Type Layer.
+    The TreeMap 2020 CONUS dataset featured here updates the TreeMap 2016 dataset to landscape conditions circa 2020 and updates the methods by: 1) using a different suite of climate variables in the imputation and 2) improving species composition assignments to prevent plots being imputed to areas where their existing vegetation type was not present, an issue which affected a small number of pixels in previous TreeMap versions. 
+
+    TreeMap v2020 was produced using the methods described in [Riley et al. (2022)](https://doi.org/10.1093/jofore/fvac022 and https://research.fs.usda.gov/treesearch/65597) but differ from TreeMap v2016 in that: 1) the climatic variables were obtained from DayMet and included precipitation, shortwave radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit; and 2) plots available for imputation in each LANDFIRE zone were limited to those plots with a tree species that were present either in the plots found within the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with Existing Vegetation Type not present in the zone but also plots with trees outside of their observed range.
+
+    
 
     **Additional Resources**
 
@@ -69,21 +71,20 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
       is a web-based application that provides users the ability to view and
       download TreeMap attribute data.
 
-    * The [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/Catalog/RDS-2021-0074)
-      for the full dataset download, metadata, and support documents for the 2016 dataset.
+    * The [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/Catalog/RDS-2021-0074) for the full dataset download, metadata, and support documents.
 
     * [TreeMap Raster Data Gateway](https://data.fs.usda.gov/geodata/rastergateway/treemap/)
       for TreeMap attribute data downloads, metadata, and support documents.
 
-    * [FIA Database Manual version 9.3](https://research.fs.usda.gov/sites/default/files/2024-12/wo-v9-3_dec2024_ug_fiadb_database_description_nfi.pdf)
+    * [FIA Database Manual version 9.3](https://research.fs.usda.gov/understory/forest-inventory-and-analysis-database-user-guide-nfi)
       for more detailed information on the attributes included in TreeMap 2020.
 
     Contact [sm.fs.treemaphelp@usda.gov](mailto:sm.fs.treemaphelp@usda.gov) with any
     questions or specific data requests.
 
-    * **Forest Inventory Analysis. 2022a.**
+    * **Forest Inventory Analysis. 2024.**
     Forest Inventory Analysis DataMart.
-    Forest Inventory Analysis DataMart FIADB_1.9.0. 2022. [https://apps.fs.usda.gov/fia/datamart/datamart.html](https://apps.fs.usda.gov/fia/datamart/datamart.html).
+    Forest Inventory Analysis DataMart FIADB_1.9.1. 2024. [https://apps.fs.usda.gov/fia/datamart/datamart.html](https://apps.fs.usda.gov/fia/datamart/datamart.html).
 
     * **Ohmann, Janet L and Matthew J Gregory. 2002.**
     Predictive Mapping of Forest Composition and Structure with Direct Gradient
@@ -112,25 +113,28 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
   ],
   'gee:categories': ['forest-biomass'],
   keywords: [
+    'aboveground',
     'biomass',
     'carbon',
     'climate_change',
     'conus',
+    'daymet',
     'forest',
-    'forest_type',
-    'fsic_go',
+    'forest-biomass',
+    'forest-type',
+    'forest-inventory-and-analysis',
+    'fsic-go',
     'gtac',
-    'go',
     'rmrs',
     'landcover',
     'landfire',
-    'daymet',
-    'usfs',
+    'redcastle-resources',
     'treemap',
-    'redcastle_resources',
-    'tree_cover',
-    'vegetation',
-    'forest_inventory_and_analysis',
+    'tree-cover',
+    'us',
+    'usda',
+    'usfs',
+    'vegetation'
   ],
   providers: [
     ee.producer_provider('USDA Forest Service (USFS)  Field Services and Innovation Center – Geospatial Office (FSIC-GO)', 'https://data.fs.usda.gov/geodata/rastergateway/treemap/'),
@@ -146,6 +150,13 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
           Year of the product.
         |||,
         type: ee_const.var_type.int,
+      },
+      {
+        name: 'study_area',
+        description: |||
+          Study area of the product.
+        |||,
+        type: ee_const.var_type.string,
       },
       {
         name: 'landfire_ver',
@@ -186,7 +197,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         'gee:units': units.tons_per_acre,
       },
       {
-        name: 'CARBON_DWN',
+        name: 'CARBON_DOWN_DEAD',
         description: |||
           Carbon, Down Dead. Carbon (tons per acre) of woody material >3 inches in diameter on the ground, and stumps and their roots >3 inches in diameter. Estimated from models based on geographic area, forest type, and live tree carbon density (Smith and Heath 2008).
         |||,
@@ -1692,11 +1703,10 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         'gee:units': units.inch,
       },
       {
-        name: 'SDI_SUM',
+        name: 'SDIsum',
         description: |||
-          Stand Density Index. A relative measure of stand density for live trees (≥1.0 inch d.b.h./d.r.c.) on the condition, expressed as a sum of the maximum stand density index (SDI).
+          Sum of Stand Density Index. Stand density index (SDI). A relative measure of stand density for live trees (greater than or equal to 1.0 inch d.b.h./d.r.c.) on the condition, expressed as a sum of the maximum stand density index (SDI).
         |||,
-        'gee:units': units.percent,
       },
       {
         name: 'STANDHT',
@@ -1748,7 +1758,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         'gee:units': units.count_per_acre,
       },
       {
-        name: 'Value',
+        name: 'TREEMAP_ID',
         description: |||
           Raw TreeMap identifier dataset values. This dataset is useful to see spatial groupings of individual modeled plot values.
         |||,
@@ -1909,7 +1919,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         },
       },
       {
-        display_name: 'CARBON_DWN_Viz',
+        display_name: 'CARBON_DOWN_DEAD_Viz',
         lookat: {
           lat: 38,
           lon: -95.712891,
@@ -1936,7 +1946,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
             '1a1a01',
             ],
             bands: [
-              'CARBON_DWN',
+              'CARBON_DOWN_DEAD',
             ],
           },
         },
@@ -2074,7 +2084,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         },
       },
       {
-        display_name: 'QMD_RMRS_Viz',
+        display_name: 'QMD_Viz',
         lookat: {
           lat: 38,
           lon: -95.712891,
@@ -2101,13 +2111,13 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
               '00404d',
             ],
             bands: [
-              'QMD_RMRS',
+              'QMD',
             ],
           },
         },
       },
       {
-        display_name: 'SDIPCT_Viz',
+        display_name: 'SDISum_Viz',
         lookat: {
           lat: 38,
           lon: -95.712891,
@@ -2134,7 +2144,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
               '00404d',
             ],
             bands: [
-              'SDIPCT_RMRS',
+              'SDISum',
             ],
           },
         },
@@ -2340,23 +2350,15 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     ],
   },
   'sci:citation': |||
-    Riley, Karin L.; Grenfell, Isaac C.; Finney, Mark A.; Shaw, John D. 2021. TreeMap 2016: A tree-level model of the forests of the conterminous United States circa 2016. Fort Collins, CO: Forest Service Research Data Archive. https://doi.org/10.2737/RDS-2021-0074.
+    Riley, Karin L.; Zimmer, Scott N.; Houtman, Rachel M.; Leatherman, Lila S. T.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D. 2025. TreeMap 2020 CONUS: A tree-level model of the forests of the conterminous United States circa 2020. Fort Collins, CO: Forest Service Research Data Archive. https://doi.org/10.2737/RDS-2021-0074.
   |||,
   'gee:terms_of_use': |||
     The USDA Forest Service makes no warranty, expressed or implied, including the warranties of
     merchantability and fitness for a particular purpose, nor assumes any legal liability or
-    responsibility for the accuracy, reliability, completeness or utility of these geospatial data,
-    or for the improper or incorrect use of these geospatial data. These geospatial data and
-    related maps or graphics are not legal documents and are not intended to be used as such. The
-    data and maps may not be used to determine title, ownership, legal descriptions or boundaries,
-    legal jurisdiction, or restrictions that may be in place on either public or private land.
-    Natural hazards may or may not be depicted on the data and maps, and land users should exercise
-    due caution. The data are dynamic and may change over time. The user is responsible to verify
-    the limitations of the geospatial data and to use the data accordingly.
+    responsibility for the accuracy, reliability, completeness or utility of these geospatial data, or for the improper or incorrect use of these geospatial data. These geospatial data and related maps or graphics are not legal documents and are not intended to be used as such. The data and maps may not be used to determine title, ownership, legal descriptions or boundaries, legal jurisdiction, or restrictions that may be in place on either public or private land. Natural hazards may or may not be depicted on the data and maps, and land users should exercise due caution. The data are dynamic and may change over time. The user is responsible to verify the limitations of the geospatial data and to use the data accordingly.
 
     These data were collected using funding from the U.S. Government and can be used
-    without additional permissions or fees. If you use these data in a publication, presentation, or
-    other research product please use the appropriate citation.
+    without additional permissions or fees. If you use these data in a publication, presentation, or other research product please use the appropriate citation.
   |||,
   'gee:user_uploaded': true,
 }
