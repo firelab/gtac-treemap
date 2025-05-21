@@ -1,5 +1,5 @@
 # Set up
-setwd("\\166.2126.25")
+setwd("//166.2.126.25/TreeMap/")
 
 library(terra)
 
@@ -19,7 +19,7 @@ vpd<- rast("./01_Data/07_Daymet/daymet_north_america_normal/vpd_normal_1981to201
 
 
 # Create output directory
-dir.create("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone")
+dir.create("./03_Outputs/05_Target_Rasters/v2023/premask")
 
 # Loop through Landfire zones, creating a folder for resampled climate data 
 
@@ -28,17 +28,17 @@ for (i in lf_zone_nums){
   
   # Make a directory for saving climate data for the zone
   if(i<10){
-    dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z0",i))
+    dir.create(paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i))
   } else {
-    dir.create(paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z",i))
+    dir.create(paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i))
   }
 
   
-  # Read in the tree mask from the LandFire EVC layer for this zone----
+  # Read in the preliminary tree mask from the LandFire EVC layer for this zone----
   if (i<10) {
-    evc<- rast(paste0("./03_Outputs/05_Target_Rasters/v2020/landfire_data_by_zone/z0",i,"/evc.tif"))
+    evc<- rast(paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i,"/evc.tif"))
   } else {
-    evc<- rast(paste0("./03_Outputs/05_Target_Rasters/v2020/landfire_data_by_zone/z",i,"/evc.tif"))
+    evc<- rast(paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i,"/evc.tif"))
   }
   
   
@@ -124,57 +124,57 @@ for (i in lf_zone_nums){
 
   # Save the final raster for each zone ----
   if (i<10){
-    writeRaster(prcp_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z0",i,"/prcp_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(prcp_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i,"/prcp_normal_1981to2020.tif"), datatype = "FLT4S")
   } else {
-    writeRaster(prcp_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z",i,"/prcp_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(prcp_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i,"/prcp_normal_1981to2020.tif"), datatype = "FLT4S")
   }
   
   #
   
   if (i<10){
-    writeRaster(srad_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z0",i,"/srad_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(srad_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i,"/srad_normal_1981to2020.tif"), datatype = "FLT4S")
   } else {
-    writeRaster(srad_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z",i,"/srad_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(srad_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i,"/srad_normal_1981to2020.tif"), datatype = "FLT4S")
   }
   
   #
   
   if (i<10){
-    writeRaster(swe_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z0",i,"/swe_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(swe_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i,"/swe_normal_1981to2020.tif"), datatype = "FLT4S")
   } else {
-    writeRaster(swe_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z",i,"/swe_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(swe_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i,"/swe_normal_1981to2020.tif"), datatype = "FLT4S")
   }
   
   #
   
   if (i<10){
-    writeRaster(tmax_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z0",i,"/tmax_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(tmax_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i,"/tmax_normal_1981to2020.tif"), datatype = "FLT4S")
   } else {
-    writeRaster(tmax_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z",i,"/tmax_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(tmax_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i,"/tmax_normal_1981to2020.tif"), datatype = "FLT4S")
   }
   
   #
   
   if (i<10){
-    writeRaster(tmin_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z0",i,"/tmin_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(tmin_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i,"/tmin_normal_1981to2020.tif"), datatype = "FLT4S")
   } else {
-    writeRaster(tmin_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z",i,"/tmin_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(tmin_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i,"/tmin_normal_1981to2020.tif"), datatype = "FLT4S")
   }
   
   #
   
   if (i<10){
-    writeRaster(vp_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z0",i,"/vp_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(vp_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i,"/vp_normal_1981to2020.tif"), datatype = "FLT4S")
   } else {
-    writeRaster(vp_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z",i,"/vp_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(vp_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i,"/vp_normal_1981to2020.tif"), datatype = "FLT4S")
   }
   
   #
   
   if (i<10){
-    writeRaster(vpd_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z0",i,"/vpd_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(vpd_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i,"/vpd_normal_1981to2020.tif"), datatype = "FLT4S")
   } else {
-    writeRaster(vpd_final, paste0("./03_Outputs/05_Target_Rasters/v2020/daymet_data_by_zone/z",i,"/vpd_normal_1981to2020.tif"), datatype = "FLT4S")
+    writeRaster(vpd_final, paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i,"/vpd_normal_1981to2020.tif"), datatype = "FLT4S")
   }
   
 

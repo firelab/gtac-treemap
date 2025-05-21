@@ -8,7 +8,7 @@ setwd(home_dir)
 
 
 # Load a landfire raster as a template to match
-lf_raster<- rast("./01_Data/02_Landfire/LF_220/Vegetation/EVC/LF2022_EVC_220_CONUS/Tif/LC22_EVC_220.tif")
+lf_raster<- rast("./01_Data/02_Landfire/LF_240/Vegetation/EVC/LF2023_EVC_240_CONUS/Tif/LC23_EVC_240.tif")
 
 # Load the landfire zones 
 lf_zones<- vect("./01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp")
@@ -32,7 +32,7 @@ vpd<- rast("../01_Data/07_Daymet/daymet_north_america_normal/vpd_normal_1981to20
 # Loop through landfire zones, masking, reprojecting, resampling, and saving data by zone ----
 
 # First create output directory 
-dir.create("./03_Outputs/05_Target_Rasters/v2022/pre_mask/")
+dir.create("./03_Outputs/05_Target_Rasters/v2023/pre_mask/")
 
 
 for (i in lf_zone_nums){
@@ -41,22 +41,22 @@ for (i in lf_zone_nums){
   
   # Make a directory for saving landfire data for the zone
   ifelse(i<10, 
-         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z0",i)),
-         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z",i)))
+         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i)),
+         dir.create(paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i)))
   
   # Save that directory path as a string
   ifelse(i<10, 
-         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z0",i),
-         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2022/pre_mask/z",i))
+         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i),
+         out_dir<- paste0("./03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i))
   
   
   # Crop, mask, and resample layers to each landfire zone---
   
   # Read in the step 1 forest mask from the LandFire EVC layer for this zone----
   if (i<10) {
-    evc<- rast(paste0("../03_Outputs/05_Target_Rasters/v2022/pre_mask/z0",i,"/evc.tif"))
+    evc<- rast(paste0("../03_Outputs/05_Target_Rasters/v2023/pre_mask/z0",i,"/evc.tif"))
   } else {
-    evc<- rast(paste0("../03_Outputs/05_Target_Rasters/v2022/pre_mask/z",i,"/evc.tif"))
+    evc<- rast(paste0("../03_Outputs/05_Target_Rasters/v2023/pre_mask/z",i,"/evc.tif"))
   }
   
   # Make a reprojected extent for cropping the climate data
@@ -139,13 +139,13 @@ for (i in lf_zone_nums){
   
   # Save the final raster for each zone ----
   
-  writeRaster(prcp_zone, paste0(out_dir, "/prcp_normal_1981to2020.tif"), datatype = "FLT4S")
-  writeRaster(srad_zone, paste0(out_dir, "/srad_normal_1981to2020.tif"), datatype = "FLT4S")
-  writeRaster(swe_zone, paste0(out_dir, "/swe_normal_1981to2020.tif"), datatype = "FLT4S")
-  writeRaster(tmax_zone, paste0(out_dir, "/tmax_normal_1981to2020.tif"), datatype = "FLT4S")
-  writeRaster(tmin_zone, paste0(out_dir, "/tmin_normal_1981to2020.tif"), datatype = "FLT4S")
-  writeRaster(vp_zone, paste0(out_dir, "/vp_normal_1981to2020.tif"), datatype = "FLT4S")
-  writeRaster(vpd_zone, paste0(out_dir, "/vpd_normal_1981to2020.tif"), datatype = "FLT4S")
+  writeRaster(prcp_zone, paste0(out_dir, "/prcp_normal_1981to2020.tif"), datatype = "FLT4S", overwrite = TRUE)
+  writeRaster(srad_zone, paste0(out_dir, "/srad_normal_1981to2020.tif"), datatype = "FLT4S", overwrite = TRUE)
+  writeRaster(swe_zone, paste0(out_dir, "/swe_normal_1981to2020.tif"), datatype = "FLT4S", overwrite = TRUE)
+  writeRaster(tmax_zone, paste0(out_dir, "/tmax_normal_1981to2020.tif"), datatype = "FLT4S", overwrite = TRUE)
+  writeRaster(tmin_zone, paste0(out_dir, "/tmin_normal_1981to2020.tif"), datatype = "FLT4S", overwrite = TRUE)
+  writeRaster(vp_zone, paste0(out_dir, "/vp_normal_1981to2020.tif"), datatype = "FLT4S", overwrite = TRUE)
+  writeRaster(vpd_zone, paste0(out_dir, "/vpd_normal_1981to2020.tif"), datatype = "FLT4S", overwrite = TRUE)
   
   
   # Clear garbage

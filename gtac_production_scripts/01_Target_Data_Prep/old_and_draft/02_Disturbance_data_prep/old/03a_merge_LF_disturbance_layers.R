@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 12/12/24
+# Last Updated: 4/14/24
 
 # Output rasters: 
 # - years since most recent disturbance
@@ -48,7 +48,7 @@ zone_name <- glue('LFz{zone_num}_{gsub(" ", "", zone$ZONE_NAME)}')
 if (!is.na(aoi_path)) {
   # load aoi subset - utah uintas only
   aoi <- vect(aoi_path) %>%
-    project(lf_output_crs)
+    project(zone_output_crs)
   
   # reassign
   zone <- aoi
@@ -70,13 +70,10 @@ if(is.na(aoi_name)) {
 message("combining Landfire fire and Landfire insect and disease")
 
 # load input rasters back in - save memory
-landfire_fire_years <- terra::rast(landfire_fire_years_outpath)
-landfire_ind_years <- terra::rast(landfire_ind_years_outpath)
-landfire_fire_binary <- terra::rast(landfire_fire_binary_outpath)
-landfire_ind_binary <- terra::rast(landfire_ind_binary_outpath)
-
-# Load EVT_GP layer
-#evt_gp <- terra::rast(glue::glue('{target_dir_z}/01_final/EVT_GP.tif'))
+LF_fire_years <- terra::rast(LF_fire_years_outpath)
+LF_ind_years <- terra::rast(LF_ind_years_outpath)
+LF_fire_binary <- terra::rast(LF_fire_binary_outpath)
+LF_ind_binary <- terra::rast(LF_ind_binary_outpath)
 
 
 #####################################################
@@ -87,22 +84,20 @@ landfire_ind_binary <- terra::rast(landfire_ind_binary_outpath)
 # fire code: 1
 # slow loss code: 2
 
-dist_year <- terra::merge(landfire_fire_years, landfire_ind_years) %>% # merge fire and slow loss 
+dist_year <- terra::merge(LF_fire_years, LF_ind_years) %>% # merge fire and slow loss 
   terra::app(function(x) model_year - x ) %>% # calculate years since disturbance
-  terra::classify(cbind(NA,99))  # set no data values 
-  #terra::project(landfire_crs) #%>%
-  #terra::mask(evt_gp)
+  terra::classify(cbind(NA,99)) %>%  # set no data values 
+  terra::project(zone_output_crs) # make sure it's in the correct crs
 
-dist_type <- terra::merge(landfire_fire_binary, landfire_ind_binary) %>% # merge fire and slow loss
-  terra::classify(cbind(NA, 0)) #%>% # set no data values 
-  #terra::project(landfire_crs) #%>%
-  #terra::mask(evt_gp)
+dist_code <- terra::merge(LF_fire_binary, LF_ind_binary) %>% # merge fire and slow loss
+  terra::classify(cbind(NA, 0)) %>% # set no data values 
+  terra::project(zone_output_crs)  # make sure it's in the correct crs
 
-# #inspect
-# plot(landfire_fire_years)
-# plot(dist_year)
-# plot(landfire_fire_binary)
-# plot(dist_type)
+#inspect
+plot(LF_fire_years)
+plot(dist_year)
+plot(LF_fire_binary)
+plot(dist_code)
 
 # Export
 # -------------------------------------------------#
@@ -115,17 +110,17 @@ writeRaster(dist_year, lf_disturb_year_outpath,
             datatype = "INT1U",
             overwrite = TRUE)
 
-writeRaster(dist_type, lf_disturb_code_outpath,
+writeRaster(dist_code, lf_disturb_code_outpath,
             datatype = "INT1U",
             overwrite = TRUE)
 
 # Remove unused files to start prep for next zone
-rm(dist_year, dist_type)
-rm(landfire_ind_binary, landfire_fire_binary, landfire_ind_years, landfire_fire_years)
+rm(dist_year, dist_code)
+rm(LF_ind_binary, LF_fire_binary, LF_ind_years, LF_fire_years)
 
 gc()
 
 # remove preliminary files
-file.remove(landfire_fire_years_outpath, landfire_fire_binary_outpath,
-            landfire_ind_years_outpath, landfire_ind_binary_outpath)
+file.remove(LF_fire_years_outpath, LF_fire_binary_outpath,
+            LF_ind_years_outpath, LF_ind_binary_outpath)
 
