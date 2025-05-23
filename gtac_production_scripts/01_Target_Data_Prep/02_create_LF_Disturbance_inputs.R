@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "rmrs_production_scripts/00_USDA_TreeMap_2014/reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 5/6/25
+# Last Updated: 5/23/25
 
 # Final Output Rasters: 
 # - disturbance code (0/1/2 for none/Fire/Other)
@@ -30,7 +30,7 @@ study_area <- "CONUS"
 #lf_version <- 'lf_240' 
 
 # which zone to start on?
-lf_zone_num_start <- 1
+lf_zone_num_start <- 19
 
 ################################################################
 # Load Library
@@ -366,7 +366,7 @@ for(zone_input in lf_zone_nums){
   message("creating final disturbance layers")
   
   # load forest mask for matching extent
-  zmask <- terra::rast(glue::glue('{target_dir_mask_z}/evt_gp.tif')) %>%
+  zmask <- terra::rast(glue::glue('{target_dir_mask_z}/evt_gp_remap.tif')) %>%
     terra::project(output_crs)
   
   # for existing disturbance layer: 
@@ -386,7 +386,7 @@ for(zone_input in lf_zone_nums){
   gc()
   
   dist_code <- terra::merge(lf_fire_binary, lf_ind_binary) %>% # merge fire and slow loss
-    terra::classify(cbind(NA,99)) %>% # set no data values
+    terra::classify(cbind(NA,0)) %>% # set no data values
     terra::project(output_crs) %>% # make sure it's in the desired projection
     terra::extend(zmask) %>% # make sure extents match
     terra::crop(zmask) %>%
