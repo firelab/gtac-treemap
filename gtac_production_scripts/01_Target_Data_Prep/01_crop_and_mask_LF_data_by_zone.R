@@ -3,17 +3,14 @@
 # - Loads Landfire data from local machine
 #     - Layers include: EVC, EVH, EVT, slope, aspect, elevation
 # - Runs over each Landfire zone in study area
-#     - Crop EVC to zone and reclassify EVC to represent tree cover >10% - a preliminary forest mask
-#     - Mask EVT_GP by EVC, classify desired EVT_GPs to NA, remap specific EVT_GPs in zones 
-#     - Remap EVT_GP 
-#     - Crop and mask remaining layers to zone using EVT-GP
-#     - Reclassify EVT to EVT_GP, using the attribute table in the layer
 #     - Calculate northing and easting from aspect
 #     - Fix no-aspect issue with northing and easting
-#     - Export .tifs for each layer (clipped to zone, masked using EVC) to "pre_mask" folder
-# - Next step: 
-#     - Confirm reference data prep
-#     - Run "final masking" script, after confirming any EVT_GPs to reclass based on EVT_GPs present in the x-table
+#     - Crop EVC to zone and reclassify EVC to represent tree cover >10% - a preliminary forest mask
+#     - Mask EVT_GP by EVC, classify desired EVT_GPs to NA, rec;ass specific EVT_GPs in zones 
+#     - Remap EVT_GP 
+#     - Crop and mask layers to zone using EVT_GP_remap
+#     - Export .tifs for each layer
+
 
 # Written by Scott Zimmer (szimmer@usda.gov) and Lila Leatherman (lila.leatherman@usda.gov)
 
@@ -176,9 +173,7 @@ for (zone_input in lf_zone_nums){
 
   # Crop EVT, mask by EVC, Reclassify to EVT_GP, and Reclassify some gps to NA
   evt_gp_zone <- terra::classify(
-    terra::classify(
-      terra::crop(evt, evc_zone, mask = TRUE),
-      evt_levels),
+    terra::classify(terra::crop(evt, evc_zone, mask = TRUE),evt_levels),
     cbind(evt_gps_na, NA))
   
   # Then reclassify further groups if necessary in this zone
