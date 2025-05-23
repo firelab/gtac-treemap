@@ -7,14 +7,14 @@
 
 # NOTE: Will need to be updated for AK and HI production
 
-# Last Updated: 2/12/2025
+# Last Updated: 5/22/2025
 
 #########################################################
 # Set Inputs
 #########################################################
 
 # project inputs
-year <- 2022
+year <- 2020
 studyArea <- 'CONUS'
 project_name <- glue::glue("{year}_Production_newXtable")
 
@@ -98,16 +98,15 @@ imputation <- rast(tif_out_path)
 
 # Build raster attribute table - calculate frequencies
 f<- terra::freq(imputation)[,c(2:3)]
-names(f)<-c("TM_ID","Count")
+names(f)<-c("Value","Count")
 
-# load attribute table csv - with remaining attributs
+# load attribute table csv - with remaining attributes
 rat <- read.csv(attribute_table_path)
 #rat$X <- NULL
 
 # join csv to frequency table
-out <- left_join(f, rat, by = "TM_ID") #%>%
-  #dplyr::rename("QMD" = QMDAll) %>%
-  #dplyr::mutate(TM_ID = Value)
+out <- left_join(f, rat, by = c("Value" = "TM_ID")) %>%
+  dplyr::mutate(TREEMAP_ID = Value)
 
 # inspect
 str(out)
