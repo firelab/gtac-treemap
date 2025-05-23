@@ -3,42 +3,56 @@ library(magrittr)
 
 setwd("//166.2.126.25/Treemap")
 
+home_dir <- "//166.2.126.25/Treemap"
+
+year_in <- 2023
+
+target_dir <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2023/")
+target_dir_mask <- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/v2023/one_mask/")
+
+target_dir_eval <- glue::glue('{target_dir}/eval/')
+target_dir_layer_comparison <- glue::glue('{target_dir}/eval/Value_Comparison_X_table_Target_Layers/')
+
+xtable_path <- glue::glue("{home_dir}/03_Outputs/06_Reference_Data/v2023/02_X_table_CONUS/x_table_complete_CONUS_2023.csv")
+
+########################################################
+
 
 # Assemble complete target layer vectors by directing to target layer vectors of a given type, reading them, and concatenating
-dc_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+dc_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="dc.rds", full.names = T), readRDS))
-dy_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+dy_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="dy.rds", full.names = T), readRDS))
-easting_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+easting_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="easting.rds", full.names = T), readRDS))
-elevation_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+elevation_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="elevation.rds", full.names = T), readRDS))
-evc_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+evc_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="evc.rds", full.names = T), readRDS))
-evh_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+evh_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="evh.rds", full.names = T), readRDS))
-northing_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+northing_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="northing.rds", full.names = T), readRDS))
-prcp_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+prcp_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="prcp.rds", full.names = T), readRDS))
-slope_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+slope_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="slope.rds", full.names = T), readRDS))
-srad_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+srad_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="srad.rds", full.names = T), readRDS))
-swe_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+swe_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="swe.rds", full.names = T), readRDS))
-tmax_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+tmax_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="tmax.rds", full.names = T), readRDS))
-tmin_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+tmin_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="tmin.rds", full.names = T), readRDS))
-vp_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+vp_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="vp.rds", full.names = T), readRDS))
-vpd_vec<- do.call(c, lapply(list.files("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/target_layer_vectors/", 
+vpd_vec<- do.call(c, lapply(list.files(target_dir_layer_comparison, 
                                       recursive=T, pattern="vpd.rds", full.names = T), readRDS))
 
 
 # Load the complete x-table
-xtable<- read.csv("./03_Outputs/06_Reference_Data/v2020/02_X_table_CONUS/x_table_complete_CONUS_2020.csv")
+xtable<- read.csv(xtable_path)
 
 #make easting and northing / work with slope
 xtable %<>%
@@ -58,6 +72,8 @@ xtable$NORTHING[xtable$SLOPE == 0 & xtable$ASPECT == 0]<- 0
 
 # Go through each variable and make density plot comparing x-table and target layer values
   # Because the target layer vectors have more values than the x-table, the x-table values get repeated. I don't think this is an issue
+
+dir.create(glue::glue("{target_dir_layer_comparison}/plots/"))
 
 # dc----
 dc_df<- as.data.frame(cbind(dc_vec, xtable$disturb_code))
@@ -90,7 +106,8 @@ plot<- dc_df %>%
   target_max
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "dc.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "dc.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 
 # dy----
@@ -123,7 +140,7 @@ plot<- dy_df %>%
   xtable_max+
   target_max
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "dy.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "dy.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 
 # easting----
@@ -157,7 +174,7 @@ plot<- easting_df %>%
   target_max
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "easting.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "easting.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # elevation----
 elevation_df<- as.data.frame(cbind(elevation_vec, xtable$ELEV))
@@ -190,7 +207,7 @@ plot<- elevation_df %>%
   target_max
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "elevation.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "elevation.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # evc----
 evc_df<- as.data.frame(cbind(evc_vec, xtable$canopy_cover))
@@ -222,7 +239,7 @@ plot<- evc_df %>%
   xtable_max+
   target_max
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "evc.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "evc.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # evh----
 evh_df<- as.data.frame(cbind(evh_vec, xtable$canopy_height))
@@ -254,7 +271,7 @@ plot<- evh_df %>%
   xtable_max+
   target_max
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "evh.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "evh.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # northing----
 northing_df<- as.data.frame(cbind(northing_vec, xtable$NORTHING))
@@ -287,7 +304,7 @@ plot<- northing_df %>%
   target_max
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "northing.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "northing.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # prcp----
 prcp_df<- as.data.frame(cbind(prcp_vec, xtable$prcp))
@@ -320,7 +337,7 @@ plot<- prcp_df %>%
   target_max
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "prcp.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "prcp.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 
 # slope----
@@ -353,7 +370,7 @@ plot<- slope_df %>%
   xtable_max+
   target_max
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "slope.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "slope.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # srad----
 srad_df<- as.data.frame(cbind(srad_vec, xtable$srad))
@@ -386,7 +403,7 @@ plot<- srad_df %>%
   target_max
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "srad.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "srad.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # swe----
 swe_df<- as.data.frame(cbind(swe_vec, xtable$swe))
@@ -420,7 +437,7 @@ plot<- swe_df %>%
 
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "swe.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "swe.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # tmax----
 tmax_df<- as.data.frame(cbind(tmax_vec, xtable$tmax))
@@ -453,7 +470,7 @@ plot<- tmax_df %>%
   target_max
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "tmax.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "tmax.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 
 # tmin----
@@ -487,7 +504,7 @@ plot<- tmin_df %>%
   target_max
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "tmin.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "tmin.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # vp----
 vp_df<- as.data.frame(cbind(vp_vec, xtable$vp))
@@ -519,7 +536,7 @@ plot<- vp_df %>%
   xtable_max+
   target_max
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "vp.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "vp.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 # vpd----
 vpd_df<- as.data.frame(cbind(vpd_vec, xtable$vpd))
@@ -553,6 +570,6 @@ plot<- vpd_df %>%
 
 
 
-ggsave(paste0("./03_Outputs/09_Value_Comparison_X_table_Target_Layers/v2020/xtable_target_layer_comparison_plots/", "vpd.jpg"), plot = plot, width = 10, height = 6, dpi=800)
+ggsave(paste0(target_dir_layer_comparison, "/plots/", "vpd.jpg"), plot = plot, width = 10, height = 6, dpi=800)
 
 
