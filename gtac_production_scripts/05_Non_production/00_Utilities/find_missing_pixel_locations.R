@@ -2,13 +2,13 @@ library(terra)
 library(dplyr)
 
 year_in = 2023
-zone_in = 5
+zone_in = 19
 
 
 zone_in_zero = ifelse(zone_in <10, glue::glue("0{zone_in}"), zone_in)
 
 # Direct to the rasters for the zone you want to inspect
-files<- list.files(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v{year_in}/one_mask/z{zone_in_zero}", pattern=".tif$", full.names = T)
+files<- list.files(glue::glue("//166.2.126.25/TreeMap/03_Outputs/05_Target_Rasters/v{year_in}/one_mask/z{zone_in_zero}"), pattern=".tif$", full.names = T)
 
 # Load the rasters
 stack<-terra::rast(files)
@@ -43,8 +43,12 @@ stack_df_some_nas <- stack_df %>% filter(rowSums(is.na(stack_df)) > 0 & rowSums(
 #
 
 # load landfire zones
-lf_zones <- terra::vect("//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp.xml")
+lf_zones <- terra::vect("//166.2.126.25/TreeMap/01_Data/02_Landfire/LF_zones/Landfire_zones/refreshGeoAreas_041210.shp")
+lf_zone <- lf_zones[lf_zones$ZONE_NUM == zone_in]
 
 pts <- terra::vect(stack_df_some_nas, geom = c("actual_lon", "actual_lat"), crs = crs(stack))
 #pts <- terra::project(pts, "EPSG:4326")
-plot(pts)
+
+plot(lf_zone)
+plot(pts, add = TRUE)
+
