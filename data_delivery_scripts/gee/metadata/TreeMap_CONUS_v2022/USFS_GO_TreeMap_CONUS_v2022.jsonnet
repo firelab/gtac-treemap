@@ -1,4 +1,4 @@
-local id = 'USFS/GTAC/TreeMap/v2020/TreeMap2020'; 
+local id = 'USFS/GTAC/TreeMap/v2022/TreeMap2022'; 
 local subdir = 'USFS';
 
 local ee_const = import 'earthengine_const.libsonnet';
@@ -22,17 +22,17 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     ee_const.ext_ver,
   ],
   id: id,
-  title: 'USFS TreeMap v2020',
-  version: '2020',
+  title: 'USFS TreeMap v2022',
+  version: '2022',
   'gee:type': ee_const.gee_type.image_collection,
   description: |||
     This product is part of the TreeMap data suite. It provides detailed spatial
     information on forest characteristics including number of live and dead trees,
     biomass, and carbon across the entire forested extent of the United States in 
-    2020.
+    2022.
 
-    TreeMap v2020 contains 22-band 30 x 30m resolution gridded map images per study area,
-    of the forests of the United States circa 2020, with each band
+    TreeMap v2022 contains 22-band 30 x 30m resolution gridded map images per study area,
+    of the forests of the United States circa 2022, with each band
     representing an attribute derived from select FIA data (and one band
     representing the TreeMap ID). Examples of attributes include forest type,
     canopy cover percent, live tree stocking, live/dead tree biomass, and carbon
@@ -56,9 +56,9 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     for each tree and plot in the FIA DataMart, FIA's public repository of plot
     information (Forest Inventory Analysis 2022a).
 
-    The TreeMap 2020 CONUS dataset featured here updates the TreeMap 2016 dataset to landscape conditions circa 2020 and updates the methods by: 1) using a different suite of climate variables in the imputation and 2) improving species composition assignments to prevent plots being imputed to areas where their existing vegetation type was not present, an issue which affected a small number of pixels in previous TreeMap versions. 
+    The TreeMap 2022 CONUS dataset featured here updates the TreeMap 2016 dataset to landscape conditions circa 2022 and updates the methods by: 1) using a different suite of climate variables in the imputation and 2) improving species composition assignments to prevent plots being imputed to areas where their existing vegetation type was not present, an issue which affected a small number of pixels in previous TreeMap versions. 
 
-    TreeMap v2020 was produced using the methods described in [Riley et al. (2022)](https://doi.org/10.1093/jofore/fvac022 and https://research.fs.usda.gov/treesearch/65597) but differ from TreeMap v2016 in that: 1) the climatic variables were obtained from DayMet and included precipitation, shortwave radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit; and 2) plots available for imputation in each LANDFIRE zone were limited to those plots with a tree species that were present either in the plots found within the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with Existing Vegetation Type not present in the zone but also plots with trees outside of their observed range.
+    TreeMap v2022 was produced using the methods described in [Riley et al. (2022)](https://doi.org/10.1093/jofore/fvac022 and https://research.fs.usda.gov/treesearch/65597) but differ from TreeMap v2016 in that: 1) the climatic variables were obtained from DayMet and included precipitation, shortwave radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit; and 2) plots available for imputation in each LANDFIRE zone were limited to those plots with a tree species that were present either in the plots found within the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with Existing Vegetation Type not present in the zone but also plots with trees outside of their observed range.
 
     
 
@@ -77,7 +77,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
       for TreeMap attribute data downloads, metadata, and support documents.
 
     * [FIA Database Manual version 9.3](https://research.fs.usda.gov/understory/forest-inventory-and-analysis-database-user-guide-nfi)
-      for more detailed information on the attributes included in TreeMap 2020.
+      for more detailed information on the attributes included in TreeMap 2022.
 
     Contact [sm.fs.treemaphelp@usda.gov](mailto:sm.fs.treemaphelp@usda.gov) with any
     questions or specific data requests.
@@ -2350,7 +2350,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     ],
   },
   'sci:citation': |||
-    Riley, Karin L.; Zimmer, Scott N.; Houtman, Rachel M.; Leatherman, Lila S. T.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D. 2025. TreeMap 2020 CONUS: A tree-level model of the forests of the conterminous United States circa 2020. Fort Collins, CO: Forest Service Research Data Archive. https://doi.org/10.2737/RDS-2021-0074.
+    Riley, Karin L.; Zimmer, Scott N.; Houtman, Rachel M.; Leatherman, Lila S. T.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D. 2025. TreeMap 2022 CONUS: A tree-level model of the forests of the conterminous United States circa 2022. Fort Collins, CO: Forest Service Research Data Archive. https://doi.org/10.2737/RDS-2021-0074.
   |||,
   'gee:terms_of_use': |||
     The USDA Forest Service makes no warranty, expressed or implied, including the warranties of

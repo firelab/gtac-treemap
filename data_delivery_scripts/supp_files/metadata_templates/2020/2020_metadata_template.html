@@ -82,7 +82,7 @@
           </dl>
         </dd>
         <dt class="onlink"><i>Online_Linkage: </i><a
-           href="https://doi.org/10.2737/RDS-2021-0074">https://doi.org/10.2737/RDS-2021-0074</a></dt>
+           href="https://doi.org/10.2737/RDS-2021-0074">https://doi.org/10.2737/RDS-2021-0074</a> <strong style="color:red;">Replace with new DOI</strong> </dt>
           </dl>
        </dd>
       </dl>
@@ -95,19 +95,22 @@
        <dt>
         <i>Abstract:</i>
        </dt>
-       <dd id="abstract">TreeMap 2020 CONUS provides a tree-level model of the forests of the conterminous United States. We identified the Forest Inventory and Analysis (FIA) plot most similar to circa-2020 landscape conditions throughout the conterminous United States on a 30x30 meter (m) grid. Previous versions of TreeMap are being used in both the private and public sectors for projects including fuel treatment planning, snag hazard mapping, and estimation of terrestrial carbon resources. We used a random forests machine-learning algorithm to impute the forest plot data to a set of target rasters provided by Landscape Fire and Resource Management Planning Tools (LANDFIRE: https://landfire.gov) and climate variables derived from DayMet (DayMet: https://daymet.ornl.gov/). Predictor variables consisted of percent forest cover, height, and vegetation type, as well as topography (slope, elevation, and aspect), location (latitude and longitude), climatic variables (precipitation, shortwave radiation, snow water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit), and disturbance history (time since disturbance and disturbance type) for the landscape circa 2020. <br />
+       <dd id="abstract">TreeMap 2020 CONUS provides a tree-level model of the forests of the conterminous United States. Throughout the conterminous United States (CONUS), for each forested pixel in 30x30 meter (m) gridded landscape data for circa 2020, we identified and assigned the most similar Forest Inventory and Analysis (FIA) plot. We used a random forests machine-learning algorithm to impute the forest plot data to a set of target rasters provided by Landscape Fire and Resource Management Planning Tools (LANDFIRE)  and DayMet (DayMet).  Predictor variables consisted of percent forest cover, height, and vegetation type, as well as topography (slope, elevation, and aspect), location (latitude and longitude), climatic variables (precipitation, shortwave radiation, snow water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit), and disturbance history (time since disturbance and disturbance type). <br />
 	     <br />
-      The main output of this project (the GeoTIFF included in this data publication) is a raster map of imputed plot identifiers at 30×30 m spatial resolution for the conterminous U.S., corresponding to landscape  conditions circa 2020. In the attribute table of this raster, we also present a set of attributes drawn from the FIA databases, including forest type and live basal area. The raster map of plot identifiers can be linked to the FIA databases available through the FIA DataMart (https://doi.org/10.2737/RDS-2001-FIADB) or to the text and SQL files included in this data publication to produce tree-level maps or to map other plot attributes. The accompanying database files included in this publication also contain attributes regarding the FIA plot CN (or control number, a unique identifier for each time a plot is measured), the subplot number, the tree record number, and number of trees per acre. For each tree, the status (live or dead), species, diameter, height, actual height (where broken), crown ratio and a code for cause of death where applicable are also provided. Previous versions of TreeMap have been validated for applications including percent live tree cover, height of the dominant trees, forest type, species of trees with most basal area, aboveground biomass, fuel treatment planning, and snag hazard. Application of the dataset to research questions other than those for which it has been validated should be investigated by the researcher before proceeding. The dataset may be suitable for other applications and for use across various scales (stand, landscape, and region), however, the researcher should test the dataset's applicability to a particular research question before proceeding. 
-      <br /><br />
-      This GeoTIFF is a subset of the main TreeMap2020_CONUS dataset, in which a single attribute, {col_name}, has been written to the raster band.</dd>
+      The main output of this project (the GeoTIFF included in this data publication) is a raster map of imputed plot identifiers at 30×30 m spatial resolution for the conterminous U.S., corresponding to landscape conditions circa 2020. In the attribute table of this raster, we also present a set of attributes drawn from the FIA databases, including forest type and live basal area. The raster of plot identifiers can be linked to the FIA databases available through the FIA DataMart to map hundreds of attributes available there, or to the text and SQL files included in this data publication to access a more limited set of tree-level attributes. The database files included in this publication also contain attributes for each tree in the plots that were assigned, including the FIA plot CN for the plot on which the tree was measured (or control number, a unique identifier for each time a plot is measured), the subplot number, the tree record number, the corresponding number of trees per acre it represents due to the study design, the status (live or dead), species, diameter, height, actual height (where broken), crown ratio and a code for cause of death where applicable. Previous versions of TreeMap have been validated for characteristics including percent live tree cover, height of the dominant trees, forest type, species of trees with most basal area, and snag hazard category.  Previous versions of TreeMap are being used in both the private and public sectors for projects including fuel treatment planning, snag hazard mapping, and estimation of terrestrial carbon resources. <br />
+      <br />
+      <strong style="color:red;">Remove for stacked tiff</strong>This GeoTIFF is a subset of the main TreeMap2020_CONUS dataset, in which a single attribute, {col_name}, has been written to the raster band.</dd>
        <dt>
         <i>Purpose:</i>
        </dt>
-       <dd id="purpose">Geospatial data describing tree species or forest structure are required for many analyses and models of forest landscape dynamics. Forest data must have resolution and continuity sufficient to reflect site gradients in mountainous terrain and stand boundaries imposed by historical events, such as wildland fire and timber harvest. The TreeMap 2014 dataset (Riley et al. 2019) was the first of its kind to provide such detailed forest structure data across the forests of the conterminous United States. Prior to the TreeMap 2014 imputed forest data, assessments relied largely on forest inventory at fixed plot locations at sparse densities. The TreeMap 2016 dataset (Riley et al. 2021, Riley et al. 2022) updated the 2014 version to include disturbance data, which improved accuracy in disturbed areas. The TreeMap 2020 CONUS dataset updates the TreeMap 2016 dataset to landscape conditions circa 2020 and updates the methods by 1) updating the climate variables used in the imputation and 2) introducing a fix for the "ride-along problem" which caused plots to be imputed to areas where their forest type was not present. See the Process Step section for more details on methodology.</dd>
+       <dd id="purpose">Geospatial data describing tree species or forest structure are required for many analyses and models of forest landscape dynamics. Forest data must have resolution and continuity sufficient to reflect site gradients in mountainous terrain and stand boundaries imposed by historical events, such as wildland fire and timber harvest. The TreeMap 2014 dataset (Riley et al. 2019) was the first of its kind to provide such detailed forest structure data across the forests of the conterminous United States. Prior to the TreeMap 2014 imputed forest data, assessments relied largely on forest inventory at fixed plot locations at sparse densities. The TreeMap 2016 dataset (Riley et al. 2021, Riley et al. 2022) updated the 2014 version to include disturbance as a response variable, which improved accuracy in disturbed areas. The TreeMap 2020 CONUS dataset featured here updates the TreeMap 2016 dataset to landscape conditions circa 2020 and updates the methods by 1) using a different suite of  climate variables in the imputation and 2) improving species composition assignments to prevent  plots  being imputed to areas where their existing vegetation type was not present, an issue which affected a small number of pixels in previous TreeMap versions. See the Process Step section for more details on methodology.</dd>
        <dt>
         <i>Supplemental_Information:</i>
        </dt>
-       <dd id="supplinf">See the Entity and Attributes section for details regarding the relationship between the data files included in this publication and the FIA DataMart (https://doi.org/10.2737/RDS-2001-FIADB).</dd>
+       <dd id="supplinf">See the Entity and Attributes section for details regarding the relationship between the data files included in this publication and the FIA DataMart (https://doi.org/10.2737/RDS-2001-FIADB).<br />
+        <br />
+        Application of the dataset to research questions other than those for which it has been validated should be investigated by the researcher before proceeding. The dataset may be suitable for other applications and for use across various scales (stand, landscape, and region), however, the researcher should test the dataset's applicability to a particular research question before proceeding.   
+       </dd>
       </dl>
      </dd>
      <dt>
@@ -230,17 +233,22 @@
          <dt class="themekt">
           <i>Theme_Keyword_Thesaurus: </i>None</dt>
          <dt class="themekey">
+           <i>Theme_Keyword: </i>raster digital data</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>U.S. Forest Service (USFS)</dt>
+         <dt class="themekey">
           <i>Theme_Keyword: </i>Forest Inventory and Analysis</dt>
          <dt class="themekey">
           <i>Theme_Keyword: </i>Imputation</dt>
          <dt class="themekey">
-          <i>Theme_Keyword: </i>LANDFIRE</dt>
+          <i>Theme_Keyword: </i>LANDFIRE 2020</dt>
          <dt class="themekey">
           <i>Theme_Keyword: </i>Random forest</dt>
          <dt class="themekey">
           <i>Theme_Keyword: </i>Tree list</dt>
          <dt class="themekey">
           <i>Theme_Keyword: </i>DayMet</dt>
+         
         </dl>
        </dd>
        <dt>
@@ -249,11 +257,17 @@
        <dd class="place">
         <dl>
          <dt class="placekt">
-          <i>Place_Keyword_Thesaurus: </i>None</dt>
+          <i>Place_Keyword_Thesaurus: </i>Common geographic areas</dt>
          <dt class="placekey">
-          <i>Place_Keyword: </i>Conterminous United States</dt>
+          <i>Place_Keyword: </i>US</dt>
          <dt class="placekey">
           <i>Place_Keyword: </i>CONUS</dt>
+         <dt class="placekey">
+          <i>Place_Keyword: </i>United States</dt>
+         <dt class="placekey">
+          <i>Place_Keyword: </i>Continental U.S.</dt>
+         <dt class="placekey">
+          <i>Place_Keyword: </i>Conterminous United States</dt>
         </dl>
        </dd>
       </dl>
@@ -265,41 +279,43 @@
       <i>Use_Constraints:</i>
      </dt> 
      <dd class="useconst">These data were collected using funding from the U.S. Government and can be used without additional permissions or fees. If you use these data in a publication, presentation, or other research product please use the following citation:<br />
-<br/>
-Riley, Karin L.; Zimmer, Scott N.; Houtman, Rachel M.; Leatherman, Lila S. T.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D. 2025. TreeMap 2020 CONUS: A tree-level model of the forests of the conterminous United States circa 2020. Fort Collins, CO: Forest Service Research Data Archive. <strong style="color:red;">(UPDATE DOI)</strong> https://doi.org/10.2737/RDS-2021-0074</dd><br/>
+    <br/>
+    Riley, Karin L.; Zimmer, Scott N.; Houtman, Rachel M.; Leatherman, Lila S. T.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D. 2025. TreeMap 2020 CONUS: A tree-level model of the forests of the conterminous United States circa 2020. Fort Collins, CO: Forest Service Research Data Archive. <strong style="color:red;">(UPDATE DOI)</strong> https://doi.org/10.2737/RDS-2021-0074</dd><br/>
      <dt>
       <i>Data_Set_Credit:</i>
      </dt>
      <dd class="datacred">This project was funded by the USDA Forest Service, Rocky Mountain Research Station (RMRS).<br />
-	<br />
-Author information: <br />
-<br />
-Karin L. Riley<br />
-USDA Forest Service, Rocky Mountain Research Station<br />
-http://orcid.org/0000-0001-6593-5657<br />
-<br />
-Scott N. Zimmer<br />
-Forest Service, Rocky Mountain Research Station, Missoula Fire Sciences Lab<br />
-https://orcid.org/0009-0000-6389-6826<br />
-<br />
-Rachel M. Houtman<br />
-Forest Service, Rocky Mountain Research Station, Missoula Fire Sciences Lab<br />
-https://orcid.org/0000-0003-2097-9423<br />
-<br />
-Lila S. T. Leatherman<br />
-RedCastle Resources Inc<br />
-<br />
-Ian W. Housman<br />
-RedCastle Resources Inc<br />
-<br />
-Abhinav Shrestha<br />
-RedCastle Resources Inc<br />
-<br />
-John D. Shaw<br />
-USDA Forest Service, Rocky Mountain Research Station<br />
-http://orcid.org/0000-0002-5797-1006<br />
-<br />	
-</dd>
+	  <br />
+    Author information: <br />
+    <br />
+    Karin L. Riley<br />
+    USDA Forest Service, Rocky Mountain Research Station<br />
+    http://orcid.org/0000-0001-6593-5657<br />
+    <br />
+    Scott N. Zimmer<br />
+    USDA Forest Service, Rocky Mountain Research Station, Missoula Fire Sciences Lab<br />
+    https://orcid.org/0009-0000-6389-6826<br />
+    <br />
+    Rachel M. Houtman<br />
+    USDA Forest Service, Rocky Mountain Research Station, Missoula Fire Sciences Lab<br />
+    https://orcid.org/0000-0003-2097-9423<br />
+    <br />
+    Lila S. T. Leatherman<br />
+    RedCastle Resources, Inc.<br />
+    https://orcid.org/0009-0007-8849-8964<br />
+    <br />
+    Ian W. Housman<br />
+    RedCastle Resources, Inc.<br />
+    <br />
+    Abhinav Shrestha<br />
+    RedCastle Resources, Inc.<br />
+    https://orcid.org/0009-0007-1904-7457<br />
+    <br />
+    John D. Shaw<br />
+    USDA Forest Service, Rocky Mountain Research Station<br />
+    http://orcid.org/0000-0002-5797-1006<br />
+    <br />	
+    </dd>
      <dt>
       <i>Native_Data_Set_Environment:</i>
      </dt>
@@ -398,6 +414,7 @@ http://orcid.org/0000-0002-5797-1006<br />
        <dd class="citeinfo">
         <dl>
          <dt class="orgin">
+          <i>Originator: </i>Riley, Karin L.</dt>
          <dt class="orgin">
           <i>Originator: </i>Grenfell, Isaac C.</dt>
          <dt class="orgin">
@@ -559,17 +576,11 @@ http://orcid.org/0000-0002-5797-1006<br />
        <dt>
         <i>Attribute_Accuracy_Report:</i>
        </dt>
-       <dd class="attraccr">We used the imputed inventory data to generate maps of forest cover, forest height, vegetation group, and disturbance code at 30×30 m resolution for all forested pixels in the conterminous United States, as a means of assessing the accuracy of our methodology. The results showed good correspondence between the target LANDFIRE data and the imputed plot data, with an overall within-class agreement of 94.3% for forest cover, 99.0% for forest height, 95.6% for vegetation group, and 95.5% for disturbance code. <br />
-	  <br />
-      The methods were the same as those described in Riley et al. (2022) except that 1) the  climatic variables were calculated as 30-year normals (1980-2010) from DayMet and  downscaled to 30×30m resolution from 1m×1km resolution; DayMet variables included  precipitation, shortwave radiation, snow water equivalent, maximum temperature, minimum  temperature, vapor pressure, and vapor pressure deficit (which was derived from other  DayMet variables); and 2) we addressed the “ride-along problem” of imputing plots with   geographically-inconsistent vegetation types. The plots available for imputation in each LANDFIRE zone were limited to those plots containing species that were present either in the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with the wrong forest type but also plots with trees outside of their observed range.<br />
+       <dd class="attraccr">We used the imputed inventory data to generate maps of forest cover, forest height, vegetation group, and disturbance code at 30×30 m resolution for all forested pixels in the conterminous United States, as a means of assessing the accuracy of our methodology. The results showed good correspondence between the target LANDFIRE data and the imputed plot data, with an overall within-class agreement of 94.3% for forest cover, 99.0% for forest height, 95.6% for vegetation group, and 95.5% for disturbance code.<br />
+	    <br />
+      The methods were the same as those described in Riley et al. (2022  ) except that 1) the climatic variables were calculated as 30-year normals (1980-2010) from DayMet and downscaled to 30×30m resolution from 1×1km resolution; DayMet variables included precipitation, shortwave radiation, snow water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit (which was derived from other DayMet variables); and 2) we addressed the “ride-along problem” of imputing plots in a small proportion of pixels with geographically-inconsistent vegetation types. The plots available for imputation in each LANDFIRE zone were limited to those plots containing species that were present either in that LANDFIRE zone or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with the wrong existing vegetation type but also plots with trees outside of their observed range.<br />
       <br />
-      In the 2016 TreeMap, including disturbance type as a response variable improved the accuracy with which disturbed plots were assigned to disturbed areas and non-disturbed plots were assigned to non-disturbed areas from 90.3% to 99.98%. <br />
-      <br />
-      The climate variables used in the 2020 TreeMap were generated by the TreeMap team, calculated as 30-year normals derived from Daymet Team <br />
-      <br />
-      In the 2020 TreeMap, we fixed the "ride-along" problem by using zone-specific lists of plots as input data to the imputation. The zone-specific plots were only those plots which had a vegetation type matching those vegetation types present in the Landfire zone being imputed, or in one of the Landfire zones bordering the imputed zone. This meant that we were no longer imputing plots geographically-inconsistent vegetation types.<br />
-      <br />
-      Of 69,800 single-condition FIA plots available to random forests, 64,745of these (92.7%) were utilized in the imputation.  <br />
+      Of 69,800 single-condition FIA plots available to random forests, 64,745 of these (92.7%) were utilized in the imputation to 2,687,805,994 forested pixels.<br />
 	  </dd>
       </dl>
      </dd>
@@ -623,7 +634,7 @@ http://orcid.org/0000-0002-5797-1006<br />
               <dt>
                 <i>Other_Citation_Details: </i>
               </dt>
-                <dd class="othercit">Retrieved 13 February 2024</dd>
+                <dd class="othercit">Retrieved 12 February 2024</dd>
                 <dt class="onlink">
                   <i>Online_Linkage: </i><a href="https://doi.org/10.2737/RDS-2001-FIADB">https://doi.org/10.2737/RDS-2001-FIADB</a></dt>
               <dt class="onlink">
@@ -670,7 +681,7 @@ http://orcid.org/0000-0002-5797-1006<br />
         <dt>
          <i>Source_Contribution:</i>
         </dt>
-        <dd class="srccontr">We obtained measurements of tree size, height, species, and status (dead or alive) and plot elevation, aspect, and slope from the USDA Forest Service's Forest Inventory and Analysis (FIA). Version 1.9.1 data were downloaded from the FIA DataMart. We restricted the plot data to single-condition forested plots only; conditions are defined by changes in vegetation or land use, and some plots have more than one condition because of harvesting or fire. Because we wanted the plots used in the imputation to be more or less homogeneous, we used single-condition plots only. Plot locations in the FIA DataMart are fuzzed to protect plot integrity and true coordinates are not available to the public; for the purposes of this study, we obtained true locations from FIA via a Memorandum of Cooperation. The most recent version of the FIADB (version 1.9.1) was used to calculate the attributes in the attribute table of the TreeMap2020_CONUS.tif raster.</dd>
+        <dd class="srccontr">We obtained measurements of tree diameter at breast height, height, species, and status (dead or alive) as well as plot elevation, aspect, and slope from the USDA Forest Service's Forest Inventory and Analysis (FIA). Version 1.9.1 data was downloaded from the FIA DataMart. We restricted the plot data to single-condition forested plots only; conditions are defined by changes in vegetation or land use, and some plots have more than one condition because of harvesting, fire, or land ownership boundaries. Because we wanted the plots used in the imputation to be more or less homogeneous, we used single-condition plots only. Plot locations in the FIA DataMart are fuzzed to protect plot integrity and true coordinates are not available to the public; for the purposes of this study, we obtained true locations from FIA via a Memorandum of Cooperation. The most recent version of the FIADB (version 1.9.1) was used to calculate the attributes in the attribute table of the TreeMap 2020 CONUS raster (TreeMap2020_CONUS.tif).</dd>
        </dl>
       </dd>
       <dt>
@@ -696,7 +707,7 @@ http://orcid.org/0000-0002-5797-1006<br />
              <i>Title: </i>LANDFIRE: Target Landscape Data</dt>
              <dt class="geoform">
             <dt class="edition">
-              <i>Edition: </i><strong style="color:red;">(WHATS THE EDITION?)</strong></dt> 
+              <i>Edition: </i>2.2.0</dt>
               <i>Geospatial_Data_Presentation_Form: </i>raster digital data</dt>
              <dt>
               <i>Publication_Information: </i></dt>
@@ -709,7 +720,7 @@ http://orcid.org/0000-0002-5797-1006<br />
               <dt>
                 <i>Other_Citation_Details: </i>
               </dt>
-                <dd class="othercit">Retrieved  <strong style="color:red;">(WHATS THE RETRIEVAL DATE?)</strong></dd>
+                <dd class="othercit">Retrieved 1 June 2024</dd>
               <dt class="onlink">
                 <i>Online_Linkage: </i><a href="https://landfire.cr.usgs.gov/viewer/">https://landfire.cr.usgs.gov/viewer/</a></dt>
             </dl>
@@ -752,7 +763,7 @@ http://orcid.org/0000-0002-5797-1006<br />
         <dt>
          <i>Source_Contribution:</i>
         </dt>
-        <dd class="srccontr">LANDFIRE provides a suite of topographic and vegetation data at 30×30-meter grid resolution for the conterminous United States that served as part of the target data for this project.</dd>
+        <dd class="srccontr">LANDFIRE provides a suite of topographic, disturbance, and vegetation data at 30×30-meter grid resolution for the conterminous United States that served as part of the target data for this project.</dd>
        </dl>
       </dd>
       <dt>
@@ -775,10 +786,10 @@ http://orcid.org/0000-0002-5797-1006<br />
              <dt class="pubdate">
               <i>Publication_Date: </i>March 5, 2023</dt>
              <dt class="title">
-              <i>Title: </i><strong style="color:red;">Daymet: Annual Climate Summaries on a 1-km Grid for North America</strong></dt>
+              <i>Title: </i>Daymet: Annual Climate Summaries on a 1-km Grid for North America</dt>
               <dt class="geoform">
              <dt class="edition">
-               <i>Edition: </i><strong style="color:red;">4 R1</strong></dt> 
+               <i>Edition: </i>4 R1</dt> 
                <i>Geospatial_Data_Presentation_Form: </i>raster digital data</dt>
               <dt>
                <i>Publication_Information: </i></dt>
@@ -791,7 +802,7 @@ http://orcid.org/0000-0002-5797-1006<br />
                <dt>
                  <i>Other_Citation_Details: </i>
                </dt>
-                 <dd class="othercit">Retrieved  <strong style="color:red;">(WHATS THE RETRIEVAL DATE?)</strong></dd>
+                 <dd class="othercit">Retrieved 23 May 2024</dd>
                <dt class="onlink">
                  <i>Online_Linkage: </i><a href="https://daymet.ornl.gov/">https://daymet.ornl.gov/</a></dt>
              </dl>
@@ -816,7 +827,7 @@ http://orcid.org/0000-0002-5797-1006<br />
              <dd class="sngdate">
               <dl>
                <dt class="caldate">
-                <i>Calendar_Date: </i><strong style="color:red;">2020</strong></dt>
+                <i>Calendar_Date: 2020</dt>
               </dl>
              </dd>
             </dl>
@@ -834,7 +845,7 @@ http://orcid.org/0000-0002-5797-1006<br />
          <dt>
           <i>Source_Contribution:</i>
          </dt>
-         <dd class="srccontr">DayMet provides long-term, continuous, gridded estimates of daily weather and climatology variables by interpolating and extrapolating ground-based observations through statistical modeling techniques (Thornton et al. 2016). DayMet weather variables include daily minimum and maximum temperature, precipitation, vapor pressure, shortwave radiation, snow water equivalent, and day length produced on a 1 km x 1 km gridded surface over North America from 1980 through the end of the most recent full calendar year. </dd>
+         <dd class="srccontr">DayMet provides long-term, continuous, gridded estimates of daily weather and climatology variables by interpolating and extrapolating ground-based observations through statistical modeling techniques <strong style="color:red;">(Thornton et al. 2016)</strong>. DayMet weather variables include daily minimum and maximum temperature (tmin, tmax), precipitation (prcp), vapor pressure (vp), shortwave radiation (srad), and snow water equivalent (swe)   produced on a 1 km x 1 km gridded surface over North America from 1980 through the end of the most recent full calendar year.</dd>
         </dl>
        </dd>
       <dt>
@@ -845,21 +856,21 @@ http://orcid.org/0000-0002-5797-1006<br />
         <dt>
          <i>Process_Description:</i>
         </dt>
-        <dd class="procdesc">A suite of rasters mapping vegetation and disturbance for the landscape circa 2020 were obtained from the LANDFIRE project’s website (https://www.landfire.gov/data/FullExtentDownloads).  Rasters mapping climatic variables (tmin, tmax, vp, prcp, swe) were obtained from DayMet. We calculated 30-year normals (1981-2010) for each of these variables and used those means as inputs to the imputation model. We calculated vapor pressure deficit (VPD) from the climate data following methods in Lobell et al. (2024). <br />
+        <dd class="procdesc">A suite of rasters mapping vegetation and disturbance for the landscape circa 2020 were obtained from the LANDFIRE project’s website (https://www.landfire.gov/data/FullExtentDownloads).  Rasters mapping climatic variables (tmin, tmax, vp, prcp, swe, srad) were obtained from DayMet (https://daymet.ornl.gov/).  We calculated 30-year normals (1981-2010) for each of these variables and used those means as inputs to the imputation model. We calculated vapor pressure deficit (VPD) from the climate data following methods in Lobell et al. (2024).<br />
         <br />
-        We obtained climatic data from DayMet, where we downloaded 30 years of data (1981-2010) and calculated the annual average for our climate variables of interest, then downscaled the climate data from 1km×1km resolution. The final target rasters include: slope, aspect, elevation, Existing Vegetation Cover, Existing Vegetation Height, Existing Vegetation Type, Vegetation Disturbance, average precipitation, average maximum temperature, average minimum temperature, average vapor pressure, average soil water equivalent, average vapor pressure deficit, average shortwave radiation. We used these rasters as target data for the random forests model (see Riley et al. 2021 and Riley et al. 2022 for more details on methodology).  <br />
+        We downloaded 30 years of data (1981-2010) from DayMet and calculated the annual average for our climate variables of interest, then downscaled the climate data from 1km×1km resolution. The final target rasters (or predictor rasters to which the FIA plots were assigned) included: slope, aspect, elevation, Existing Vegetation Cover, Existing Vegetation Height, Existing Vegetation Type, disturbance (i.e. fire or insects and disease), average precipitation, average maximum temperature, average minimum temperature, average vapor pressure, average soil water equivalent, average vapor pressure deficit, average shortwave radiation. We used these rasters as target data for the random forests model (see Riley et al. (2021) and Riley et al. (2022) for more details on methodology).<br />
         <br />
-        Tabular information regarding FIA plots was obtained from the FIA DataMart. True plot locations are not available in the DataMart and were obtained directly from FIA via a Memorandum of Cooperation. We obtained information directly from the FIA DataMart regarding plot elevation, slope, and aspect, as well as tree-level information for each plot. In a small subset of plots, slope and/or aspect were not recorded within the FIA database. These plots were assigned slope and aspect by intersecting the FIA plot location with the LANDFIRE 2022 slope and aspect raster datasets. We calculated plot-level tree cover and height using the StrClass keyword in the Forest Vegetation Simulator (Dixon 2002, Crookston and Stage 1999). Existing Vegetation Type was assigned to each plot using a series of scripts we obtained from LANDFIRE; these scripts are not publicly available and were obtained via a Memorandum of Cooperation. We assigned climatic predictors to each plot via spatial overlay of the plot locations with the DayMet rasters in R. This plot-level information was used as reference data in the random forests model.<br />
+        Tabular information regarding FIA plots was obtained from the FIA DataMart. True plot locations are not available in the DataMart and were obtained directly from FIA via a Memorandum of Cooperation. We obtained information directly from the FIA DataMart regarding plot elevation, slope, and aspect, as well as tree-level information for each plot (i.e. number of trees per acre, height, diameter at breast height, species, and status (live or dead)). In a small subset of plots, slope and/or aspect were not recorded within the FIA database. These plots were assigned slope and aspect by intersecting the FIA plot location with the LANDFIRE 2022 slope and aspect raster datasets. We calculated plot-level tree cover and height using the StrClass keyword in the Forest Vegetation Simulator (Dixon 2002, Crookston and Stage 1999). Existing Vegetation Type was assigned to each plot using a series of scripts we obtained from LANDFIRE; these scripts are not publicly available and were obtained via a Memorandum of Cooperation. We assigned climatic predictors to each plot via spatial overlay of the plot locations with the DayMet rasters in R. This plot-level information was used as reference data in the random forests model.<br />
         <br />
-        We then used a modified random forests approach with the LANDFIRE vegetation, disturbance, and biophysical predictors as the target data, to which we imputed the FIA plot data at 30-meter (m) grid resolution (Riley et al. 2016, Riley et al. 2021, and Riley et al. 2022). This method imputed the plot with the best statistical match, according to a “forest” of decision trees, to each pixel of gridded landscape data.<br />
+        We then used a modified random forests approach with the vegetation, disturbance, and biophysical predictors as the target data, to which we imputed the FIA plot data at 30-meter (m) grid resolution (Riley et al. (2016), Riley et al. (2021), and Riley et al. (2022)). This method imputed the plot with the best statistical match, according to a “forest” of decision trees, to each pixel of gridded landscape data.<br />
         <br />
         <strong style="color:red;">Keep this? It wasn't in the word file</strong>We built a separate imputation model for each Landfire zone in CONUS. For each zone, we included all FIA plots that had an existing vegetation type group (EVG) that matched the EVGs present in the zone of interest and all zones that immediately bordered it, according to the Landfire raster.<br />
         <br />
-        We then mosaicked all imputed zonal rasters together into a CONUS-wide raster. <br />
+        <strong style="color:red;">Keep this? It wasn't in the word file</strong>We then mosaicked all imputed zonal rasters together into a CONUS-wide raster. <br />
         <br />
-        {col_name} was then separated into its own raster by writing values in the raster attribute table to the corresponding pixels in the raster band.<br />
+        <strong style="color:red;">Remove for stacked tiff</strong>{col_name} was then separated into its own raster by writing values in the raster attribute table to the corresponding pixels in the raster band.<br />
         <br />
-        For complete details see Riley et al. (2016), Riley et al. (2021), and Riley et al. (2022). Methods for the TreeMap 2020 version differ from those in Riley et al. (2022) in that  1) the climatic variables were obtained from DayMet and included precipitation, shortwave radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit; and 2) plots available for imputation in each LANDFIRE zone were limited to those plots with a tree species that were present either in the plots found within the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with the wrong forest type but also plots with trees outside of their observed range.<br />
+        For complete details see Riley et al. (2016), Riley et al. (2021), and Riley et al. (2022). Methods for the TreeMap 2020 version differ from those in Riley et al. (2022) in that  1) the climatic variables were obtained from DayMet and included precipitation, shortwave radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit; and 2) plots available for imputation in each LANDFIRE zone were limited to those plots with a tree species that were present either in the plots found within the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with Existing Vegetation Type not present in the zone but also plots with trees outside of their observed range.<br />
         <br />
         <br />
         Burrill, Elizabeth A.; DiTommaso, Andrea M.; Turner, Jeffery A.; Pugh, Scott A.; Christensen, Glenn; Kralicek, Karin M.; Perry, Carol J.; Lepine, Lucie C.; Walker, David M.; Conkling, Barbara L. 2024. The Forest Inventory and Analysis Database, FIADB user guides, volume: database description (version 9.3), nationwide forest inventory (NFI). U.S. Department of Agriculture, Forest Service. 1026 p. [Online]. Available at web address: https://research.fs.usda.gov/understory/forest-inventory-and-analysis-database-user-guide-nfi<br />
@@ -868,15 +879,17 @@ http://orcid.org/0000-0002-5797-1006<br />
         <br />
         Dixon, Gary E. (Comp.). 2002. Essential FVS: A user's guide to the Forest Vegetation Simulator. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Forest Management Service Center. 226p. http://www.fs.fed.us/fmsc/ftp/fvs/docs/gtr/EssentialFVS.pdf (Revised: February 2013, last accessed August 19, 2013<br />
         <br /> 
+        LANDFIRE, 2022, Conterminous U.S., LANDFIRE - LF 2020 (LF_220), U.S. Department of the Interior, Geological Survey, and U.S. Department of Agriculture. Accessed 1 June 2024 at http://www.landfire/viewer. <br />
+        <br /> 
         Lobell, David B.; Roberts, Michael J.; Schlenker, Wolfram; Braun, Noah; Little, Bertis B.; Rejesus, Roderick M.; Hammer, Graeme L. 2014. Greater sensitivity to drought accompanies maize yield increase in the U.S. Midwest. Science 344,516-519. DOI:10.1126/science.1251423 <br />
         <br />
         Riley, Karin L.; Grenfell, Isaac C.; Finney, Mark A. 2016. Mapping forest vegetation for the western United States using modified random forests imputation of FIA forest plots. Ecosphere 7(10): e01472. https://doi.org/10.1002/ecs2.1472<br />
         <br />
         Riley, Karin L.; Grenfell, Isaac C.; Finney, Mark A.; Wiener, Jason M. 2021. TreeMap, a tree-level model of conterminous US forests circa 2014 produced by imputation of FIA plot data. Scientific Data 8(11). https://doi.org/10.1038/s41597-020-00782-x and https://www.fs.usda.gov/research/treesearch/61840<br />
         <br />
-        Riley, Karin L,  Grenfell, Isaac C., Wiener, Jason M., Finney, Mark A. 2022. TreeMap 2016 Dataset Generates CONUS-Wide Maps of Forest Characteristics Including Live Basal Area, Aboveground Carbon, and Number of Trees per Acre. Journal of Forestry 2022: 607-632. https://doi.org/10.1093/jofore/fvac022 and https://research.fs.usda.gov/treesearch/65597. <br />
+        Riley, Karin L.; Grenfell, Isaac C.; Wiener, Jason M.; Finney, Mark A. 2022. TreeMap 2016 Dataset Generates CONUS-Wide Maps of Forest Characteristics Including Live Basal Area, Aboveground Carbon, and Number of Trees per Acre. Journal of Forestry 2022: 607-632. https://doi.org/10.1093/jofore/fvac022 and https://research.fs.usda.gov/treesearch/65597. <br />
         <br />
-        Thornton, P., Thornton, M., Mayer, B., Wei, Y., Devarakonda, R., Vose, R., & Cook, R. (2016). Daymet: Daily surface weather data on a 1-km grid for North America, version 3. ORNL DAAC, Oak Ridge, Tennessee, USA. USDA-NASS, 2019. 2017 Census of Agriculture, Summary and State Data, Geographic Area Series, Part 51, AC-17-A, 51.<br />
+        Thornton, M.M.; Shrestha R.; Wei Y.; Thornton P.E.; Kao S-C. 2022. Daymet: Annual Climate Summaries on a 1-km Grid for North America, Version 4 R1. ORNL DAAC, Oak Ridge, Tennessee, USA. https://doi.org/10.3334/ORNLDAAC/2130 and https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=2130<br />
         <br />
         </dd>
         <dt>
@@ -1037,20 +1050,21 @@ http://orcid.org/0000-0002-5797-1006<br />
        <br />
        IMPORTANT INFORMATION<br />
        <br />
-       The tree list raster (\Data\TreeMap2020_CONUS.tif) can be linked to tree data in the tree table         (\Data\TreeMap2020_CONUS_tree_table.csv) via the tree map identifier values (“TREEMAP_ID”) or control numbers (“CN”); the latter corresponds to a unique identifier used by FIA for each visit to a plot. (Note that FIA uses the attribute name “CN” in the “PLOT” table and “PLT_CN” in all other tables but these are equivalent). All plot CNs utilized in this analysis were single condition, 100% forested, physically located within the boundaries of CONUS, and were download from the FIA database on Feb. 12, 2024.<br />
+       The tree list raster (\Data\TreeMap2020_CONUS.tif) can be linked to data in the tree table (\Data\TreeMap2020_CONUS_tree_table.csv) via the TreeMap identifier values <strong style="color:red;">(“TREEMAP_ID”)</strong> or control numbers (“CN”); the latter corresponds to a unique identifier used by FIA for each visit to a plot. (Note that FIA uses the attribute name “CN” in the “PLOT” table and “PLT_CN” in all other tables but these are equivalent). All plot CNs utilized in this analysis were single condition, 100% forested, physically located within the boundaries of CONUS, and were downloaded from the FIA database on February 12, 2024.<br />
        <br />
-       <strong style="color:red;">(SEPARATE ATTRIBUTES ONLY) </strong>
+       <strong style="color:red;">(SEPARATE AT RIBUTES ONLY) </strong>
        TreeMap2020_CONUS_{col_name}.tif is a subset of the full TreeMap2020_CONUS dataset. Band values for         TreeMap2020_CONUS_{col_name}.tif are those found in the attribute table of the full dataset.<br />
        <br />
        <br />
        DATA FILE DESCRIPTIONS (4) <br />
        <br />
-       (1) \Data\TreeMap2020_CONUS.tif: <br /> Raster dataset (GeoTIFF file) representing model output generated by random forests imputation of forest inventory plot data measured by Forest Inventory and Analysis (FIA) to unsampled (and sampled) spatial locations on the landscape for circa 2020 conditions. The primary attributes of the raster are a plot identifier (“TREEMAP_ID”) and control number (“CN”), which can be used to link the raster to information available in the FIA Datamart via the control number (CN) field in the PLOT table or PLT_CN field in all other tables to produce tree-level maps or to map other plot attributes. Predictor variables in the random forests imputation were chosen to optimize the prediction of aboveground forest carbon. These include topographic variables (slope, aspect, and elevation from the FIA PLOT and COND tables), true plot location, vegetation (forest cover, height, and vegetation group assigned to each plot via Forest Vegetation Simulator [FVS, https://www.fs.usda.gov/fvs/, Dixon 2002] and LANDFIRE methods), disturbance (years since disturbance and disturbance type as derived from LANDFIRE disturbance rasters), and biophysical variables (average precipitation, average maximum temperature, average minimum temperature, average vapor pressure, average soil water equivalent, average vapor pressure deficit, average daily shortwave radiation derived by overlay of the plot coordinates with DayMet rasters). Variables and methods are defined in more completeness in Riley et al. (2016) and Riley et al. (2021), the accompanying Data Dictionary file (“TreeMap2016_Data_Dictionary.pdf”), and the FIA documentation (Burrill et al. 2024).<br />
+       (1) \Data\TreeMap2020_CONUS.tif: <br /> 
+       Raster dataset (GeoTIFF file) representing model output generated by random forests imputation of forest inventory plot data measured by Forest Inventory and Analysis (FIA) to unsampled (and sampled) spatial locations on the landscape for circa 2020 conditions. The primary attributes of the raster are a plot identifier (“TREEMAP_ID”) and control number (“CN”), which can be used to link the raster to information available in the tree table (2 and 3 below) or FIA Datamart via the control number (CN) field in the PLOT table or PLT_CN field in all other tables to produce tree-level maps or to map other plot attributes. Predictor variables in the random forests imputation were chosen to optimize the prediction of aboveground forest carbon. These include topographic variables (slope, aspect, and elevation from the FIA PLOT and COND tables), true plot location, vegetation (forest cover and height assigned to each plot via Forest Vegetation Simulator [FVS, https://www.fs.usda.gov/fvs/, Dixon 2002] and vegetation group assigned by LANDFIRE methods), disturbance (years since disturbance and disturbance type as derived from LANDFIRE disturbance rasters), and biophysical variables (average precipitation, average maximum temperature, average minimum temperature, average vapor pressure, average soil water equivalent, average vapor pressure deficit, average daily shortwave radiation derived by overlay of the plot coordinates with DayMet rasters). Variables and methods are defined in more completeness in Riley et al. (2016), Riley et al. (2021), Riley et al. (2022), the accompanying Data Dictionary file (“TreeMap2016_Data_Dictionary.pdf”), and the FIA documentation (Burrill et al. 2024).<br />
        <br />
        (2) \Data\TreeMap2020_CONUS_tree_table.db and <br />
        <br />
        (3) \Data\TreeMap2020_CONUS_tree_table.csv: <br />
-       SQLite database and comma-separated text file containing a list of attributes for each tree on all imputed Forest Inventory and Analysis (FIA) plots. This file can be linked to the TreeMap2016.tif raster via either the TreeMap ID field (“TREEMAP_ID”) or the plot CN (but note that because of the length of the CN field many programs are apt to round it and render it useless so using the “TREEMAP_ID” is best practice). (Note: the .db and .csv files contain the same data; the only difference is the software format.) Variables included are listed below.<br />
+       SQLite database and comma-separated text file containing a list of attributes for each tree on all imputed Forest Inventory and Analysis (FIA) plots. This file can be linked to the TreeMap2016.tif  raster via either the TreeMap ID field (“TREEMAP_ID”) or the plot CN (but note that because of the length of the CN field many programs are apt to round it and render it useless so using the “TREEMAP_ID” is best practice). (Note: the .db and .csv files contain the same data; the only difference is the software format.) Variables included are listed below under the variable description section.<br />
        <br />
        (4) \Data\TreeMap2020_CONUS_Data_Dictionary.pdf: <br />
        Portable Document Format file containing attribute names, definitions, and data sources for TreeMap2020_CONUS.tif. <br />
@@ -1059,10 +1073,13 @@ http://orcid.org/0000-0002-5797-1006<br />
        (1) TreeMap2020_CONUS_{col_name}.tif: <br />
        Raster dataset (GeoTIFF file) representing a single attribute, {col_name}, of the full model output generated by random forests imputation of forest inventory plot data measured by Forest Inventory and Analysis (FIA) to unsampled (and sampled) spatial locations on the landscape for circa 2020 conditions. {col_name} is a measure of {col_description} of the FIA plot CN assigned to each pixel. Predictor variables in the random forests imputation were chosen to optimize the prediction of aboveground forest carbon. These include topographic variables (slope, aspect, and elevation from the FIA PLOT and COND tables), true plot location, vegetation (forest cover, height, and vegetation group assigned to each plot via Forest Vegetation Simulator [FVS, https://www.fs.fed.us/fvs/, Dixon 2002] and LANDFIRE methods), disturbance (years since disturbance and disturbance type as derived from LANDFIRE disturbance rasters), and climatic variables (maximum and minimum temperature, precipitation, solar radiation, soil water equivalent, vapor pressure, and and vapor pressure deficit deficit derived by overlay of the plot coordinates with DayMet 30-year normals). Variables and methods for the full model output are defined in more completeness in Riley et al. (2022), Riley et al. (2021) and Riley et al. (2016), the accompanying Data Dictionary file, and the FIA documentation (Burrill et al. 2024).<br />
        <br />
-       VARIABLE DESCRIPTIONS for (1) \Data\TreeMap2020_CONUS.tif <br />
+       VARIABLE DESCRIPTIONS for (1) \Data\TreeMap2020_CONUS.tif.<br /> 
        (Please see “TreeMap2020_CONUS_Data_Dictionary.pdf” for more details)<br />
        <br />
-       Note that 4.2949673e+09 is the No Data or Null value in this table. This is the default No Data value for rasters produced in R. If you have difficulty viewing or working with the dataset, you might need to convert this to a Null value. The workflow in ArcGIS might be as follows: 1) export desired attribute to standalone raster using the Lookup tool, 2) use Set Null tool to set 4.2949673e+09 to Null.<br />
+       Note that 4.2949673e+09 is the No Data or Null value in this table. This is the default No Data value for rasters produced in R. If you have difficulty viewing or working with the dataset, you might need to convert this to a Null value. The workflow in ArcGIS might be as follows: 1) export desired attribute to standalone raster using the Lookup tool, 2) use Set Null tool to set 4.2949673e+09 to Null.  <br />
+       <br />
+       Note that many variables below are given as per acre figures; when totaling within a polygon in a GIS, they must first be converted to per pixel values.
+       <br />
        <br />
        OID = Unique identifier for each row<br />
        <br />
@@ -1234,13 +1251,13 @@ http://orcid.org/0000-0002-5797-1006<br />
          <dt class="cntvoice">
           <i>Contact_Voice_Telephone: </i>see Contact Instructions</dt>
          <dt class="cntinst">
-          <i>Contact Instructions: </i>This contact information was current as of August 2021. For current information see Contact Us page on: https://doi.org/10.2737/RDS.</dt>
+          <i>Contact Instructions: </i>This contact information was current as of May 2025. For current information see Contact Us page on: https://doi.org/10.2737/RDS.</dt>
         </dl>
        </dd>
       </dl>
      </dd>
      <dt class="resdesc">
-      <i>Resource_Description: </i>RDS-2021-0074 (UPDATED THIS?) </dt>
+      <i>Resource_Description: </i>RDS-2021-0074 <strong style="color:red;">(UPDATED THIS?)</strong> </dt>
      <dt>
       <i>Distribution_Liability:</i>
      </dt>
