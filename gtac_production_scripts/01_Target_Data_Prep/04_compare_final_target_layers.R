@@ -12,7 +12,7 @@ year_input <- 2023
 study_area <- "CONUS"
 
 # which zone to start on?
-lf_zone_num_start <- 7
+lf_zone_num_start <- 19
 
 ################################################################
 # Load Library
@@ -101,7 +101,7 @@ for(zone_input in lf_zone_nums){
   layer_info_all <- rbind(layer_info_all, layer_info)
   
   # write out to file
-  write.csv(layer_info_all, glue::glue('{target_dir}/eval/layer_pixel_counts/px_counts.csv'), row.names = FALSE)
+  #write.csv(layer_info_all, glue::glue('{target_dir}/eval/layer_pixel_counts/px_counts.csv'), row.names = FALSE)
   
   # look at data frame; report out if any layers don't have the same # of px   
   
