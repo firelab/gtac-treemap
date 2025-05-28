@@ -134,6 +134,9 @@ ind_codes <- c(seq(540,564,1), seq(840,854,1), seq(861, 863, 1), seq(1040,1062,1
 # Create matrices for reclassifying
 #---------------------------------------------#
 
+# set NA value for reclass
+NAValue = -9999
+
 # list all possible codes 
 nums <- c(-9999, seq(0, 1133, 1))
 
@@ -143,18 +146,18 @@ rcl_ind <- nums
 
 # replace fire codes with 1, all others with na
 rcl_fire[rcl_fire %in% fire_codes] <- 1 # fire code: 1
-rcl_fire[rcl_fire !=1] <- NA
+rcl_fire[rcl_fire !=1] <- NAValue
 
 # replace ind codes with 2, all others with na
 rcl_ind[rcl_ind %in% ind_codes] <- 2 # not-fire code: 2
-rcl_ind[rcl_ind != 2] <- NA
+rcl_ind[rcl_ind != 2] <- NAValue
 
 #####################################################
 # Prep Landfire Disturbance - by zone
 ####################################################
 
 for(zone_input in lf_zone_nums){
-  #zone_input = 19
+
   zone_num = zone_input
   
   
@@ -375,25 +378,28 @@ for(zone_input in lf_zone_nums){
   # for existing disturbance layer: 
   # fire code: 1
   # slow loss code: 2
+  NAValue_year <- -99
   
   dist_year <- terra::merge(lf_fire_years, lf_ind_years) %>% # merge fire and slow loss 
     terra::app(function(x) model_year - x ) %>% # calculate years since disturbance 
-    #terra::classify(cbind(NA,99)) %>% # set no data values
-    terra::project(output_crs) #%>% # make sure it's in the desired projection
-    terra::extend(zmask) %>% # make sure extents match
-    terra::crop(zmask) #%>%
-    #terra::mask(zmask)  # apply mask
+    terra::classify(cbind(NAValue,NAValue_year)) %>% # set no data values
+    terra::project(output_crs) %>% # make sure it's in the desired projection
+    terra::extend(zmask, fill = NAValue_year) %>% # make sure extents match
+    terra::crop(zmask) %>%
+    terra::mask(zmask)  # apply mask
     
     
   
   gc()
   
+  NAValue_code <- 0
+  
   dist_code <- terra::merge(lf_fire_binary, lf_ind_binary) %>% # merge fire and slow loss
-    #terra::classify(cbind(NA,0)) %>% # set no data values
+    terra::classify(cbind(NAValue, NAValue_code)) %>% # set no data values
     terra::project(output_crs) %>% # make sure it's in the desired projection
-    terra::extend(zmask) %>% # make sure extents match
-    terra::crop(zmask)# %>%#
-    #terra::mask(zmask)# apply mask
+    terra::extend(zmask, fill = NAValue_code) %>% # make sure extents match
+    terra::crop(zmask) %>%
+    terra::mask(zmask)# apply mask
      
   
   gc()
@@ -413,12 +419,12 @@ for(zone_input in lf_zone_nums){
   
   #export
   writeRaster(dist_year, 
-              glue::glue('{target_dir_mask_z}/disturb_year_LF.tif'),
+              glue::glue('{target_dir_mask_z}/disturb_year.tif'),
               datatype = "INT1U",
               overwrite = TRUE)
   
   writeRaster(dist_code, 
-              glue::glue('{target_dir_mask_z}/disturb_code_LF.tif'),
+              glue::glue('{target_dir_mask_z}/disturb_code.tif'),
               datatype = "INT1U",
               overwrite = TRUE)
   
