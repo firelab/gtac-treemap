@@ -30,7 +30,7 @@ study_area <- "CONUS"
 #lf_version <- 'lf_240' 
 
 # which zone to start on?
-lf_zone_num_start <- 19
+lf_zone_num_start <- 12
 
 ################################################################
 # Load Library
@@ -55,7 +55,7 @@ source(lib_path)
 break.up <- 5
 
 # set number of cores used for parallelization
-ncores <- 8
+ncores <- 6
 
 
 ###################################################
@@ -158,7 +158,7 @@ rcl_ind[rcl_ind != 2] <- NAValue
 
 for(zone_input in lf_zone_nums){
   
-  zone_input = lf_zone_nums[1]
+  #zone_input = 19
   zone_num = zone_input
   
   
@@ -259,7 +259,7 @@ for(zone_input in lf_zone_nums){
       terra::classify(cbind(nums, rcl_fire)) %>% # reclass fire codes to binary indicator for each year
       terra::app(which.max.hightie) %>% # get most recent year
       terra::classify(cbind(c(seq(1:length(lf_files$year))), lf_files$year)) %>% # reclassify index values to years
-      terra::classify(cbind(NAValue,-99))  %>% # set no data values = -99 for year 
+      #terra::classify(cbind(NAValue,-99))  %>% # set no data values = -99 for year 
       terra::mask(tile_r_mask[[1]]) # mask to zone
     
     # Export
@@ -283,7 +283,7 @@ for(zone_input in lf_zone_nums){
       terra::classify(cbind(nums, rcl_ind)) %>% # reclass disturbance codes to binary for each year
       terra::app(which.max.hightie) %>% # get most recent year of disturbance
       terra::classify(cbind(c(seq(1:length(lf_files$year))), lf_files$year))%>% # reclassify index values to years
-      terra::classify(cbind(NAValue,-99))  %>% # set no data values = -99 for year
+      #terra::classify(cbind(NAValue,-99))  %>% # set no data values = -99 for year
       terra::mask(tile_r_mask[[1]]) # mask to zone
     
     # Export tiles
@@ -378,15 +378,14 @@ for(zone_input in lf_zone_nums){
   # for existing disturbance layer: 
   # fire code: 1
   # slow loss code: 2
-  NAValue_year <- -99
+  NAValue_year <- 99
   
   dist_year <- terra::merge(lf_fire_years, lf_ind_years) %>% # merge fire and slow loss 
     terra::app(function(x) model_year - x ) %>% # calculate years since disturbance 
     terra::classify(cbind(NAValue,NAValue_year)) %>% # set no data values
     terra::project(output_crs) %>% # make sure it's in the desired projection
     terra::extend(zmask, fill = NAValue_year) %>% # make sure extents match
-    terra::crop(zmask) %>%
-    terra::mask(zmask)  # apply mask
+    terra::crop(zmask, mask = TRUE) 
     
     
   
