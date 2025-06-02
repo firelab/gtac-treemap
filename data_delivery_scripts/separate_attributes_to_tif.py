@@ -1,7 +1,16 @@
 """
-This script separates columns (attributes) from the raster attribute table of TreeMap tifs into separate images, builds pyramids for those images, 
-calculates statistics, converts to COG format, builds attribute tables (for discrete attributes), creates an xml + html metadata file based on a template,
-creates arc compatable metadata (tif.xml), creates arc compatable statistics (aux.xml), creates a readme, and zips all the files together (including manually made symbology files (lyrx + qml)).
+This script:
+1. separates columns (attributes) from the raster attribute table of TreeMap tifs into separate images, 
+2. builds pyramids for those images, 
+3. calculates statistics, 
+4. converts to COG format, 
+5. builds attribute tables (for discrete attributes), 
+6. creates an xml + html metadata file based on a template,
+7. creates arc compatable metadata (tif.xml), 
+8. creates arc compatable statistics (aux.xml), 
+9. creates a readme, 
+10. zips all the files together (including manually made symbology files (lyrx + qml)).
+
 The user is prompted upon start which products they want processed.
 Please update use considerations and this description with any changes.
 
@@ -69,10 +78,10 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
 # Specify output folder - will be created if it doesn't already exist
-outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/"
+outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/2/"
 
 # Name of TreeMap ID column in Raster Attribute Table
-tmid_col_name = "TM_ID"
+tmid_col_name = "TREEMAP_ID"
 
 # Column names to create individual attribute images of, their full names, and their data type
     # Columns whose full precision can only be contained within Float64: VOLCFNET_L, VOLCFNET_D, VOLBFNET_L, DRYBIO_L, DRYBIO_D, CARBON_L, CARBON_D
