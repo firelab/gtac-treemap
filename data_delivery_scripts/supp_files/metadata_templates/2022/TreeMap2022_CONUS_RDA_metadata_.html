@@ -1,0 +1,1500 @@
+﻿<html>
+ <body>
+  <a
+   name="Top" />
+  <h1>TreeMap 2022 CONUS: A tree-level model of the forests of the conterminous United States circa 2022</h1>
+  <h2>Metadata:</h2>
+  <ul>
+   <li>
+    <a
+     href="#Identification_Information">Identification_Information</a>
+   </li>
+   <li>
+    <a
+     href="#Data_Quality_Information">Data_Quality_Information</a>
+   </li>
+   <li>
+    <a
+     href="#Spatial_Data_Organization_Information">Spatial_Data_Organization_Information</a>
+   </li>
+   <li>
+    <a
+     href="#Spatial_Reference_Information">Spatial_Reference_Information</a>
+   </li>
+   <li>
+    <a
+     href="#Entity_and_Attribute_Information">Entity_and_Attribute_Information</a>
+   </li>
+   <li>
+    <a
+     href="#ID0EPG">
+                  Distribution_Information
+               </a>
+   </li>
+   <li>
+    <a
+     href="#Metadata_Reference_Information">Metadata_Reference_Information</a>
+   </li>
+  </ul>
+  <a
+   name="Identification_Information" />
+  <dl id="idinfo">
+   <dt>
+    <i>Identification_Information:</i>
+   </dt>
+   <dd>
+    <dl>
+     <dt>
+      <i>Citation:</i>
+     </dt>
+     <dd class="citation">
+      <dl class="citeinfo">
+       <dt>
+        <i>Citation_Information:</i>
+       </dt>
+       <dd>
+        <dl>
+         <dt class="origin">
+          <i>Originator: </i>Houtman, Rachel M.</dt>
+         <dt class="origin">
+          <i>Originator: </i>Leatherman, Lila S. T.</dt> 
+         <dt class="origin">
+          <i>Originator: </i>Zimmer, Scott N.</dt>
+         <dt class="origin">
+          <i>Originator: </i>Housman, Ian W.</dt>
+         <dt class="origin">
+          <i>Originator: </i>Shrestha, Abhinav</dt>
+         <dt class="origin"> 
+          <i>Originator: </i>Shaw, John D.</dt>
+         <dt class="origin">
+          <i>Originator: </i>Riley, Karin L.</dt>
+         <dt class="pubdate">
+          <i>Publication_Date: </i>2025</dt>
+         <dt class="title">
+          <i>Title: </i>
+         TreeMap 2022 CONUS: A tree-level model of the forests of the conterminous United States circa 2022</dt>
+         <dt class="geoform"><i>Geospatial_Data_Presentation_Form: </i>raster and tabular digital data</dt>
+         <dt><i>Publication_Information: </i></dt>
+         <dd class="pubinfo">
+          <dl>
+            <dt class="pubplace"><i>Publication_Place: </i>Fort Collins, CO</dt>
+            <dt class="publish"><i>Publisher: </i>Forest Service Research Data Archive</dt>
+          </dl>
+        </dd>
+        <dt class="onlink"><i>Online_Linkage: </i> </dt>
+          </dl>
+       </dd>
+      </dl>
+     </dd>
+     <dt>
+      <i>Description:</i>
+     </dt>
+     <dd id="descript">
+      <dl>
+       <dt>
+        <i>Abstract:</i>
+       </dt>
+       <dd id="abstract">TreeMap 2022 CONUS provides a tree-level model of the forests of the conterminous United States. Throughout the conterminous United States (CONUS), for each forested pixel in 30x30 meter (m) gridded landscape data for circa 2022, we identified and assigned the most similar Forest Inventory and Analysis (FIA) plot. We used a random forests machine-learning algorithm to impute the forest plot data to a set of target rasters provided by Landscape Fire and Resource Management Planning Tools (LANDFIRE)  and DayMet (DayMet).  Predictor variables consisted of percent forest cover, height, and vegetation type, as well as topography (slope, elevation, and aspect), location (latitude and longitude), climatic variables (precipitation, shortwave radiation, snow water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit), and disturbance history (time since disturbance and disturbance type). <br />
+	     <br />
+      The main output of this project (the GeoTIFF included in this data publication) is a raster map of imputed plot identifiers at 30×30 m spatial resolution for the conterminous U.S., corresponding to landscape conditions circa 2022. In the attribute table of this raster, we also present a set of attributes drawn from the FIA databases, including forest type and live basal area. The raster of plot identifiers can be linked to the FIA databases available through the FIA DataMart to map hundreds of attributes available there, or to the comma separated file included in this data publication to access a more limited set of tree-level attributes. The database files included in this publication also contain attributes for each tree in the plots that were assigned, including the FIA plot CN for the plot on which the tree was measured (or control number, a unique identifier for each time a plot is measured), the subplot number, the tree record number, the corresponding number of trees per acre it represents due to the study design, the status (live or dead), species, diameter, height, actual height (where broken), crown ratio and a code for cause of death where applicable. Previous versions of TreeMap have been validated for characteristics including percent live tree cover, height of the dominant trees, forest type, species of trees with most basal area, and snag hazard category.  Previous versions of TreeMap are being used in both the private and public sectors for projects including fuel treatment planning, snag hazard mapping, and estimation of terrestrial carbon resources. <br />
+      </dd>
+       <dt>
+        <i>Purpose:</i>
+       </dt>
+       <dd id="purpose">Geospatial data describing tree species or forest structure are required for many analyses and models of forest landscape dynamics. Forest data must have resolution and continuity sufficient to reflect site gradients in mountainous terrain and stand boundaries imposed by historical events, such as wildland fire and timber harvest. The TreeMap 2014 dataset (Riley et al. 2019) was the first of its kind to provide such detailed forest structure data across the forests of the conterminous United States. Prior to the TreeMap 2014 imputed forest data, assessments relied largely on forest inventory at fixed plot locations at sparse densities. The TreeMap 2016 dataset (Riley et al. 2021, Riley et al. 2022) updated the 2014 version to include disturbance as a response variable, which improved accuracy in disturbed areas. The TreeMap 2022 CONUS dataset featured here updates the TreeMap 2016 dataset to landscape conditions circa 2022 and updates the methods by 1) using a different suite of  climate variables in the imputation and 2) improving species composition assignments to prevent  plots  being imputed to areas where their existing vegetation type was not present, an issue which affected a small number of pixels in previous TreeMap versions. See the Process Step section for more details on methodology.</dd>
+       <dt>
+        <i>Supplemental_Information:</i>
+       </dt>
+       <dd id="supplinf">See the Entity and Attributes section for details regarding the relationship between the data files included in this publication and the FIA DataMart (https://doi.org/10.2737/RDS-2001-FIADB).<br />
+        <br />
+        For more information about these data, see Riley et al. (2022).<br />
+       </dd>
+      </dl>
+     </dd>
+     <dt>
+      <i>Time_Period_of_Content:</i>
+     </dt>
+     <dd class="timeperd">
+      <dl class="timeinfo">
+       <dt>
+        <i>Time_Period_Information:</i>
+       </dt>
+       <dd class="sngdate">
+        <dl>
+         <dt>
+          <i>Single_Date/Time:</i>
+         </dt>
+         <dd>
+          <dl>
+           <dt class="caldate">
+            <i>Calendar_Date: </i>2022</dt>
+          </dl>
+         </dd>
+        </dl>
+       </dd>
+       <dt>
+        <i>Currentness_Reference:</i>
+       </dt>
+       <dd class="current">Ground condition</dd>
+      </dl>
+     </dd>
+     <dt>
+      <i>Status:</i>
+     </dt>
+     <dd class="status">
+      <dl>
+       <dt class="progress">
+        <i>Progress: </i>Complete</dt>
+       <dt class="update">
+        <i>Maintenance_and_Update_Frequency: </i>None planned</dt>
+      </dl>
+     </dd>
+     <dt>
+      <i>Spatial_Domain:</i>
+     </dt>
+     <dd class="spdom">
+      <dl>
+       <dt>
+        <i>Description_of_Geographic_Extent:</i>
+       </dt>
+       <dd class="descgeog">Forested areas in the conterminous United States.</dd>
+       <dt>
+        <i>Bounding_Coordinates:</i>
+       </dt>
+       <dd class="bounding">
+        <dl>
+         <dt class="westbc">
+          <i>West_Bounding_Coordinate: </i>-128.97722</dt>
+         <dt class="eastbc">
+          <i>East_Bounding_Coordinate: </i>-65.25445</dt>
+         <dt class="northbc">
+          <i>North_Bounding_Coordinate: </i>51.64968</dt>
+         <dt class="southbc">
+          <i>South_Bounding_Coordinate: </i>22.76862</dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+     <dt>
+      <i>Keywords:</i>
+     </dt>
+     <dd class="keywords">
+      <dl>
+       <dt>
+        <i>Theme:</i>
+       </dt>
+       <dd class="theme">
+        <dl>
+         <dt class="themekt">
+          <i>Theme_Keyword_Thesaurus: </i>ISO 19115 Topic Category</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>biota</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>environment</dt>
+        </dl>
+       </dd>
+       <dt>
+        <i>Theme:</i>
+       </dt>
+       <dd class="theme">
+        <dl>
+         <dt class="themekt">
+          <i>Theme_Keyword_Thesaurus: </i>National Research &amp; Development Taxonomy</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Ecology, Ecosystems, &amp; Environment</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Forest &amp; Plant Health</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Inventory, Monitoring, &amp; Analysis</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Natural Resource Management &amp; Use</dt>
+         <dt class="themekey">
+          <i class="themekey">
+            <i>Theme_Keyword: </i>Conservation</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Ecosystem services</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Forest management</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Restoration</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Timber</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Wilderness</dt>
+        </dl>
+       </dd>
+       <dt>
+        <i>Theme:</i>
+       </dt>
+       <dd class="theme">
+        <dl>
+         <dt class="themekt">
+          <i>Theme_Keyword_Thesaurus: </i>None</dt>
+         <dt class="themekey">
+           <i>Theme_Keyword: </i>raster digital data</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>U.S. Forest Service (USFS)</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Forest Inventory and Analysis</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Imputation</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>LANDFIRE 2022</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Random forest</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>Tree list</dt>
+         <dt class="themekey">
+          <i>Theme_Keyword: </i>DayMet</dt>
+         
+        </dl>
+       </dd>
+       <dt>
+        <i>Place:</i>
+       </dt>
+       <dd class="place">
+        <dl>
+         <dt class="placekt">
+          <i>Place_Keyword_Thesaurus: </i>Common geographic areas</dt>
+         <dt class="placekey">
+          <i>Place_Keyword: </i>US</dt>
+         <dt class="placekey">
+          <i>Place_Keyword: </i>CONUS</dt>
+         <dt class="placekey">
+          <i>Place_Keyword: </i>United States</dt>
+         <dt class="placekey">
+          <i>Place_Keyword: </i>Continental U.S.</dt>
+         <dt class="placekey">
+          <i>Place_Keyword: </i>Conterminous United States</dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+     <dt class="accconst">
+      <i>Access_Constraints: </i>None</dt>
+     <dt>
+      <i>Use_Constraints:</i>
+     </dt> 
+     <dd class="useconst">These data were collected using funding from the U.S. Government and can be used without additional permissions or fees. If you use these data in a publication, presentation, or other research product please use the following citation:<br />
+    <br/>
+    Houtman, Rachel M.; Leatherman, Lila S. T.; Zimmer, Scott N.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D.; Riley, Karin L. 2025. TreeMap 2022 CONUS: A tree-level model of the forests of the conterminous United States circa 2022. Fort Collins, CO: Forest Service Research Data Archive. <br/>
+    <dt>
+      <i>Point_of_Contact:</i>
+     </dt>
+     <dd>
+      <dl>
+       <dt>
+        <i>Contact_Information:</i>
+       </dt>
+       <dd>
+        <dl>
+         <dt>
+          <i>Contact_Person_Primary:</i>
+         </dt>
+         <dd>
+          <dl>
+           <dt>
+            <i>Contact_Person: </i>Karin Riley</dt>
+           <dt>
+            <i>Contact_Organization: </i>USDA Forest Service, Rocky Mountain Research Station</dt>
+          </dl>
+         </dd>
+         <dt>
+          <i>Contact_Position: </i>Research Ecologist</dt>
+         <dt>
+          <i>Contact_Address:</i>
+         </dt>
+         <dd>
+          <dl>
+           <dt>
+            <i>Address_Type: </i>mailing and physical</dt>
+           <dt>
+            <i>Address: </i>5775 W. Broadway</dt>
+           <dt>
+            <i>City: </i>Missoula</dt>
+           <dt>
+            <i>State_or_Province: </i>Montana</dt>
+           <dt>
+            <i>Postal_Code: </i>59808</dt>
+           <dt>
+            <i>Country: </i>USA</dt>
+          </dl>
+         </dd>
+         <dt>
+          <i>Contact_Voice_Telephone: </i>406-329-4806</dt>
+         <dt>
+          <i>Contact_Electronic_Mail_Address: </i>
+          <TT>karin.l.riley@usda.gov</TT>
+         </dt>
+         <dt>
+          <i>Contact Instructions: </i>This contact information was current as of original publication date. For current information see Contact Us page on: .</dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+    
+    <dt>
+      <i>Data_Set_Credit:</i>
+     </dt>
+     <dd class="datacred">This project was funded by the USDA Forest Service, Rocky Mountain Research Station (RMRS).<br />
+	  <br />
+    Author information: <br />
+    <br />
+    <br />
+    Rachel M. Houtman<br />
+    USDA Forest Service, Rocky Mountain Research Station, Missoula Fire Sciences Lab<br />
+    https://orcid.org/0000-0003-2097-9423<br />
+    <br />
+    Lila S. T. Leatherman<br />
+    RedCastle Resources, Inc.<br />
+    https://orcid.org/0009-0007-8849-8964<br />
+    <br />
+    Scott N. Zimmer<br />
+    USDA Forest Service, Rocky Mountain Research Station, Missoula Fire Sciences Lab<br />
+    https://orcid.org/0009-0000-6389-6826<br />
+    <br />
+    Ian W. Housman<br />
+    RedCastle Resources, Inc.<br />
+    <br />
+    Abhinav Shrestha<br />
+    RedCastle Resources, Inc.<br />
+    https://orcid.org/0009-0007-1904-7457<br />
+    <br />
+    John D. Shaw<br />
+    USDA Forest Service, Rocky Mountain Research Station<br />
+    http://orcid.org/0000-0002-5797-1006<br />
+    <br />
+    Karin L. Riley<br />
+    USDA Forest Service, Rocky Mountain Research Station<br />
+    http://orcid.org/0000-0001-6593-5657<br />
+    </dd>
+     <dt>
+      <i>Native_Data_Set_Environment:</i>
+     </dt>
+     <dd class="native">Version 6.2 (Build 9200) ; Esri ArcGIS 10.5.1.7333</dd>
+     <br />
+     <dt>
+      <i>Cross_Reference:</i>
+     </dt>
+     <dd class="crossref">
+      <dl>
+       <dt>
+        <i>Citation_Information:</i>
+       </dt>
+       <dd class="citeinfo">
+        <dl>
+         <dt class="orgin">
+          <i>Originator: </i>Riley, Karin L.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Grenfell, Isaac C.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Wiener, Jason M.</dt>
+        <dt class="orgin">
+          <i>Originator: </i>Finney, Mark A.</dt>
+         <dt class="orgin">
+          <i>Publication_Date: </i>2022</dt>
+         <dt class="title">
+          <i>Title: </i>TreeMap 2016 Dataset Generates CONUS-Wide Maps of Forest Characteristics Including Live Basal Area, Aboveground Carbon, and Number of Trees per Acre</dt>
+         <dt class="geoform">
+          <i>Geospatial_Data_Presentation_Form: </i>journal article</dt>
+         <dt class="serinfo">
+          <i>Series_Information: </i></dt>
+          <dd>
+            <dl>
+              <dt class="sername"><i>Series_Name: </i>Journal of Forestry</dt>
+              <dt class="issue"><i>Issue_Identification: </i>2022: 607-632</dt>
+            </dl>
+          </dd>
+          <dt class="onlink">
+            <i>Online_Linkage: </i><a href="https://research.fs.usda.gov/treesearch/65597">https://research.fs.usda.gov/treesearch/65597</a></dt>
+          <dt class="onlink">
+            <i>Online_Linkage: </i><a href="https://doi.org/10.1093/jofore/fvac022">https://doi.org/10.1093/jofore/fvac022</a></dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+
+     <dt>
+      <i>Cross_Reference:</i>
+     </dt>
+     <dd class="crossref">
+      <dl>
+       <dt>
+        <i>Citation_Information:</i>
+       </dt>
+       <dd class="citeinfo">
+        <dl>
+         <dt class="orgin">
+          <i>Originator: </i>Riley, Karin L.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Grenfell, Isaac C.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Finney, Mark A.</dt>
+        <dt class="orgin">
+          <i>Originator: </i>Wiener, Jason M.</dt>
+         <dt class="orgin">
+          <i>Publication_Date: </i>2021</dt>
+         <dt class="title">
+          <i>Title: </i>TreeMap, a tree-level model of conterminous US forests circa 2014 produced by imputation of FIA plot data</dt>
+         <dt class="geoform">
+          <i>Geospatial_Data_Presentation_Form: </i>journal article</dt>
+         <dt class="serinfo">
+          <i>Series_Information: </i></dt>
+          <dd>
+            <dl>
+              <dt class="sername"><i>Series_Name: </i>Scientific Data</dt>
+              <dt class="issue"><i>Issue_Identification: </i>8: 11</dt>
+            </dl>
+          </dd>
+          <dt class="onlink">
+            <i>Online_Linkage: </i><a href="https://www.fs.usda.gov/treesearch/pubs/61840">https://www.fs.usda.gov/treesearch/pubs/61840</a></dt>
+          <dt class="onlink">
+            <i>Online_Linkage: </i><a href="https://doi.org/10.1038/s41597-020-00782-x">https://doi.org/10.1038/s41597-020-00782-x</a></dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+
+     <dt> 	
+      <i>Cross_Reference:</i>
+     </dt>
+     <dd class="crossref">
+      <dl>
+       <dt>
+        <i>Citation_Information:</i>
+       </dt>
+       <dd class="citeinfo">
+        <dl>
+         <dt class="orgin">
+          <i>Originator: </i>Riley, Karin L.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Grenfell, Isaac C.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Finney, Mark A.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Shaw, John D.</dt>
+         <dt class="pubdate">
+          <i>Publication_Date: </i>2021</dt>
+         <dt class="title">
+          <i>Title: </i>TreeMap 2016: A tree-level model of the forests of the conterminous United States circa 2016</dt>
+         <dt class="geoform">
+          <i>Geospatial_Data_Presentation_Form: </i>raster and tabular digital data</dt>
+         <dt class="pubinfo">
+          <i>Publication_Information: </i></dt>
+          <dd>
+            <dl>
+              <dt class="pubplace"><i>Publication_Place: </i>Fort Collins, CO</dt>
+              <dt class="publish"><i>Publisher: </i>Forest Service Research Data Archive</dt>
+            </dl>
+          </dd>
+          <dt class="onlink">
+            <i>Online_Linkage: </i><a href="https://doi.org/10.2737/RDS-2021-0074">https://doi.org/10.2737/RDS-2021-0074</a></dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+     <dt> 	
+      <i>Cross_Reference:</i>
+     </dt>
+     <dd class="crossref">
+      <dl>
+       <dt>
+        <i>Citation_Information:</i>
+       </dt>
+       <dd class="citeinfo">
+        <dl>
+         <dt class="orgin">
+          <i>Originator: </i>Riley, Karin L.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Grenfell, Isaac C.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Finney, Mark A.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Wiener, Jason M.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Houtman, Rachel M.</dt>
+         <dt class="pubdate">
+          <i>Publication_Date: </i>2019</dt>
+         <dt class="title">
+          <i>Title: </i>Fire Lab tree list: A tree-level model of the conterminous United States landscape circa 2014</dt>
+         <dt class="geoform">
+          <i>Geospatial_Data_Presentation_Form: </i>raster and tabular digital data</dt>
+         <dt class="pubinfo">
+          <i>Publication_Information: </i></dt>
+          <dd>
+            <dl>
+              <dt class="pubplace"><i>Publication_Place: </i>Fort Collins, CO</dt>
+              <dt class="publish"><i>Publisher: </i>Forest Service Research Data Archive</dt>
+            </dl>
+          </dd>
+          <dt class="onlink">
+            <i>Online_Linkage: </i><a href="https://doi.org/10.2737/RDS-2019-0026">https://doi.org/10.2737/RDS-2019-0026</a></dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+     <dt>
+      <i>Cross_Reference:</i>
+     </dt>
+     <dd class="crossref">
+      <dl>
+       <dt>
+        <i>Citation_Information:</i>
+       </dt>
+       <dd class="citeinfo">
+        <dl>
+         <dt class="orgin">
+          <i>Originator: </i>Riley, Karin L.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Grenfell, Isaac C.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Finney, Mark A.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Wiener, Jason M.</dt>
+         <dt class="pubdate">
+          <i>Publication_Date: </i>2018</dt>
+         <dt class="title">
+          <i>Title: </i>Fire Lab tree list: A tree-level model of the western US circa 2009 v1</dt>
+         <dt class="geoform">
+          <i>Geospatial_Data_Presentation_Form: </i>raster and tabular digital data</dt>
+         <dt class="pubinfo">
+          <i>Publication_Information: </i></dt>
+          <dd>
+            <dl>
+              <dt class="pubplace"><i>Publication_Place: </i>Fort Collins, CO</dt>
+              <dt class="publish"><i>Publisher: </i>Forest Service Research Data Archive</dt>
+            </dl>
+          </dd>
+          <dt class="onlink">
+            <i>Online_Linkage: </i><a href="https://doi.org/10.2737/RDS-2018-0003">https://doi.org/10.2737/RDS-2018-0003</a></dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+     <dt>
+      <i>Cross_Reference:</i>
+     </dt>
+     <dd class="crossref">
+      <dl>
+       <dt>
+        <i>Citation_Information:</i>
+       </dt>
+       <dd class="citeinfo">
+        <dl>
+         <dt class="orgin">
+          <i>Originator: </i>Riley, Karin L.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Grenfell, Isaac C.</dt>
+         <dt class="orgin">
+          <i>Originator: </i>Finney, Mark A.</dt>
+         <dt class="orgin">
+          <i>Publication_Date: </i>2016</dt>
+         <dt class="title">
+          <i>Title: </i>Mapping forest vegetation for the western United States using modified random forests imputation of FIA forest plots</dt>
+         <dt class="geoform">
+          <i>Geospatial_Data_Presentation_Form: </i>journal article</dt>
+         <dt class="serinfo">
+          <i>Series_Information: </i></dt>
+          <dd>
+            <dl>
+              <dt class="sername"><i>Series_Name: </i>Ecosphere</dt>
+              <dt class="issue"><i>Issue_Identification: </i>7(10): e01472</dt>
+            </dl>
+          </dd>
+          <dt class="onlink">
+            <i>Online_Linkage: </i><a href="https://www.fs.usda.gov/treesearch/pubs/53114">https://www.fs.usda.gov/treesearch/pubs/53114</a></dt>
+          <dt class="onlink">
+            <i>Online_Linkage: </i><a href="https://doi.org/10.1002/ecs2.1472">https://doi.org/10.1002/ecs2.1472</a></dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+  </dl>
+  <a
+   href="#Top">Back to Top</a>
+  <a
+   name="Data_Quality_Information" />
+  <dl>
+   <dt>
+    <i>Data_Quality_Information:</i>
+   </dt>
+   <dd id="dataqual">
+    <dl>
+     <dt>
+      <i>Attribute_Accuracy:</i>
+     </dt>
+     <dd class="attracc">
+      <dl>
+       <dt>
+        <i>Attribute_Accuracy_Report:</i>
+       </dt>
+       <dd class="attraccr">We used the imputed inventory data to generate maps of forest cover, forest height, vegetation group, and disturbance code at 30×30 m resolution for all forested pixels in the conterminous United States, as a means of assessing the accuracy of our methodology. The results showed good correspondence between the target LANDFIRE data and the imputed plot data, with an overall within-class agreement of 94.2% for forest cover, 99.0% for forest height, 95.5% for vegetation group, and 94.9% for disturbance code.<br />
+	    <br />
+      The methods were the same as those described in Riley et al. (2022) except that 1) the climatic variables were calculated as 30-year normals (1980-2010) from DayMet and downscaled to 30×30m resolution from 1×1km resolution; DayMet variables included precipitation, shortwave radiation, snow water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit (which was derived from other DayMet variables); and 2) we addressed the “ride-along problem” of imputing plots in a small proportion of pixels with geographically-inconsistent vegetation types. The plots available for imputation in each LANDFIRE zone were limited to those plots containing species that were present either in that LANDFIRE zone or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with the wrong existing vegetation type but also plots with trees outside of their observed range.<br />
+      <br />
+      Of 69,800 single-condition FIA plots available to random forests, 65,107 of these (93.3%) were utilized in the imputation to 2,687,805,994 forested pixels.<br />
+	  </dd>
+      </dl>
+     </dd>
+     <dt>
+      <i>Logical_Consistency_Report:</i>
+     </dt>
+     <dd class="logic">See attribute accuracy information provided.</dd>
+     <br />
+     <dt>
+      <i>Completeness_Report:</i>
+     </dt>
+     <dd class="complete">Forest plots available for imputation were those that met the following criteria: 1) physically located in the conterminous United States, 2) single-condition, 100% forested FIA Phase 2 plots. There were 69,800 plots that met these criteria and were available for imputation; of these, 65,043 (93.3%) were chosen for imputation at least once.</dd>
+     <br />
+     <dt>
+      <i>Lineage:</i>
+     </dt>
+     <dl class="lineage">
+      <dt>
+       <i>Source_Information:</i>
+      </dt>
+      <dd class="srcinfo">
+       <dl>
+        <dt>
+         <i>Source_Citation:</i>
+        </dt>
+        <dd class="srccite">
+         <dl>
+          <dt>
+           <i>Citation_Information:</i>
+          </dt>
+          <dd class="citeinfo">
+           <dl>
+            <dt class="origin">
+             <i>Originator: </i>USDA Forest Service, Forest Inventory and Analysis</dt>
+            <dt class="pubdate">
+             <i>Publication_Date: </i>Unknown</dt>
+            <dt class="title">
+             <i>Title: </i>FIA forest plot data</dt>
+             <dt class="edition">
+              <i>Edition: </i>1.9.1</dt>
+             <dt class="geoform">
+              <i>Geospatial_Data_Presentation_Form: </i>tabular digital data</dt>
+             <dt>
+              <i>Publication_Information: </i></dt>
+             <dd class="pubinfo">
+              <dl>
+                <dt class="publish">
+                  <i>Publisher: </i>FIA DataMart</dt>
+                </dl>
+              </dd>
+              <dt>
+                <i>Other_Citation_Details: </i>
+              </dt>
+                <dd class="othercit">Retrieved 12 February 2024</dd>
+                <dt class="onlink">
+                  <i>Online_Linkage: </i><a href="https://doi.org/10.2737/RDS-2001-FIADB">https://doi.org/10.2737/RDS-2001-FIADB</a></dt>
+              <dt class="onlink">
+                <i>Online_Linkage: </i><a href="https://research.fs.usda.gov/products/dataandtools/fia-datamart">https://research.fs.usda.gov/products/dataandtools/fia-datamart</a></dt>
+            </dl>
+          </dd>
+         </dl>
+        </dd>
+        <dt class="typesrc">
+         <i>Type_of_Source_Media: </i>Online</dt>
+        <dt>
+         <i>Source_Time_Period_of_Content:</i>
+        </dt>
+        <dd class="srctime">
+         <dl>
+          <dt>
+           <i>Time_Period_Information:</i>
+          </dt>
+          <dd class="timeinfo">
+           <dl>
+            <dt>
+             <i>Range_of_Dates/Times:</i>
+            </dt>
+            <dd class="rngdates">
+             <dl>
+              <dt class="begdate">
+               <i>Beginning_Date: </i>1997</dt>
+              <dt class="enddate">
+               <i>Ending_Date: </i>2022</dt>
+             </dl>
+            </dd>
+           </dl>
+          </dd>
+          <dt>
+           <i>Source_Currentness_Reference:</i>
+          </dt>
+          <dd class="srccurr">Ground Condition</dd>
+         </dl>
+        </dd>
+        <dt>
+         <i>Source_Citation_Abbreviation:</i>
+        </dt>
+        <dd class="srccitea">FIA DATAMART</dd>
+        <dt>
+         <i>Source_Contribution:</i>
+        </dt>
+        <dd class="srccontr">We obtained measurements of tree diameter at breast height, height, species, and status (dead or alive) as well as plot elevation, aspect, and slope from the USDA Forest Service's Forest Inventory and Analysis (FIA). Version 1.9.1 data was downloaded from the FIA DataMart. We restricted the plot data to single-condition forested plots only; conditions are defined by changes in vegetation or land use, and some plots have more than one condition because of harvesting, fire, or land ownership boundaries. Because we wanted the plots used in the imputation to be more or less homogeneous, we used single-condition plots only. Plot locations in the FIA DataMart are fuzzed to protect plot integrity and true coordinates are not available to the public; for the purposes of this study, we obtained true locations from FIA via a Memorandum of Cooperation. The most recent version of the FIADB (version 1.9.1) was used to calculate the attributes in the attribute table of the TreeMap 2022 CONUS raster (TreeMap2022_CONUS.tif).</dd>
+       </dl>
+      </dd>
+      <dt>
+       <i>Source_Information:</i>
+      </dt>
+      <dd class="srcinfo">
+       <dl>
+        <dt>
+         <i>Source_Citation:</i>
+        </dt>
+        <dd class="srccite">
+         <dl>
+          <dt>
+           <i>Citation_Information:</i>
+          </dt>
+          <dd class="citeinfo">
+           <dl>
+            <dt class="origin">
+             <i>Originator: </i>U.S. Department of Interior, Geological Survey</dt>
+            <dt class="pubdate">
+             <i>Publication_Date: </i>Unknown</dt>
+            <dt class="title">
+             <i>Title: </i>LANDFIRE: Target Landscape Data</dt>
+             <dt class="geoform">
+            <dt class="edition">
+              <i>Edition: </i>2.3.0</dt>
+              <i>Geospatial_Data_Presentation_Form: </i>raster digital data</dt>
+             <dt>
+              <i>Publication_Information: </i></dt>
+             <dd class="pubinfo">
+              <dl>
+                <dt class="publish">
+                  <i>Publisher: </i>U.S. Department of Interior, Geological Survey</dt>
+                </dl>
+              </dd>
+              <dt>
+                <i>Other_Citation_Details: </i>
+              </dt>
+                <dd class="othercit">Retrieved 1 June 2024</dd>
+              <dt class="onlink">
+                <i>Online_Linkage: </i><a href="https://landfire.cr.usgs.gov/viewer/">https://landfire.cr.usgs.gov/viewer/</a></dt>
+            </dl>
+          </dd>
+         </dl>
+        </dd>
+        <dt class="typesrc">
+         <i>Type_of_Source_Media: </i>Online</dt>
+        <dt>
+         <i>Source_Time_Period_of_Content:</i>
+        </dt>
+        <dd class="srctime">
+         <dl>
+          <dt>
+           <i>Time_Period_Information:</i>
+          </dt>
+          <dd class="timeinfo">
+           <dl>
+            <dt>
+             <i>Single_Date/Time:</i>
+            </dt>
+            <dd class="sngdate">
+             <dl>
+              <dt class="caldate">
+               <i>Calendar_Date: </i>2022</dt>
+             </dl>
+            </dd>
+           </dl>
+          </dd>
+          <dt>
+           <i>Source_Currentness_Reference:</i>
+          </dt>
+          <dd class="srccurr">Ground Condition</dd>
+         </dl>
+        </dd>
+        <dt>
+         <i>Source_Citation_Abbreviation:</i>
+        </dt>
+        <dd class="srccitea">LANDFIRE</dd>
+        <dt>
+         <i>Source_Contribution:</i>
+        </dt>
+        <dd class="srccontr">LANDFIRE provides a suite of topographic, disturbance, and vegetation data at 30×30-meter grid resolution for the conterminous United States that served as part of the target data for this project.</dd>
+       </dl>
+      </dd>
+      <dt>
+        <i>Source_Information:</i>
+       </dt>
+       <dd class="srcinfo">
+        <dl>
+         <dt>
+          <i>Source_Citation:</i>
+         </dt>
+         <dd class="srccite">
+          <dl>
+           <dt>
+            <i>Citation_Information:</i>
+           </dt>
+           <dd class="citeinfo">
+            <dl>
+             <dt class="origin">
+              <i>Originator: </i>ORNL DAAC NASA</dt>
+             <dt class="pubdate">
+              <i>Publication_Date: </i>March 5, 2023</dt>
+             <dt class="title">
+              <i>Title: </i>Daymet: Annual Climate Summaries on a 1-km Grid for North America</dt>
+              <dt class="geoform">
+             <dt class="edition">
+               <i>Edition: </i>4 R1</dt> 
+               <i>Geospatial_Data_Presentation_Form: </i>raster digital data</dt>
+              <dt>
+               <i>Publication_Information: </i></dt>
+              <dd class="pubinfo">
+               <dl>
+                 <dt class="publish">
+                   <i>Publisher: </i>ORNL DAAC NASA</dt>
+                 </dl>
+               </dd>
+               <dt>
+                 <i>Other_Citation_Details: </i>
+               </dt>
+                 <dd class="othercit">Retrieved 23 May 2024</dd>
+               <dt class="onlink">
+                 <i>Online_Linkage: </i><a href="https://daymet.ornl.gov/">https://daymet.ornl.gov/</a></dt>
+             </dl>
+           </dd>
+          </dl>
+         </dd>
+         <dt class="typesrc">
+          <i>Type_of_Source_Media: </i>Online</dt>
+         <dt>
+          <i>Source_Time_Period_of_Content:</i>
+         </dt>
+         <dd class="srctime">
+          <dl>
+           <dt>
+            <i>Time_Period_Information:</i>
+           </dt>
+           <dd class="timeinfo">
+            <dl>
+             <dt>
+              <i>Single_Date/Time:</i>
+             </dt>
+             <dd class="sngdate">
+              <dl>
+               <dt class="caldate">
+                <i>Calendar_Date: 2022</dt>
+              </dl>
+             </dd>
+            </dl>
+           </dd>
+           <dt>
+            <i>Source_Currentness_Reference:</i>
+           </dt>
+           <dd class="srccurr">Ground Condition</dd>
+          </dl>
+         </dd>
+         <dt>
+          <i>Source_Citation_Abbreviation:</i>
+         </dt>
+         <dd class="srccitea">DAYMET</dd>
+         <dt>
+          <i>Source_Contribution:</i>
+         </dt>
+         <dd class="srccontr">DayMet provides long-term, continuous, gridded estimates of daily weather and climatology variables by interpolating and extrapolating ground-based observations through statistical modeling techniques (Thornton et al. 2022). DayMet weather variables include daily minimum and maximum temperature (tmin, tmax), precipitation (prcp), vapor pressure (vp), shortwave radiation (srad), and snow water equivalent (swe) produced on a 1 km x 1 km gridded surface over North America from 1980 through the end of the most recent full calendar year.</dd>
+        </dl>
+       </dd>
+      <dt>
+       <i>Process_Step:</i>
+      </dt>
+      <dd class="procstep">
+       <dl>
+        <dt>
+         <i>Process_Description:</i>
+        </dt>
+        <dd class="procdesc">A suite of rasters mapping vegetation and disturbance for the landscape circa 2022 were obtained from the LANDFIRE project’s website (https://www.landfire.gov/data/FullExtentDownloads).  Rasters mapping climatic variables (tmin, tmax, vp, prcp, swe, srad) were obtained from DayMet (https://daymet.ornl.gov/).  We calculated 30-year normals (1981-2010) for each of these variables and used those means as inputs to the imputation model. We calculated vapor pressure deficit (VPD) from the climate data following methods in Lobell et al. (2024).<br />
+        <br />
+        We downloaded 30 years of data (1981-2010) from DayMet and calculated the annual average for our climate variables of interest, then downscaled the climate data from 1km×1km resolution. The final target rasters (or predictor rasters to which the FIA plots were assigned) included: slope, aspect, elevation, Existing Vegetation Cover, Existing Vegetation Height, Existing Vegetation Type, disturbance (i.e. fire or insects and disease), average precipitation, average maximum temperature, average minimum temperature, average vapor pressure, average soil water equivalent, average vapor pressure deficit, average shortwave radiation. We used these rasters as target data for the random forests model (see Riley et al. (2021) and Riley et al. (2022) for more details on methodology).<br />
+        <br />
+        Tabular information regarding FIA plots was obtained from the FIA DataMart. True plot locations are not available in the DataMart and were obtained directly from FIA via a Memorandum of Cooperation. We obtained information directly from the FIA DataMart regarding plot elevation, slope, and aspect, as well as tree-level information for each plot (i.e. number of trees per acre, height, diameter at breast height, species, and status (live or dead)). In a small subset of plots, slope and/or aspect were not recorded within the FIA database. These plots were assigned slope and aspect by intersecting the FIA plot location with the LANDFIRE 2022 slope and aspect raster datasets. We calculated plot-level tree cover and height using the StrClass keyword in the Forest Vegetation Simulator (Dixon 2002, Crookston and Stage 1999). Existing Vegetation Type was assigned to each plot using a series of scripts we obtained from LANDFIRE; these scripts are not publicly available and were obtained via a Memorandum of Cooperation. We assigned climatic predictors to each plot via spatial overlay of the plot locations with the DayMet rasters in R. This plot-level information was used as reference data in the random forests model.<br />
+        <br />
+        We then used a modified random forests approach with the vegetation, disturbance, and biophysical predictors as the target data, to which we imputed the FIA plot data at 30-meter (m) grid resolution (Riley et al. (2016), Riley et al. (2021), and Riley et al. (2022)). This method imputed the plot with the best statistical match, according to a “forest” of decision trees, to each pixel of gridded landscape data.<br />
+        <br />
+        For complete details see Riley et al. (2016), Riley et al. (2021), and Riley et al. (2022). Methods for the TreeMap 2022 version differ from those in Riley et al. (2022) in that  1) the climatic variables were obtained from DayMet and included precipitation, shortwave radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit; and 2) plots available for imputation in each LANDFIRE zone were limited to those plots with a tree species that were present either in the plots found within the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with Existing Vegetation Type not present in the zone but also plots with trees outside of their observed range.<br />
+        <br />
+        <br />
+        Burrill, Elizabeth A.; DiTommaso, Andrea M.; Turner, Jeffery A.; Pugh, Scott A.; Christensen, Glenn; Kralicek, Karin M.; Perry, Carol J.; Lepine, Lucie C.; Walker, David M.; Conkling, Barbara L. 2024. The Forest Inventory and Analysis Database, FIADB user guides, volume: database description (version 9.3), nationwide forest inventory (NFI). U.S. Department of Agriculture, Forest Service. 1026 p. [Online]. Available at web address: https://research.fs.usda.gov/understory/forest-inventory-and-analysis-database-user-guide-nfi<br />
+        <br />
+        Crookston Nicholas L.; Stage Albert R. 1999. Percent canopy cover and stand structure statistics from the Forest Vegetation Simulator. USDA Forest Service, Rocky Mountain Research Station, General Technical Report RMRS-GTR-24. Ogden, UT. 11p. https://doi.org/10.2737/RMRS-GTR-24<br />
+        <br />
+        Dixon, Gary E. (Comp.). 2002. Essential FVS: A user's guide to the Forest Vegetation Simulator. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Forest Management Service Center. 226p. http://www.fs.fed.us/fmsc/ftp/fvs/docs/gtr/EssentialFVS.pdf (Revised: February 2013, last accessed August 19, 2013<br />
+        <br /> 
+        LANDFIRE, 2023, Conterminous U.S., LANDFIRE - LF 2022 (LF_230), U.S. Department of the Interior, Geological Survey, and U.S. Department of Agriculture. Accessed 1 June 2024 at http://www.landfire/viewer. <br />
+        <br /> 
+        Lobell, David B.; Roberts, Michael J.; Schlenker, Wolfram; Braun, Noah; Little, Bertis B.; Rejesus, Roderick M.; Hammer, Graeme L. 2014. Greater sensitivity to drought accompanies maize yield increase in the U.S. Midwest. Science 344,516-519. DOI:10.1126/science.1251423 <br />
+        <br />
+        Riley, Karin L.; Grenfell, Isaac C.; Finney, Mark A. 2016. Mapping forest vegetation for the western United States using modified random forests imputation of FIA forest plots. Ecosphere 7(10): e01472. https://doi.org/10.1002/ecs2.1472<br />
+        <br />
+        Riley, Karin L.; Grenfell, Isaac C.; Finney, Mark A.; Wiener, Jason M. 2021. TreeMap, a tree-level model of conterminous US forests circa 2014 produced by imputation of FIA plot data. Scientific Data 8(11). https://doi.org/10.1038/s41597-020-00782-x and https://www.fs.usda.gov/research/treesearch/61840<br />
+        <br />
+        Riley, Karin L.; Grenfell, Isaac C.; Wiener, Jason M.; Finney, Mark A. 2022. TreeMap 2016 Dataset Generates CONUS-Wide Maps of Forest Characteristics Including Live Basal Area, Aboveground Carbon, and Number of Trees per Acre. Journal of Forestry 2022: 607-632. https://doi.org/10.1093/jofore/fvac022 and https://research.fs.usda.gov/treesearch/65597. <br />
+        <br />
+        Thornton, M.M.; Shrestha R.; Wei Y.; Thornton P.E.; Kao S-C. 2022. Daymet: Annual Climate Summaries on a 1-km Grid for North America, Version 4 R1. ORNL DAAC, Oak Ridge, Tennessee, USA. https://doi.org/10.3334/ORNLDAAC/2130 and https://daac.ornl.gov/cgi-bin/dsviewer.pl?ds_id=2130<br />
+        <br />
+        </dd>
+        <dt>
+         <i>Source_Used_Citation_Abbreviation:</i>
+        </dt>
+        <dd class="srcused">FIA DATAMART<br />
+                            LANDFIRE<br />
+                            DAYMET</dd>
+        <dt class="procdate">
+         <i>Process_Date: </i>2024</dt>
+       </dl>
+      </dd>
+     </dl>
+     <dt class="cloud">
+      <i>Cloud_Cover: </i>0</dt>
+    </dl>
+   </dd>
+  </dl>
+  <a
+   href="#Top">Back to Top</a>
+  <a
+   name="Spatial_Data_Organization_Information" />
+  <dl>
+   <dt>
+    <i>Spatial_Data_Organization_Information:</i>
+   </dt>
+   <dd id="spdoinfo">
+    <dl>
+     <dt class="direct">
+      <i>Direct_Spatial_Reference_Method: </i>Raster</dt>
+     <dt>
+      <i>Raster_Object_Information:</i>
+     </dt>
+     <dd class="rastinfo">
+      <dl>
+       <dt class="rasttype">
+        <i>Raster_Object_Type: </i>Pixel</dt>
+       <dt class="rowcount">
+        <i>Row_Count: </i>97387</dt>
+       <dt class="colcount">
+        <i>Column_Count: </i>154221</dt>
+      </dl>
+     </dd>
+    </dl>
+   </dd>
+  </dl>
+  <a
+   href="#Top">Back to Top</a>
+  <a
+   name="Spatial_Reference_Information" />
+  <dl>
+   <dt>
+    <i>Spatial_Reference_Information:</i>
+   </dt>
+   <dd id="spref">
+    <dl>
+     <dt>
+      <i>Horizontal_Coordinate_System_Definition:</i>
+     </dt>
+     <dd class="horizsys">
+      <dl>
+       <dt>
+        <i>Planar:</i>
+       </dt>
+       <dd class="planar">
+        <dl>
+         <dt>
+          <i>Map_Projection:</i>
+         </dt>
+         <dd class="mapproj">
+          <dl>
+           <dt class="mapprojn">
+            <i>Map_Projection_Name: </i>NAD 1983 Albers</dt>
+           <dt>
+            <i>Albers_Conical_Equal_Area:</i>
+           </dt>
+           <dd class="albers">
+            <dl>
+             <dt class="stdparll">
+              <i>Standard_Parallel: </i>29.5</dt>
+             <dt class="stdparll">
+              <i>Standard_Parallel: </i>45.5</dt>
+             <dt class="longcm">
+              <i>Longitude_of_Central_Meridian: </i>-96.0</dt>
+             <dt class="latprjo">
+              <i>Latitude_of_Projection_Origin: </i>23.0</dt>
+             <dt class="feast">
+              <i>False_Easting: </i>0.0</dt>
+             <dt class="fnorth">
+              <i>False_Northing: </i>0.0</dt>
+            </dl>
+           </dd>
+          </dl>
+         </dd>
+         <dt>
+          <i>Planar_Coordinate_Information:</i>
+         </dt>
+         <dd class="planci">
+          <dl>
+           <dt class="plance">
+            <i>Planar_Coordinate_Encoding_Method: </i>coordinate pair</dt>
+           <dt>
+            <i>Coordinate_Representation:</i>
+           </dt>
+           <dd class="coordrep">
+            <dl>
+             <dt class="absres">
+              <i>Abscissa_Resolution: </i>0.0000000037527980722984474</dt>
+             <dt class="ordres">
+              <i>Ordinate_Resolution: </i>0.0000000037527980722984474</dt>
+            </dl>
+           </dd>
+           <dt class="plandu">
+            <i>Planar_Distance_Units: </i>meter</dt>
+          </dl>
+         </dd>
+        </dl>
+       </dd>
+       <dt>
+        <i>Geodetic_Model:</i>
+       </dt>
+       <dd class="geodetic">
+        <dl>
+         <dt class="horizdn">
+          <i>Horizontal_Datum_Name: </i>D North American 1983</dt>
+         <dt class="ellips">
+          <i>Ellipsoid_Name: </i>GRS 1980</dt>
+         <dt class="semiaxis">
+          <i>Semi-major_Axis: </i>6378137.0</dt>
+         <dt class="denflat">
+          <i>Denominator_of_Flattening_Ratio: </i>298.257222101</dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+    </dl>
+   </dd>
+  </dl>
+  <a
+   href="#Top">Back to Top</a>
+  <a
+   name="Entity_and_Attribute_Information" />
+  <dl>
+   <dt>
+    <i>Entity_and_Attribute_Information:</i>
+   </dt>
+   <dd id="eainfo">
+    <dl>
+     <dt>
+      <i>Overview_Description:</i>
+     </dt>
+     <dd class="overview">
+      <dl>
+       <dt>
+        <i>Entity_and_Attribute_Overview:</i>
+       </dt>
+       <dd class="eaover">Below is a description of the files (3) included in this publication and their relationship to each other and the FIA DataMart.<br />
+       <br />
+       IMPORTANT INFORMATION<br />
+       <br />
+       The tree list raster (\Data\TreeMap2022_CONUS.tif) can be linked to data in the tree table (\Data\TreeMap2022_CONUS_tree_table.csv) via the TreeMap identifier values (“TREEMAP_ID”) or control numbers (“CN”); the latter corresponds to a unique identifier used by FIA for each visit to a plot. (Note that FIA uses the attribute name “CN” in the “PLOT” table and “PLT_CN” in all other tables but these are equivalent). All plot CNs utilized in this analysis were single condition, 100% forested, physically located within the boundaries of CONUS, and were downloaded from the FIA database on February 12, 2024.<br />
+       <br />
+       <br />
+       DATA FILE DESCRIPTIONS (3) <br />
+       <br />
+       (1) \Data\TreeMap2022_CONUS.tif: <br /> 
+       Raster dataset (GeoTIFF file) representing model output generated by random forests imputation of forest inventory plot data measured by Forest Inventory and Analysis (FIA) to unsampled (and sampled) spatial locations on the landscape for circa 2022 conditions. The primary attributes of the raster are a plot identifier (“TREEMAP_ID”) and control number (“PLT_CN”), which can be used to link the raster to information available in the tree table (2 below) or FIA Datamart via the control number (CN) field in the PLOT table or PLT_CN field in all other tables to produce tree-level maps or to map other plot attributes. Predictor variables in the random forests imputation were chosen to optimize the prediction of aboveground forest carbon. These include topographic variables (slope, aspect, and elevation from the FIA PLOT and COND tables), true plot location, vegetation (forest cover and height assigned to each plot via Forest Vegetation Simulator [FVS, https://www.fs.usda.gov/fvs/, Dixon 2002] and vegetation group assigned by LANDFIRE methods), disturbance (years since disturbance and disturbance type as derived from LANDFIRE disturbance rasters), and biophysical variables (average precipitation, average maximum temperature, average minimum temperature, average vapor pressure, average soil water equivalent, average vapor pressure deficit, average daily shortwave radiation derived by overlay of the plot coordinates with DayMet rasters). Variables and methods are defined in more completeness in Riley et al. (2016), Riley et al. (2021), Riley et al. (2022), the accompanying Data Dictionary file (“TreeMap2022_CONUS_Data_Dictionary.pdf”), and the FIA documentation (Burrill et al. 2024).<br />
+       <br />
+       (2) \Data\TreeMap2022_CONUS_tree_table.csv: <br />
+       Comma-separated text file containing a list of attributes for each tree on all imputed Forest Inventory and Analysis (FIA) plots. This file can be linked to the TreeMap2022_CONUS.tif raster via either the TreeMap ID field (“TREEMAP_ID”) or the plot CN (but note that because of the length of the CN field many programs are apt to round it and render it useless so using the “TREEMAP_ID” is best practice). Variables included are listed below under the variable description section.<br />
+       <br />
+       (3) \Data\TreeMap2022_CONUS_Data_Dictionary.pdf: <br />
+       Portable Document Format file containing attribute names, definitions, and data sources for TreeMap2022_CONUS.tif. <br />
+       <br />
+       <br />
+       VARIABLE DESCRIPTIONS for (1) \Data\TreeMap2022_CONUS.tif.<br /> 
+       (Please see “TreeMap2022_CONUS_Data_Dictionary.pdf” for more details)<br />
+       <br />
+       Note that 4.2949673e+09 is the No Data or Null value in this table. This is the default No Data value for rasters produced in R. If you have difficulty viewing or working with the dataset, you might need to convert this to a Null value. The workflow in ArcGIS might be as follows: 1) export desired attribute to standalone raster using the Lookup tool, 2) use Set Null tool to set 4.2949673e+09 to Null.  <br />
+       <br />
+       Note that many variables below are given as per acre figures; when totaling within a polygon in a GIS, they must first be converted to per pixel values.<br />
+       <br />
+       OID = Unique identifier for each row<br />
+       <br />
+       Value = equivalent to ‘TREEMAP_ID’ field below. A unique identifier for each forest plot<br />
+       <br />
+       Count = Number of pixels in TreeMap2022_CONUS to which this plot CN was imputed<br />
+       <br />
+       PLT_CN = Unique identifier for an FIA visit to a forest plot. Can be used to link to tables via the “CN” field in the TREE table. This field is a text field due to its length and should not be converted to a numeric field or most software programs will round or truncate it.<br />
+       <br />
+       FORTYPCD = Forest type code (assigned by FIA algorithm)<br />
+       <br />
+       ForTypName = Forest type name or description (assigned by FIA algorithm)<br />
+       <br />
+       FLDTYPCD = Forest type code (assigned in field by FIA crew)<br />
+       <br />
+       FldTypName = Forest type name or description (assigned in field by FIA crew)<br />
+       <br />
+       STDSZCD = Stand size code (assigned by FIA algorithm)<br />
+       <br />
+       FLDSZCD = Stand size code (assigned in field by FIA crew)<br />
+       <br />
+       BALIVE = Live tree basal area (square feet [ft.] per acre [ac.])<br />
+       <br />
+       CANOPYPCT = Live canopy cover (percent) estimated by FVS routine<br />
+       <br />
+       STANDHT = Height of dominant trees (ft.) estimated by FVS routine<br />
+       <br />
+       ALSTK = All live tree stocking (percent)<br />
+       <br />
+       GSSTK = Growing-stock stocking (percent)<br />
+       <br />
+       QMD = Stand quadratic mean diameter<br />
+       <br />
+       SDI_Sum = Sum of Stand density index <br />
+       <br />
+       TPA_LIVE = Number of live trees per acre<br />
+       <br />
+       TPA_DEAD = Number of standing dead trees per acre (DIA ≥ 5 inches)<br />
+       <br />
+       VOLCFNET_L = Live volume (cubic ft. per ac.)<br />
+       <br />
+       VOLCFNET_D = Standing dead volume (cubic ft. per ac.)<br />
+       <br />
+       VOLBFNET_L = Volume, live, sawlog board feet per ac. (log rule: International 1/4 inch)<br />
+       <br />
+       DRYBIO_L = Aboveground dry live tree biomass (tons per ac.)<br />
+       <br />
+       DRYBIO_D = Aboveground dry standing dead tree biomass (tons per ac.)<br />
+       <br />
+       CARBON_L = Live aboveground carbon (tons per ac.)<br />
+       <br />
+       CARBON_D = Standing dead carbon (tons per ac.)<br />
+       <br />
+       CARBON_DOW = Down dead carbon >3 inches diameter (tons per ac.); estimated by FIA based on forest type, geographic area, and live tree carbon density.<br />
+       <br />
+       TREEMAP_ID = Unique identifier for each forest plot. This shortened ID is unique to the TreeMap 2022 CONUS product<br />
+       <br />
+       <br />
+       VARIABLE DESCRIPTIONS for (2) \Data\ TreeMap2022_CONUS_Tree_Table.csv<br />
+       (Please see “TreeMap2022_CONUS_Data_Dictionary.pdf” for more details)<br />
+       <br />
+       tm_id = Unique identifier for each forest plot (identical in content to “TREEMAP_ID” field in TreeMap raster (“TreeMap2022_CONUS.tif”))<br />
+       <br />
+       CN = Unique identifier for an FIA visit to a forest plot. Can be used to link the TREE table via the “CN” field to the “PLT_CN” field in the TreeMap 2022 CONUS product. This field is a text field due to its length and should not be converted to a numeric field or most software programs will round or truncate it.<br />
+       <br />
+       STATUSCD = A code that indicates whether the tree is live (1) or dead (2) when the plot was measured. (from FIA TREE table)<br />
+       <br />
+       TPA_UNADJ = The number of trees per acre that the sample tree theoretically represents based on the sample design. (from FIA TREE table)<br />
+       <br />
+       SPCD = Tree species code. (from FIA TREE table) (See FIADB User Guide for a description of the codes: https://www.fia.fs.usda.gov/library/database-documentation/)<br />
+       <br />
+       COMMON_NAME = Common name of tree species (from FIA REF_SPECIES table)<br />
+       <br />
+       SCIENTIFIC_NAME = Scientific name of tree species (from FIA REF_SPECIES table)<br />
+       <br />
+       SPECIES_SYMBOL = USDA PLANTS Database code (USDA, NRCS 2021; from FIA REF_SPECIES table)<br />
+       <br />
+       DIA = Tree diameter in inches at breast height (4.5 ft. above ground line on uphill side of tree) or root crown for woodland species (at the ground line or stem root collar, whichever is higher). (from FIA TREE table)<br />
+       <br />
+       HT = Total height of a tree (ft.) from the ground to tip of apical meristem. (If main stem is broken, the total height is estimated.) (from FIA TREE table)<br />
+       <br />
+       ACTUALHT = Actual height of a tree (ft.) from the ground to the highest remaining portion of the tree still attached to the bole. (from FIA TREE table)<br />
+       <br />
+       CR = Compacted crown ratio (percent of tree bole supporting live healthy foliage when compared to height [ACTUALHT]). (from FIA TREE table)<br />
+       <br />
+       SUBP = Subplot number (from FIA TREE table)<br />
+       <br />
+       TREE = Tree record number. A number used to uniquely identify a tree on a subplot (from FIA TREE table)<br />
+       <br />
+       AGENTCD = Cause of death, where applicable (from FIA TREE table): “10=insect, 20=disease, 30=fire, 40=animal, 50=weather, 60=vegetation (e.g. suppression, competition, vines/kudzu), 70=unknown/not sure/other – includes death from human activity not related to silvicultural or landclearing activity (accidental, random, etc.), 80=silvicultural or landclearing activity (death caused by harvesting or other silvicultural activity, including girdling, chaining, etc., or other landclearing activity)” (Burrill et al. 2024)<br />
+       <br />
+       <br />
+       </dd>
+       <dt>
+        <i>Entity_and_Attribute_Detail_Citation:</i>
+       </dt>
+       <dd class="eadetcit">Burrill, Elizabeth A.; DiTommaso, Andrea M.; Turner, Jeffery A.; Pugh, Scott A.; Christensen, Glenn; Kralicek, Karin M.; Perry, Carol J.; Lepine, Lucie C.; Walker, David M.; Conkling, Barbara L. 2024. The Forest Inventory and Analysis Database, FIADB user guides, volume: database description (version 9.3), nationwide forest inventory (NFI). U.S. Department of Agriculture, Forest Service. 1026 p. [Online]. Available at web address: https://research.fs.usda.gov/understory/forest-inventory-and-analysis-database-user-guide-nfi<br />
+      <br />
+      Dixon, Gary E. (Comp.). 2002. Essential FVS: A user’s guide to the Forest Vegetation Simulator. Fort Collins, CO: U.S. Department of Agriculture, Forest Service, Forest Management Service Center. 226p. http://www.fs.fed.us/fmsc/ftp/fvs/docs/gtr/EssentialFVS.pdf (Revised: February 2013, last accessed August 19, 2013)<br />
+      <br />
+      Dunn, Christopher J.; O’Connor, Christopher D.; Reilly, Matthew J.; Calkin, Dave E.; Thompson, Matthew P. 2019. Spatial and temporal assessment of responder exposure to snag hazards in post-fire environments. Forest Ecology and Management 441: 202–214. https://doi.org/10.1016/j.foreco.2019.03.035<br />
+      <br />
+      Riley, Karin L.; Grenfell, Isaac C.; Finney, Mark A. 2016. Mapping forest vegetation for the western United States using modified random forests imputation of FIA forest plots. Ecosphere 7(10): e01472. https://doi.org/10.1002/ecs2.1472<br />
+      	  <br />
+      Riley, Karin L.; Grenfell, Isaac C.; Finney, Mark A.; Wiener, Jason M. 2021. TreeMap, a tree-level model of conterminous US forests circa 2014 produced by imputation of FIA plot data. Scientific Data 8(11). https://doi.org/10.1038/s41597-020-00782-x 	  <br />
+      <br />
+      Riley, Karin L.; Grenfell, Isaac C.; Shaw, John D.; Finney, Mark A. 2022. TreeMap 2016 dataset generates CONUS-wide maps of forest characteristics including live basal area, aboveground carbon, and number of trees per acre. Journal of Forestry. 2022: 607-632. https://doi.org/10.1093/jofore/fvac022 <br />
+      <br />
+      USDA, NRCS. 2021. The PLANTS Database (http://plants.usda.gov, 08/03/2021). National Plant Data Team, Greensboro, NC USA.<br />
+      </dd>
+      </dl>
+     </dd>
+    </dl>
+   </dd>
+  </dl>
+  <a
+   href="#Top">Back to Top</a>
+  <a
+   name="ID0EPG" />
+  <dl>
+   <dt>
+    <i>Distribution_Information:</i>
+   </dt>
+   <dd id="distinfo">
+    <dl>
+     <dt>
+      <i>Distributor:</i>
+     </dt>
+     <dd class="distrib">
+      <dl>
+       <dt>
+        <i>Contact_Information:</i>
+       </dt>
+       <dd class="cntinfo">
+        <dl>
+         <dt>
+          <i>Contact_Organization_Primary:</i>
+         </dt>
+         <dd class="cntorgp">
+          <dl>
+           <dt class="cntorg">
+            <i>Contact_Organization: </i>USDA Forest Service, Research and Development</dt>
+          </dl>
+         </dd>
+         <dt class="cntpos">
+          <i>Contact_Position: </i>Research Data Archivist</dt>
+         <dt>
+          <i>Contact_Address:</i>
+         </dt>
+         <dd class="cntaddr">
+          <dl>
+           <dt class="addrtype">
+            <i>Address_Type: </i>mailing and physical</dt>
+           <dt class="address">
+            <i>Address: </i>240 West Prospect Road</dt>
+           <dt class="city">
+            <i>City: </i>Fort Collins</dt>
+           <dt class="state">
+            <i>State_or_Province: </i>CO</dt>
+           <dt class="postal">
+            <i>Postal_Code: </i>80526</dt>
+           <dt class="country">
+            <i>Country: </i>USA</dt>
+          </dl>
+         </dd>
+         <dt class="cntvoice">
+          <i>Contact_Voice_Telephone: </i>see Contact Instructions</dt>
+         <dt class="cntinst">
+          <i>Contact Instructions: </i>This contact information was current as of June 2025. For current information see Contact Us page on: </dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+     <dt class="resdesc">
+      <i>Resource_Description:  </dt>
+     <dt>
+      <i>Distribution_Liability:</i>
+     </dt>
+     <dd class="distliab">Metadata documents have been reviewed for accuracy and completeness. Unless otherwise stated, all data and related materials are considered to satisfy the quality standards relative to the purpose for which the data were collected. However, neither the author, the Archive, nor any part of the federal government can assure the reliability or suitability of these data for a particular purpose. The act of distribution shall not constitute any such warranty, and no responsibility is assumed for a user's application of these data or related materials.<br />
+    <br />
+    The metadata, data, or related materials may be updated without notification. If a user believes errors are present in the metadata, data or related materials, please use the information in (1) Identification Information: Point of Contact, (2) Metadata Reference: Metadata Contact, or (3) Distribution Information: Distributor to notify the author or the Archive of the issues.</dd>
+     <dt>
+      <i>Standard_Order_Process:</i>
+     </dt>
+     <dd class="stdorder">
+      <dl>
+       <dt>
+        <i>Digital_Form:</i>
+       </dt>
+       <dd class="digform">
+        <dl>
+         <dt>
+          <i>Digital_Transfer_Information:</i>
+         </dt>
+         <dd class="digtinfo">
+          <dl>
+           <dt class="formname">
+            <i>Format_Name: </i>TIF</dt>
+           <dt class="formvern">
+            <i>Format_Version_Number: </i>see Format Specification</dt>
+           <dt>
+            <i>Format_Specification:</i>
+           </dt>
+           <dd class="formspec">GeoTIFF file</dd>
+           <dt>
+            <i>File_Decompression_Technique: </i>Files zipped with zipfile python library</dt>
+          </dl>
+         </dd>
+         <dt>
+          <i>Digital_Transfer_Option:</i>
+         </dt>
+         <dd class="digtopt">
+          <dl>
+           <dt>
+            <i>Online_Option:</i>
+           </dt>
+           <dd class="onlinopt">
+            <dl>
+             <dt>
+              <i>Computer_Contact_Information:</i>
+             </dt>
+             <dd class="computer">
+              <dl>
+               <dt>
+                <i>Network_Address:</i>
+               </dt>
+               <dd class="networka">
+                <dl>
+                 <dt class="networkr">
+                  <i>Network_Resource_Name:</i>
+                  <a
+                   TARGET="viewer"
+                   href="{data_gateway_link}">{data_gateway_link}</a>
+                 </dt>
+                </dl>
+               </dd>
+              </dl>
+             </dd>
+            </dl>
+           </dd>
+          </dl>
+         </dd>
+        </dl>
+       </dd>
+       <dt>
+        <i>Digital_Form:</i>
+       </dt>
+       <dd class="digform">
+        <dl>
+         <dt>
+          <i>Digital_Transfer_Information:</i>
+         </dt>
+         <dd class="digtinfo">
+          <dl>
+           <dt class="formname">
+            <i>Format_Name: </i>CSV</dt>
+           <dt class="formvern">
+            <i>Format_Version_Number: </i>see Format Specification</dt>
+           <dt>
+            <i>Format_Specification:</i>
+           </dt>
+           <dd class="formspec">Comma-separated text file</dd>
+         </dd>
+         <dt>
+          <i>Digital_Transfer_Option:</i>
+         </dt>
+         <dd class="digtopt">
+          <dl>
+           <dt>
+            <i>Online_Option:</i>
+           </dt>
+           <dd class="onlinopt">
+            <dl>
+             <dt>
+              <i>Computer_Contact_Information:</i>
+             </dt>
+             <dd class="computer">
+              <dl>
+               <dt>
+                <i>Network_Address:</i>
+               </dt>
+               <dd class="networka">
+                <dl>
+                 <dt class="networkr">
+                  <i>Network_Resource_Name:</i>
+                  <a
+                   TARGET="viewer"
+                   href="{data_gateway_link}">{data_gateway_link}</a>
+                 </dt>
+                </dl>
+               </dd>
+              </dl>
+             </dd>
+            </dl>
+           </dd>
+          </dl>
+         </dd>
+        </dl>
+       </dd>
+       <dt class="fees">
+        <i>Fees: </i>none</dt>
+      </dl>
+     </dd>
+    </dl>
+   </dd>
+  </dl>
+  <a
+   href="#Top">Back to Top</a>
+  <a
+   name="Metadata_Reference_Information" />
+  <dl>
+   <dt>
+    <i>Metadata_Reference_Information:</i>
+   </dt>
+   <dd id="metainfo">
+    <dl>
+     <dt class="metd">
+      <i>Metadata_Date: </i>{date}</dt>
+     <dt>
+      <i>Metadata_Contact:</i>
+     </dt>
+     <dd class="metc">
+      <dl>
+       <dt>
+        <i>Contact_Information:</i>
+       </dt>
+       <dd class="cntinfo">
+        <dl>
+         <dt>
+          <i>Contact_Person_Primary:</i>
+         </dt>
+         <dd class="cntperp">
+          <dl>
+           <dt class="cntper">
+            <i>Contact_Person: </i>Karin Riley</dt>
+           <dt class="cntorg">
+            <i>Contact_Organization: </i>USDA Forest Service, Rocky Mountain Research Station</dt>
+          </dl>
+         </dd>
+         <dt class="cntpos">
+          <i>Contact_Position: </i>Research Ecologist</dt>
+         <dt>
+          <i>Contact_Address:</i>
+         </dt>
+         <dd class="cntaddr">
+          <dl>
+           <dt class="addrtype">
+            <i>Address_Type: </i>mailing and physical</dt>
+           <dt class="address">
+            <i>Address: </i>5775 W. Broadway</dt>
+           <dt class="city">
+            <i>City: </i>Missoula</dt>
+           <dt class="state">
+            <i>State_or_Province: </i>Montana</dt>
+           <dt class="postal">
+            <i>Postal_Code: </i>59808</dt>
+           <dt class="country">
+            <i>Country: </i>USA</dt>
+          </dl>
+         </dd>
+         <dt class="cntvoice">
+          <i>Contact_Voice_Telephone: </i>406-329-4806</dt>
+         <dt class="cntemail">
+          <i>Contact_Electronic_Mail_Address: </i>
+          <TT>karin.l.riley@usda.gov</TT>
+         </dt>
+        </dl>
+       </dd>
+      </dl>
+     </dd>
+     <dt class="metstdn">
+      <i>Metadata_Standard_Name: </i>FGDC Content Standard for Digital Geospatial Metadata</dt>
+     <dt class="metstdv">
+      <i>Metadata_Standard_Version: </i>FGDC-STD-001-1998</dt>
+    </dl>
+   </dd>
+  </dl>
+  <a
+   href="#Top">Back to Top</a>
+ </body>
+</html>
