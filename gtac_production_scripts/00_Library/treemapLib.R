@@ -14,7 +14,7 @@ list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse",
                       "magrittr", "tictoc", "caret", "randomForest", "ggplot2",
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
                       "stringr", "stringi", "devtools", "philentropy", "skimr",
-                      "data.table", "RSQLite", "sqldf", "gdalUtilities")
+                      "data.table", "RSQLite", "sqldf", "gdalUtilities", "foreign", "gdtools")
 
 
 # Install dev version of yaImpute - to make sure we get the option to retain OOB obs
