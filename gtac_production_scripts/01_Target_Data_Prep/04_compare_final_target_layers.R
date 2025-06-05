@@ -12,7 +12,7 @@ year_input <- 2023
 study_area <- "CONUS"
 
 # which zone to start on?
-lf_zone_num_start <- 19
+lf_zone_num_start <- 1
 
 ################################################################
 # Load Library
@@ -33,7 +33,6 @@ source(lib_path)
 # LOAD DATA
 ###################################################
 
-#source(project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R"))
 targetDataProjectInputs(year_input = year_input,
                         study_area = study_area)
 
@@ -55,7 +54,7 @@ dir.create(glue::glue("{target_dir}/eval/layer_pixel_counts/"))
 
 for(zone_input in lf_zone_nums){
  
-  #zone_input = 1 # for testing
+  #zone_input = 19 # for testing
   zone_num = zone_input
   
 
@@ -89,7 +88,7 @@ for(zone_input in lf_zone_nums){
   # loop over each layer
   for (i in seq_along(names(target_stack))){
     
-    # count px in each tif and append to data fra,e
+    # count px in each tif and append to data frae
     r <- target_stack[[i]]
     layer_info$numpx[[i]] <- length(values(r, na.rm=T))
     
@@ -101,7 +100,7 @@ for(zone_input in lf_zone_nums){
   layer_info_all <- rbind(layer_info_all, layer_info)
   
   # write out to file
-  #write.csv(layer_info_all, glue::glue('{target_dir}/eval/layer_pixel_counts/px_counts.csv'), row.names = FALSE)
+  write.csv(layer_info_all, glue::glue('{target_dir}/eval/layer_pixel_counts/px_counts.csv'), row.names = FALSE)
   
   # look at data frame; report out if any layers don't have the same # of px   
   

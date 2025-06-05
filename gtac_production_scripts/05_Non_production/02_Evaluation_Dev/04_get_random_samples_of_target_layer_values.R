@@ -46,8 +46,8 @@ if(!exists(target_dir_layer_comparison)) {
   
 # Target Layer Values ----
 # direct to all target rasters
-dc_rasters<- list.files(target_dir_mask, pattern="disturb_code_LF.tif$", full.names=T, recursive = T)
-dy_rasters<- list.files(target_dir_mask, pattern="disturb_year_LF.tif$", full.names=T, recursive = T)
+dc_rasters<- list.files(target_dir_mask, pattern="disturb_code.tif$", full.names=T, recursive = T)
+dy_rasters<- list.files(target_dir_mask, pattern="disturb_year.tif$", full.names=T, recursive = T)
 easting_rasters<- list.files(target_dir_mask, pattern="easting.tif$", full.names=T, recursive = T)
 elevation_rasters<- list.files(target_dir_mask, pattern="elevation.tif$", full.names=T, recursive = T)
 evc_rasters<- list.files(target_dir_mask, pattern="evc.tif$", full.names=T, recursive = T)
