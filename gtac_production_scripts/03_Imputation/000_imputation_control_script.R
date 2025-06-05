@@ -8,15 +8,15 @@ gc()
 #################################################################
 
 # Initialize projects (years) and zones
-year_input <- 2020
+year_input <- 2023
 
 
 # manually list zones
-# zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-#                 seq(from = 12, to = 66, by = 1),
-#                 98, 99)
+zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
+                seq(from = 12, to = 66, by = 1),
+                98, 99)
 
-zones_list <- c(1,10)
+#zones_list <- c(1,10)
 
 ### Additional code for sub-setting zones list (for production)
 ## Filter out certain run zones (unordered list)
@@ -66,42 +66,10 @@ reportGenerator_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Eva
 # Attribute layer assembly script
 assembleAttribute_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/05_assemble_attribute_layers.R")
 
-# packages required
-list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
-                      "magrittr", "tictoc", "caret", "randomForest", 
-                      "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
-                      "stringr", "stringi", "devtools", "philentropy", "skimr")
 
 ################################################################
 # END USER INPUTS
 ################################################################
-
-#################################################################
-# Make sure required packages are installed
-#################################################################
-
-# #check for packages and install if needed
-new.packages <- tryCatch(
-  
-  # try to get list of packages installed
-  {suppressWarnings(list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]) }, 
-  
-  error= function(cond) {
-    message("Can't access list of packages")
-    message("Here's the original error message:")
-    message(conditionMessage(cond))
-    
-    # return value in case of error:
-    NA
-  }
-  
-)
-
-if(length(new.packages) > 0) install.packages(new.packages)
-
-# remove unused objects
-rm(list.of.packages, new.packages)
-
 
 ##############################################################################
 # Do the work
@@ -112,7 +80,7 @@ ptm_start <- Sys.time() # Processing time: Start
 message(paste0("Running imputation preparation for year: ", year_input))
 
 # PASS variables to `00a_project_inputs_for_imp.R` to SET project directory for each year
-source(project_inputScript)
+source(project_inputScript) # calls TreeMap Library and installs any necessary packages
 
 # LOOP by zones 
 for (zone_input in zones_list){
