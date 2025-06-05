@@ -3,7 +3,7 @@
 # Written By Lila Leatherman (lila.Leatherman@usda.gov)
 # Based on script "rmrs_production_scripts/00_USDA_TreeMap_2014/reclass_Landfire_disturbance_rasters_for_tree_list.py" by Karin Riley (karin.riley@usda.gov)
 
-# Last Updated: 5/6/25
+# Last Updated: 5/28/25
 
 # Final Output Rasters: 
 # - disturbance code (0/1/2 for none/Fire/Other)
@@ -30,7 +30,7 @@ study_area <- "CONUS"
 #lf_version <- 'lf_240' 
 
 # which zone to start on?
-lf_zone_num_start <- 40
+lf_zone_num_start <- 12
 
 ################################################################
 # Load Library
@@ -55,7 +55,7 @@ source(lib_path)
 break.up <- 5
 
 # set number of cores used for parallelization
-ncores <- 4
+ncores <- 6
 
 
 ###################################################
@@ -134,6 +134,9 @@ ind_codes <- c(seq(540,564,1), seq(840,854,1), seq(861, 863, 1), seq(1040,1062,1
 # Create matrices for reclassifying
 #---------------------------------------------#
 
+# set NA value for reclass
+NAValue = NA
+
 # list all possible codes 
 nums <- c(-9999, seq(0, 1133, 1))
 
@@ -143,11 +146,11 @@ rcl_ind <- nums
 
 # replace fire codes with 1, all others with na
 rcl_fire[rcl_fire %in% fire_codes] <- 1 # fire code: 1
-rcl_fire[rcl_fire !=1] <- NA
+rcl_fire[rcl_fire !=1] <- NAValue
 
 # replace ind codes with 2, all others with na
 rcl_ind[rcl_ind %in% ind_codes] <- 2 # not-fire code: 2
-rcl_ind[rcl_ind != 2] <- NA
+rcl_ind[rcl_ind != 2] <- NAValue
 
 #####################################################
 # Prep Landfire Disturbance - by zone
@@ -155,10 +158,9 @@ rcl_ind[rcl_ind != 2] <- NA
 
 for(zone_input in lf_zone_nums){
   
+  #zone_input = 19
   zone_num = zone_input
   
-  # for testing
-  #zone_input = 29
   
   message(glue::glue("Creating disturbance layers for zone {zone_input}"))
   targetDataZonalInputs(zone_input)
@@ -231,13 +233,13 @@ for(zone_input in lf_zone_nums){
     
     # for testing
     #i = 1
-    message(glue::glue("working on tile {i}"))
+    #message(glue::glue("working on tile {i}"))
     
     fn <- tiles[i]
     
     # read raster tile into memory
     tile <- terra::rast(fn) %>%
-      terra::trim()
+      terra::trim(value = NA)
     
     # read landfire data as vrt
     lf_dist <- terra::vrt(lf_files$path, filename = glue::glue("{tmp_dir}/lf_dist.vrt"), options = "-separate", overwrite = TRUE)
@@ -245,7 +247,9 @@ for(zone_input in lf_zone_nums){
     # Crop landfire disturbance layers to tile
     #---------------------------------------------#
     tile_r <- terra::crop(lf_dist, tile)
+    tile_r_mask <- terra::classify(tile_r, cbind(-9999, NA))
     rm(lf_dist)
+    
     
     # Prep Landfire fire layers
     # --------------------------------------------#
@@ -254,13 +258,15 @@ for(zone_input in lf_zone_nums){
       tile_r %>%
       terra::classify(cbind(nums, rcl_fire)) %>% # reclass fire codes to binary indicator for each year
       terra::app(which.max.hightie) %>% # get most recent year
-      terra::classify(cbind(c(seq(1:length(lf_files$year))), lf_files$year)) # reclassify index values to years
+      terra::classify(cbind(c(seq(1:length(lf_files$year))), lf_files$year)) %>% # reclassify index values to years
+      #terra::classify(cbind(NAValue,-99))  %>% # set no data values = -99 for year 
+      terra::mask(tile_r_mask[[1]]) # mask to zone
     
     # Export
     #---------------------------------------#
     writeRaster(lf_fire_years_tile, 
                 filename = glue::glue('{tmp_dir}/lf/fire_years_tile{i}.tif'),
-                datatype = "INT2U",
+                datatype = "INT2S",
                 overwrite = TRUE)
     
     
@@ -276,14 +282,16 @@ for(zone_input in lf_zone_nums){
       tile_r %>%
       terra::classify(cbind(nums, rcl_ind)) %>% # reclass disturbance codes to binary for each year
       terra::app(which.max.hightie) %>% # get most recent year of disturbance
-      terra::classify(cbind(c(seq(1:length(lf_files$year))), lf_files$year)) # reclassify index values to years
+      terra::classify(cbind(c(seq(1:length(lf_files$year))), lf_files$year))%>% # reclassify index values to years
+      #terra::classify(cbind(NAValue,-99))  %>% # set no data values = -99 for year
+      terra::mask(tile_r_mask[[1]]) # mask to zone
     
     # Export tiles
     #---------------------------------------#
     
     writeRaster(lf_ind_years_tile, 
                 filename = paste0(tmp_dir, "/lf/ind_years_tile", i, ".tif"),
-                datatype = "INT2U",
+                datatype = "INT2S",
                 overwrite = TRUE)
     
     # remove unused files
@@ -302,6 +310,10 @@ for(zone_input in lf_zone_nums){
   
   message("merging tiles to zone")
   
+  # load forest mask
+  zmask <- terra::rast(glue::glue('{target_dir_mask_z}/evt_gp_remap.tif')) %>%
+    terra::project(output_crs)
+  
   # list fire tiles
   fire_tiles <- list.files(path = glue::glue('{tmp_dir}/lf/'), 
                            pattern = "fire",
@@ -313,10 +325,10 @@ for(zone_input in lf_zone_nums){
                           full.names = TRUE)
   
   # Read in tiles as vrt and mask to zone
-  lf_fire_years <- terra::vrt(fire_tiles,  glue('{tmp_dir}/lf_fire.vrt'), overwrite = TRUE) %>%
-    terra::mask(lf_zone)
-  lf_ind_years <- terra::vrt(ind_tiles, glue('{tmp_dir}/lf_ind.vrt'), overwrite = TRUE) %>%
-    terra::mask(lf_zone)
+  lf_fire_years <- terra::vrt(fire_tiles,  glue('{tmp_dir}/lf_fire.vrt'), overwrite = TRUE) #%>%
+    #terra::crop(lf_zone, mask = TRUE)
+  lf_ind_years <- terra::vrt(ind_tiles, glue('{tmp_dir}/lf_ind.vrt'), overwrite = TRUE) #%>%
+    #terra::crop(lf_zone, mask = TRUE)
   
   # Reclass to binary 
   #----------------------------------------_---#
@@ -325,15 +337,13 @@ for(zone_input in lf_zone_nums){
   fire_code = 1
   lf_fire_binary <-
     lf_fire_years %>%
-    terra::classify(cbind(year_list, fire_code)) %>%
-    terra::mask(lf_zone)
+    terra::classify(cbind(year_list, fire_code)) 
   
   # reclassify to binary indicator of insect and disease (ind) over all years
   ind_code = 2
   lf_ind_binary <-
     lf_ind_years %>%
-    terra::classify(cbind(year_list, ind_code)) %>%
-    terra::mask(lf_zone)
+    terra::classify(cbind(year_list, ind_code)) 
   
   # # Export intermediate files
   # #-------------------------------------------------#
@@ -365,31 +375,30 @@ for(zone_input in lf_zone_nums){
   
   message("creating final disturbance layers")
   
-  # load forest mask for matching extent
-  zmask <- terra::rast(glue::glue('{target_dir_mask_z}/evt_gp.tif')) %>%
-    terra::project(output_crs)
-  
   # for existing disturbance layer: 
   # fire code: 1
   # slow loss code: 2
+  NAValue_year <- 99
   
   dist_year <- terra::merge(lf_fire_years, lf_ind_years) %>% # merge fire and slow loss 
     terra::app(function(x) model_year - x ) %>% # calculate years since disturbance 
+    terra::classify(cbind(NAValue,NAValue_year)) %>% # set no data values
     terra::project(output_crs) %>% # make sure it's in the desired projection
-    terra::extend(zmask) %>% # make sure extents match
-    terra::crop(zmask) %>%
-    terra::mask(zmask) %>% # apply mask
-    terra::classify(cbind(NA,99)) # set no data values
+    terra::extend(zmask, fill = NAValue_year) %>% # make sure extents match
+    terra::crop(zmask, mask = TRUE) 
+    
     
   
   gc()
   
+  NAValue_code <- 0
+  
   dist_code <- terra::merge(lf_fire_binary, lf_ind_binary) %>% # merge fire and slow loss
+    terra::classify(cbind(NAValue, NAValue_code)) %>% # set no data values
     terra::project(output_crs) %>% # make sure it's in the desired projection
-    terra::extend(zmask) %>% # make sure extents match
+    terra::extend(zmask, fill = NAValue_code) %>% # make sure extents match
     terra::crop(zmask) %>%
-    terra::mask(zmask) %>% # apply mask
-    terra::classify(cbind(NA, 0)) #%>% # set no data values 
+    terra::mask(zmask)# apply mask
      
   
   gc()
@@ -409,12 +418,12 @@ for(zone_input in lf_zone_nums){
   
   #export
   writeRaster(dist_year, 
-              glue::glue('{target_dir_mask_z}/disturb_year_LF.tif'),
+              glue::glue('{target_dir_mask_z}/disturb_year.tif'),
               datatype = "INT1U",
               overwrite = TRUE)
   
   writeRaster(dist_code, 
-              glue::glue('{target_dir_mask_z}/disturb_code_LF.tif'),
+              glue::glue('{target_dir_mask_z}/disturb_code.tif'),
               datatype = "INT1U",
               overwrite = TRUE)
   

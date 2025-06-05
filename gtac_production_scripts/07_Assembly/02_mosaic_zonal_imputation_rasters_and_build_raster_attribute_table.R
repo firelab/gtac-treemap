@@ -7,14 +7,14 @@
 
 # NOTE: Will need to be updated for AK and HI production
 
-# Last Updated: 2/12/2025
+# Last Updated: 6/4/2025
 
 #########################################################
 # Set Inputs
 #########################################################
 
 # project inputs
-year <- 2022
+year <- 2020
 studyArea <- 'CONUS'
 project_name <- glue::glue("{year}_Production_newXtable")
 
@@ -39,7 +39,6 @@ this_proj = this.path::this.proj()
 lib_path = glue::glue("{this_proj}/gtac_production_scripts/00_Library/treeMapLib.R")
 source(lib_path)
 
-library(foreign)
 
 # Update folder and data paths
 #-----------------------------------------------------#
@@ -47,6 +46,10 @@ assembled_dir <-  glue::glue("{home_dir}/{assembled_dir}")
 mosaic_dir <- glue::glue("{home_dir}/{mosaic_dir}")
 dbf_table_path <- glue::glue("{home_dir}/{dbf_table_path}")
 attribute_table_path <- glue::glue("{home_dir}/{attribute_table_path}")
+
+
+tif_out_path = glue::glue("{mosaic_dir}/TreeMap{year}_{studyArea}.tif")
+
 
 # conditionally create mosaic_dir
 if (!file.exists(mosaic_dir)){
@@ -69,13 +72,11 @@ terra::vrt(imputation_rasters, glue::glue("{mosaic_dir}/imputation_vrt.vrt"),
 # Load the VRT
 imputation <- rast(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
 
-# Save the VRT as a tif
-tif_out_path = glue::glue("{mosaic_dir}/TreeMap{year}_{studyArea}.tif")
-
 if(file.exists(tif_out_path)) {
   message(glue::glue("Warning: overwriting existing tif: {tif_out_path}"))
 }
 
+# save VRT as a tif
 terra::writeRaster(imputation, tif_out_path,
             gdal=c("COMPRESS=LZW"),
             overwrite = TRUE
@@ -84,8 +85,6 @@ terra::writeRaster(imputation, tif_out_path,
 # Delete the VRT
 file.remove(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
 
-# Reload imputation from the tif output
-rm(imputation)
 
 # Delete any pre-existing dbf file so that we can overwrite and create a new one
 if(file.exists(glue::glue("{tif_out_path}.vat.dbf"))){
@@ -94,20 +93,26 @@ if(file.exists(glue::glue("{tif_out_path}.vat.dbf"))){
   file.remove(glue::glue("{tif_out_path}.vat.dbf"))
 }
 
+# Reload imputation from the tif output
+rm(imputation)
 imputation <- rast(tif_out_path)
+
 
 # Build raster attribute table - calculate frequencies
 f<- terra::freq(imputation)[,c(2:3)]
-names(f)<-c("TM_ID","Count")
+names(f)<-c("Value","Count")
+f %<>%
+  mutate(OID = row_number(f)) %>%
+  dplyr::select(OID, Value, Count)
 
-# load attribute table csv - with remaining attributs
+# load attribute table csv - with remaining attributes
 rat <- read.csv(attribute_table_path)
 #rat$X <- NULL
 
 # join csv to frequency table
-out <- left_join(f, rat, by = "TM_ID") #%>%
-  #dplyr::rename("QMD" = QMDAll) %>%
-  #dplyr::mutate(TM_ID = Value)
+out <- left_join(f, rat, by = c("Value" = "TM_ID")) %>%
+  dplyr::mutate(TM_ID = Value) %>%
+  dplyr::relocate(TM_ID, .after = Count)
 
 # inspect
 str(out)
@@ -115,3 +120,10 @@ str(out)
 #Write as dbf / attribute table
 foreign::write.dbf(out,
                    glue::glue("{tif_out_path}.vat.dbf"))
+
+# inspect 
+rm(imputation)
+r <- terra::rast(tif_out_path)
+
+x <- cats(r)[[1]]
+f <- freq(r)
