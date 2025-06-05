@@ -3,7 +3,7 @@
 # Author: Lila Leatherman (lila.leatherman@usda.gov)
 
 # Last Updated:
-# 4/15/2025
+# 6/5/2025
 
 #################################################################
 # Load required packages
@@ -14,7 +14,7 @@ list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse",
                       "magrittr", "tictoc", "caret", "randomForest", "ggplot2",
                       "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
                       "stringr", "stringi", "devtools", "philentropy", "skimr",
-                      "data.table", "RSQLite", "sqldf")
+                      "data.table", "RSQLite", "sqldf", "gdalUtilities")
 
 
 # Install dev version of yaImpute - to make sure we get the option to retain OOB obs
