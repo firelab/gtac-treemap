@@ -56,8 +56,8 @@ gdal.UseExceptions()
 chunk_size = 48000 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif"
-treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif.vat.dbf"
+treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif"
+treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif.vat.dbf"
 
 # Specify the character limit for column names in the DBF (DBFs typically have a 10 character limit, so CARBON_DOWN_DEAD would appear as CARBON_DOW in the DBF)
 dbfColumnCharLimit = 10
@@ -66,7 +66,7 @@ dbfColumnCharLimit = 10
 projectArea = "CONUS"
 
 # specify project year
-projectYear = 2020
+projectYear = 2022
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
@@ -81,7 +81,7 @@ data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/inde
 outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/2/"
 
 # Name of TreeMap ID column in Raster Attribute Table
-tmid_col_name = "TREEMAP_ID"
+tmid_col_name = "TM_ID"
 
 # Column names to create individual attribute images of, their full names, and their data type
     # Columns whose full precision can only be contained within Float64: VOLCFNET_L, VOLCFNET_D, VOLBFNET_L, DRYBIO_L, DRYBIO_D, CARBON_L, CARBON_D
@@ -107,7 +107,7 @@ cols = [('FORTYPCD', gdal.GDT_UInt16),
         ('CARBON_L', gdal.GDT_Float32), 
         ('CARBON_D', gdal.GDT_Float32), 
         ('CARBON_DOWN_DEAD', gdal.GDT_Float32),
-        ('TREEMAP_ID', gdal.GDT_UInt16)]
+        ('TM_ID', gdal.GDT_UInt16)]
 
 # Column names with their associated descriptions
 col_descriptions = {
@@ -132,7 +132,7 @@ col_descriptions = {
     'CARBON_L': 'live aboveground carbon (tons per acre)',
     'CARBON_D': 'standing dead carbon (tons per acre)',
     'CARBON_DOWN_DEAD': 'down dead carbon > 3 inches diameter (tons per acre); estimated by FIA based on forest type, geographic area, and live tree carbon density.',
-    'TREEMAP_ID': 'unique identifier assigned to each plot; corresponds to FIA PLT_CN'
+    'TM_ID': 'unique identifier assigned to each plot; corresponds to FIA PLT_CN'
     }
 
 # Discrete (thematic + ordinal) columns with their associated color information. FORTYPCD + FLDTYPCD do not get assigned colors from here and are thus listed as NA
@@ -166,7 +166,7 @@ col_units = {
     'CARBON_L': 'tons/acre',
     'CARBON_D': 'tons/acre',
     'CARBON_DOWN_DEAD': 'tons/acre',
-    'TREEMAP_ID': 'NA'
+    'TM_ID': 'NA'
 }
 
 #%%
@@ -227,7 +227,7 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
     print('******************************************\n')
 
     # Account for DBF column names vs official attribute names
-    if columnName == 'TREEMAP_ID':
+    if columnName == 'TM_ID':
         df_column = df[tmid_col_name]
     else:
         df_column = df[columnName[:dbfColumnCharLimit]]
