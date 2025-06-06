@@ -14,7 +14,9 @@ target_stands <- as.data.table(read.table("F:/TreeMap2022/TM_2022_Plot_Table2.cs
 #tree_header <- c("TM_ID", "TM_PLT_CN", "INVYR", "STATUSCD", "Tree_count", "SPCD", "DBH", "HT", "ACTUALHT", "CR", "SUBP",
 #                 "TREE", "AGENTCD", "Species", "History", "CrRatio")
 
-tree_header <- c("tm_id","CN","STATUSCD","TPA_UNADJ","SPCD","COMMON_NAME","SCIENTIFIC_NAME","SPECIES_SYMBOL","DIA","HT","ACTUALHT","CR","SUBP","TREE","AGENTCD")
+#tree_header <- c("tm_id","CN","STATUSCD","TPA_UNADJ","SPCD","COMMON_NAME","SCIENTIFIC_NAME","SPECIES_SYMBOL","DIA","HT","ACTUALHT","CR","SUBP","TREE","AGENTCD")
+
+tree_header <- c("TM_ID","PLT_CN","STATUSCD","TPA_UNADJ","SPCD","COMMON_NAME","SCIENTIFIC_NAME","SPECIES_SYMBOL","DIA","HT","ACTUALHT","CR","SUBP","TREE","AGENTCD")
 
 ## CREATE THE TREE TABLE ##
 # Extract the tree data from the FIA database
@@ -47,8 +49,8 @@ tree_filtered <- tree_filtered[History != 0,] %>%
   select(-STANDING_DEAD_CD)
 
 tree_characteristics = c("TM_ID", "PLT_CN", "STATUSCD", "TPA_UNADJ", "SPCD", "DIA", "HT", "ACTUALHT", "CR", "SUBP", "TREE", "AGENTCD")
-tree_table <- tree_filtered[, tree_characteristics, with=FALSE] %>% 
-  rename(tm_id = TM_ID, CN = PLT_CN)
+tree_table <- tree_filtered[, tree_characteristics, with=FALSE] #%>% 
+  #rename(tm_id = TM_ID, CN = PLT_CN)
 
 species_names <- as.data.table(dbGetQuery(con, 'select * from REF_SPECIES'))
 species_filtered <- left_join(tree_table, species_names[,c("SPCD", "COMMON_NAME","SCIENTIFIC_NAME","SPECIES_SYMBOL"),], by = "SPCD")
