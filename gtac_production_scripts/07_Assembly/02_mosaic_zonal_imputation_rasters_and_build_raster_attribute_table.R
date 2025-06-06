@@ -14,7 +14,7 @@
 #########################################################
 
 # project inputs
-year <- 2020
+year <- 2022
 studyArea <- 'CONUS'
 project_name <- glue::glue("{year}_Production_newXtable")
 
@@ -72,6 +72,27 @@ terra::vrt(imputation_rasters, glue::glue("{mosaic_dir}/imputation_vrt.vrt"),
 # Load the VRT
 imputation <- rast(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
 
+# Build raster attribute table - calculate frequencies
+f<- terra::freq(imputation)[,c(2:3)]
+names(f)<-c("Value","Count")
+
+# load attribute table csv - with remaining attributes
+rat <- read.csv(attribute_table_path)
+#rat$X <- NULL
+
+# replace NAs in RAT with 0 
+rat[is.na(rat)] <- 0
+
+# join csv to frequency table
+out <- left_join(f, rat, by = c("Value" = "TM_ID")) %>%
+  dplyr::mutate(TM_ID = Value) %>%
+  dplyr::relocate(TM_ID, .after = Value) %>%
+  dplyr::relocate(Count, .after = PLT_CN) 
+
+str(out)
+
+levels(imputation) <- out
+
 if(file.exists(tif_out_path)) {
   message(glue::glue("Warning: overwriting existing tif: {tif_out_path}"))
 }
@@ -86,44 +107,35 @@ terra::writeRaster(imputation, tif_out_path,
 file.remove(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
 
 
-# Delete any pre-existing dbf file so that we can overwrite and create a new one
-if(file.exists(glue::glue("{tif_out_path}.vat.dbf"))){
-  message(glue::glue("Warning: dbf already exists: {tif_out_path}.vat.dbf"))
-  message("deleting existing dbf file")
-  file.remove(glue::glue("{tif_out_path}.vat.dbf"))
-}
 
 # Reload imputation from the tif output
 rm(imputation)
 imputation <- rast(tif_out_path)
 
+# inspect RAT
+x <- cats(imputation)[[1]]
 
-# Build raster attribute table - calculate frequencies
-f<- terra::freq(imputation)[,c(2:3)]
-names(f)<-c("Value","Count")
-f %<>%
-  mutate(OID = row_number(f)) %>%
-  dplyr::select(OID, Value, Count)
+str(x)
 
-# load attribute table csv - with remaining attributes
-rat <- read.csv(attribute_table_path)
-#rat$X <- NULL
+activeCat(imputation) <- 0
 
-# join csv to frequency table
-out <- left_join(f, rat, by = c("Value" = "TM_ID")) %>%
-  dplyr::mutate(TM_ID = Value) %>%
-  dplyr::relocate(TM_ID, .after = Count)
+# # f %<>%
+# #  mutate(OID = row_number(f)) %>%
+# #  dplyr::select(OID, Value, Count)
+# 
+# rm(imputation)
+# 
+# 
+# 
+# # Delete any pre-existing dbf file so that we can overwrite and create a new one
+# if(file.exists(glue::glue("{tif_out_path}.vat.dbf"))){
+#   message(glue::glue("Warning: dbf already exists: {tif_out_path}.vat.dbf"))
+#   message("deleting existing dbf file")
+#   file.remove(glue::glue("{tif_out_path}.vat.dbf"))
+# }
+# 
+# 
+# #Write as dbf / attribute table
+# foreign::write.dbf(out,
+#                    glue::glue("{tif_out_path}.vat.dbf"))
 
-# inspect
-str(out)
-
-#Write as dbf / attribute table
-foreign::write.dbf(out,
-                   glue::glue("{tif_out_path}.vat.dbf"))
-
-# inspect 
-rm(imputation)
-r <- terra::rast(tif_out_path)
-
-x <- cats(r)[[1]]
-f <- freq(r)
