@@ -121,7 +121,7 @@ col_descriptions = {
     'ALSTK': 'all live tree stocking (percent)',
     'GSSTK': 'growing-stock stocking (percent)',
     'QMD': 'stand quadratic mean diameter (in)',
-    'SDIsum': 'Sum of stand density index',
+    'SDIsum': 'sum of stand density index',
     'TPA_LIVE': 'number of live trees per acre',
     'TPA_DEAD': 'number of standing dead trees per acre (DIA ≥ 5 inches)',
     'VOLCFNET_L': 'live volume (cubic ft. per acre)',
