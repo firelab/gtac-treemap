@@ -7,7 +7,7 @@
 
 # NOTE: Will need to be updated for AK and HI production
 
-# Last Updated: 6/4/2025
+# Last Updated: 6/6/2025
 
 #########################################################
 # Set Inputs
@@ -88,7 +88,7 @@ out <- left_join(f, rat, by = c("Value" = "TM_ID")) %>%
   dplyr::mutate(TM_ID = Value) %>%
   dplyr::relocate(TM_ID, .after = Value) %>%
   dplyr::relocate(Count, .after = PLT_CN) %>%
-  dplyr::rename(CARBON_DOWN_DEAD = CARBON_DWN) # manually rename this field to be 10 characters to fit requirements for .dbf 
+  dplyr::rename(CARBON_DWN = CARBON_DOWN_DEAD) # manually rename this field to be 10 characters to fit requirements for .dbf 
 
 str(out)
 
@@ -104,6 +104,18 @@ terra::writeRaster(imputation, tif_out_path,
             overwrite = TRUE
             )
 
+# Delete any pre-existing dbf file so that we can overwrite and create a new one
+if(file.exists(glue::glue("{tif_out_path}.vat.dbf"))){
+  message(glue::glue("Warning: dbf already exists: {tif_out_path}.vat.dbf"))
+  message("deleting existing dbf file")
+  file.remove(glue::glue("{tif_out_path}.vat.dbf"))
+}
+
+
+#Write as dbf / attribute table
+foreign::write.dbf(out,
+                   glue::glue("{tif_out_path}.vat.dbf"))
+
 # Delete the VRT
 file.remove(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
 
@@ -117,24 +129,6 @@ x <- cats(imputation)[[1]]
 str(x)
 
 activeCat(imputation) <- 0
+imputation
 
-# # f %<>%
-# #  mutate(OID = row_number(f)) %>%
-# #  dplyr::select(OID, Value, Count)
-# 
-# rm(imputation)
-# 
-# 
-# 
-# # Delete any pre-existing dbf file so that we can overwrite and create a new one
-# if(file.exists(glue::glue("{tif_out_path}.vat.dbf"))){
-#   message(glue::glue("Warning: dbf already exists: {tif_out_path}.vat.dbf"))
-#   message("deleting existing dbf file")
-#   file.remove(glue::glue("{tif_out_path}.vat.dbf"))
-# }
-# 
-# 
-# #Write as dbf / attribute table
-# foreign::write.dbf(out,
-#                    glue::glue("{tif_out_path}.vat.dbf"))
 
