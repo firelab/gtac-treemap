@@ -87,7 +87,8 @@ rat[is.na(rat)] <- 0
 out <- left_join(f, rat, by = c("Value" = "TM_ID")) %>%
   dplyr::mutate(TM_ID = Value) %>%
   dplyr::relocate(TM_ID, .after = Value) %>%
-  dplyr::relocate(Count, .after = PLT_CN) 
+  dplyr::relocate(Count, .after = PLT_CN) %>%
+  dplyr::rename(CARBON_DOWN_DEAD = CARBON_DWN) # manually rename this field to be 10 characters to fit requirements for .dbf 
 
 str(out)
 
@@ -105,8 +106,6 @@ terra::writeRaster(imputation, tif_out_path,
 
 # Delete the VRT
 file.remove(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
-
-
 
 # Reload imputation from the tif output
 rm(imputation)
