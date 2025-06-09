@@ -229,6 +229,8 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
     # Account for DBF column names vs official attribute names
     if columnName == 'TM_ID':
         df_column = df[tmid_col_name]
+    elif columnName == 'CARBON_DOWN_DEAD':
+        df_column = df['CARBON_DWN']
     else:
         df_column = df[columnName[:dbfColumnCharLimit]]
     
