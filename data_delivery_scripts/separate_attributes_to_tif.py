@@ -56,8 +56,8 @@ gdal.UseExceptions()
 chunk_size = 48000 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif"
-treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif.vat.dbf"
+treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif"
+treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif.vat.dbf"
 
 # Specify the character limit for column names in the DBF (DBFs typically have a 10 character limit, so CARBON_DOWN_DEAD would appear as CARBON_DOW in the DBF)
 dbfColumnCharLimit = 10
@@ -66,7 +66,7 @@ dbfColumnCharLimit = 10
 projectArea = "CONUS"
 
 # specify project year
-projectYear = 2022
+projectYear = 2020
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
@@ -78,7 +78,7 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
 # Specify output folder - will be created if it doesn't already exist
-outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/2/"
+outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/"
 
 # Name of TreeMap ID column in Raster Attribute Table
 tmid_col_name = "TM_ID"
@@ -106,7 +106,7 @@ cols = [('FORTYPCD', gdal.GDT_UInt16),
         ('DRYBIO_D', gdal.GDT_Float32),
         ('CARBON_L', gdal.GDT_Float32), 
         ('CARBON_D', gdal.GDT_Float32), 
-        ('CARBON_DOWN_DEAD', gdal.GDT_Float32),
+        ('CARBON_DWN', gdal.GDT_Float32),
         ('TM_ID', gdal.GDT_UInt16)]
 
 # Column names with their associated descriptions
@@ -126,12 +126,12 @@ col_descriptions = {
     'TPA_DEAD': 'number of standing dead trees per acre (DIA ≥ 5 inches)',
     'VOLCFNET_L': 'live volume (cubic ft. per acre)',
     'VOLCFNET_D': 'standing dead volume (cubic ft. per acre)',
-    'VOLBFNET_L': 'volume, live, (sawlog board feet per acre) (log rule: International 1/4 inch) ',
+    'VOLBFNET_L': 'volume, live, (sawlog board feet per acre) (log rule: International 1/4 inch)',
     'DRYBIO_L': 'aboveground dry live tree biomass (tons per acre)',
     'DRYBIO_D': 'aboveground dry standing dead tree biomass (tons per acre)',
     'CARBON_L': 'live aboveground carbon (tons per acre)',
     'CARBON_D': 'standing dead carbon (tons per acre)',
-    'CARBON_DOWN_DEAD': 'down dead carbon > 3 inches diameter (tons per acre); estimated by FIA based on forest type, geographic area, and live tree carbon density.',
+    'CARBON_DWN': 'down dead carbon > 3 inches diameter (tons per acre); estimated by FIA based on forest type, geographic area, and live tree carbon density.',
     'TM_ID': 'unique identifier assigned to each plot; corresponds to FIA PLT_CN'
     }
 
@@ -141,6 +141,7 @@ discrete_cols= {
     'FLDTYPCD': ['NA', 'NA', 'NA'],
     'STDSZCD': ['custom', 'standsize', '4'],
     'FLDSZCD': ['custom', 'fieldsize', '6'],
+    'TM_ID': 'NA',
     }
 
 # Column units
@@ -165,8 +166,7 @@ col_units = {
     'DRYBIO_D': 'tons/acre',
     'CARBON_L': 'tons/acre',
     'CARBON_D': 'tons/acre',
-    'CARBON_DOWN_DEAD': 'tons/acre',
-    'TM_ID': 'NA'
+    'CARBON_DWN': 'tons/acre'
 }
 
 #%%
@@ -394,7 +394,7 @@ def create_arc_metadata(col_name, tif_path):
     source_root = source_tree.getroot()
     
     # Open template xml
-    template_file = os.path.join(os.path.dirname(metd_template_dir), 'TreeMap_ArcMeta_template.xml')
+    template_file = os.path.join((metd_template_dir), 'TreeMap_ArcMeta_template.xml')
     template_tree = ET.parse(template_file)
     template_root = template_tree.getroot()
     
@@ -709,7 +709,7 @@ def create_arc_stats(col_name, tif_path):
     
     # Create statistics metadata (*.tif.aux.xml)
         # Open template file
-    stats_template_file = os.path.join(os.path.dirname(metd_template_dir), 'TreeMap_ArcStats_template.xml')
+    stats_template_file = os.path.join((metd_template_dir), 'TreeMap_ArcStats_template.xml')
     stats_template_tree = ET.parse(stats_template_file)
     stats_template_root = stats_template_tree.getroot()
     
@@ -1292,6 +1292,8 @@ def package_for_rdg(col_name):
     # Zip files
     zip_files(files_to_zip, col_name)
 
+    print(files_to_zip)
+
 
 def generate_metadata(col_name, meta_mode):
     # Get path to the separated attribute image
@@ -1308,14 +1310,14 @@ def generate_metadata(col_name, meta_mode):
             create_basic_metadata(col_name)
         # Create ESRI xml metadata
         if meta_mode == 'arc' or meta_mode == 'all':
-            print('Building ESRI compatable metadata and statistics...')
+            print('Building ESRI compatible metadata and statistics...')
             create_arc_metadata(col_name, image_path)
             create_arc_stats(col_name, image_path)
 
     else:
         print(f'Image for {col_name} does not exist in the output folder. Skipping...')
         
-
+#%%
 ######################################################################
 # Main Function Calls
 ######################################################################
@@ -1329,6 +1331,7 @@ metd_template_dir = os.path.join(metd_template_dir, str(projectYear))
 
 # Determine this TreeMap version's symbology folder
 symbology_dir = os.path.join(find_folder(os.path.dirname(os.path.abspath(__file__)), 'symbology_files'), str(projectYear))
+#%%
 
 # Inform user of assigned inputs + outputs and get input on modes to run
 mode, second_mode = prompt_user()
