@@ -197,7 +197,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         'gee:units': units.tons_per_acre,
       },
       {
-        name: 'CARBON_DOWN_DEAD',
+        name: 'CARBON_DWN',
         description: |||
           Carbon, Down Dead. Carbon (tons per acre) of woody material >3 inches in diameter on the ground, and stumps and their roots >3 inches in diameter. Estimated from models based on geographic area, forest type, and live tree carbon density (Smith and Heath 2008).
         |||,
@@ -1758,7 +1758,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         'gee:units': units.count_per_acre,
       },
       {
-        name: 'TREEMAP_ID',
+        name: 'TM_ID',
         description: |||
           Raw TreeMap identifier dataset values. This dataset is useful to see spatial groupings of individual modeled plot values.
         |||,
@@ -1919,7 +1919,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         },
       },
       {
-        display_name: 'CARBON_DOWN_DEAD_Viz',
+        display_name: 'CARBON_DWN_Viz',
         lookat: {
           lat: 38,
           lon: -95.712891,
@@ -1946,7 +1946,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
             '1a1a01',
             ],
             bands: [
-              'CARBON_DOWN_DEAD',
+              'CARBON_DWN',
             ],
           },
         },
@@ -2126,10 +2126,10 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         image_visualization: {
           band_vis: {
             min: [
-              6,
+              30,
             ],
             max: [
-              99,
+              460,
             ],
             palette: [
               'ffe599',
@@ -2350,7 +2350,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     ],
   },
   'sci:citation': |||
-    Riley, Karin L.; Zimmer, Scott N.; Houtman, Rachel M.; Leatherman, Lila S. T.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D. 2025. TreeMap 2022 CONUS: A tree-level model of the forests of the conterminous United States circa 2022. Fort Collins, CO: Forest Service Research Data Archive. https://doi.org/10.2737/RDS-2021-0074.
+    Houtman, Rachel M.; Leatherman, Lila S. T.; Zimmer, Scott N.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D.; Riley, Karin L. 2025. TreeMap 2022 CONUS: A tree-level model of the forests of the conterminous United States circa 2022. Fort Collins, CO: Forest Service Research Data Archive. TBD https://doi.org/.
   |||,
   'gee:terms_of_use': |||
     The USDA Forest Service makes no warranty, expressed or implied, including the warranties of
