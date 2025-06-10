@@ -66,7 +66,7 @@ dbfColumnCharLimit = 10
 projectArea = "CONUS"
 
 # specify project year
-projectYear = 2020
+projectYear = 2022
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
@@ -78,7 +78,7 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
 # Specify output folder - will be created if it doesn't already exist
-outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/"
+outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)
 
 # Name of TreeMap ID column in Raster Attribute Table
 tmid_col_name = "TM_ID"
@@ -140,8 +140,7 @@ discrete_cols= {
     'FORTYPCD': ['NA', 'NA', 'NA'],
     'FLDTYPCD': ['NA', 'NA', 'NA'],
     'STDSZCD': ['custom', 'standsize', '4'],
-    'FLDSZCD': ['custom', 'fieldsize', '6'],
-    'TM_ID': 'NA',
+    'FLDSZCD': ['custom', 'fieldsize', '6']
     }
 
 # Column units
@@ -166,7 +165,8 @@ col_units = {
     'DRYBIO_D': 'tons/acre',
     'CARBON_L': 'tons/acre',
     'CARBON_D': 'tons/acre',
-    'CARBON_DWN': 'tons/acre'
+    'CARBON_DWN': 'tons/acre',
+    'TM_ID': 'NA'
 }
 
 #%%
@@ -330,7 +330,6 @@ def attributeToImage(columnName, gdal_dtype, processing_mode):
 
 def save_attribute_table(output_file):
     rat_file = "/vsimem/tmp.tif.aux.xml"
-
     rat_data = gdal.VSIFOpenL(rat_file, "rb")
     if rat_data:
         content = gdal.VSIFReadL(1, gdal.VSIStatL(rat_file).size, rat_data)
@@ -1275,8 +1274,8 @@ def package_for_rdg(col_name):
 
     files_to_zip = [tif_file, xml_file, html_file, arcxml_file, arcstats_file]
     
-    # If the attribute is not discrete, add arcgis + qgis symbology files to the list of files to be zipped
-    if col_name not in discrete_cols.keys():
+    # If the attribute is not TM_ID or discrete, add arcgis + qgis symbology files to the list of files to be zipped
+    if col_name == 'TM_ID' or col_name not in discrete_cols.keys():
         arc_lyrx_file = os.path.join(symbology_dir, f'{outputFileName}_{col_name}.tif.lyrx')
         qgis_qml_file = os.path.join(symbology_dir, f'{outputFileName}_{col_name}.tif.qml')
 
