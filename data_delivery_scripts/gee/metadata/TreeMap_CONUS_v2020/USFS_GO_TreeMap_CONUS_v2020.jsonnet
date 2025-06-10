@@ -60,6 +60,8 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
 
     TreeMap v2020 was produced using the methods described in [Riley et al. (2022)](https://doi.org/10.1093/jofore/fvac022 and https://research.fs.usda.gov/treesearch/65597) but differ from TreeMap v2016 in that: 1) the climatic variables were obtained from DayMet and included precipitation, shortwave radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit; and 2) plots available for imputation in each LANDFIRE zone were limited to those plots with a tree species that were present either in the plots found within the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with Existing Vegetation Type not present in the zone but also plots with trees outside of their observed range.
 
+    The results showed good correspondence between the target LANDFIRE data and the imputed plot data, with an overall within-class agreement of 94.3% for forest cover, 99.0% for forest height, 95.6% for vegetation group, and 95.5% for disturbance code. Of 69,800 single-condition FIA plots available to Random Forest, 64,745 of these (92.7%) were utilized in the imputation to 2,687,805,994 forested pixels.
+
     
 
     **Additional Resources**
