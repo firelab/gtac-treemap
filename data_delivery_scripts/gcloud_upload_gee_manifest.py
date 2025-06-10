@@ -16,9 +16,13 @@ from osgeo import gdal
 #################################################
 
 # Year of the dataset and associated landfire version
-year = '2020'
+year = '2022'
 study_area = 'CONUS'
-landfire_ver = '2.0.0'
+
+if year == '2020':
+    landfire_ver = '2.2.0'
+else: 
+    landfire_ver = '2.3.0'
 
 # The folder in which to look for images, and the format of the file names to select
 image_folder = rf'\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute_Rasters\{year}'
@@ -58,7 +62,7 @@ pyramidPolicy_lookup = {
     'DRYBIO_D':'MEAN',          #Continuous attributes
     'CARBON_L':'MEAN',          #Continuous attributes
     'CARBON_D':'MEAN',          #Continuous attributes
-    'CARBON_DOWN_DEAD':'MEAN',  #Continuous attributes
+    'CARBON_DWN':'MEAN',        #Continuous attributes
     'TM_ID' : 'MODE'            #Nominal attribute
 }
 
@@ -105,7 +109,7 @@ for image in glob(os.path.join(image_folder, name_format)):
 #################################################
 # Main process: create collection and upload
 #################################################
-#%%
+
 # Create the image collection in EE assets
 aml.create_image_collection(f'{gee_folder}/{gee_image_collection_name}', image_collection_properties)
 
@@ -117,6 +121,8 @@ aml.uploadToGEEAssetImagesAsBands(
     overwrite=False,
     properties=image_properties
     )
+
+
 
 
 

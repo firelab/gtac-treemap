@@ -5,7 +5,7 @@ Adds properties (version and attribute) to each image.
 
 The output file is used in the TreeMap viewer. 
 
-Last update: 05/15/2025
+Last update: 05/15/2025 (MOB)
 '''
 
 
@@ -21,7 +21,7 @@ ee.Initialize(project=project_id)
 #################################################
 # User Variables (edit these)
 #################################################
-treeMapYear = '2020'
+treeMapYear = '2022'
 study_area = 'CONUS'
 
 input_path = f'projects/treemap-386222/assets/Final_Outputs/{treeMapYear}/TreeMap{treeMapYear}'   # Path to input image collection
