@@ -14,7 +14,7 @@
 #########################################################
 
 # project inputs
-year <- 2022
+year <- 2020
 studyArea <- 'CONUS'
 project_name <- glue::glue("{year}_Production_newXtable")
 
@@ -119,16 +119,16 @@ foreign::write.dbf(out,
 # Delete the VRT
 file.remove(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
 
-# Reload imputation from the tif output
-rm(imputation)
-imputation <- rast(tif_out_path)
-
-# inspect RAT
-x <- cats(imputation)[[1]]
-
-str(x)
-
-activeCat(imputation) <- 0
-imputation
+# # Reload imputation from the tif output
+# rm(imputation)
+# imputation <- rast(tif_out_path)
+# 
+# # inspect RAT
+# x <- cats(imputation)[[1]]
+# 
+# str(x)
+# 
+# activeCat(imputation) <- 0
+# imputation
 
 
