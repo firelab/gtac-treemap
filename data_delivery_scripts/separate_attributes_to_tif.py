@@ -1005,7 +1005,7 @@ def get_readme_text(col_name, zip_only=True):
         readme_text = readme.read()
     
     # Insert additional text if the attributes are continuous or if they are thematic, else remove the placeholders in the .txt
-    if col_name not in discrete_cols.keys():
+    if col_name not in discrete_cols.keys() and col_name != 'TM_ID':
         readme_text = readme_text.format(
                                         outputFileName = outputFileName,
                                         projectYear = projectYear, 
@@ -1275,7 +1275,7 @@ def package_for_rdg(col_name):
     files_to_zip = [tif_file, xml_file, html_file, arcxml_file, arcstats_file]
     
     # If the attribute is not TM_ID or discrete, add arcgis + qgis symbology files to the list of files to be zipped
-    if col_name == 'TM_ID' or col_name not in discrete_cols.keys():
+    if col_name not in discrete_cols.keys() and col_name != "TM_ID":
         arc_lyrx_file = os.path.join(symbology_dir, f'{outputFileName}_{col_name}.tif.lyrx')
         qgis_qml_file = os.path.join(symbology_dir, f'{outputFileName}_{col_name}.tif.qml')
 
