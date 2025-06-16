@@ -154,6 +154,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
           Year of the product.
         |||,
         type: ee_const.var_type.int,
+        'gee:units': units.year,
       },
       {
         name: 'study_area',
@@ -161,6 +162,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
           Study area of the product.
         |||,
         type: ee_const.var_type.string,
+        'gee:units': units.dimensionless,
       },
       {
         name: 'landfire_ver',
@@ -168,6 +170,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
           Landfire version used as reference and target data for imputation.
         |||,
         type: ee_const.var_type.string,
+        'gee:units': units.dimensionless,
       },
     ],
     gsd: [30],
@@ -2430,29 +2433,30 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
       },
     ],
   },
+  'sci:doi': 'doi:10.2737/TBD_STRING',
   'sci:citation': ||| 
-    Zimmer, Scott N.; Houtman, Rachel M.; Leatherman, Lila S. T.; Housman, Ian W.; 
-    Shrestha, Abhinav; Shaw, John D.; Riley, Karin L. 2025. TreeMap 2020 CONUS: 
-    A tree-level model of the forests of the conterminous United States circa 2020. 
-    Fort Collins, CO: Forest Service Research Data Archive. 
+    Zimmer, S. N., R. M. Houtman, L. S. T. Leatherman, I. W. Housman, A. Shrestha, 
+    J. D. Shaw, K. L. Riley: 2025, TreeMap 2020 CONUS: A tree-level model of the 
+    forests of the conterminous United States circa 2020. Fort Collins, CO: Forest 
+    Service Research Data Archive. 
     [doi:10.2737/RDS-2025-TBD](TBD)
 
   |||,
    'sci:publications': [
         {
         citation: |||
-            Riley, Karin L.; Grenfell, Isaac C.; Finney, Mark A.; Shaw, John D. 2021.
-            TreeMap 2016: A tree-level model of the forests of the conterminous United 
-            States circa 2016. Fort Collins, CO: Forest Service Research Data Archive.
+            Riley, K. L., I. C. Grenfell, M. A. Finney and J. D. Shaw:  2021, TreeMap 2016: 
+            A tree-level model of the forests of the conterminous United States circa 2016. 
+            Fort Collins, CO: Forest Service Research Data Archive.
             [doi:10.2737/RDS-2021-0074](https://doi.org/10.2737/RDS-2021-0074)
         |||,
         doi:'10.2737/RDS-2021-0074',
         },
         {
         citation: |||
-            Wilson, B Tyler, Andrew J Lister, and Rachel I Riemann. 2012.
-            A Nearest-Neighbor Imputation Approach to Mapping Tree Species over Large
-            Areas Using Forest Inventory Plots and Moderate Resolution Raster Data.
+            Wilson, B T., A. J. Lister and R. I. Riemann: 2012, A Nearest-Neighbor 
+            Imputation Approach to Mapping Tree Species over Large Areas Using Forest 
+            Inventory Plots and Moderate Resolution Raster Data. 
             Forest Ecol. Manag. 271:182-198.
             [doi:10.1016/j.foreco.2012.02.002](https://doi.org/10.1016/j.foreco.2012.02.002)
         |||,
@@ -2460,10 +2464,9 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         },
         {
         citation: |||
-            Pierce, Kenneth B Jr, Janet L Ohmann, Michael C Wimberly, Matthew J Gregory, 
-            and Jeremy S Fried. 2009.
-            Mapping Wildland Fuels and Forest Structure for Land Management: A Comparison
-            of Nearest Neighbor Imputation and Other Methods.
+            Pierce, K. B. Jr., J. L. Ohmann, M. C. Wimberly, M. J. Gregory and J. S Fried: 
+            2009, Mapping Wildland Fuels and Forest Structure for Land Management: 
+            A Comparison of Nearest Neighbor Imputation and Other Methods.
             Can. J. For. Res. 39: 1901-1916.
             [doi:10.1139/X09-102](https://doi.org/10.1139/X09-102)
         |||,
@@ -2471,19 +2474,17 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         },
         {
         citation: |||
-            Ohmann, Janet L and Matthew J Gregory. 2002.
-            Predictive Mapping of Forest Composition and Structure with Direct Gradient
-            Analysis and Nearest- Neighbor Imputation in Coastal Oregon, USA.
-            Can. J. For. Res. 32:725-741.
+            Ohmann, J. L. and M. J. Gregory: 2002, Predictive Mapping of Forest Composition 
+            and Structure with Direct Gradient Analysis and Nearest- Neighbor Imputation in 
+            Coastal Oregon, USA. Can. J. For. Res. 32:725-741.
             [doi: 10.1139/X02-011](https://doi.org/10.1139/X02-011)
         |||,
         doi:'10.1139/X02-011',
         },
         {
         citation: |||
-            Forest Inventory Analysis. 2024. 
-            Forest Inventory Analysis DataMart.
-            Forest Inventory Analysis DataMart FIADB_1.9.1. 2024.
+            Forest Inventory Analysis: 2024, Forest Inventory Analysis DataMart. Forest 
+            Inventory Analysis DataMart FIADB_1.9.1. 2024.
             Accessed February 2024 at [https://apps.fs.usda.gov/fia/datamart/datamart.html](https://apps.fs.usda.gov/fia/datamart/datamart.html)
             [doi: 10.2737/DS-2001-FIADB](https://doi.org/10.2737/RDS-2001-FIADB)
         |||,
@@ -2508,15 +2509,16 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     without additional permissions or fees. If you use these data in a publication, 
     presentation, or other research product please use the appropriate citation:
 
-    Zimmer, Scott N.; Houtman, Rachel M.; Leatherman, Lila S. T.; Housman, Ian W.; 
-    Shrestha, Abhinav; Shaw, John D.; Riley, Karin L. 2025. TreeMap 2020 CONUS: 
-    A tree-level model of the forests of the conterminous United States circa 2020. 
-    Fort Collins, CO: Forest Service Research Data Archive. 
+    Zimmer, S. N., R. M. Houtman, L. S. T. Leatherman, I. W. Housman, A. Shrestha, 
+    J. D. Shaw, K. L. Riley: 2025, TreeMap 2020 CONUS: A tree-level model of the 
+    forests of the conterminous United States circa 2020. Fort Collins, CO: Forest 
+    Service Research Data Archive. 
     [doi:10.2737/RDS-2025-TBD](TBD)
 
     See [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/Catalog/RDS-2021-0074) 
     for additional information.
 
   |||,
+  'gee:status': 'incomplete',
   'gee:user_uploaded': true,
 }
