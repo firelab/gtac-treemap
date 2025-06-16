@@ -1,10 +1,10 @@
-
 //var dataset = ee.ImageCollection('projects/treemap-386222/assets/Final_Outputs/2020/TreeMap2020');
-var dataset = ee.ImageCollection('USFS/GTAC/TreeMap/v2020');
+var dataset = ee.ImageCollection('USFS/GTAC/TreeMap');
 
-var tm2022 = dataset.filterDate('2020', '2021')
-                    .filter('study_area == "CONUS"') 
-                    .first();
+var TreeMap = dataset.filter('year == "2020"') //Choose between 2020 and 2022
+                     .filter('study_area == "CONUS"') 
+                     .first();
+
 
 // 'Official' TreeMap visualization palettes
 
