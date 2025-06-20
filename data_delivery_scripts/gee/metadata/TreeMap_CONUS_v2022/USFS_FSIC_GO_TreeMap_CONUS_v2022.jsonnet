@@ -1,5 +1,6 @@
 local id = 'USFS/GTAC/TreeMap/v2022/TreeMap2022'; 
 local subdir = 'USFS';
+local version = '2022';
 
 local ee_const = import 'earthengine_const.libsonnet';
 local ee = import 'earthengine.libsonnet';
@@ -60,6 +61,8 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
 
     TreeMap v2022 was produced using the methods described in [Riley et al. (2022)](https://doi.org/10.1093/jofore/fvac022 and https://research.fs.usda.gov/treesearch/65597) but differ from TreeMap v2016 in that: 1) the climatic variables were obtained from DayMet and included precipitation, shortwave radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit; and 2) plots available for imputation in each LANDFIRE zone were limited to those plots with a tree species that were present either in the plots found within the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with Existing Vegetation Type not present in the zone but also plots with trees outside of their observed range.
 
+    The results showed good correspondence between the target LANDFIRE data and the imputed plot data, with an overall within-class agreement of 94.3% for forest cover, 99.0% for forest height, 95.6% for vegetation group, and 95.5% for disturbance code. Of 69,800 single-condition FIA plots available to Random Forest, 64,745 of these (92.7%) were utilized in the imputation to 2,687,805,994 forested pixels.
+
     
 
     **Additional Resources**
@@ -82,25 +85,6 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     Contact [sm.fs.treemaphelp@usda.gov](mailto:sm.fs.treemaphelp@usda.gov) with any
     questions or specific data requests.
 
-    * **Forest Inventory Analysis. 2024.**
-    Forest Inventory Analysis DataMart.
-    Forest Inventory Analysis DataMart FIADB_1.9.1. 2024. [https://apps.fs.usda.gov/fia/datamart/datamart.html](https://apps.fs.usda.gov/fia/datamart/datamart.html).
-
-    * **Ohmann, Janet L and Matthew J Gregory. 2002.**
-    Predictive Mapping of Forest Composition and Structure with Direct Gradient
-    Analysis and Nearest- Neighbor Imputation in Coastal Oregon, USA.
-    Can. J. For. Res. 32:725-741. [doi: 10.1139/X02-011](https://doi.org/10.1139/X02-011).
-
-    * **Pierce, Kenneth B Jr, Janet L Ohmann, Michael C Wimberly,
-    Matthew J Gregory, and Jeremy S Fried. 2009.**
-    Mapping Wildland Fuels and Forest Structure for Land Management: A Comparison
-    of Nearest Neighbor Imputation and Other Methods.
-    Can. J. For. Res. 39: 1901-1916. [doi:10.1139/X09-102](https://doi.org/10.1139/X09-102).
-
-    * **Wilson, B Tyler, Andrew J Lister, and Rachel I Riemann. 2012.**
-    A Nearest-Neighbor Imputation Approach to Mapping Tree Species over Large
-    Areas Using Forest Inventory Plots and Moderate Resolution Raster Data.
-    Forest Ecol. Manag. 271:182-198. [doi: 10.1016/j. foreco.2012.02.002](https://doi.org/10.1016/j.foreco.2012.02.002).
   |||,
   license: license.id,
   links: ee.standardLinks(subdir, id) + [
@@ -2349,16 +2333,72 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
       },
     ],
   },
-  'sci:citation': |||
-    Houtman, Rachel M.; Leatherman, Lila S. T.; Zimmer, Scott N.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D.; Riley, Karin L. 2025. TreeMap 2022 CONUS: A tree-level model of the forests of the conterminous United States circa 2022. Fort Collins, CO: Forest Service Research Data Archive. TBD https://doi.org/.
-  |||,
-  'gee:terms_of_use': |||
-    The USDA Forest Service makes no warranty, expressed or implied, including the warranties of
-    merchantability and fitness for a particular purpose, nor assumes any legal liability or
-    responsibility for the accuracy, reliability, completeness or utility of these geospatial data, or for the improper or incorrect use of these geospatial data. These geospatial data and related maps or graphics are not legal documents and are not intended to be used as such. The data and maps may not be used to determine title, ownership, legal descriptions or boundaries, legal jurisdiction, or restrictions that may be in place on either public or private land. Natural hazards may or may not be depicted on the data and maps, and land users should exercise due caution. The data are dynamic and may change over time. The user is responsible to verify the limitations of the geospatial data and to use the data accordingly.
+  'sci:citation': ||| 
+    Houtman, Rachel M.; Leatherman, Lila S. T.; Zimmer, Scott N.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D.; Riley, Karin L. 2025. TreeMap 2022 CONUS: A tree-level model of the forests of the conterminous United States circa 2022. Fort Collins, CO: Forest Service Research Data Archive. 
+    [doi:10.2737/RDS-2025-TBD](TBD)
 
-    These data were collected using funding from the U.S. Government and can be used
-    without additional permissions or fees. If you use these data in a publication, presentation, or other research product please use the appropriate citation.
+  |||,
+   'sci:publications': [
+        {
+        citation: |||
+            Riley, Karin L.; Grenfell, Isaac C.; Finney, Mark A.; Shaw, John D. 2021.
+            TreeMap 2016: A tree-level model of the forests of the conterminous United States 
+            circa 2016. Fort Collins, CO: Forest Service Research Data Archive.
+            [doi:10.2737/RDS-2021-0074](https://doi.org/10.2737/RDS-2021-0074)
+        |||,
+        doi:'10.2737/RDS-2021-0074',
+        },
+        {
+        citation: |||
+            Wilson, B Tyler, Andrew J Lister, and Rachel I Riemann. 2012.
+            A Nearest-Neighbor Imputation Approach to Mapping Tree Species over Large
+            Areas Using Forest Inventory Plots and Moderate Resolution Raster Data.
+            Forest Ecol. Manag. 271:182-198.
+            [doi:10.1016/j.foreco.2012.02.002](https://doi.org/10.1016/j.foreco.2012.02.002)
+        |||,
+        doi:'10.1016/j.foreco.2012.02.002',
+        },
+        {
+        citation: |||
+            Pierce, Kenneth B Jr, Janet L Ohmann, Michael C Wimberly, Matthew J Gregory, 
+            and Jeremy S Fried. 2009.
+            Mapping Wildland Fuels and Forest Structure for Land Management: A Comparison
+            of Nearest Neighbor Imputation and Other Methods.
+            Can. J. For. Res. 39: 1901-1916.
+            [doi:10.1139/X09-102](https://doi.org/10.1139/X09-102)
+        |||,
+        doi:'10.1139/X09-102',
+        },
+        {
+        citation: |||
+            Ohmann, Janet L and Matthew J Gregory. 2002.
+            Predictive Mapping of Forest Composition and Structure with Direct Gradient
+            Analysis and Nearest- Neighbor Imputation in Coastal Oregon, USA.
+            Can. J. For. Res. 32:725-741.
+            [doi: 10.1139/X02-011](https://doi.org/10.1139/X02-011)
+        |||,
+        doi:'10.1139/X02-011',
+        },
+        {
+        citation: |||
+            Forest Inventory Analysis. 2024. 
+            Forest Inventory Analysis DataMart.
+            Forest Inventory Analysis DataMart FIADB_1.9.1. 2024.
+            Accessed February 2024 at [https://apps.fs.usda.gov/fia/datamart/datamart.html](https://apps.fs.usda.gov/fia/datamart/datamart.html)
+            [doi: 10.2737/DS-2001-FIADB](https://doi.org/10.2737/RDS-2001-FIADB)
+        |||,
+        doi:'10.2737/DS-2001-FIADB',
+        },
+   ],
+  'gee:terms_of_use': |||
+    The USDA Forest Service makes no warranty, expressed or implied, including the warranties of merchantability and fitness for a particular purpose, nor assumes any legal liability or responsibility for the accuracy, reliability, completeness or utility of these geospatial data, or for the improper or incorrect use of these geospatial data. These geospatial data and related maps or graphics are not legal documents and are not intended to be used as such. The data and maps may not be used to determine title, ownership, legal descriptions or boundaries, legal jurisdiction, or restrictions that may be in place on either public or private land. Natural hazards may or may not be depicted on the data and maps, and land users should exercise due caution. The data are dynamic and may change over time. The user is responsible to verify the limitations of the geospatial data and to use the data accordingly.
+
+    These data were collected using funding from the U.S. Government and can be used without additional permissions or fees. If you use these data in a publication, presentation, or other research product please use the appropriate citation:
+
+    Houtman, Rachel M.; Leatherman, Lila S. T.; Zimmer, Scott N.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D.; Riley, Karin L. 2025. TreeMap 2022 CONUS: A tree-level model of the forests of the conterminous United States circa 2022. Fort Collins, CO: Forest Service Research Data Archive. [doi:10.2737/RDS-2025-TBD](TBD)
+
+    See [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/Catalog/RDS-2021-0074) for additional information.
+
   |||,
   'gee:user_uploaded': true,
 }
