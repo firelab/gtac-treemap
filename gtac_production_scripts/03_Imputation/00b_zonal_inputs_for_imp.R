@@ -116,7 +116,7 @@ eval_dir <- glue::glue("{eval_dir}{cur_zone_zero}")
 tile_dir <- glue::glue("{raw_outputs_dir}raster/tiles/")
 model_dir = glue::glue("{raw_outputs_dir}/model/")
 
-evt_gp_remap_table_path = glue::glue("{evt_gp_remap_table_dir}/{cur_zone_zero}/evt_gp_remap.csv")
+evt_gp_remap_table_path = glue::glue("{evt_gp_remap_table_dir}/{cur_zone_zero}/evt_gp_remap_table.csv")
 params_dir = glue::glue("{raw_outputs_dir}/params/")
 
 

@@ -12,9 +12,9 @@ year_input <- 2023
 
 
 # manually list zones
-zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-                seq(from = 12, to = 66, by = 1),
-                98, 99)
+zones_list <- #c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
+               c(seq(from = 12, to = 66, by = 1),
+               98, 99)
 
 #zones_list <- c(1,10)
 
@@ -30,6 +30,7 @@ zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone
 # Types of evaluation to run and prepare reports for 
 # Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
 eval_type_list <- c("model_eval", "TargetLayerComparison", "CV")
+#eval_type_list <- c("CV")
 
 # Export evaluation report stats (parameters, metrics, and accuracies) 
 exportEvalReportStats <- TRUE # TRUE or FALSE
@@ -38,10 +39,11 @@ exportEvalReportStats <- TRUE # TRUE or FALSE
 skip_Imputation <- FALSE
 
 # RUN EVAL REPORT GENERATION ONLY (skips evaluation script -- assumes eval RDS is already saved in zone folder)
-skip_Evaluation <- TRUE
+skip_Evaluation <- FALSE
 
 # Skip additional layer assembly - optional
 skip_Assembly <- TRUE
+
 # Script inputs - changed less frequently 
 ########################################################
 

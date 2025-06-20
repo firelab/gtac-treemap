@@ -12,7 +12,7 @@
 year <- year_input
 
 #project_name <- glue::glue("{year}_Production")
-project_name <- glue::glue("{year}_Production_newXtable")
+project_name <- glue::glue("{year}_Production")
 
 # name for products - includes params here if desired
 #e.g., #output_name <- "2016_GTAC_LCMSDist"
@@ -52,11 +52,11 @@ targetvars <- c("elevation", "easting", "northing",
   
 
 # list names of attribute vars to evaluate - these come from RAT table or similar; are not included in imputation
-attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
-                   "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
-                   "TPA_DEAD", "TPA_LIVE") # 2016 version
+# attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
+#                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
+#                    "TPA_DEAD", "TPA_LIVE") # 2016 version
 
-attributevars <- c("BALIVE", "GSSTKCD", "QMD", "SDIsum",	"CANOPYPCT",
+attributevars <- c("BALIVE", "GSSTK", "QMD", "SDIsum",	"CANOPYPCT",
                    "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
                    "TPA_DEAD", "TPA_LIVE")	# 2020/2022 version
 
@@ -81,7 +81,7 @@ xtable_dir <- glue::glue("{home_dir}/03_Outputs/06_Reference_Data/{ref_data_vers
 
 # Raster Attribute Table used in validation for attribute vars
 #rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
-rat_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}RAT_tmid.csv")
+rat_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}_RAT_tmid.csv")
 
 # path to zone metadata
 zone_metadata_path <- glue::glue('{home_dir}/01_Data/02_Landfire/metadata/LF_zones_all_byStudyArea.csv')
@@ -112,7 +112,7 @@ lf_zones_path_HI <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/h
 
 
 # Directory where target rasters live
-target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/post_mask/")
+target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/masked/")
 
 # Directory where disturbance layers live 
 dist_raster_dir <- target_dir 
