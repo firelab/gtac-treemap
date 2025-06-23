@@ -1,5 +1,5 @@
 # packages required
-list.of.packages <- c("terra", "tidyverse", "magrittr", "glue", "tictoc", "foreach", "doParallel", "this.path", "shiny", "rsconnect", "bslib", "data.table", "DT", "plotly")
+list.of.packages <- c("terra", "tidyverse", "magrittr", "glue", "tictoc", "foreach", "doParallel", "this.path", "shiny", "rsconnect", "bslib", "data.table", "DT", "plotly", "lazyeval")
 
 # #check for packages and install if needed
 new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
@@ -41,12 +41,12 @@ get_xTableRow <<- function(lookUp_Zone=NULL, lookUp_TM_ID=NULL, xTable_df=NULL){
 
 # NOTE code assumes X table csv is in the app folder (copy csv from NAS drive //166.2.126.25/TreeMap/07_Documentation/01_Validation/02_Eval_tools/)
 
-xtable_path <- file.path(getwd(), "X_table_v2022_allZones.csv")
+xtable_path <- file.path(getwd(), "X_table_v2023_allZones.csv")
 if (!file.exists(xtable_path)){
   cat("\n")
   cat("\n")
   message("!-----------------------------------------------------------------------------------------------------------------------!")
-  message("! X_table_v2022_allZones.csv is not present in app directory. Please move the file to app directory and re-run the app. !")
+  message(glue::glue("! {xtable_path} is not present in app directory. Please move the file to app directory and re-run the app. !"))
   message("!-----------------------------------------------------------------------------------------------------------------------!")
   cat("\n")
   cat("\n")
