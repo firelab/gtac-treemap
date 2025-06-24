@@ -98,6 +98,8 @@ This EVC layer is used as a preliminary forest mask.
 
 - Table of reclassed evt groups
 
+- For each zone, we then remap EVT_GP to a number from 1 - n(EVT_GPs) in the zone, to account for our imputation / classification algorithm only accepting a finite number of classes in a classification scheme. (Is this right?)
+
 #### EVT_GP as final mask
 
 We then treat the EVT_Gp layer as the final, forest mask for all target layers. the Topographic, vegetation, and Climate layers all have this mask applied and we ensure that it aligns for each zone
@@ -116,7 +118,7 @@ We then treat the EVT_Gp layer as the final, forest mask for all target layers. 
 - Download data from Daymet using daymet R package
 - Calculate 30-year normals
 - Reproject and resample to 30m
-- Compare valid pixels in DayMet to EVT_GP / mask layer; if they don't have the same number, apply a focal width to make sure the pixel #s match
+- Compare valid pixels in DayMet to EVT_GP / mask layer; if they don't have the same number, apply a focal width to make sure the pixel #s match so that we don't end up with holes in the DayMet layers; we need all target layers to have data at all pixels otherwise we are unable to predict to all pixels 
     - Expand on this a bit
 
 ### Disturbance Layer Prep
@@ -127,6 +129,7 @@ We then treat the EVT_Gp layer as the final, forest mask for all target layers. 
 
 ### Target Layer post-processing
 
+- Compare all target layers for each zone to ensure that each layer has the same number of pixels and there are no holes or missing data 
 - Create national-scale tifs of each variable
 
 ### Reference data post-processing
@@ -173,5 +176,12 @@ Changes from 2016 method:
 - Drop any plots with that have EVT_GPs that are present in <0.3% of plots: these EVT_GPs are too rare to be represented in cross-validation
 
 ## National Evaluation
+- Calculate total # of available plots
+- Calculate total # of imputed plots
+- Calculate percent of available plots imputed
+- Calculate total # of forested pixels
+
+- Calculate accuracy for response variables (EVT, EVC, EVH, disturb code)
+    - average zonal accuracies 
 
 ### 
