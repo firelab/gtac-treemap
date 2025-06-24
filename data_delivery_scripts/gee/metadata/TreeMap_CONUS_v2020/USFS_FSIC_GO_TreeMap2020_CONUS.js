@@ -42,7 +42,7 @@ var layers = [
   {band: 'CARBON_DWN',        min: 0,   max: 15,    palette: palettes.lajolla,    name: 'Carbon, Down Dead (tons/acre)',                            shown: false},
   {band: 'CARBON_D',          min: 0,   max: 10,    palette: palettes.lajolla,    name: 'Carbon, Standing Dead (tons/acre)',                        shown: false},
   {band: 'CANOPYPCT',         min: 0,   max: 100,   palette: palettesR.bamako_r,  name: 'Live Canopy Cover (%)',                                    shown: false},
-  {band: 'BALIVE',            min: 24,  max: 217,   palette: palettesR.bamako_r,  name: 'Live Tree Basal Area (ft²)',                               shown: false},
+  {band: 'BALIVE',            min: 24,  max: 217,   palette: palettesR.bamako_r,  name: 'Live Tree Basal Area (ft²/acre)',                               shown: false},
   {band: 'ALSTK',             min: 0,   max: 100,   palette: palettesR.bamako_r,  name: 'All-Live-Tree Stocking (%)',                               shown: false}
   ];
 
