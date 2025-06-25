@@ -1,8 +1,10 @@
-var datasetPath = 'projects/treemap-386222/assets/Final_Outputs/2020/TreeMap2020';
-//var datasetPath = 'USFS/GTAC/TreeMap';
+var year = '2020';
+
+var datasetPath = 'projects/treemap-386222/assets/Final_Outputs/' + year + '/TreeMap' + year;
+//var datasetPath = 'USFS/GTAC/TreeMap/v2020';
 
 var dataset = ee.ImageCollection(datasetPath);
-var image = dataset.filter('year == "2020"') //Options are 2020 and 2022
+var image = dataset.filter(ee.Filter.eq('year', year))
                     .filter('study_area == "CONUS"') 
                     .select('FLDTYPCD')
                     .first();
