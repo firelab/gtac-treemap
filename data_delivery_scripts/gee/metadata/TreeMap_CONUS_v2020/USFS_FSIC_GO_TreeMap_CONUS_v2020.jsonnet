@@ -93,7 +93,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
       is a web-based application that provides users the ability to view and
       download TreeMap attribute data.
 
-    * The [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/Catalog/RDS-2021-0074) 
+    * The [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/catalog/RDS-2025-0031) 
       for the full dataset download, metadata, and support documents.
 
     * [TreeMap Raster Data Gateway](https://data.fs.usda.gov/geodata/rastergateway/treemap/)
@@ -141,7 +141,8 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     'vegetation'
   ],
   providers: [
-    ee.producer_provider('USDA Forest Service (USFS)  Field Services and Innovation Center – Geospatial Office (FSIC-GO)', 'https://data.fs.usda.gov/geodata/rastergateway/treemap/'),
+    ee.producer_provider('USDA Forest Service (USFS)  Field Services and Innovation 
+    Center – Geospatial Office (FSIC-GO)', 'https://data.fs.usda.gov/geodata/rastergateway/treemap/'),
     ee.host_provider(self_ee_catalog_url),
   ],
   extent: ee.extent(-128.97722, 22.76862, -65.25445, 51.64968,
@@ -2433,13 +2434,13 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
       },
     ],
   },
-  'sci:doi': 'doi:10.2737/TBD_STRING',
+  'sci:doi': 'doi:10.2737/RDS-2025-0031',
   'sci:citation': ||| 
     Zimmer, S. N., R. M. Houtman, L. S. T. Leatherman, I. W. Housman, A. Shrestha, 
     J. D. Shaw, K. L. Riley: 2025, TreeMap 2020 CONUS: A tree-level model of the 
     forests of the conterminous United States circa 2020. Fort Collins, CO: Forest 
     Service Research Data Archive. 
-    [doi:10.2737/RDS-2025-TBD](TBD)
+    [doi:10.2737/RDS-2025-0031](https://doi.org/10.2737/RDS-2025-0031)
 
   |||,
    'sci:publications': [
@@ -2513,9 +2514,9 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     J. D. Shaw, K. L. Riley: 2025, TreeMap 2020 CONUS: A tree-level model of the 
     forests of the conterminous United States circa 2020. Fort Collins, CO: Forest 
     Service Research Data Archive. 
-    [doi:10.2737/RDS-2025-TBD](TBD)
+    [doi:10.2737/RDS-2025-0031](https://doi.org/10.2737/RDS-2025-0031)
 
-    See [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/Catalog/RDS-2021-0074) 
+    See [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/catalog/RDS-2025-0031) 
     for additional information.
 
   |||,
