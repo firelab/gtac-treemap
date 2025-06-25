@@ -1,10 +1,9 @@
-
 //var dataset = ee.ImageCollection('projects/treemap-386222/assets/Final_Outputs/2022/TreeMap2022');
 var dataset = ee.ImageCollection('USFS/GTAC/TreeMap/v2022');
 
-var tm2022 = dataset.filterDate('2022', '2023')
-                    .filter('study_area == "CONUS"') 
-                    .first();
+var TreeMap = dataset.filter('year == "2022"')
+                     .filter('study_area == "CONUS"') 
+                     .first();
 
 // 'Official' TreeMap visualization palettes
 
@@ -42,7 +41,7 @@ var layers = [
   {band: 'CARBON_DWN',        min: 0,   max: 15,    palette: palettes.lajolla,    name: 'Carbon, Down Dead (tons/acre)',                            shown: false},
   {band: 'CARBON_D',          min: 0,   max: 10,    palette: palettes.lajolla,    name: 'Carbon, Standing Dead (tons/acre)',                        shown: false},
   {band: 'CANOPYPCT',         min: 0,   max: 100,   palette: palettesR.bamako_r,  name: 'Live Canopy Cover (%)',                                    shown: false},
-  {band: 'BALIVE',            min: 24,  max: 217,   palette: palettesR.bamako_r,  name: 'Live Tree Basal Area (ft²/acre)',                               shown: false},
+  {band: 'BALIVE',            min: 24,  max: 217,   palette: palettesR.bamako_r,  name: 'Live Tree Basal Area (ft²/acre)',                          shown: false},
   {band: 'ALSTK',             min: 0,   max: 100,   palette: palettesR.bamako_r,  name: 'All-Live-Tree Stocking (%)',                               shown: false}
   ];
 
@@ -52,7 +51,7 @@ var layers = [
 // Load all attributes to the map with their corresponding visualization parameters
 
 layers.forEach(function(layer){
-  var image = tm2022.select(layer.band);
+  var image = TreeMap.select(layer.band);
   var vis = {};
   if (layer.min === undefined) {
     Map.addLayer(image.randomVisualizer(), {}, layer.band + ': ' + layer.name, layer.shown);

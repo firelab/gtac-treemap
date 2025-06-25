@@ -1,10 +1,9 @@
 //var dataset = ee.ImageCollection('projects/treemap-386222/assets/Final_Outputs/2020/TreeMap2020');
-var dataset = ee.ImageCollection('USFS/GTAC/TreeMap');
+var dataset = ee.ImageCollection('USFS/GTAC/TreeMap/v2020');
 
-var TreeMap = dataset.filter('year == "2020"') //Choose between 2020 and 2022
+var TreeMap = dataset.filter('year == "2020"')
                      .filter('study_area == "CONUS"') 
                      .first();
-
 
 // 'Official' TreeMap visualization palettes
 
@@ -33,7 +32,7 @@ var layers = [
   {band: 'TPA_LIVE',          min: 252, max: 1666,  palette: palettesR.bamako_r,  name: 'Live Trees Per Acre',                                      shown: false},
   {band: 'TPA_DEAD',          min: 38,  max: 126,   palette: palettes.bamako,     name: 'Dead Trees Per Acre',                                      shown: false},
   {band: 'STANDHT',           min: 23,  max: 194,   palette: palettesR.bamako_r,  name: 'Height of Dominant Trees (ft)',                            shown: false},
-  {band: 'SDIsum',            min: 30,  max: 460,   palette: palettesR.bamako_r,  name: 'Sum of Stand Density Index',                            shown: false},
+  {band: 'SDIsum',            min: 30,  max: 460,   palette: palettesR.bamako_r,  name: 'Sum of Stand Density Index',                               shown: false},
   {band: 'QMD',               min: 2,   max: 25,    palette: palettesR.bamako_r,  name: 'Stand Quadratic Mean Diameter (in)',                       shown: false},
   {band: 'GSSTK',             min: 0,   max: 100,   palette: palettesR.bamako_r,  name: 'Growing-Stock Stocking (%)',                               shown: false},
   {band: 'DRYBIO_L',          min: 4,   max: 118,   palette: palettesR.lajolla_r, name: 'Dry Live Tree Biomass, Above Ground (tons/acre)',          shown: false},
@@ -42,7 +41,7 @@ var layers = [
   {band: 'CARBON_DWN',        min: 0,   max: 15,    palette: palettes.lajolla,    name: 'Carbon, Down Dead (tons/acre)',                            shown: false},
   {band: 'CARBON_D',          min: 0,   max: 10,    palette: palettes.lajolla,    name: 'Carbon, Standing Dead (tons/acre)',                        shown: false},
   {band: 'CANOPYPCT',         min: 0,   max: 100,   palette: palettesR.bamako_r,  name: 'Live Canopy Cover (%)',                                    shown: false},
-  {band: 'BALIVE',            min: 24,  max: 217,   palette: palettesR.bamako_r,  name: 'Live Tree Basal Area (ft²/acre)',                               shown: false},
+  {band: 'BALIVE',            min: 24,  max: 217,   palette: palettesR.bamako_r,  name: 'Live Tree Basal Area (ft²/acre)',                          shown: false},
   {band: 'ALSTK',             min: 0,   max: 100,   palette: palettesR.bamako_r,  name: 'All-Live-Tree Stocking (%)',                               shown: false}
   ];
 
@@ -52,7 +51,7 @@ var layers = [
 // Load all attributes to the map with their corresponding visualization parameters
 
 layers.forEach(function(layer){
-  var image = tm2022.select(layer.band);
+  var image = TreeMap.select(layer.band);
   var vis = {};
   if (layer.min === undefined) {
     Map.addLayer(image.randomVisualizer(), {}, layer.band + ': ' + layer.name, layer.shown);
