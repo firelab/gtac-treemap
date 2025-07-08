@@ -9,58 +9,87 @@ library(magrittr)
 #make %notin% function
 `%notin%` <- Negate('%in%')
 
-treemap <- rast("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
 
-treemap
+# ORIGINAL: get forest types from raster attribute table
+##########################################################
 
-#list all categories
-names(cats(treemap)[[1]])
+# treemap <- rast("//166.2.126.25/TreeMap/01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
+# 
+# dat <- treemap 
 
-activeCat(treemap)
+# #list all categories
+# names(cats(dat)[[1]])
+# 
+# activeCat(dat)
+# 
+# 
+# #get FORTYPCD
+# activeCat(dat) <- 2 # FORTYPCD
+# fortypcd <- levels(dat)[[1]][,2]
+# 
+# #get FORTYPNAME
+# activeCat(dat) <- 3 #ForTypName
+# fortypname<- levels(dat)[[1]][,2]
+# 
+# #get FLTYPCD
+# activeCat(dat) <- 4 # FldTypCD
+# fldtypcd <- levels(dat)[[1]][,2]
+# 
+# #get FLDTYPNAME
+# activeCat(dat) <- 5 # FldTypName
+# fldtypname <- levels(dat)[[1]][,2]
+# 
+# #get unique values for each
+# fortyp_table <- data.frame(fortypcd, fortypname)
+# fortyp_table <- unique(fortyp_table) %>%
+#   arrange(fortypcd)
+# 
+# # get unique values for each
+# fldtyp_table <- data.frame(fldtypcd, fldtypname)
+# fldtyp_table <- unique(fldtyp_table) %>%
+#   arrange(fldtypcd)
+# 
+# #look at correspondence
+# unique_names_fortyp <- fortyp_table$fortypname[fortyp_table$fortypname %notin% fldtyp_table$fldtypname]
+# unique_names_fortyp
+# 
+# unique_names_fldtyp <- fldtyp_table$fldtypname[fldtyp_table$fldtypname %notin% fortyp_table$fortypname]
+# unique_names_fldtyp
+# 
+# 
+# #get full table of all types in both
+# all_typ_table <- data.frame(code = c(fortyp_table$fortypcd, fldtyp_table$fldtypcd),
+#                             names = c(fortyp_table$fortypname, fldtyp_table$fldtypname))
+# all_typ_table <- unique(all_typ_table)
+
+# UPDATED: USE FOREST TYPE TABLE FROM FIA DATABASE
+###################################################
+
+forest_types <- read.csv("//166.2.126.25/TreeMap/01_Data/04_FIA/05_FIA_DataMart/CSV/FIADB_REFERENCE/REF_FOREST_TYPE.csv")
+
+dat <- forest_types
+
+all_typ_table <- dat
+
+all_typ_table %<>% 
+  dplyr::rename("code" = VALUE,
+                "names" = MEANING) %>%
+  dplyr::select(code, name) %>%
+  dplyr::filter(!str_detect(name, "retired"))
 
 
-#get FORTYPCD
-activeCat(treemap) <- 2 # FORTYPCD
-fortypcd <- levels(treemap)[[1]][,2]
+# inspect
+all_typ_table %>%
+  arrange(name)
 
-#get FORTYPNAME
-activeCat(treemap) <- 3 #ForTypName
-fortypname<- levels(treemap)[[1]][,2]
-
-#get FLTYPCD
-activeCat(treemap) <- 4 # FldTypCD
-fldtypcd <- levels(treemap)[[1]][,2]
-
-#get FLDTYPNAME
-activeCat(treemap) <- 5 # FldTypName
-fldtypname <- levels(treemap)[[1]][,2]
-
-#get unique values for each
-fortyp_table <- data.frame(fortypcd, fortypname)
-fortyp_table <- unique(fortyp_table) %>%
-  arrange(fortypcd)
-
-# get unique values for each
-fldtyp_table <- data.frame(fldtypcd, fldtypname)
-fldtyp_table <- unique(fldtyp_table) %>%
-  arrange(fldtypcd)
-
-#look at correspondence
-unique_names_fortyp <- fortyp_table$fortypname[fortyp_table$fortypname %notin% fldtyp_table$fldtypname]
-unique_names_fortyp
-
-unique_names_fldtyp <- fldtyp_table$fldtypname[fldtyp_table$fldtypname %notin% fortyp_table$fortypname]
-unique_names_fldtyp
-
-
-#get full table of all types in both
-all_typ_table <- data.frame(code = c(fortyp_table$fortypcd, fldtyp_table$fldtypcd),
-                            names = c(fortyp_table$fortypname, fldtyp_table$fldtypname))
-all_typ_table <- unique(all_typ_table)
+all_typ_table %>%
+  arrange(code)
 
 # sort
 all_typ_table %<>% dplyr::arrange(code)
 
+# GET COLORS
+#####################################################################
   
 # get colors - random colors
 n <- nrow(all_typ_table)
@@ -83,7 +112,7 @@ all_typ_table_Json <- toJSON(all_typ_table)
 write(all_typ_table_Json, 
       "C:/Users/lleatherman/OneDrive - USDA/Documents/GitHub/gtac-treemap/gee_viz_setup_scripts/forest_type_palette_lookup.json")
 write(all_typ_table_Json,
-      "C:/Users/lleatherman/Documents/GitHub/lcms-viewer/js/forest_type_palette_lookup.json")
+      "C:/Users/lleatherman/Documents/GitHub/GTAC-LCMS-Viewer/src/data/geojson/forest_type_palette_lookup_20250708.json")
 
 
 #######################################################################
