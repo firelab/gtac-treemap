@@ -12,7 +12,7 @@ year_input <- 2023
 study_area <- "CONUS"
 
 # which zone to start on?
-lf_zone_num_start <- 2
+lf_zone_num_start <- 1
 
 ################################################################
 # Load Library
@@ -33,7 +33,6 @@ source(lib_path)
 # LOAD DATA
 ###################################################
 
-#source(project_inputScript <- glue::glue("{this_dir}/00a_project_inputs_for_targetdata.R"))
 targetDataProjectInputs(year_input = year_input,
                         study_area = study_area)
 
@@ -47,9 +46,15 @@ lf_zone_nums<- sort(lf_zones$ZONE_NUM)
 z = which(lf_zone_num_start==lf_zone_nums)[1] # get index of starting zone
 lf_zone_nums <- lf_zone_nums[z:length(lf_zone_nums)] # list zones to run
 
+# create data frame to hold outputs
+layer_info_all <- data.frame()
+
+# create directory where that data frame will be saved
+dir.create(glue::glue("{target_dir}/eval/layer_pixel_counts/"))
+
 for(zone_input in lf_zone_nums){
  
-  #zone_input = 1 # for testing
+  #zone_input = 19 # for testing
   zone_num = zone_input
   
 
@@ -66,6 +71,7 @@ for(zone_input in lf_zone_nums){
   layer_info = data.frame(layer_fns)
   layer_info$name = NA
   layer_info$numpx = NA
+  layer_info$zone = zone_input
   
   # get layer names from fnames using regex / gsub
     for (i in seq_along(layer_info$layer_fns)) {
@@ -82,7 +88,7 @@ for(zone_input in lf_zone_nums){
   # loop over each layer
   for (i in seq_along(names(target_stack))){
     
-    # count px in each tif and append to data fra,e
+    # count px in each tif and append to data frae
     r <- target_stack[[i]]
     layer_info$numpx[[i]] <- length(values(r, na.rm=T))
     
@@ -90,13 +96,19 @@ for(zone_input in lf_zone_nums){
   
   gc()
   
+  # bind with data frame
+  layer_info_all <- rbind(layer_info_all, layer_info)
+  
+  # write out to file
+  write.csv(layer_info_all, glue::glue('{target_dir}/eval/layer_pixel_counts/px_counts.csv'), row.names = FALSE)
+  
   # look at data frame; report out if any layers don't have the same # of px   
   
   if(n_distinct(layer_info$numpx) == 1) {
     print(glue::glue("zone {zone_input} - all target layers have the same number of px"))
   } else if(n_distinct(layer_info$numpx > 1)){
     print(layer_info)
-    stop(glue::glue("zone {zone_input} - target layers have different numbers of pixels, see table"))
+    print(glue::glue("zone {zone_input} - target layers have different numbers of pixels, see table"))
     
 
   }

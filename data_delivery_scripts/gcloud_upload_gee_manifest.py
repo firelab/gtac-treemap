@@ -16,9 +16,13 @@ from osgeo import gdal
 #################################################
 
 # Year of the dataset and associated landfire version
-year = '2020'
+year = '2022'
 study_area = 'CONUS'
-landfire_ver = '2.0.0'
+
+if year == '2020':
+    landfire_ver = '2.2.0'
+else: 
+    landfire_ver = '2.3.0'
 
 # The folder in which to look for images, and the format of the file names to select
 image_folder = rf'\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute_Rasters\{year}'
@@ -38,28 +42,28 @@ gee_image_name = f'TreeMap{year}_{study_area}'
 
 # pyramidPolicy lookup for attributes
 pyramidPolicy_lookup = {
-    'FORTYPCD': 'MODE',
-    'FLDTYPCD':'MODE',
-    'STDSZCD':'MODE',
-    'FLDSZCD':'MODE',
-    'BALIVE':'MEAN',
-    'CANOPYPCT':'MEAN',
-    'STANDHT':'MEAN',
-    'ALSTK':'MEAN',
-    'GSSTK':'MEAN',
-    'QMD':'MEAN',
-    'SDIsum':'MEAN',
-    'TPA_LIVE':'MEAN',
-    'TPA_DEAD':'MEAN',
-    'VOLCFNET_L':'MEAN',
-    'VOLCFNET_D':'MEAN',
-    'VOLBFNET_L':'MEAN',
-    'DRYBIO_L':'MEAN',
-    'DRYBIO_D':'MEAN',
-    'CARBON_L':'MEAN',
-    'CARBON_D':'MEAN',
-    'CARBON_DOWN_DEAD':'MEAN',
-    'TREEMAP_ID' : 'MODE'
+    'FORTYPCD': 'MODE',         #Nominal attribute
+    'FLDTYPCD':'MODE',          #Nominal attribute
+    'STDSZCD':'MODE',           #Ordinal attribute
+    'FLDSZCD':'MODE',           #Ordinal attribute
+    'BALIVE':'MEAN',            #Continuous attributes
+    'CANOPYPCT':'MEAN',         #Continuous attributes
+    'STANDHT':'MEAN',           #Continuous attributes
+    'ALSTK':'MEAN',             #Continuous attributes
+    'GSSTK':'MEAN',             #Continuous attributes
+    'QMD':'MEAN',               #Continuous attributes
+    'SDIsum':'MEAN',            #Continuous attributes
+    'TPA_LIVE':'MEAN',          #Continuous attributes
+    'TPA_DEAD':'MEAN',          #Continuous attributes
+    'VOLCFNET_L':'MEAN',        #Continuous attributes
+    'VOLCFNET_D':'MEAN',        #Continuous attributes
+    'VOLBFNET_L':'MEAN',        #Continuous attributes
+    'DRYBIO_L':'MEAN',          #Continuous attributes
+    'DRYBIO_D':'MEAN',          #Continuous attributes
+    'CARBON_L':'MEAN',          #Continuous attributes
+    'CARBON_D':'MEAN',          #Continuous attributes
+    'CARBON_DWN':'MEAN',        #Continuous attributes
+    'TM_ID' : 'MODE'            #Nominal attribute
 }
 
 # Properties for the image collection
@@ -105,7 +109,7 @@ for image in glob(os.path.join(image_folder, name_format)):
 #################################################
 # Main process: create collection and upload
 #################################################
-#%%
+
 # Create the image collection in EE assets
 aml.create_image_collection(f'{gee_folder}/{gee_image_collection_name}', image_collection_properties)
 
@@ -117,6 +121,5 @@ aml.uploadToGEEAssetImagesAsBands(
     overwrite=False,
     properties=image_properties
     )
-
 
 

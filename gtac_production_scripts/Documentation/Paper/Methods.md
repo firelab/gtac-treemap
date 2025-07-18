@@ -94,9 +94,15 @@ This EVC layer is used as a preliminary forest mask.
 - Fix: Limit plots available for imputation in each zone to those plots with species that are present in the zone being imputed, or any of the landfire zones that border the zone being imputed. 
 - Insert a map of landfire zones for context
 - Example: If we are imputing Landfire zone 1, (PNW, North Cascades). Within zone 1 and its bordering zones, say 18 EVT groups are present. Only plots that contain one of those 18 EVT groups will be included in the zone-specific x-table for that zone.
-- This also requires that every EVT group in a zone is present in both the Landfire EVT layer and the X table. If there are any EVT gps that re not present in either dataset, the unmatched EVT groups are reclassified to nearest-matching appropriate groups based on expert opinion. 
+- This also requires that every EVT group in a zone is present in both the Landfire EVT layer and the X table. If there are any EVT gps that are not present in either dataset, the unmatched EVT groups are reclassified to nearest-matching appropriate groups based on expert opinion. 
 
-- Table of reclassed evt groups, for final mask and reclass stage
+- Table of reclassed evt groups
+
+- For each zone, we then remap EVT_GP to a number from 1 - n(EVT_GPs) in the zone, to account for our imputation / classification algorithm only accepting a finite number of classes in a classification scheme. (Is this right?)
+
+#### EVT_GP as final mask
+
+We then treat the EVT_Gp layer as the final, forest mask for all target layers. the Topographic, vegetation, and Climate layers all have this mask applied and we ensure that it aligns for each zone
 
 ### Climate Layer Prep
 - List of climate vars: 
@@ -110,15 +116,25 @@ This EVC layer is used as a preliminary forest mask.
   
 
 - Download data from Daymet using daymet R package
+- Calculate 30-year normals
+- Reproject and resample to 30m
+- Compare valid pixels in DayMet to EVT_GP / mask layer; if they don't have the same number, apply a focal width to make sure the pixel #s match so that we don't end up with holes in the DayMet layers; we need all target layers to have data at all pixels otherwise we are unable to predict to all pixels 
+    - Expand on this a bit
 
 ### Disturbance Layer Prep
 
 - Changes from 2016 (or 2014) method: NA
 - FSIC GO refactored code to make it more modular
+- Calc disturbance as years since disturbance and disturbance code (0, 1, 2)
 
-### Final masking
-- Each zone is applied a tree mask. TreeMask is derived from EVC > 10% tree
-- Fill holes in DayMet data
+### Target Layer post-processing
+
+- Compare all target layers for each zone to ensure that each layer has the same number of pixels and there are no holes or missing data 
+- Create national-scale tifs of each variable
+
+### Reference data post-processing
+
+- Compare variable distribution between reference data and target data to make sure that we're at least in the same order of magnitude; a gut check 
 
 ## Imputation
 
@@ -160,5 +176,12 @@ Changes from 2016 method:
 - Drop any plots with that have EVT_GPs that are present in <0.3% of plots: these EVT_GPs are too rare to be represented in cross-validation
 
 ## National Evaluation
+- Calculate total # of available plots
+- Calculate total # of imputed plots
+- Calculate percent of available plots imputed
+- Calculate total # of forested pixels
+
+- Calculate accuracy for response variables (EVT, EVC, EVH, disturb code)
+    - average zonal accuracies 
 
 ### 
