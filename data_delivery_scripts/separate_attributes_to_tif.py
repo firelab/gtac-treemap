@@ -78,7 +78,7 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
 # Specify output folder - will be created if it doesn't already exist
-outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)
+outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/3/"
 
 # Name of TreeMap ID column in Raster Attribute Table
 tmid_col_name = "TM_ID"
@@ -809,7 +809,7 @@ def create_thematic_att_table(file_path, vals):
 
     # Path to the forest_type_palette_lookup JSON file in the repo
         # This json consists of a list of codes, a list of names, and a list hex colors. Corresponding values from the codes, names, and colors lists share the same indicies.
-    palettes_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'gee_viz_setup_scripts', 'forest_type_palette_lookup_UPDATED.json')
+    palettes_file = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'gee_viz_setup_scripts', 'forest_type_palette_lookup_20250708.json')
         
     # Open the color maps JSON file
     with open(palettes_file) as json_file:
