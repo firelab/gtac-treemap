@@ -1,15 +1,16 @@
 """
-This script:
-1. separates columns (attributes) from the raster attribute table of TreeMap tifs into separate images, 
+This script processes a large TreeMap raster dataset by:
+1. separating columns (individual attributes) from a multi-attribute raster into standalone GeoTIFF files, 
 2. builds pyramids for those images, 
 3. calculates statistics, 
-4. converts to COG format, 
+4. creates Cloud-Optimized GeoTIFFs (COG), 
 5. builds attribute tables (for discrete attributes), 
 6. creates an xml + html metadata file based on a template,
 7. creates arc compatable metadata (tif.xml), 
-8. creates arc compatable statistics (aux.xml), 
-9. creates a readme, 
-10. zips all the files together (including manually made symbology files (lyrx + qml)).
+8. creates arc compatable statistics (aux.xml),
+9. builds attribute tables for discrete/thematic attributes, 
+10. creates a readme, 
+10. packages everything for distribution into zip files (including manually made symbology files (lyrx + qml)).
 
 The user is prompted upon start which products they want processed.
 Please update use considerations and this description with any changes.
@@ -56,8 +57,11 @@ gdal.UseExceptions()
 chunk_size = 48000 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif"
-treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif.vat.dbf"
+treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif"
+treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif.vat.dbf"
+#treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif"
+#treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif.vat.dbf"
+
 
 # Specify the character limit for column names in the DBF (DBFs typically have a 10 character limit, so CARBON_DOWN_DEAD would appear as CARBON_DOW in the DBF)
 dbfColumnCharLimit = 10
@@ -66,7 +70,7 @@ dbfColumnCharLimit = 10
 projectArea = "CONUS"
 
 # specify project year
-projectYear = 2022
+projectYear = 2020
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
@@ -800,7 +804,7 @@ def create_thematic_att_table(file_path, vals):
     Creates a raster attribute table for the specified image.
     
     Args:
-        col_name (str): Name of the attribute being processed (e.g. 'FLDSZCD').
+        col_name (str): Name of the attribute being processed (e.g. 'FLDTYPCD').
         file_path (str): File path of the file.
         
     Returns:
