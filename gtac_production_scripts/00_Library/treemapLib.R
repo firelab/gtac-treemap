@@ -544,31 +544,67 @@ eval_cm_function <- function(t, noDataVal = NA) {
 # Write function to reclass rasters from id field to variable field, and export
 ##################################################################
 
-assembleExport <- function(layer_field, raster, lookup, id_field, export_path, plot = FALSE, time = FALSE) {
+assembleExport <- function(layer_field, raster, lookup, id_field, export_path, plot = FALSE, time = FALSE, datatype="INT4U", progress = TRUE, overwrite = TRUE) {
+
+  #' Function to reclass a raster from an id field to a variable field using a lookup table, and export the result
+  #' @param layer_field STRING - the name of the field in the lookup table to reclass to
+  #' @param raster SpatRaster - the input raster with id values
+  #' @param lookup DATAFRAME - the lookup table with id and variable fields
+  #' @param id_field STRING - the name of the id field in the lookup table that corresponds to the values in the input raster
+  #' @param export_path STRING - the file path (without extension) to export the reclassified raster to. "layer_field.tif" is later appended to file path.
+  #' @param plot BOOLEAN - whether to plot the reclassified raster after export (default = FALSE)
+  #' @param time BOOLEAN - whether to print the time taken for the operation (default = FALSE)
+  #' @param datatype STRING - the data type for the output raster (default = "INT4U")
+  #' @param progress BOOLEAN - whether to show progress during raster processing (default = TRUE)
+  #' @param overwrite BOOLEAN - whether to overwrite existing output file (default = TRUE)
+  ################################################################################
+  #' @return None (writes out the reclassified raster to the specified path)
   
   require(tictoc)
+  require(glue)
+  require(terra)
   
   tic()
   
-  print(glue('assembleExport: {layer_field}'))
+  progress_opt = FALSE
+
+  if (progress) {
+    # make sure terra progress option is set
+    terraOptions(progress = 1)
+    progress_opt = TRUE
+  }
+  
+  print(glue::glue('assembleExport: {layer_field}'))
+
+  output_path = glue('{export_path}_{layer_field}.tif')
+
+  # check if output file exists
+  if (file.exists(output_path) & !overwrite) {
+    stop(glue::glue("Output file {output_path} already exists and overwrite is set to FALSE. Set overwrite to TRUE to overwrite existing file."))
+  } 
+
+  # otherwise, proceed with reclassification
   lt <- cbind(lookup[id_field], lookup[layer_field])
   #print(head(lt))
-  rout <- terra::classify(raster, lt)
+  rout <- terra::classify(raster, lt, progress = progress_opt)
   writeRaster(rout,
-              glue('{export_path}_{layer_field}.tif'),
-              overwrite = TRUE,
-              datatype="INT4U")
+              output_path,
+              overwrite = overwrite,
+              datatype=datatype,
+              progress = progress_opt)
   
   # conditionally plot
   if(plot == TRUE) {
     plot(rout)
   }
   
+  # delete raster from memory 
   rm(rout)
   
+  time_out <- toc(quiet = !time)
   # conditionally report time
   if(time == TRUE) {
-    print(toc())
+    print(time_out)
   }
   
   gc()
