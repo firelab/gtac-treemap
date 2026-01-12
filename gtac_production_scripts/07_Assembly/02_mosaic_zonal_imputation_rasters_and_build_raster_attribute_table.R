@@ -14,9 +14,10 @@
 #########################################################
 
 # project inputs
-year <- 2020
+year <- 2023
 studyArea <- 'CONUS'
-project_name <- glue::glue("{year}_Production_newXtable")
+#project_name <- glue::glue("{year}_Production_newXtable")
+project_name <- glue::glue("{year}_Production")
 
 #set path to assembled rasters - relative to home_dir
 assembled_dir <- glue::glue("03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
@@ -66,10 +67,19 @@ message("Mosaicking imputation rasters...")
 imputation_rasters<- list.files(assembled_dir,
                                 pattern = "Production_Imputation.tif$", full.names = T, recursive = T)
 
+# Check if files were found
+message(glue::glue("Found {length(imputation_rasters)} imputation rasters"))
+if(length(imputation_rasters) == 0) {
+  stop("No imputation rasters found. Check the assembled_dir path and pattern.")
+}
+
+# Print first few files for verification
+message("First few rasters:")
+print(head(imputation_rasters))
 
 # Make a VRT and assemble a complete, mosaicked tif
-terra::vrt(imputation_rasters, glue::glue("{mosaic_dir}/imputation_vrt.vrt"),
-           overwrite = TRUE)
+vrt_path <- glue::glue("{mosaic_dir}/imputation_vrt.vrt")
+terra::vrt(imputation_rasters, vrt_path, overwrite = TRUE)
 
 # Load the VRT
 imputation <- rast(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
