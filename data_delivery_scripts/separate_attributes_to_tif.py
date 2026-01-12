@@ -21,7 +21,7 @@ Please update use considerations and this description with any changes.
 # Print use considerations
 print('\n**************************************************************\n**************************************************************')
 print('USE CONSIDERATIONS: ')
-print('* This script makes use of gdal, numpy, simpledbf, bs4, and pandas python libraries. Please insure these are installed in the environment before running.')
+print('* This script makes use of gdal, numpy, simpledbf, bs4, and pandas python libraries. Please ensure these are installed in the environment before running.')
 print('* Filepaths for the main TreeMap tif, dbf and the output folder are assigned within the script. If these need to be changed, it must done in the script.')
 print('* Attributes to be separated and their data types are defined within the script. If these need to change, it must be done in the script.')
 print('* Existing attribute files in the output folder will NOT be reprocessed. Please delete their tif files if you wish to reprocess')
@@ -35,7 +35,6 @@ print('**************************************************************\n*********
 import os
 import numpy as np
 from osgeo import gdal
-from simpledbf import Dbf5
 import pandas as pd
 import json
 import re
@@ -53,24 +52,26 @@ gdal.UseExceptions()
 # User Variables (Edit these values between versions + computing environments)
 ############################################################################
 
+# Specify project area
+projectArea = "CONUS"
+
+# specify project year
+projectYear = 2022
+
+# specify project name
+projectName = ""+str(projectYear)+"_Production_newXtable"
+
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
 chunk_size = 48000 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif"
-treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2020_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2020_CONUS.tif.vat.dbf"
-#treeMapTif = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif"
-#treeMapDbf = r"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\2022_Production_newXtable\04_Mosaic_assembled_model_outputs\TreeMap2022_CONUS.tif.vat.dbf"
+treeMapTif = rf"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\{projectName}\04_Mosaic_assembled_model_outputs\TreeMap{projectYear}_{projectArea}.tif"
+treeMapDbf = rf"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\{projectName}\04_Mosaic_assembled_model_outputs\TreeMap{projectYear}_{projectArea}.tif.vat.dbf"
 
 
 # Specify the character limit for column names in the DBF (DBFs typically have a 10 character limit, so CARBON_DOWN_DEAD would appear as CARBON_DOW in the DBF)
 dbfColumnCharLimit = 10
 
-# Specify project area
-projectArea = "CONUS"
-
-# specify project year
-projectYear = 2020
 
 # Specify no data value in main dataset dbf
 treeMapDatasetNoDataValue = np.nan # np.nan = NaN
@@ -82,7 +83,7 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
 # Specify output folder - will be created if it doesn't already exist
-outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)
+outputFolder = f"//166.2.126.25/TreeMap/08_Data_Delivery/Separated_Attribute_Rasters/Updated_STANDHT_CANOPYPCT/{projectYear}/"
 
 # Name of TreeMap ID column in Raster Attribute Table
 tmid_col_name = "TM_ID"
@@ -179,8 +180,45 @@ col_units = {
 ######################################################################
 
 # Import dbf, convert to pandas DataFrame, isolate id values
-dbf = Dbf5(treeMapDbf)
-df = dbf.to_dataframe()
+print('Loading attribute table...')
+
+# Check if a CSV cache exists (much faster to load)
+csv_cache = treeMapDbf.replace('.dbf', '_cache.csv')
+
+if os.path.exists(csv_cache):
+    print(f'Loading from CSV cache: {csv_cache}')
+    df = pd.read_csv(csv_cache)
+    print(f'Loaded {len(df)} records from cache')
+else:
+    print('No CSV cache found. Loading DBF file (this may take several minutes)...')
+    print('Consider creating a CSV cache by running this once and saving the output.')
+    
+    # Try using dbfread (faster than simpledbf)
+    try:
+        from dbfread import DBF
+        print('Using dbfread library...')
+        dbf_table = DBF(treeMapDbf, load=True)
+        df = pd.DataFrame(iter(dbf_table))
+        print(f'Loaded {len(df)} records')
+        
+        # Save to CSV cache for future runs
+        print(f'Saving CSV cache to: {csv_cache}')
+        df.to_csv(csv_cache, index=False)
+        print('Cache saved. Future runs will be much faster.')
+        
+    except ImportError:
+        print('dbfread not available, falling back to simpledbf (slower)...')
+        from simpledbf import Dbf5
+        dbf = Dbf5(treeMapDbf)
+        print('Converting to DataFrame...')
+        df = dbf.to_dataframe()
+        print(f'Loaded {len(df)} records')
+        
+        # Save to CSV cache for future runs
+        print(f'Saving CSV cache to: {csv_cache}')
+        df.to_csv(csv_cache, index=False)
+        print('Cache saved. Future runs will be much faster.')
+
 ctrlValues = df[tmid_col_name]
 #%%
 # Load original tif, specify band, get raw no data value
@@ -1140,22 +1178,35 @@ def prompt_user():
                 'images' to generate attribute tifs (.tif)
                 'meta' to generate metadata (.xml, .html, .aux.xml, .tif.xml - separated attribute tifs must already exist)
                 'package' to package all necessary files for the raster data gateway (tif, metadata, symbology files - if they exist)
+                'complete' to generate images, metadata, and package all in one go
                      
                 Please type choice: ''')
         
         second_mode = ''
         
-        if mode == 'images':
+        if mode == 'images' or mode == 'complete':
             choosing2 = True
             while(choosing2):
                 second_mode = input('''\n*************************************\nChoose Image Mode: 
                     'all' to generate all attributes. Existing attributes in the output folder will not be overwritten.
                     OR
                     Type the name of the attribute you want to process (e.g., 'FORTYPCD').
+                    OR
+                    Type a comma-separated list of attributes (e.g., 'FORTYPCD,FLDTYPCD,BALIVE').
                                 
                     Please type choice: ''')
                 
-                if second_mode.lower() != 'all' and (not any(col[0].upper() == second_mode.upper() for col in cols)):
+                # Check if it's a comma-separated list
+                if ',' in second_mode:
+                    # Split and validate each attribute
+                    attr_list = [attr.strip().upper() for attr in second_mode.split(',')]
+                    invalid_attrs = [attr for attr in attr_list if not any(col[0].upper() == attr for col in cols)]
+                    
+                    if invalid_attrs:
+                        print(f'\nThe following attributes are not defined: {", ".join(invalid_attrs)}. Please choose valid options or update the attribute list in the script.')
+                    else:
+                        choosing2 = False
+                elif second_mode.lower() != 'all' and (not any(col[0].upper() == second_mode.upper() for col in cols)):
                     print(f'\n{second_mode} is not a defined attribute. Please choose a valid option or update the attribute list in the script.')
                 else:
                     choosing2 = False
@@ -1169,6 +1220,8 @@ def prompt_user():
             print('****************************************************************************************************')
             print('****************************************************************************************************')
             print('Project Year: ' + str(projectYear))
+            print('****************************************************************************************************\n')
+            print('Project Name: ' + projectName)
             print('****************************************************************************************************\n')
             print('Project Area: ' + projectArea)
             print('****************************************************************************************************\n')
@@ -1227,6 +1280,32 @@ def prompt_user():
 
             # Check with user if inputs are correct
             print("If paths, Project Year, and Project Area are correct press 'enter', otherwise press 'q' to quit and correct in script")
+            key = msvcrt.getch()
+            if key.lower() == b'q':
+                quit()
+
+            choosing = False
+
+        elif mode == 'complete':
+            print('\n\n****************************************************************************************************')
+            print('Input tif: ' + treeMapTif)
+            print('Input dbf: ' + treeMapDbf)
+            print('Output folder: ' + outputFolder)
+            print('****************************************************************************************************')
+            print('Current chunk size:' + str(chunk_size))
+            print('****************************************************************************************************')
+            print('****************************************************************************************************')
+            print('Project Year: ' + str(projectYear))
+            print('****************************************************************************************************\n')
+            print('Project Area: ' + projectArea)
+            print('****************************************************************************************************')
+            print('Metadata template folder: ' + metd_template_dir)
+            print('****************************************************************************************************')
+            print('Symbology files: ' + symbology_dir)
+            print('****************************************************************************************************\n')
+            
+            # Check with user if inputs are correct
+            print("If all paths, chunk size, Project Year, and Project Area are correct press 'enter', otherwise press 'q' to quit and correct in script")
             key = msvcrt.getch()
             if key.lower() == b'q':
                 quit()
@@ -1356,6 +1435,21 @@ if mode == 'images':
             end_time = time.perf_counter()
             elapsed = (end_time - start_time)/60
             print(f'Time to complete: {elapsed} minutes')
+    # If user provided a comma-separated list
+    elif ',' in second_mode:
+        attr_list = [attr.strip().upper() for attr in second_mode.split(',')]
+        for col_name, gdal_dtype in cols:
+            if col_name.upper() in attr_list:
+                start_time = time.perf_counter()
+
+                try:
+                    attributeToImage(col_name, gdal_dtype, 'list')
+                except Exception as e:
+                    print(f'ERROR: {e}\n{traceback.format_exc()}\n\nFailed to process {col_name}')
+                
+                end_time = time.perf_counter()
+                elapsed = (end_time - start_time)/60
+                print(f'Time to complete: {elapsed} minutes')
     # Else process the specific attribute they provided
     else:
         for col_name, gdal_dtype in cols:
@@ -1370,6 +1464,51 @@ if mode == 'images':
                 end_time = time.perf_counter()
                 elapsed = (end_time - start_time)/60
                 print(f'Time to complete: {elapsed} minutes')
+# Complete workflow mode (images + metadata + package)
+elif mode == 'complete':
+    # Process based on second_mode selection
+    if second_mode == 'all':
+        attr_to_process = cols
+    elif ',' in second_mode:
+        attr_list = [attr.strip().upper() for attr in second_mode.split(',')]
+        attr_to_process = [(col_name, gdal_dtype) for col_name, gdal_dtype in cols if col_name.upper() in attr_list]
+    else:
+        attr_to_process = [(col_name, gdal_dtype) for col_name, gdal_dtype in cols if col_name.upper() == second_mode.upper()]
+    
+    for col_name, gdal_dtype in attr_to_process:
+        overall_start = time.perf_counter()
+        print('\n' + '='*80)
+        print(f'COMPLETE WORKFLOW FOR {col_name}')
+        print('='*80)
+        
+        try:
+            # Step 1: Generate image
+            print(f'\n[1/3] Generating image for {col_name}...')
+            start_time = time.perf_counter()
+            attributeToImage(col_name, gdal_dtype, 'complete')
+            end_time = time.perf_counter()
+            print(f'Image generation time: {(end_time - start_time)/60:.2f} minutes')
+            
+            # Step 2: Generate metadata
+            print(f'\n[2/3] Generating metadata for {col_name}...')
+            start_time = time.perf_counter()
+            generate_metadata(col_name, 'all')
+            end_time = time.perf_counter()
+            print(f'Metadata generation time: {(end_time - start_time)/60:.2f} minutes')
+            
+            # Step 3: Package files
+            print(f'\n[3/3] Packaging files for {col_name}...')
+            start_time = time.perf_counter()
+            package_for_rdg(col_name)
+            end_time = time.perf_counter()
+            print(f'Packaging time: {(end_time - start_time)/60:.2f} minutes')
+            
+            overall_end = time.perf_counter()
+            print(f'\n✓ Complete workflow for {col_name} finished in {(overall_end - overall_start)/60:.2f} minutes')
+            
+        except Exception as e:
+            print(f'ERROR: {e}\n{traceback.format_exc()}\n\nFailed to complete workflow for {col_name}')
+
 # Metadata generation mode
 elif mode == 'meta':
     for col_name, gdal_dtype in cols:
@@ -1383,6 +1522,7 @@ elif mode == 'meta':
         end_time = time.perf_counter()
         elapsed = (end_time - start_time)/60
         print(f'Time to complete: {elapsed} minutes')
+
 # Package in ZIP mode
 elif mode == 'package':
     for col_name, gdal_dtype in cols:
@@ -1396,6 +1536,7 @@ elif mode == 'package':
         end_time = time.perf_counter()
         elapsed = (end_time - start_time)/60
         print(f'Time to complete: {elapsed} minutes')
+
 # Otherwise they didn't provide a valid mode
 else:
     print(f'\n{mode} is not valid. Please restart the script and specify a valid mode.')
