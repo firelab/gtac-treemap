@@ -28,9 +28,9 @@ tmin_files<- list.files(paste0(data_dir,"07_Daymet/daymet_hawaii_annual/tmin/"),
 
 for (i in seq_along(tmax_files)){
   
-  # Load the min and max raster for a year and convert to kelvin
-  max<- rast(tmax_files[i]) + 273.15
-  min<- rast(tmin_files[i]) + 273.15
+  # Load the min and max raster for a year
+  max<- rast(tmax_files[i])
+  min<- rast(tmin_files[i])
   
   # Calculate annual vpd from tmin and tmax 
   # Citaton: David B. Lobell et al. ,Greater Sensitivity to Drought Accompanies
@@ -46,6 +46,9 @@ stack<- rast(mget(paste0("vpd_",seq_along(tmax_files))))
 
 # Calculate pixel means
 stack_mean<- mean(stack, na.rm=T)
+
+# Convert from kPa to Pa
+stack_mean<- 1000*stack_mean
 
 # Then save it with the correct name
 writeRaster(stack_mean, paste0(data_dir,"07_Daymet/daymet_hawaii_normal/vpd_normal_1981to2010.tif"))
@@ -64,9 +67,9 @@ tmin_files<- list.files(paste0(data_dir,"07_Daymet/daymet_north_america_annual/t
 
 for (i in seq_along(tmax_files)){
   
-  # Load the min and max raster and convert to kelvin
-  max<- rast(tmax_files[i]) + 273.15
-  min<- rast(tmin_files[i]) + 273.15
+  # Load the min and max raster for a year
+  max<- rast(tmax_files[i])
+  min<- rast(tmin_files[i])
   
   # Calculate annual vpd from tmin and tmax 
   # Citaton: David B. Lobell et al. ,Greater Sensitivity to Drought Accompanies
@@ -82,6 +85,9 @@ stack<- rast(mget(paste0("vpd_",seq_along(tmax_files))))
 
 # Calculate pixel means
 stack_mean<- mean(stack, na.rm=T)
+
+# Convert from kPa to Pa
+stack_mean<- 1000*stack_mean
 
 # Then save it with the correct name
 writeRaster(stack_mean, paste0(data_dir,"07_Daymet/daymet_north_america_normal/vpd_normal_1981to2010.tif"))

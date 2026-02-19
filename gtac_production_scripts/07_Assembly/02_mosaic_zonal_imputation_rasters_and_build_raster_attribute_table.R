@@ -15,6 +15,7 @@
 
 # project inputs
 year <- 2022
+studyArea <- 'CONUS'
 project_name <- glue::glue("{year}_Production_newXtable")
 
 #set path to assembled rasters - relative to home_dir
@@ -69,7 +70,7 @@ terra::vrt(imputation_rasters, glue::glue("{mosaic_dir}/imputation_vrt.vrt"),
 imputation <- rast(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
 
 # Save the VRT as a tif
-tif_out_path = glue::glue("{mosaic_dir}/TreeMap{year}.tif")
+tif_out_path = glue::glue("{mosaic_dir}/TreeMap{year}_{studyArea}.tif")
 
 if(file.exists(tif_out_path)) {
   message(glue::glue("Warning: overwriting existing tif: {tif_out_path}"))
