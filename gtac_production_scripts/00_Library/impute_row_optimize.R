@@ -1,4 +1,4 @@
-impute_row <- function(dat, yai) {
+impute_row_optimize <- function(dat, yai) {
   
   # Identify valid pixels
   # Check the first column for NA's
