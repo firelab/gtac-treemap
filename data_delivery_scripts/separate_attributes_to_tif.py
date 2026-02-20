@@ -35,7 +35,6 @@ import os
 import numpy as np
 from osgeo import gdal
 from simpledbf import Dbf5
-from simpledbf import Dbf5
 import pandas as pd
 import json
 import re
