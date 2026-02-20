@@ -14,9 +14,10 @@
 #########################################################
 
 # project inputs
-year <- 2020
+year <- 2023
 studyArea <- 'CONUS'
-project_name <- glue::glue("{year}_Production_newXtable")
+#project_name <- glue::glue("{year}_Production_newXtable")
+project_name <- glue::glue("{year}_Production")
 
 #set path to assembled rasters - relative to home_dir
 assembled_dir <- glue::glue("03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
@@ -26,7 +27,7 @@ mosaic_dir <- glue::glue("03_Outputs/07_Projects/{project_name}/04_Mosaic_assemb
 
 # paths to data - relative to home_dir
 dbf_table_path <- glue::glue("{mosaic_dir}/TreeMap{year}.tif.vat.dbf") 
-attribute_table_path <- glue::glue("03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}_RAT_tmid.csv") 
+attribute_table_path <- glue::glue("03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}_RAT_tmid_contValues.csv") 
 
 
 # Load TreeMap script library
@@ -60,17 +61,30 @@ if (!file.exists(mosaic_dir)){
 
 # Mosaic Imputation Rasters 
 #--------------------------------------------------#
+message("Mosaicking imputation rasters...")
+
 #Direct to all zonal imputation rasters
 imputation_rasters<- list.files(assembled_dir,
                                 pattern = "Production_Imputation.tif$", full.names = T, recursive = T)
 
+# Check if files were found
+message(glue::glue("Found {length(imputation_rasters)} imputation rasters"))
+if(length(imputation_rasters) == 0) {
+  stop("No imputation rasters found. Check the assembled_dir path and pattern.")
+}
+
+# Print first few files for verification
+message("First few rasters:")
+print(head(imputation_rasters))
 
 # Make a VRT and assemble a complete, mosaicked tif
-terra::vrt(imputation_rasters, glue::glue("{mosaic_dir}/imputation_vrt.vrt"),
-           overwrite = TRUE)
+vrt_path <- glue::glue("{mosaic_dir}/imputation_vrt.vrt")
+terra::vrt(imputation_rasters, vrt_path, overwrite = TRUE)
 
 # Load the VRT
 imputation <- rast(glue::glue("{mosaic_dir}/imputation_vrt.vrt"))
+
+message("Building raster attribute table...")
 
 # Build raster attribute table - calculate frequencies
 f<- terra::freq(imputation)[,c(2:3)]
@@ -93,6 +107,8 @@ out <- left_join(f, rat, by = c("Value" = "TM_ID")) %>%
 str(out)
 
 levels(imputation) <- out
+
+message("Exporting mosaicked raster...")
 
 if(file.exists(tif_out_path)) {
   message(glue::glue("Warning: overwriting existing tif: {tif_out_path}"))

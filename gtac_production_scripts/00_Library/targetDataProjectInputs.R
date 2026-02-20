@@ -234,7 +234,7 @@ targetDataProjectInputs <- function(year_input,
   }
   
   if(!file.exists(target_dir_mask)) {
-    dir.create(target_dir_premask, recursive = TRUE)
+    dir.create(target_dir_mask, recursive = TRUE)
   }
   
   # if(!file.exists(target_dir_premask)) {
