@@ -35,6 +35,7 @@ import os
 import numpy as np
 from osgeo import gdal
 from simpledbf import Dbf5
+from simpledbf import Dbf5
 import pandas as pd
 import json
 import re
@@ -45,6 +46,8 @@ from zipfile import ZipFile
 import msvcrt
 import time
 import traceback
+import tables
+import sqlalchemy
 
 gdal.UseExceptions()
 #%%
@@ -78,7 +81,7 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
 # Specify output folder - will be created if it doesn't already exist
-outputFolder = "//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/"+str(projectYear)+"/3/"
+outputFolder = f"//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/Updated_STANDHT_CANOPYPCT/{projectYear}/"
 
 # Name of TreeMap ID column in Raster Attribute Table
 tmid_col_name = "TM_ID"
@@ -175,8 +178,11 @@ col_units = {
 ######################################################################
 
 # Import dbf, convert to pandas DataFrame, isolate id values
+print('Loading DBF file (this may take several minutes for large files)...')
 dbf = Dbf5(treeMapDbf)
+print('Converting to DataFrame...')
 df = dbf.to_dataframe()
+print(f'Loaded {len(df)} records')
 ctrlValues = df[tmid_col_name]
 #%%
 # Load original tif, specify band, get raw no data value

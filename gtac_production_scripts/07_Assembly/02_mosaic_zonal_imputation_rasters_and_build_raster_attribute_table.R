@@ -101,7 +101,8 @@ if(file.exists(tif_out_path)) {
 # save VRT as a tif
 terra::writeRaster(imputation, tif_out_path,
             gdal=c("COMPRESS=LZW"),
-            overwrite = TRUE
+            overwrite = TRUE,
+            datatype = "INT4S"
             )
 
 # Delete any pre-existing dbf file so that we can overwrite and create a new one
