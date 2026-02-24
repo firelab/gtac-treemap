@@ -58,10 +58,10 @@ gdal.UseExceptions()
 projectArea = "CONUS"
 
 # specify project year
-projectYear = 2022
+projectYear = 2023
 
 # specify project name
-projectName = ""+str(projectYear)+"_Production_newXtable"
+projectName = ""+str(projectYear)+"_Production"
 
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
 chunk_size = 48000 * 2
@@ -85,7 +85,7 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
 # Specify output folder - will be created if it doesn't already exist
-outputFolder = f"//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/Updated_STANDHT_CANOPYPCT/{projectYear}/"
+outputFolder = f"//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/{projectYear}/"
 
 # Name of TreeMap ID column in Raster Attribute Table
 tmid_col_name = "TM_ID"
