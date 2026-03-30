@@ -55,24 +55,24 @@
        <dd>
         <dl>
          <dt class="origin">
+          <i>Originator: </i>Zimmer, Scott N.</dt>
+         <dt class="origin">
           <i>Originator: </i>Houtman, Rachel M.</dt>
          <dt class="origin">
           <i>Originator: </i>Leatherman, Lila S. T.</dt> 
-         <dt class="origin">
-          <i>Originator: </i>Zimmer, Scott N.</dt>
+         <dt class="origin"> 
+          <i>Originator: </i>Shaw, John D.</dt>         
          <dt class="origin">
           <i>Originator: </i>Housman, Ian W.</dt>
          <dt class="origin">
           <i>Originator: </i>Shrestha, Abhinav</dt>
-         <dt class="origin"> 
-          <i>Originator: </i>Shaw, John D.</dt>
+         <dt class="origin">
+          <i>Originator: </i>Borja Arboleda, Maria O.</dt>
          <dt class="origin">
           <i>Originator: </i>Grenfell, Isaac C.</dt>
-         <dt class="orgin">
+         <dt class="origin">
           <i>Originator: </i>Finney, Mark A.</dt>
-         <dt class="orgin">
-          <i>Originator: </i>Borja Arboleda, Maria O.</dt>
-         <dt class="orgin">
+         <dt class="origin">
           <i>Originator: </i>Riley, Karin L.</dt>
          <dt class="pubdate">
           <i>Publication_Date: </i>2026</dt>
@@ -87,7 +87,8 @@
             <dt class="publish"><i>Publisher: </i>Forest Service Research Data Archive</dt>
           </dl>
         </dd>
-        <dt class="onlink"><i>Online_Linkage: </i> </dt>
+        <dt class="onlink"><i>Online_Linkage: </i> <a href="{data_gateway_link}">{data_gateway_link}</a>
+        </dt>
           </dl>
        </dd>
       </dl>
@@ -100,9 +101,9 @@
        <dt>
         <i>Abstract:</i>
        </dt>
-       <dd id="abstract">TreeMap 2023 CONUS provides a tree-level model of the forests of the conterminous United States. Throughout the conterminous United States (CONUS), for each forested pixel in 30x30 meter (m) gridded landscape data for circa 2023, we identified and assigned the most similar Forest Inventory and Analysis (FIA) plot. We used a Random Forest machine-learning algorithm to impute the forest plot data to a set of target rasters provided by Landscape Fire and Resource Management Planning Tools (LANDFIRE)  and Daymet (Daymet).  Predictor variables consisted of percent forest cover, vegetation height, and vegetation type, as well as topography (slope, elevation, and aspect), location (latitude and longitude), climatic variables (precipitation, shortwave radiation, snow water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit), and disturbance history (time since disturbance and disturbance type). <br />
+       <dd id="abstract">TreeMap 2023 CONUS provides a tree-level model of the forests of the conterminous United States. Throughout the conterminous United States (CONUS), for each forested pixel in 30x30 meter (m) gridded landscape data for circa 2023, we identified and assigned the most similar Forest Inventory and Analysis (FIA) plot. We used a Random Forest machine-learning algorithm to impute the forest plot data to a set of target rasters provided by Landscape Fire and Resource Management Planning Tools (LANDFIRE)  and Daymet (Daymet). Predictor variables consisted of percent forest cover, vegetation height, and vegetation type, as well as topography (slope, elevation, and aspect), location (latitude and longitude), climatic variables (precipitation, shortwave radiation, snow water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit), and disturbance history (time since disturbance and disturbance type). <br />
 	     <br />
-      The main output of this project (the GeoTIFF included in this data publication) is a raster map of imputed plot identifiers at 30×30 m spatial resolution for the conterminous U.S., corresponding to landscape conditions circa 2023. In the attribute table of this raster, we also present a set of attributes drawn from the FIA databases, including forest type and live basal area. The raster of plot identifiers can be linked to the FIA databases available through the FIA DataMart to map hundreds of attributes available there, or to the comma separated file included in this data publication to access a more limited set of tree-level attributes. The data files included in this publication also contain attributes for each tree in the plots that were assigned, including the FIA plot PLT_CN for the plot on which the tree was measured (or control number, a unique identifier for each time a plot is measured), the subplot number, the tree record number, the corresponding number of trees per acre it represents due to the study design, the status (live or dead), species, diameter, height, actual height (where broken), crown ratio and a code for cause of death where applicable. Previous versions of TreeMap have been validated for characteristics including percent live tree cover, height of the dominant trees, forest type, species of trees with most basal area, and snag hazard category.  Previous versions of TreeMap are being used in both the private and public sectors for projects including fuel treatment planning, snag hazard mapping, and estimation of terrestrial carbon resources. <br />
+      The main output of this project (the GeoTIFF included in this data publication) is a raster map of imputed plot identifiers at 30×30 m spatial resolution for the conterminous U.S., corresponding to landscape conditions circa 2023. In the attribute table of this raster, we also present a set of attributes drawn from the FIA databases, including forest type and live basal area. The raster of plot identifiers can be linked to the FIA databases available through the FIA DataMart to map hundreds of attributes available there, or to the comma separated file included in this data publication to access a more limited set of tree-level attributes. The data files included in this publication also contain attributes for each tree in the plots that were assigned, including the FIA plot PLT_CN for the plot on which the tree was measured (or control number, a unique identifier for each time a plot is measured), the subplot number, the tree record number, the corresponding number of trees per acre it represents due to the study design, the status (live or dead), species, diameter, height, actual height (where broken), crown ratio and a code for cause of death where applicable. Previous versions of TreeMap have been validated for characteristics including percent live tree cover, height of the dominant trees, forest type, species of trees with most basal area, and snag hazard category. Previous versions of TreeMap are being used in both the private and public sectors for projects including fuel treatment planning, snag hazard mapping, and estimation of terrestrial carbon resources. <br />
       </dd>
        <dt>
         <i>Purpose:</i>
@@ -282,7 +283,7 @@
      </dt> 
      <dd class="useconst">These data were collected using funding from the U.S. Government and can be used without additional permissions or fees. If you use these data in a publication, presentation, or other research product please use the following citation:<br />
     <br/>
-    Houtman, Rachel M.; Leatherman, Lila S. T.; Zimmer, Scott N.; Housman, Ian W.; Shrestha, Abhinav; Shaw, John D.; Grenfell, Isaac C.; Grenfell, Isaac C.; Borja Arboleda, Maria O.; Riley, Karin L. 2026. TreeMap 2023 CONUS: A tree-level model of the forests of the conterminous United States circa 2023. Fort Collins, CO: Forest Service Research Data Archive. <br/>
+    Zimmer, Scott N.; Houtman, Rachel M.; Leatherman, Lila S. T.; Shaw, John D.; Housman, Ian W.; Shrestha, Abhinav; Borja Arboleda, Maria O.; Grenfell, Isaac C.; Finney, Mark A.; Riley, Karin L. 2026. TreeMap 2023 CONUS: A tree-level model of the forests of the conterminous United States circa 2023. Fort Collins, CO: Forest Service Research Data Archive.<br/>
     <dt>
       <i>Point_of_Contact:</i>
      </dt>
@@ -332,7 +333,7 @@
           <TT>karin.l.riley@usda.gov</TT>
          </dt>
          <dt>
-          <i>Contact Instructions: </i>This contact information was current as of original publication date. For current information see Contact Us page on: .</dt>
+          <i>Contact Instructions: </i>This contact information was current as of original publication date. For current information see Contact Us page on: https://doi.org/10.2737/RDS.</dt>
         </dl>
        </dd>
       </dl>
@@ -346,6 +347,10 @@
     Author information: <br />
     <br />
     <br />
+    Scott N. Zimmer<br />
+    USDA Forest Service, Rocky Mountain Research Station, Missoula Fire Sciences Lab<br />
+    https://orcid.org/0009-0000-6389-6826<br />
+    <br />
     Rachel M. Houtman<br />
     USDA Forest Service, Rocky Mountain Research Station, Missoula Fire Sciences Lab<br />
     https://orcid.org/0000-0003-2097-9423<br />
@@ -354,9 +359,9 @@
     RedCastle Resources, Inc.<br />
     https://orcid.org/0009-0007-8849-8964<br />
     <br />
-    Scott N. Zimmer<br />
-    USDA Forest Service, Rocky Mountain Research Station, Missoula Fire Sciences Lab<br />
-    https://orcid.org/0009-0000-6389-6826<br />
+    John D. Shaw<br />
+    USDA Forest Service, Rocky Mountain Research Station<br />
+    http://orcid.org/0000-0002-5797-1006<br />
     <br />
     Ian W. Housman<br />
     RedCastle Resources, Inc.<br />
@@ -366,9 +371,9 @@
     RedCastle Resources, Inc.<br />
     https://orcid.org/0009-0007-1904-7457<br />
     <br />
-    John D. Shaw<br />
-    USDA Forest Service, Rocky Mountain Research Station<br />
-    http://orcid.org/0000-0002-5797-1006<br />
+    Maria O. Borja Arboleda<br />
+    RedCastle Resources, Inc.<br />
+    http://orcid.org/0000-0001-8029-6742<br />
     <br />
     Isaac C. Grenfell<br />
     USDA Forest Service, Rocky Mountain Research Station<br />
@@ -378,10 +383,6 @@
     USDA Forest Service, Rocky Mountain Research Station<br />
     https://orcid.org/0000-0002-6584-1754<br />
     <br />
-    Maria O. Borja Arboleda<br />
-    RedCastle Resources, Inc.<br />
-    http://orcid.org/0000-0001-8029-6742<br />
-    <br />
     Karin L. Riley<br />
     USDA Forest Service, Rocky Mountain Research Station<br />
     http://orcid.org/0000-0001-6593-5657<br />
@@ -389,8 +390,7 @@
      <dt>
       <i>Native_Data_Set_Environment:</i>
      </dt>
-     <dd class="native">Version 6.2 (Build 9200) ; Esri ArcGIS 10.5.1.7333</dd>
-     
+     <dd class="native">Version 6.2 (Build 9200) ; Esri ArcGIS 10.5.1.7333</dd>  
       <dt> 	
       <i>Cross_Reference:</i>
      </dt>
@@ -1023,7 +1023,7 @@
         For complete details see Riley et al. (2016), Riley et al. (2021), and Riley et al. (2022). Methods for the TreeMap 2023 version differ from those in Riley et al. (2022) in that  1) the climatic variables were obtained from Daymet and included precipitation, shortwave radiation, soil water equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor pressure deficit; and 2) plots available for imputation in each LANDFIRE zone were limited to those plots with a tree species that were present either in the plots found within the LANDFIRE zone, or in the zones immediately bordering it, according to the FIA plots located within the zone. This reduced not only plots with Existing Vegetation Type not present in the zone but also plots with trees outside of their observed range.<br />
         <br />
         <br />
-        Burrill, Elizabeth A.; DiTommaso, Andrea M.; Turner, Jeffery A.; Pugh, Scott A.; Christensen, Glenn; Kralicek, Karin M.; Perry, Carol J.; Lepine, Lucie C.; Walker, David M.; Conkling, Barbara L. 2024. The Forest Inventory and Analysis Database, FIADB user guides, volume: database description (version 9.3), nationwide forest inventory (NFI). U.S. Department of Agriculture, Forest Service. 1026 p. [Online]. Available at web address: https://research.fs.usda.gov/understory/forest-inventory-and-analysis-database-user-guide-nfi<br />
+        Burrill, Elizabeth A.; Christensen, Glenn A.; Conkling, Barbara L.; DiTommaso, Andrea M.; Kralicek, Karin M.; Lepine, Lucie C.; Perry, Carol J.; Pugh, Scott A.; Turner, Jeffery A.; Walker, David M. 2025. The Forest Inventory and Analysis Database, FIADB User Guides, Volume: Database Description (version 9.4), nationwide forest inventory (NFI). U.S. Department of Agriculture, Forest Service. 1026 p. [Online]. Available at web address: https://research.fs.usda.gov/understory/forest-inventory-and-analysis-database-user-guide-nfi<br />
         <br />
         Crookston Nicholas L.; Stage Albert R. 1999. Percent canopy cover and stand structure statistics from the Forest Vegetation Simulator. USDA Forest Service, Rocky Mountain Research Station, General Technical Report RMRS-GTR-24. Ogden, UT. 11p. https://doi.org/10.2737/RMRS-GTR-24<br />
         <br />
@@ -1299,7 +1299,7 @@
        <br />
        DIA = Tree diameter in inches at breast height (4.5 ft. above ground line on uphill side of tree) or root crown for woodland species (at the ground line or stem root collar, whichever is higher) (from FIA TREE table)<br />
        <br />
-       HT = Total height of a tree (ft.) from the ground to tip of apical meristem. (If main stem is broken, the total height is estimated.) (from FIA TREE table)<br />
+       HT = Total height of a tree (ft.) from the ground to tip of apical meristem (if main stem is broken, the total height is estimated) (from FIA TREE table)<br />
        <br />
        ACTUALHT = Actual height of a tree (ft.) from the ground to the highest remaining portion of the tree still attached to the bole (from FIA TREE table)<br />
        <br />
@@ -1394,7 +1394,7 @@
          <dt class="cntvoice">
           <i>Contact_Voice_Telephone: </i>see Contact Instructions</dt>
          <dt class="cntinst">
-          <i>Contact Instructions: </i>This contact information was current as of March 2026. For current information see Contact Us page on: </dt>
+          <i>Contact Instructions: </i>This contact information was current as of April 2026. For current information see Contact Us page on: https://doi.org/10.2737/RDS.</dt>
         </dl>
        </dd>
       </dl>
