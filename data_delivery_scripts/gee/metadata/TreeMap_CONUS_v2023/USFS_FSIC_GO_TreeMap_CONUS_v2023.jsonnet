@@ -141,6 +141,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     'gtac',
     'landcover',
     'landfire',
+    'publisher-dataset',
     'redcastle-resources',
     'tree-cover',
     'us',
