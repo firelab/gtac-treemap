@@ -1,4 +1,4 @@
-local id = 'USFS/GTAC/TreeMap/v2022/TreeMap2022'; 
+local id = 'USFS/GTAC/TreeMap/v2023'; 
 local subdir = 'USFS';
 local version = '2023';
 
@@ -15,6 +15,9 @@ local self_ee_catalog_url = ee_const.ee_catalog_url + basename;
 local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
 
 {
+  'gee:user_uploaded': true,
+  'gee:status': 'incomplete',
+
   stac_version: ee_const.stac_version,
   type: ee_const.stac_type.collection,
   stac_extensions: [
@@ -63,17 +66,18 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     existing vegetation type was not present, an issue which affected a small number 
     of pixels in previous TreeMap versions. 
 
-    TreeMap v2023 was produced using the methods described in 
-    [Riley et al. (2022)](https://doi.org/10.1093/jofore/fvac022 and https://research.fs.usda.gov/treesearch/65597) 
-    but differ from TreeMap v2016 in that: 1) the climatic variables were obtained 
-    from DayMet and included precipitation, shortwave radiation, soil water 
-    equivalent, maximum temperature, minimum temperature, vapor pressure, and vapor 
-    pressure deficit; and 2) plots available for imputation in each LANDFIRE zone 
-    were limited to those plots with a tree species that were present either in the 
-    plots found within the LANDFIRE zone, or in the zones immediately bordering it, 
-    according to the FIA plots located within the zone. This reduced not only plots 
-    with Existing Vegetation Type not present in the zone but also plots with trees 
-    outside of their observed range.
+    TreeMap v2023 was produced using the methods described in
+    [Riley et al. (2022)](https://research.fs.usda.gov/treesearch/65597)
+    but differ from TreeMap v2016 in that: 1) biophysical variables were derived by
+    overlay of the plot coordinates with Daymet rasters and included average
+    precipitation, average maximum temperature, average minimum temperature, average
+    vapor pressure, average soil water equivalent, average vapor pressure deficit,
+    average daily shortwave radiation; and 2) plots available for imputation in each
+    LANDFIRE zone were limited to those plots with a tree species that were present
+    either in the plots found within the LANDFIRE zone, or in the zones immediately
+    bordering it, according to the FIA plots located within the zone. This reduced
+    not only plots with Existing Vegetation Type not present in the zone but also
+    plots with trees outside of their observed range.
 
     The results showed good correspondence between the target LANDFIRE data and the 
     imputed plot data, with an overall within-class agreement of X% for forest 
@@ -86,24 +90,31 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
 
     **Additional Resources**
 
-    * Please see the [TreeMap 2016 Publication](https://www.fs.usda.gov/research/treesearch/65597)
+    * See the [TreeMap 2016 Publication](https://www.fs.usda.gov/research/treesearch/65597)
       for more detailed information regarding methods and accuracy assessment.
 
     * The [TreeMap Data Explorer](https://apps.fs.usda.gov/lcms-viewer/treemap.html)
       is a web-based application that provides users the ability to view and
       download TreeMap attribute data.
 
-    * The [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/catalog/RDS-2025-0032) 
-      for the full dataset download, metadata, and support documents.
-
-    * [TreeMap Raster Data Gateway](https://data.fs.usda.gov/geodata/rastergateway/treemap/)
+    * Visit the [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/catalog/RDS-2026-XXXX) for the full dataset download, metadata, and support documents.
+    
+    * Visit the [TreeMap Raster Data Gateway](https://data.fs.usda.gov/geodata/rastergateway/treemap/)
       for TreeMap attribute data downloads, metadata, and support documents.
-
-    * [FIA Database Manual version 9.4](https://research.fs.usda.gov/understory/forest-inventory-and-analysis-database-user-guide-nfi)
+      
+    * See the [FIA Database Manual version 9.4](https://research.fs.usda.gov/understory/forest-inventory-and-analysis-database-user-guide-nfi)
       for more detailed information on the attributes included in TreeMap 2023.
+    
+    * The [Treemap 2016 vintage](https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_TreeMap_v2016)
+      contains landscape conditions of the forests of the United States circa 2016.
 
-    Contact [sm.fs.treemaphelp@usda.gov](mailto:sm.fs.treemaphelp@usda.gov) with any
-    questions or specific data requests.
+    * The [Treemap 2020 vintage](https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_TreeMap_v2020)
+      contains landscape conditions of the forests of the United States circa 2020.
+
+    * The [Treemap 2020 vintage](https://developers.google.com/earth-engine/datasets/catalog/USFS_GTAC_TreeMap_v2022)
+      contains landscape conditions of the forests of the United States circa 2022.   
+
+    Contact sm.fs.treemaphelp@usda.gov with any questions or specific data requests.
 
   |||,
   license: license.id,
@@ -122,18 +133,15 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     'carbon',
     'climate_change',
     'conus',
-    'daymet',
     'forest',
     'forest-biomass',
     'forest-type',
     'forest-inventory-and-analysis',
     'fsic-go',
     'gtac',
-    'rmrs',
     'landcover',
     'landfire',
     'redcastle-resources',
-    'treemap',
     'tree-cover',
     'us',
     'usda',
@@ -141,8 +149,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     'vegetation'
   ],
   providers: [
-    ee.producer_provider('USDA Forest Service (USFS)  Field Services and Innovation 
-    Center – Geospatial Office (FSIC-GO)', 'https://data.fs.usda.gov/geodata/rastergateway/treemap/'),
+    ee.producer_provider('USDA Forest Service (USFS) Field Services and Innovation Center Geospatial Office (FSIC-GO)', 'https://data.fs.usda.gov/geodata/rastergateway/treemap/'),
     ee.host_provider(self_ee_catalog_url),
   ],
   extent: ee.extent(-128.97722, 22.76862, -65.25445, 51.64968,
@@ -154,8 +161,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         description: |||
           Year of the product.
         |||,
-        type: ee_const.var_type.int,
-        'gee:units': units.year,
+        type: ee_const.var_type.string,
       },
       {
         name: 'study_area',
@@ -163,7 +169,6 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
           Study area of the product.
         |||,
         type: ee_const.var_type.string,
-        'gee:units': units.dimensionless,
       },
       {
         name: 'landfire_ver',
@@ -171,7 +176,6 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
           Landfire version used as reference and target data for imputation.
         |||,
         type: ee_const.var_type.string,
-        'gee:units': units.dimensionless,
       },
     ],
     gsd: [30],
@@ -2202,7 +2206,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         },
       },
       {
-        display_name: 'SDISum_Viz',
+        display_name: 'SDIsum_Viz',
         lookat: {
           lat: 38,
           lon: -95.712891,
@@ -2229,7 +2233,7 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
               '00404d',
             ],
             bands: [
-              'SDISum',
+              'SDIsum',
             ],
           },
         },
@@ -2538,15 +2542,11 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     Archive.
     [doi:10.2737/RDS-2026-XXXX](https://doi.org/10.2737/RDS-2026-XXXX)
 
-    See [TreeMap Research Data Archive](https://www.fs.usda.gov/rds/archive/catalog/RDS-2026-XXXX) 
-    for additional information.
+    See the TreeMap Research Data Archive for additional information on
+      [TreeMap 2016](https://www.fs.usda.gov/rds/archive/catalog/RDS-2021-0074),  
+      [TreeMap 2020](https://www.fs.usda.gov/rds/archive/catalog/RDS-2025-0031),  
+      [TreeMap 2022](https://www.fs.usda.gov/rds/archive/catalog/RDS-2025-0032),  
+      [TreeMap 2023](https://www.fs.usda.gov/rds/archive/catalog/RDS-2026-XXXX).
 
   |||,
-  'gee:status': 'incomplete',
-  'gee:user_uploaded': true,
 }
-
-
-
-
-
