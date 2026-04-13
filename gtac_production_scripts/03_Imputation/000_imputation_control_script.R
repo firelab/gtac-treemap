@@ -12,11 +12,11 @@ year_input <- 2023
 
 
 # manually list zones
-zones_list <- #c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-               c(seq(from = 12, to = 66, by = 1),
+zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
+               seq(from = 12, to = 66, by = 1),
                98, 99)
 
-#zones_list <- c(1,10)
+#zones_list <- c(8)
 
 ### Additional code for sub-setting zones list (for production)
 ## Filter out certain run zones (unordered list)
@@ -29,11 +29,13 @@ zones_list <- #c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zon
 
 # Types of evaluation to run and prepare reports for 
 # Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
-eval_type_list <- c("model_eval", "TargetLayerComparison", "CV")
-#eval_type_list <- c("CV")
+eval_type_list <- c("TargetLayerComparison", "CV")
 
 # Export evaluation report stats (parameters, metrics, and accuracies) 
 exportEvalReportStats <- TRUE # TRUE or FALSE
+
+# SKIP MODEL BUILDING - if using an existing model version and just want to run imputation and/or evaluation
+skip_ModelBuild <- TRUE # TRUE or FALSE; if TRUE, will skip the model building step and will use an existing model version specified in `model_version` variable in `00a_project_inputs_for_imp.R`
 
 # RUN EVAL ONLY (skips imputation -- assumes already done)
 skip_Imputation <- FALSE
@@ -43,6 +45,7 @@ skip_Evaluation <- FALSE
 
 # Skip additional layer assembly - optional
 skip_Assembly <- TRUE
+
 
 # Script inputs - changed less frequently 
 ########################################################
@@ -73,6 +76,38 @@ assembleAttribute_script <- glue::glue("{this_proj}/gtac_production_scripts/04_E
 # END USER INPUTS
 ################################################################
 
+# Make sure required packages are installed
+#################################################################
+
+# packages required
+list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
+                      "magrittr", "tictoc", "caret", "randomForest", 
+                      "Metrics", "foreach", "doParallel", "yaImpute",
+                      "docstring","stringr", "stringi", "devtools",
+                      "philentropy", "skimr", "foreign","doSNOW")
+
+# #check for packages and install if needed
+new.packages <- tryCatch(
+  
+  # try to get list of packages installed
+  {suppressWarnings(list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]) }, 
+  
+  error= function(cond) {
+    message("Can't access list of packages")
+    message("Here's the original error message:")
+    message(conditionMessage(cond))
+    
+    # return value in case of error:
+    NA
+  }
+  
+)
+
+if(length(new.packages) > 0) install.packages(new.packages)
+
+# remove unused objects
+rm(list.of.packages, new.packages)
+
 ##############################################################################
 # Do the work
 ##############################################################################
@@ -98,11 +133,17 @@ for (zone_input in zones_list){
   
   # PASS variables to `00b_zone_inputs_imp.R` to SET variables by zone
   source(zone_inputScript)
-  
-  if (skip_Imputation == FALSE){
-    # SOURCE script 01 to build the imputation model for the zone
+
+  if(skip_ModelBuild == FALSE) {
+    # SOURCE script 01 to build the imputation model for each zone
     message(paste0("Building imputation model for zone: ", zone_input))
     source(buildImputation_script)
+  } else {
+    message("---------------------------------------------------------------------------")
+    message("Skipping model building as `skip_ModelBuild` was set to TRUE. Moving to imputation...")
+  }
+  
+  if (skip_Imputation == FALSE){
     
     # SOURCE script 02 to run the imputation model for each zone
     message(paste0("Applying imputation model for zone: ", zone_input))

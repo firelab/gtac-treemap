@@ -3,7 +3,7 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 12/17/24
+# Last updated: 3/15/26
 
 ###########################################################################
 # Set inputs
@@ -12,17 +12,25 @@
 year <- year_input
 
 #project_name <- glue::glue("{year}_Production")
-project_name <- glue::glue("{year}_Production")
+project_name <- glue::glue("{year}_Production_rerun_w2022model_take2_optimized")
 
 # name for products - includes params here if desired
 #e.g., #output_name <- "2016_GTAC_LCMSDist"
-output_name <- glue::glue("{year}_Production") 
+#output_name <- glue::glue("{year}_Production") 
+output_name <- project_name
 
 # target data version to use
 target_data_version <- glue::glue("v{year}")
 
 # reference data version to use
-ref_data_version <- glue::glue("v{year}")
+ref_data_version <- "v2022"
+
+# model version to use - should match with a project name. default is project_name. 
+# model version name might be different than project name; eg might not have "_newXtable" suffix
+#model_version <- project_name
+#model_version_name <- project_name
+model_version <- "2022_Production_newXtable"
+model_version_name <- "2022_Production"
 
 # disturbance type - options are "LF" or "LFLCMS"
 dist_layer_type <- "LF"
