@@ -2800,44 +2800,6 @@ local self_url = base_url + base_filename;
         |||,
         doi:'10.1093/jofore/fvac022',
         },
-        {
-        citation: |||
-            Wilson, B T., A. J. Lister and R. I. Riemann: 2012, A Nearest-Neighbor 
-            Imputation Approach to Mapping Tree Species over Large Areas Using Forest 
-            Inventory Plots and Moderate Resolution Raster Data. 
-            Forest Ecol. Manag. 271:182-198.
-            [doi:10.1016/j.foreco.2012.02.002](https://doi.org/10.1016/j.foreco.2012.02.002)
-        |||,
-        doi:'10.1016/j.foreco.2012.02.002',
-        },
-        {
-        citation: |||
-            Pierce, K. B. Jr., J. L. Ohmann, M. C. Wimberly, M. J. Gregory and J. S Fried: 
-            2009, Mapping Wildland Fuels and Forest Structure for Land Management: 
-            A Comparison of Nearest Neighbor Imputation and Other Methods.
-            Can. J. For. Res. 39: 1901-1916.
-            [doi:10.1139/X09-102](https://doi.org/10.1139/X09-102)
-        |||,
-        doi:'10.1139/X09-102',
-        },
-        {
-        citation: |||
-            Ohmann, J. L. and M. J. Gregory: 2002, Predictive Mapping of Forest Composition 
-            and Structure with Direct Gradient Analysis and Nearest- Neighbor Imputation in 
-            Coastal Oregon, USA. Can. J. For. Res. 32:725-741.
-            [doi: 10.1139/X02-011](https://doi.org/10.1139/X02-011)
-        |||,
-        doi:'10.1139/X02-011',
-        },
-        {
-        citation: |||
-            Forest Inventory Analysis: 2024, Forest Inventory Analysis DataMart. Forest 
-            Inventory Analysis DataMart FIADB_1.9.1. 2024.
-            Accessed February 2024 at [https://apps.fs.usda.gov/fia/datamart/datamart.html](https://apps.fs.usda.gov/fia/datamart/datamart.html)
-            [doi: 10.2737/RDS-2001-FIADB](https://doi.org/10.2737/RDS-2001-FIADB)
-        |||,
-        doi:'10.2737/RDS-2001-FIADB',
-        },
    ],
   'gee:terms_of_use': |||
     The USDA Forest Service makes no warranty, expressed or implied, including the 
