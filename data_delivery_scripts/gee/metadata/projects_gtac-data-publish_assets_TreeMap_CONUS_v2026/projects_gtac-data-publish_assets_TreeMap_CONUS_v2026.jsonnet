@@ -1,19 +1,20 @@
 
-local id = 'USFS/GTAC/TreeMap/v2023'; 
-local subdir = 'USFS';
-local version = '2023';
+local id = 'gtac-data-publish/TreeMap; 
 
 local ee_const = import 'earthengine_const.libsonnet';
 local ee = import 'earthengine.libsonnet';
+
 local spdx = import 'spdx.libsonnet';
 local units = import 'units.libsonnet';
-
 local license = spdx.proprietary;
 
-local basename = std.strReplace(id, '/', '_');
+local basename = 'catalog';
 local base_filename = basename + '.json';
-local self_ee_catalog_url = ee_const.ee_catalog_url + basename;
-local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
+
+local base_url = ee_const.catalog_base + 'ee-pkurelab/';
+local parent_url = ee_const.catalog_base + 'catalog.json';
+local self_url = base_url + base_filename;
+
 
 {
   'gee:user_uploaded': true,
@@ -1914,162 +1915,10 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
       },
     ],
     'gee:visualizations': [
-      {
-        display_name: 'FORTYPCD_Viz',
-        lookat: {
-          lat: 38,
-          lon: -95.712891,
-          zoom: 5,
-        },
-        image_visualization: {
-          band_vis: {
-            min: [
-              0,
-            ],
-            max: [
-              100,
-            ],
-            palette: [
-              '94D0AA','81B0B6','7F6A37','C57F69','EEC289',
-              'F08BF0','51A0B1','F3B035','EBA9D1','AF8DE6','BBB92D',
-              'E48FC8','EEA97F','EAF5E0','D2D59B','DCC2C0','C7F0AA',
-              'E51EEB','3A1591','C26DA6','67C6CA','95EF79','D5C7E9',
-              'BC916F','D1DFD6','49F6AE','7B677B','F16791','DBF39C',
-              'DAD9BD','7D2F2E','45E8D5','9BC5E5','4DEBBE','3A6A8B',
-              '68F0EC','AAA7E7','4589D2','F4DF8E','F7D969','DFA098',
-              'D8ECF0','CAF466','E64393','8CE7EF','EEC7EA','DFA9EF',
-              'B7F2E0','BBBCC4','B2B1C8','ADF6D0','E2C8F9','BAE3F5',
-              '8391A7','9A2D79','B4CFA7','93DBF2','BAAEA2','8FF390',
-              'B2FA73','C6295F','EA6375','A1E073','2DB8AB','AE73B2',
-              'E38BAE','CFB0FA','D3A9B3','90E5D5','F12C43','B2C387',
-              '8FA42C','CDE353','7680AC','46D7ED','EECC39','D7BAF5',
-              '9A29F0','A7C6D7','F28A8D','EBF385','A0CD4F','81B180',
-              'CBA1FB','6BC35E','F5A3AD','D4DDEF','A049B7','E1A0B6',
-              'F06748','7A9252','66D727','E645DC','AA8D8B','EE405D',
-              'CFADD4','9190E6','4E655F','57ADF1','B2EB31','C6E377',
-              'BEA664','C26262','4B9A91','72F4B9','DA90E3','3EBF45',
-              'E973BF','AFE7B3','81629F','9144DD','E4C0A1','AC82A2',
-              'F5A8E1','B486F5','ECBF68','F340AF','C0CAF5','C1F89A',
-              'D3F3D2','EBEBC0','D350F4','D1CF7C','71F943','9E87C0',
-              'B6707A','F7E6D7','8CAAF2','F1F2F3','A3D382','4EBF86',
-              '8CF45A','F4F3B7','A1CFC9','F0DC9F','5971EF','699FCB',
-              'F7A1F0','5E62F8','F0CDBD','A7902B','F2F875','E6A55A',
-              'F068E4','DE55BF','CFF3C0','F7C1F3','90896C','F5BEB3',
-              'B49EC7','6BC3F5','6226E8','7AEBCD','D2AB20','515891',
-              'E47A65','97B45A','CBD14D','64C2A2','ADF2AD','DEEFB4',
-              '52B8DC','E1F855','8FA792','EBE545','C676DF','489744',
-              'E2F231','CFBC8F','51DC89','AA511D','846AC6','BB8FD3',
-              'F1BCD8','4F45A6','C6F5F4','E5DD69','C0A8E1','7F5DD7',
-              'DFD3D7','56F277','28703C','86E799','B9D1BF','A5BAEE',
-              'F28E2E','E7DBED','5D84E4','BB68F3','D96F9B','EFCDDD',
-            ],
-            bands: [
-              'FORTYPCD',
-            ],
-          },
-        },
-      },
-      {
-        display_name: 'FLDTYPCD_Viz',
-        lookat: {
-          lat: 38,
-          lon: -95.712891,
-          zoom: 5,
-        },
-        image_visualization: {
-          band_vis: {
-            min: [
-              0,
-            ],
-            max: [
-              100,
-            ],
-            palette: [
-              'ffe599',
-              'e7cd68',
-              'c5ae32',
-              '969206',
-              '71870b',
-              '52741c',
-              '3a652a',
-              '265737',
-              '134b42',
-              '00404d',
-            ],
-            bands: [
-              'FLDTYPCD',
-            ],
-          },
-        },
-      },
-
-
-      {
-        display_name: 'STDSZCD_Viz',
-        lookat: {
-          lat: 38,
-          lon: -95.712891,
-          zoom: 5,
-        },
-        image_visualization: {
-          band_vis: {
-            min: [
-              1,
-            ],
-            max: [
-              5,
-            ],
-            palette: [
-              '38A800',
-              'FFFF00',
-              'FEBA12',
-              'C62363',
-              'C62363',
-            ],
-            bands: [
-              'STDSZCD',
-            ],
-          },
-        },
-      },
-
-
-
-      {
-        display_name: 'FLDSZCD_Viz',
-        lookat: {
-          lat: 38,
-          lon: -95.712891,
-          zoom: 5,
-        },
-        image_visualization: {
-          band_vis: {
-            min: [
-              0,
-            ],
-            max: [
-              5,
-            ],
-            palette: [
-              'C62363',
-              'FEBA12',
-              'FFFF00',
-              '38A800',
-              '73DFFF',
-              '5C09FC',
-            ],
-            bands: [
-              'FLDSZCD',
-            ],
-          },
-        },
-      },
-
-
-
-
-
-
+      
+      
+      
+      
       {
         display_name: 'ALSTK_Viz',
         lookat: {
@@ -2335,6 +2184,145 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
         },
       },
       {
+        display_name: 'FLDSZCD_Viz',
+        lookat: {
+          lat: 38,
+          lon: -95.712891,
+          zoom: 5,
+        },
+        image_visualization: {
+          band_vis: {
+            min: [
+              0,
+            ],
+            max: [
+              5,
+            ],
+            palette: [
+              'C62363',
+              'FEBA12',
+              'FFFF00',
+              '38A800',
+              '73DFFF',
+              '5C09FC',
+            ],
+            bands: [
+              'FLDSZCD',
+            ],
+          },
+        },
+      },
+      {
+        display_name: 'FLDTYPCD_Viz',
+        lookat: {
+          lat: 38,
+          lon: -95.712891,
+          zoom: 5,
+        },
+        image_visualization: {
+          band_vis: {
+            min: [
+              101,
+            ],
+            max: [
+              995,
+            ],
+            palette: [
+              '94D0AA','81B0B6','7F6A37','C57F69','EEC289',
+              'F08BF0','51A0B1','F3B035','EBA9D1','AF8DE6','BBB92D',
+              'E48FC8','EEA97F','EAF5E0','D2D59B','DCC2C0','C7F0AA',
+              'E51EEB','3A1591','C26DA6','67C6CA','95EF79','D5C7E9',
+              'BC916F','D1DFD6','49F6AE','7B677B','F16791','DBF39C',
+              'DAD9BD','7D2F2E','45E8D5','9BC5E5','4DEBBE','3A6A8B',
+              '68F0EC','AAA7E7','4589D2','F4DF8E','F7D969','DFA098',
+              'D8ECF0','CAF466','E64393','8CE7EF','EEC7EA','DFA9EF',
+              'B7F2E0','BBBCC4','B2B1C8','ADF6D0','E2C8F9','BAE3F5',
+              '8391A7','9A2D79','B4CFA7','93DBF2','BAAEA2','8FF390',
+              'B2FA73','C6295F','EA6375','A1E073','2DB8AB','AE73B2',
+              'E38BAE','CFB0FA','D3A9B3','90E5D5','F12C43','B2C387',
+              '8FA42C','CDE353','7680AC','46D7ED','EECC39','D7BAF5',
+              '9A29F0','A7C6D7','F28A8D','EBF385','A0CD4F','81B180',
+              'CBA1FB','6BC35E','F5A3AD','D4DDEF','A049B7','E1A0B6',
+              'F06748','7A9252','66D727','E645DC','AA8D8B','EE405D',
+              'CFADD4','9190E6','4E655F','57ADF1','B2EB31','C6E377',
+              'BEA664','C26262','4B9A91','72F4B9','DA90E3','3EBF45',
+              'E973BF','AFE7B3','81629F','9144DD','E4C0A1','AC82A2',
+              'F5A8E1','B486F5','ECBF68','F340AF','C0CAF5','C1F89A',
+              'D3F3D2','EBEBC0','D350F4','D1CF7C','71F943','9E87C0',
+              'B6707A','F7E6D7','8CAAF2','F1F2F3','A3D382','4EBF86',
+              '8CF45A','F4F3B7','A1CFC9','F0DC9F','5971EF','699FCB',
+              'F7A1F0','5E62F8','F0CDBD','A7902B','F2F875','E6A55A',
+              'F068E4','DE55BF','CFF3C0','F7C1F3','90896C','F5BEB3',
+              'B49EC7','6BC3F5','6226E8','7AEBCD','D2AB20','515891',
+              'E47A65','97B45A','CBD14D','64C2A2','ADF2AD','DEEFB4',
+              '52B8DC','E1F855','8FA792','EBE545','C676DF','489744',
+              'E2F231','CFBC8F','51DC89','AA511D','846AC6','BB8FD3',
+              'F1BCD8','4F45A6','C6F5F4','E5DD69','C0A8E1','7F5DD7',
+              'DFD3D7','56F277','28703C','86E799','B9D1BF','A5BAEE',
+              'F28E2E','E7DBED','5D84E4','BB68F3','D96F9B','EFCDDD',
+            ],
+            bands: [
+              'FLDTYPCD',
+            ],
+          },
+        },
+      },
+      {
+        display_name: 'FORTYPCD_Viz',
+        lookat: {
+          lat: 38,
+          lon: -95.712891,
+          zoom: 5,
+        },
+        image_visualization: {
+          band_vis: {
+            min: [
+              101,
+            ],
+            max: [
+              999,
+            ],
+            palette: [
+              '94D0AA','81B0B6','7F6A37','C57F69','EEC289',
+              'F08BF0','51A0B1','F3B035','EBA9D1','AF8DE6','BBB92D',
+              'E48FC8','EEA97F','EAF5E0','D2D59B','DCC2C0','C7F0AA',
+              'E51EEB','3A1591','C26DA6','67C6CA','95EF79','D5C7E9',
+              'BC916F','D1DFD6','49F6AE','7B677B','F16791','DBF39C',
+              'DAD9BD','7D2F2E','45E8D5','9BC5E5','4DEBBE','3A6A8B',
+              '68F0EC','AAA7E7','4589D2','F4DF8E','F7D969','DFA098',
+              'D8ECF0','CAF466','E64393','8CE7EF','EEC7EA','DFA9EF',
+              'B7F2E0','BBBCC4','B2B1C8','ADF6D0','E2C8F9','BAE3F5',
+              '8391A7','9A2D79','B4CFA7','93DBF2','BAAEA2','8FF390',
+              'B2FA73','C6295F','EA6375','A1E073','2DB8AB','AE73B2',
+              'E38BAE','CFB0FA','D3A9B3','90E5D5','F12C43','B2C387',
+              '8FA42C','CDE353','7680AC','46D7ED','EECC39','D7BAF5',
+              '9A29F0','A7C6D7','F28A8D','EBF385','A0CD4F','81B180',
+              'CBA1FB','6BC35E','F5A3AD','D4DDEF','A049B7','E1A0B6',
+              'F06748','7A9252','66D727','E645DC','AA8D8B','EE405D',
+              'CFADD4','9190E6','4E655F','57ADF1','B2EB31','C6E377',
+              'BEA664','C26262','4B9A91','72F4B9','DA90E3','3EBF45',
+              'E973BF','AFE7B3','81629F','9144DD','E4C0A1','AC82A2',
+              'F5A8E1','B486F5','ECBF68','F340AF','C0CAF5','C1F89A',
+              'D3F3D2','EBEBC0','D350F4','D1CF7C','71F943','9E87C0',
+              'B6707A','F7E6D7','8CAAF2','F1F2F3','A3D382','4EBF86',
+              '8CF45A','F4F3B7','A1CFC9','F0DC9F','5971EF','699FCB',
+              'F7A1F0','5E62F8','F0CDBD','A7902B','F2F875','E6A55A',
+              'F068E4','DE55BF','CFF3C0','F7C1F3','90896C','F5BEB3',
+              'B49EC7','6BC3F5','6226E8','7AEBCD','D2AB20','515891',
+              'E47A65','97B45A','CBD14D','64C2A2','ADF2AD','DEEFB4',
+              '52B8DC','E1F855','8FA792','EBE545','C676DF','489744',
+              'E2F231','CFBC8F','51DC89','AA511D','846AC6','BB8FD3',
+              'F1BCD8','4F45A6','C6F5F4','E5DD69','C0A8E1','7F5DD7',
+              'DFD3D7','56F277','28703C','86E799','B9D1BF','A5BAEE',
+              'F28E2E','E7DBED','5D84E4','BB68F3','D96F9B','EFCDDD',
+            ],
+            bands: [
+              'FORTYPCD',
+            ],
+          },
+        },
+      },
+      {
         display_name: 'GSSTK_Viz',
         lookat: {
           lat: 38,
@@ -2462,6 +2450,34 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
             ],
             bands: [
               'STANDHT',
+            ],
+          },
+        },
+      },
+      {
+        display_name: 'STDSZCD_Viz',
+        lookat: {
+          lat: 38,
+          lon: -95.712891,
+          zoom: 5,
+        },
+        image_visualization: {
+          band_vis: {
+            min: [
+              1,
+            ],
+            max: [
+              5,
+            ],
+            palette: [
+              '38A800',
+              'FFFF00',
+              'FEBA12',
+              'C62363',
+              'C62363',
+            ],
+            bands: [
+              'STDSZCD',
             ],
           },
         },
@@ -2634,8 +2650,10 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
     ],
   },
   'sci:citation': |||
-    USDA Forest Service. 2026. USFS RMRS TreeMap: A tree-level model of the forests of the conterminous United States. 
-    Fort Collins, Colorado.
+    TreeMap is updated periodically. To ensure scientific reproducibility, please 
+    cite the specific version(s) corresponding to the data year(s) used in your 
+    analysis. Individual citations for each TreeMap vintage are listed below.
+    
    |||,
    'sci:publications': [
         {
@@ -2677,6 +2695,17 @@ local catalog_subdir_url = ee_const.catalog_base + subdir + '/';
             [doi:10.2737/RDS-2021-0074](https://doi.org/10.2737/RDS-2021-0074)
         |||,
         doi:'10.2737/RDS-2021-0074',
+        },
+        {
+        citation: |||
+            Riley, K. L., I. C. Grenfell, J. M. Wiener and M. A. Finney:  2022, TreeMap 2016
+            dataset generates CONUS-wide maps of forest characteristics including live basal
+            area, aboveground carbon, and number of trees per acre. 
+            Journal of Forestry. 2022: 607-632.
+            [doi:10.1093/jofore/fvac022](https://doi.org/10.1093/jofore/fvac022)
+            [https://research.fs.usda.gov/treesearch/65597](https://research.fs.usda.gov/treesearch/65597)
+        |||,
+        doi:'10.1093/jofore/fvac022',
         },
         {
         citation: |||
