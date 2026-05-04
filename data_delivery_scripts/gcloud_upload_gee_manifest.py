@@ -7,23 +7,25 @@ YOU MUST SET THE START AND END DATE OF THE IMAGE COLLECTION IN EARTH ENGINE MANU
 '''
 #%%
 import os, ee
+#%%
 from geeViz import assetManagerLib as aml
 from glob import glob
 from osgeo import gdal
+gdal.UseExceptions()
 #%%
 #################################################
 # User Variables (edit these)
 #################################################
 
 # Year of the dataset and associated landfire version
-year = '2020'
+year = '2022'
 study_area = 'CONUS'
 
 if year == '2020':
     landfire_ver = '2.2.0'
 elif year == '2022':
     landfire_ver = '2.3.0'
-elif year == '2023': 
+else:
     landfire_ver = '2.4.0'
 
 # The folder in which to look for images, and the format of the file names to select
@@ -31,7 +33,7 @@ image_folder = rf'\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute
 name_format = f'TreeMap{year}_{study_area}_*.tif'
 
 # Google Cloud bucket to upload the attributes to and the project id
-gcs_bucket = f'gs://separated-attributes/2026_UPDATE/{year}'
+gcs_bucket = f'gs://treemap-data-staging/{year}' 
 project_id = 'treemap-386222'
 #%%
 # Earth Engine paths
@@ -70,7 +72,7 @@ pyramidPolicy_lookup = {
 
 # Properties for the image collection
 image_collection_properties = {
-    'year': year
+    #'year': year
 }
 
 # Properties for the image
@@ -107,7 +109,7 @@ for image in glob(os.path.join(image_folder, name_format)):
     band = ds.GetRasterBand(1)
     no_data_val = band.GetNoDataValue()
     image_dict[image]['noDataValue'] = no_data_val
-
+#%%
 #################################################
 # Main process: create collection and upload
 #################################################
@@ -125,3 +127,5 @@ aml.uploadToGEEAssetImagesAsBands(
     )
 
 
+
+# %%
