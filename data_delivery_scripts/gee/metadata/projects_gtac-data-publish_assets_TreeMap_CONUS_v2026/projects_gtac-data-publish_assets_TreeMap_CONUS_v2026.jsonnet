@@ -1794,7 +1794,18 @@ local self_url = base_url + base_filename;
           ≥1.0 inch d.b.h./d.r.c. 
         |||,
         'gee:units': units.inch,
-        years: ['2016', '2020', '2022', '2023'],
+        years: ['2020', '2022', '2023'],
+      },
+      {
+        name: 'QMD_RMRS',
+        description: |||
+          Stand Quadratic Mean Diameter. Rocky Mountain Research Station. The quadratic 
+          mean diameter, or the diameter of the tree of average basal area, on the 
+          condition. Based on live trees ≥1.0 inch d.b.h./d.r.c. Only collected by certain
+          FIA work units. 
+        |||,
+        'gee:units': units.inch,
+        years: ['2016'],
       },
       {
         name: 'SDIsum',
@@ -1804,7 +1815,18 @@ local self_url = base_url + base_filename;
           on the condition, expressed as a sum of the maximum stand density index (SDI).
         |||,
         'gee:units': units.dimensionless,
-        years: ['2016', '2020', '2022', '2023'],
+        years: ['2020', '2022', '2023'],
+      },
+      {
+        name: 'SDIPCT_RMRS',
+        description: |||
+          Stand Density Index. Rocky Mountain Research Station. A relative measure of 
+          stand density for live trees (≥1.0 inch d.b.h./d.r.c.) on the condition, 
+          expressed as a percentage of the maximum stand density index (SDI). Only 
+          collected by certain FIA work units.
+        |||,
+        'gee:units': units.dimensionless,
+        years: ['2016'],
       },
       {
         name: 'STANDHT',
@@ -1882,7 +1904,16 @@ local self_url = base_url + base_filename;
           groupings of individual modeled plot values.
         |||,
         'gee:units': units.dimensionless,
-        years: ['2016', '2020', '2022', '2023'],
+        years: ['2020', '2022', '2023'],
+      },
+      {
+        name: 'Value',
+        description: |||
+          Raw TreeMap identifier dataset values. This dataset is useful to see spatial 
+          groupings of individual modeled plot values.
+        |||,
+        'gee:units': units.dimensionless,
+        years: ['2016'],
       },
       {
         name: 'VOLBFNET_L',
@@ -1915,10 +1946,6 @@ local self_url = base_url + base_filename;
       },
     ],
     'gee:visualizations': [
-      
-      
-      
-      
       {
         display_name: 'ALSTK_Viz',
         lookat: {
@@ -2389,6 +2416,39 @@ local self_url = base_url + base_filename;
         },
       },
       {
+        display_name: 'QMD_RMRS_Viz',
+        lookat: {
+          lat: 38,
+          lon: -95.712891,
+          zoom: 5,
+        },
+        image_visualization: {
+          band_vis: {
+            min: [
+              2,
+            ],
+            max: [
+              25,
+            ],
+            palette: [
+              'ffe599',
+              'e7cd68',
+              'c5ae32',
+              '969206',
+              '71870b',
+              '52741c',
+              '3a652a',
+              '265737',
+              '134b42',
+              '00404d',
+            ],
+            bands: [
+              'QMD_RMRS',
+            ],
+          },
+        },
+      },
+      {
         display_name: 'SDIsum_Viz',
         lookat: {
           lat: 38,
@@ -2417,6 +2477,39 @@ local self_url = base_url + base_filename;
             ],
             bands: [
               'SDIsum',
+            ],
+          },
+        },
+      },
+      {
+        display_name: 'SDIPCT_RMRS_Viz',
+        lookat: {
+          lat: 38,
+          lon: -95.712891,
+          zoom: 5,
+        },
+        image_visualization: {
+          band_vis: {
+            min: [
+              30,
+            ],
+            max: [
+              460,
+            ],
+            palette: [
+              'ffe599',
+              'e7cd68',
+              'c5ae32',
+              '969206',
+              '71870b',
+              '52741c',
+              '3a652a',
+              '265737',
+              '134b42',
+              '00404d',
+            ],
+            bands: [
+              'SDIPCT_RMRS',
             ],
           },
         },
