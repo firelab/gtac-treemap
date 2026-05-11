@@ -3,13 +3,11 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 12/17/24
-
-# TO DO: what target data params can i pull in from target data RDS? 
+# Last updated: 3/15/26
 
 ###########################################################################
 # Set user inputs
-###########################################################################
+########################################################################
 
 # zone to run
 zone = zone_input
@@ -114,9 +112,9 @@ assembled_dir = glue::glue("{assembled_dir}/{cur_zone_zero}")
 eval_dir <- glue::glue("{eval_dir}{cur_zone_zero}")
 
 tile_dir <- glue::glue("{raw_outputs_dir}raster/tiles/")
-model_dir = glue::glue("{raw_outputs_dir}/model/")
+model_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{model_version}/01_Raw_model_outputs/{cur_zone_zero}/model")
 
-evt_gp_remap_table_path = glue::glue("{evt_gp_remap_table_dir}/{cur_zone_zero}/evt_gp_remap.csv")
+evt_gp_remap_table_path = glue::glue("{evt_gp_remap_table_dir}/{cur_zone_zero}/evt_gp_remap_table.csv")
 params_dir = glue::glue("{raw_outputs_dir}/params/")
 
 
@@ -125,20 +123,14 @@ params_dir = glue::glue("{raw_outputs_dir}/params/")
 
 # build default model path
 if(is.na(model_path)) {
-  model_path1 <- glue::glue('{output_name}_yai_treelist_bin')
-  
-  # Path where model is located
-  # This path will be used for export and import
-  model_path <- glue::glue('{raw_outputs_dir}/model/{model_path1}.RDS')
-  
-  rm(model_path1)
-  
+  model_name <- glue::glue("{cur_zone_zero}_{model_version_name}_yai_treelist_bin")
+  model_path <- glue::glue("{model_dir}/{model_name}.RDS")
 }
+  
 
-# path to save x and y tables used in model
-xtable_path_model <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Xdf_bin.csv")
-ytable_path_model <- glue::glue("{raw_outputs_dir}/xytables/{output_name}_Ydf_bin.csv")
-
+# path to save and load x and y tables used in model
+xtable_path_model <- glue::glue("{home_dir}03_Outputs/07_Projects/{model_version}/01_Raw_model_outputs/{cur_zone_zero}/xytables/{cur_zone_zero}_{model_version_name}_Xdf_bin.csv")
+ytable_path_model <- glue::glue("{home_dir}03_Outputs/07_Projects/{model_version}/01_Raw_model_outputs/{cur_zone_zero}/xytables/{cur_zone_zero}_{model_version_name}_Ydf_bin.csv")
 
 # Create all directories
 # ----------------------------------#
@@ -245,8 +237,10 @@ params_out <- data.frame(
   aoi_name,
   target_data_version,
   ref_data_version,
+  model_version,
   model_path,
   xtable_path,
+  target_dir,
   zone_output_crs
   ) %>%
     bind_rows() %>%

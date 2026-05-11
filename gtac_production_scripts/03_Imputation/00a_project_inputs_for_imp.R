@@ -3,7 +3,7 @@
 
 # Written by: Lila Leatherman (lila.leatherman@usda.gov)
 
-# Last updated: 12/17/24
+# Last updated: 3/15/26
 
 ###########################################################################
 # Set inputs
@@ -12,17 +12,25 @@
 year <- year_input
 
 #project_name <- glue::glue("{year}_Production")
-project_name <- glue::glue("{year}_Production_newXtable")
+project_name <- glue::glue("{year}_Production_rerun_w2022model_take2_optimized")
 
 # name for products - includes params here if desired
 #e.g., #output_name <- "2016_GTAC_LCMSDist"
-output_name <- glue::glue("{year}_Production") 
+#output_name <- glue::glue("{year}_Production") 
+output_name <- project_name
 
 # target data version to use
 target_data_version <- glue::glue("v{year}")
 
 # reference data version to use
-ref_data_version <- glue::glue("v{year}")
+ref_data_version <- "v2022"
+
+# model version to use - should match with a project name. default is project_name. 
+# model version name might be different than project name; eg might not have "_newXtable" suffix
+#model_version <- project_name
+#model_version_name <- project_name
+model_version <- "2022_Production_newXtable"
+model_version_name <- "2022_Production"
 
 # disturbance type - options are "LF" or "LFLCMS"
 dist_layer_type <- "LF"
@@ -52,11 +60,11 @@ targetvars <- c("elevation", "easting", "northing",
   
 
 # list names of attribute vars to evaluate - these come from RAT table or similar; are not included in imputation
-attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
-                   "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
-                   "TPA_DEAD", "TPA_LIVE") # 2016 version
+# attributevars <- c("BALIVE", "GSSTK", "QMD_RMRS", "SDIPCT_RMRS",
+#                    "CANOPYPCT", "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD",
+#                    "TPA_DEAD", "TPA_LIVE") # 2016 version
 
-attributevars <- c("BALIVE", "GSSTKCD", "QMD", "SDIsum",	"CANOPYPCT",
+attributevars <- c("BALIVE", "GSSTK", "QMD", "SDIsum",	"CANOPYPCT",
                    "CARBON_D", "CARBON_L", "CARBON_DOWN_DEAD", 
                    "TPA_DEAD", "TPA_LIVE")	# 2020/2022 version
 
@@ -77,11 +85,11 @@ source(lib_path)
 coords_path <- glue::glue("{FIA_dir}/06_Coordinates/select_TREEMAP2022_2send/select_TREEMAP2022_2send.csv")
 
 # Dir for X table - relative to home_dir
-xtable_dir <- glue::glue("{home_dir}/03_Outputs/06_Reference_Data/{ref_data_version}/01_X_tables_by_zone/")
+xtable_dir <- glue::glue("{home_dir}/03_Outputs/06_Reference_Data/{ref_data_version}/01_X_tables_by_zone/{ref_data_version}/")
 
 # Raster Attribute Table used in validation for attribute vars
 #rat_path <- glue::glue("{home_dir}01_Data/01_TreeMap2016_RDA/RDS-2021-0074_Data/Data/TreeMap2016.tif")
-rat_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}RAT_tmid.csv")
+rat_path <- glue::glue("{home_dir}03_Outputs/06_Reference_Data/v{year}/03_Raster_attributes/TM{year}_RAT_tmid.csv")
 
 # path to zone metadata
 zone_metadata_path <- glue::glue('{home_dir}/01_Data/02_Landfire/metadata/LF_zones_all_byStudyArea.csv')
@@ -112,7 +120,7 @@ lf_zones_path_HI <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/h
 
 
 # Directory where target rasters live
-target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/post_mask/")
+target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/masked/")
 
 # Directory where disturbance layers live 
 dist_raster_dir <- target_dir 

@@ -147,7 +147,7 @@ if (!is.na(aoi_path)) {
 rs2 %<>% terra::trim()
 
 #crop target data to extent of outputs
-rs2 %<>% terra::crop(ext(ras))
+rs2 %<>% terra::crop(terra::ext(ras))
 
 
 # Make sure target and imputation rasters have the same geometry

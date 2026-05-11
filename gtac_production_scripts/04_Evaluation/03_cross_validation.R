@@ -149,6 +149,7 @@ rat_x <- rat %>%
 message(glue::glue("running {k}-fold cross-validation"))
 
 # make folds
+set.seed(123) # for reproducibility
 folds <- caret::createMultiFolds(y = row.names(X_df), k = k, times = 1)
 
 cv <- data.frame()
