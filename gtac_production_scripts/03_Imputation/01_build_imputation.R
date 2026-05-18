@@ -111,46 +111,46 @@ plot_df %<>%
 row.names(plot_df) <- NULL
 row.names(plot_df) <- plot_df$tm_id
 
-# Inspect input variables - check for values in expected ranges
-#-------------------------------------------------------------------#
-
-##### PLOT
-message(glue::glue("plotting x table variables for pre-model QA: exporting to {raw_outputs_dir}"))
-
-facet_n = ceiling(sqrt(length(xvars)))
-
-png(glue::glue("{raw_outputs_dir}/model_eval/{cur_zone_zero}_xtable_summary.png"),
-    width =2000, height = 2000)
-
-par(mar=c(3,3,3,3),
-    mfrow = c(facet_n, 4))
-
-for(i in 1:length(xvars)) {
-  
-  hist(as.numeric(plot_df[,xvars[i]]),
-       xlab = "n",
-       ylab = xvars[i],
-       main = xvars[i])
-  
-}
-dev.off()
-
-
-#### EXPORT CSV USING SKIMR package
-skim_out <- plot_df %>%
-  mutate(evt_gp_remap = as.numeric(evt_gp_remap),
-         disturb_code_bin = as.numeric(disturb_code_bin)) %>%
-  skimr::skim()%>%
-  select(skim_variable, 
-         numeric.mean, numeric.sd, numeric.p0, numeric.p25, numeric.p50, numeric.p75, numeric.p100) %>%
-  filter(skim_variable %notin% c("tm_id", "zone", "plt_cn")) %>%
-  as_tibble() %>%
-  rename("variable" = skim_variable) %>%
-  rename_with(., ~ gsub("numeric.", "", .x))
-
-#str(skim_out)
-
-write.csv(skim_out, glue::glue("{raw_outputs_dir}/model_eval/{cur_zone_zero}_xtable_summary.csv"), row.names = FALSE)
+# # Inspect input variables - check for values in expected ranges
+# #-------------------------------------------------------------------#
+# 
+# ##### PLOT
+# message(glue::glue("plotting x table variables for pre-model QA: exporting to {raw_outputs_dir}"))
+# 
+# facet_n = ceiling(sqrt(length(xvars)))
+# 
+# png(glue::glue("{raw_outputs_dir}/model_eval/{cur_zone_zero}_xtable_summary.png"),
+#     width =2000, height = 2000)
+# 
+# par(mar=c(3,3,3,3),
+#     mfrow = c(facet_n, 4))
+# 
+# for(i in 1:length(xvars)) {
+#   
+#   hist(as.numeric(plot_df[,xvars[i]]),
+#        xlab = "n",
+#        ylab = xvars[i],
+#        main = xvars[i])
+#   
+# }
+# dev.off()
+# 
+# 
+# #### EXPORT CSV USING SKIMR package
+# skim_out <- plot_df %>%
+#   mutate(evt_gp_remap = as.numeric(evt_gp_remap),
+#          disturb_code_bin = as.numeric(disturb_code_bin)) %>%
+#   skimr::skim()%>%
+#   select(skim_variable, 
+#          numeric.mean, numeric.sd, numeric.p0, numeric.p25, numeric.p50, numeric.p75, numeric.p100) %>%
+#   filter(skim_variable %notin% c("tm_id", "zone", "plt_cn")) %>%
+#   as_tibble() %>%
+#   rename("variable" = skim_variable) %>%
+#   rename_with(., ~ gsub("numeric.", "", .x))
+# 
+# #str(skim_out)
+# 
+# write.csv(skim_out, glue::glue("{raw_outputs_dir}/model_eval/{cur_zone_zero}_xtable_summary.csv"), row.names = FALSE)
 
 # Create X table - orig (aka training table)
 # ---------------------------------------------------------#

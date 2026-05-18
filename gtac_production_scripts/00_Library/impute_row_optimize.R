@@ -1,4 +1,22 @@
-impute_row_optimize <- function(dat, yai) {
+library(docstring)
+
+impute_row_optimize <- function(dat, yai, k=1) {
+
+  #' Function to make new imputation predictions given a data frame input
+  #' 
+  #' @param dat The data frame, for TreeMap, represents one row of a multi-layer raster
+  #' Where each column in the data frame represents all values in the row for a given layer of the raster. Each column represents a different layer. 
+  #' @param yai model created by the `yaImpute` function
+  #' @param test default FALSE. test = TRUE skips the imputation portion and returns a data frame of the input ids
+  #' @param k which nearest neighbor to use in imputation. Default is 1, which is the same as the original `impute_row` function. if k>1, the interior function will return a list of the k nearest neighbor ids, and the kth neighbor will be extracted and returned as the imputed id for the row.
+  #' @return data frame of imputed ids in the same shape and size as the input `dat`
+  #' @export
+  #'
+  #' @examples 
+  require(yaImpute)
+  require(dplyr)
+  require(tidyverse)
+  require(magrittr)
   
   # Identify valid pixels
   # Check the first column for NA's
@@ -29,10 +47,10 @@ impute_row_optimize <- function(dat, yai) {
   
   
   # Run imputation on the data
-  temp_newtargs <- yaImpute::newtargets(yai, newdata = X_temp)
+  temp_newtargs <- yaImpute::newtargets(yai, newdata = X_temp, k = k)
   
   # Extract imputed ID
-  yrows <- as.numeric(temp_newtargs$neiIdsTrgs[,1])
+  yrows <- as.numeric(temp_newtargs$neiIdsTrgs[, k])
   
   impute_out[valid_cols] <- yrows
   #

@@ -5,12 +5,14 @@ Run for each image you'd like in the image collection (e.g., once for CONUS imag
 
 YOU MUST SET THE START AND END DATE OF THE IMAGE COLLECTION IN EARTH ENGINE MANUALLY (THESE CAN BE SET IN THE SCRIPT FOR THE INDIVIDUAL IMAGES)
 '''
-
+#%%
 import os, ee
+#%%
 from geeViz import assetManagerLib as aml
 from glob import glob
 from osgeo import gdal
-
+gdal.UseExceptions()
+#%%
 #################################################
 # User Variables (edit these)
 #################################################
@@ -21,20 +23,22 @@ study_area = 'CONUS'
 
 if year == '2020':
     landfire_ver = '2.2.0'
-else: 
+elif year == '2022':
     landfire_ver = '2.3.0'
+else:
+    landfire_ver = '2.4.0'
 
 # The folder in which to look for images, and the format of the file names to select
-image_folder = rf'\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute_Rasters\{year}'
+image_folder = rf'\\166.2.126.25\TreeMap\08_Data_Delivery\01_Separated_Attribute_Rasters\2026_UPDATE\{year}'
 name_format = f'TreeMap{year}_{study_area}_*.tif'
 
 # Google Cloud bucket to upload the attributes to and the project id
-gcs_bucket = f'gs://separated-attributes/{year}'
+gcs_bucket = f'gs://treemap-data-staging/{year}' 
 project_id = 'treemap-386222'
-
+#%%
 # Earth Engine paths
     # The folder to save the image collection in
-gee_folder = f'projects/treemap-386222/assets/Final_Outputs/{year}'
+gee_folder = f'projects/treemap-386222/assets/2026_UPDATE/{year}'
     # The name of the image collection to create
 gee_image_collection_name = f'TreeMap{year}'
     # The name of the image to create
@@ -68,7 +72,7 @@ pyramidPolicy_lookup = {
 
 # Properties for the image collection
 image_collection_properties = {
-    'year': year
+    #'year': year
 }
 
 # Properties for the image
@@ -81,7 +85,7 @@ image_properties = {
     'system:time_start': ee.Date(f'{year}-01-01'),
     'system:time_end': ee.Date(f'{int(year)+1}-01-01')
 }
-
+#%%
 #################################################
 # Script Setup
 #################################################
@@ -89,7 +93,7 @@ image_properties = {
 # Initialize Google Cloud and Earth Engine with the project
 ee.Authenticate()
 ee.Initialize(project=project_id)
-
+#%%
 # For each image in the directory that matches the name format, add it to a dictionary and save its pyramiding policy, band name, and no data value
 image_dict = {}
 for image in glob(os.path.join(image_folder, name_format)):
@@ -105,7 +109,7 @@ for image in glob(os.path.join(image_folder, name_format)):
     band = ds.GetRasterBand(1)
     no_data_val = band.GetNoDataValue()
     image_dict[image]['noDataValue'] = no_data_val
-
+#%%
 #################################################
 # Main process: create collection and upload
 #################################################
@@ -123,3 +127,5 @@ aml.uploadToGEEAssetImagesAsBands(
     )
 
 
+
+# %%

@@ -11,13 +11,13 @@
 ######################################################
 
 #years
-years <- c(2020, 2022)
+years <- c(2020, 2022, 2023)
 
 # study area(s) - currently only takes 'CONUS'
 studyArea <- 'CONUS'
 
 # project name structure
-project_name_base <- "Production_newXtable"
+project_name_base <- c("Production_newXtable", "Production_newXtable", "Production")
 
 zones <- 'all' # options: 'all' or list of zone numbers
 #zones <- c(seq(1,5,1))
@@ -28,7 +28,7 @@ response_vars <-  c("evc", "evh", "evt_gp", "disturb_code_bin")
 eval_vars <- c(response_vars, "disturb_code", "disturb_year")
 
 # Types of evaluation to run and prepare reports for 
-# Options: "model_eval", "CV"
+# Options: "model_eval", "CV", "TargetLayerComparison"
 eval_types <- c("model_eval", "TargetLayerComparison")
 
 # where to export results, relative to home_dir
@@ -72,7 +72,7 @@ for (year in years){
   out_dat_year <- c()
 
   # make string for project name
-  project_name <- glue::glue('{year}_{project_name_base}')
+  project_name <- glue::glue('{year}_{project_name_base[which(years == year)]}')
   
   # make string for project name in eval path
   project_name_path = gsub("_newXtable", "", project_name)
@@ -98,13 +98,14 @@ for (year in years){
   rat <- data.frame(cats(r))
   
   # get # unique ids in x table
-  xtable <- read.csv(glue::glue("{home_dir}/03_Outputs/06_Reference_Data/v{year}/02_X_table_{studyArea}/x_table_complete_{studyArea}_2022.csv"))
+  xtable <- read.csv(glue::glue("{home_dir}/03_Outputs/06_Reference_Data/v{year}/02_X_table_{studyArea}/x_table_complete_{studyArea}_{year}.csv"))
   
   #get all data 
   unique_ids <- data.frame(n_unique = nrow(rat), # how many unique ids were imputed to the zone?
                            n_available = nrow(xtable), # how many unique ids were available?
                            pct_imputed = nrow(rat)/nrow(xtable)) # pct of available ids imputed? 
-  
+
+
   # export
   write.csv(unique_ids, 
             glue::glue("{eval_dir}/National/Treemap{year}_{studyArea}_uniqueIdsImputed.csv"),
@@ -256,13 +257,15 @@ out_dat_all |>
 
 out_years_long <- 
 out_dat_all %>%
-  pivot_wider(names_from = var, values_from = acc)
+  pivot_wider(names_from = var, values_from = acc) %>%
+  data.frame()
 
 out_years_wide <-
 out_dat_all %>%
   pivot_wider(names_from = c(var, year), 
               values_from = acc,
-              names_sort = TRUE)
+              names_sort = TRUE) %>%
+  data.frame()
 
 
 # Export tables
@@ -275,10 +278,10 @@ if(!file.exists(output_dir)){
 
 output_years <- paste(years, collapse = "_")
 
-write.csv(out_years_long, glue::glue('{output_dir}/{output_years}_{project_name_base}_eval_var_accuracy_allZones_yearsLong.csv'),
+write.csv(out_years_long, glue::glue('{output_dir}/{output_years}_eval_var_accuracy_allZones_yearsLong.csv'),
           row.names = FALSE)
 
-write.csv(out_years_wide, glue::glue('{output_dir}/{output_years}_{project_name_base}_eval_var_accuracy_allZones_yearsWide.csv'),
+write.csv(out_years_wide, glue::glue('{output_dir}/{output_years}_eval_var_accuracy_allZones_yearsWide.csv'),
           row.names = FALSE)
 
 
@@ -292,7 +295,7 @@ national_acc <-
               evt_gp = mean(evt_gp),
               disturb_code = mean(disturb_code)) 
 
-write.csv(national_acc, glue::glue('{output_dir}/{output_years}_{project_name_base}_national_accuracy.csv'),
+write.csv(national_acc, glue::glue('{output_dir}/{output_years}_national_accuracy.csv'),
           row.names = FALSE)
 
 

@@ -123,13 +123,15 @@ if (na_imputed == na_target) {
                   Target: {na_target}"))
 }
 
+assembled_ras_out_path <- glue('{assembled_dir}/01_Imputation/{rout_name}.tif')
 
 # export as single raster per zone
 writeRaster(vrt, 
-            glue('{assembled_dir}/01_Imputation/{rout_name}.tif'),
+            assembled_ras_out_path,
             overwrite = TRUE,
             datatype="INT4U")
 
+message(glue::glue("Finished assembling imputed tiles; exported to {assembled_ras_out_path}"))
 
 # clear unused memory
 gc()

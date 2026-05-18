@@ -2,9 +2,9 @@
 # Original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
 # original script: "rmrs_production_scripts/2016_updated_production_scripts/yai-treemap commented.R"
 
-# Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
+# Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov) and Scott Zimmer
 
-# Last updated: 9/17/24
+# Last updated: 3/16/26
 
 # This script accomplishes the following tasks: 
 # - Run imputation over provided input area and target rasters
@@ -34,13 +34,14 @@ which_tiles <- NA
 # Load data
 ####################################################################
 
-message("loading data")
+message("  Loading data...")
 
 # Load imputation model
 # ---------------------------------------------------------- #
 
 #load model
 yai <- readr::read_rds(model_path)
+message(glue::glue("Loaded model from {model_path}"))
 
 # get names of variables included in model
 model_vars <- names(yai$xRefs)
@@ -48,6 +49,8 @@ model_vars %<>% str_subset("point_", negate = TRUE) %>% sort() # remove point_x 
 
 # Load target rasters
 # ---------------------------------------------------------- #
+
+message("  Loading target rasters...")
 
 # list raster files
 flist_tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
@@ -125,7 +128,7 @@ if (!is.na(aoi_path)) {
 #Set up for applying imputation
 ###################################################################
 
-message("setting up tiles for imputation")
+message("  Setting up tiles for imputation...")
 
 # Set inputs for run
 # ---------------------------------------------------------- #
@@ -150,7 +153,7 @@ agg <- terra::aggregate(rs2[[1]], fact = tile_size,
 # subset the raster and create temporary files
 # tiles with only NA values are omitted
 # the function returns file names for the temporary files
-tiles <- rs2 %>%
+tiles <- rs2 %>%    
   terra::makeTiles(agg, paste0(tempfile(), "_.tif"), na.rm = TRUE)
 
 # garbage collector
@@ -184,18 +187,25 @@ if(is.na(which_tiles[1])) {
 
 # Set up parallel processing
 # ---------------------------------------------------------- #
-message("setting up parallel processing")
+message("  Setting up parallel processing...")
 
 # set up dopar
 cl <- parallel::makeCluster(ncores)
-doParallel::registerDoParallel(cl)
+#doParallel::registerDoParallel(cl)
+doSNOW::registerDoSNOW(cl)
+
 
 # load packages to each cluster
 parallel::clusterCall(cl, function() {
-  library(tidyverse);
   library(yaImpute);
-  library(randomForest);
-  library(glue)})
+  library(randomForest)
+})
+
+
+# Export yai and impute_row function to each node. Doing this in the initial setup saves a ton of time
+parallel::clusterExport(cl, varlist = c("yai", "impute_row_optimize"))
+
+
 
 ##################################################################################
 # Apply imputation over tiles
@@ -210,7 +220,7 @@ message(glue::glue("Total tiles: {n_tiles}. Running over tiles {min(which_tiles)
 
 for(j in which_tiles) {
   
-  # j <- 1 # for test
+  #j <- 1 # for test
   
   # select tile to run
   fn <- tiles[j]
@@ -235,53 +245,45 @@ for(j in which_tiles) {
   
   gc()
   
-  # convert raster to matrix
-  mat <- as.matrix(ras)
+  # Convert raster values to data frame
+  mat_df <- as.data.frame(terra::values(ras, mat = TRUE))
+  
+  # Identify rows that have valid pixels
+  is_valid <- !is.na(mat_df[[1]]) 
+  valid_indices <- which(is_valid)
+  
+  # Divide the valid data into chunks - up to 10 per core
+  n_chunks <- 10 * ncores
+  group_id <- cut(seq_along(valid_indices), breaks = n_chunks, labels = FALSE)
+  
+  # Split by chunk ID
+  chunk_list <- split(mat_df[valid_indices, ], group_id)
   
   
   # Do work on tile - parallel with foreach and %dopar%
   # ---------------------------------------------------------- #
-
-  f <- foreach(i = 1:nrow_r,
-    .packages = c("tidyverse", "yaImpute", "glue"),
-    .export = c("tmp_dir" )
-  ) %dopar% {
-
-    # # for testing
-    #i = 1851
-    # print(glue::glue("working on row {i}/{nrow_r}"))
-
-    # get extracted values from each field for each row of input raster
-    d <- data.frame(
-                    mat[(ncol_r * (i - 1) + 1):(ncol_r * i), ])
-    
-    # impute on row of data - input is named row of data + yai
-    row <- impute_row(dat = d,
-                      yai = yai, test = FALSE)
-    
-    # label for row - to keep rows in order
-    i_out <- if (i < 10) { glue::glue("000{i}")
-    } else if (i < 100) { glue::glue("00{i}")
-    } else if (i < 1000) { glue::glue("0{i}")
-    } else if (i < 10000) {glue::glue("{i}")
-    }
-    
-    saveRDS(row,
-      glue::glue("{tmp_dir}/rows/row{i_out}.RDS")) 
-   
-   } # end do par
-             
-  # read rows back in 
-  rlist <- list.files(glue::glue("{tmp_dir}/rows/"),
-                      "row[0-9]*.RDS", full.names = TRUE)
   
-  # potential for error catch - if length(rlist) > nrow_r
-  
-  # bind rows together
-  mout <- do.call(rbind,
-                  lapply(rlist, readRDS))
+  # Parallelize over the row list and collect row imputations into list
+  mout_list <- foreach(d = chunk_list, 
+                       .packages = c("yaImpute"),
+                       .noexport = c("yai"),
+                       .options.snow = list(preschedule = FALSE)) %dopar% {
+                         impute_row_optimize(dat = d, yai = yai)
+                       }
 
-  # Turn rows into a raster tile
+  # Bind the nested list, with NA's filled in where they should be at the invalid indices
+  final_vector <- rep(NA_integer_, nrow(mat_df))
+  final_vector[valid_indices] <- unlist(mout_list, use.names = FALSE)
+  
+  
+  # Arrange vector data to matrix with correct dimensions
+  mout <- matrix(final_vector, 
+                 nrow = nrow_r, # raster input nrow
+                 ncol = ncol_r, # raster input ncol
+                 byrow = TRUE)
+  
+  
+  # Turn imputed values from matrix into a raster tile
   # ---------------------------------------------------------- #
   if (nrow(mout) < nrow_r) {
     # fill any missing rows in tile, when compared to input raster tile
@@ -290,14 +292,15 @@ for(j in which_tiles) {
     # convert to raster
     tile_out <- mout %>% terra::rast()
   }
-
-  #post-process tile - with metadata from input raster
+  
+  # Post-process raster tile - assign metadata from input raster
   terra::ext(tile_out) <- ext_r
   terra::crs(tile_out) <- crs_r
-
-  # trim NAs from tile, now that we have appropriate extent and CRS
+  
+  # Trim NAs from tile, now that we have appropriate extent and CRS
   tile_out <- terra::trim(tile_out)
-
+  
+  
   # # inspect
   # plot(tile_out,
   #      main = glue::glue('Zone {zone_num} ; tile {j} of {n_tiles}'))
@@ -308,14 +311,14 @@ for(j in which_tiles) {
               datatype = "INT4U",
               overwrite = TRUE)
 
-  #rm(tile_out)
-  gc() # end of work on tile
-
-  # delete rows from tmp dir - fresh start for next tile
-  do.call(unlink, list(rlist))
-
-  message(glue::glue("done with tile {j} of {n_tiles}!"))
+  # Remove objects
+  rm(mout_list)
+  rm(mout)
+  rm(tile_out)
+  #
+  gc() # end of work on this tile
   
+  message(glue::glue("    done with tile {j} of {n_tiles}!"))
 
 }
 
@@ -323,4 +326,4 @@ stopCluster(cl)
 
 message(glue::glue("Done with zone {zone_num}!"))
 
-rm(f, cl, p, agg, yai, ras, tile_out, mout, mat, ext_r, ncol_r, nrow_r, j)
+rm(f, cl, p, agg, yai, ras, tile_out, mout, mout_list, mat_df, ext_r, ncol_r, nrow_r, j)

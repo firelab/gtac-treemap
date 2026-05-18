@@ -2,9 +2,9 @@
 # Original script written by Isaac Grenfell, RMRS (igrenfell@gmail.com) 
 # original script: "rmrs_production_scripts/2016_updated_production_scripts/yai-treemap commented.R"
 
-# Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov)
+# Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov) and Scott Zimmer
 
-# Last updated: 9/17/24
+# Last updated: 3/16/26
 
 # This script accomplishes the following tasks: 
 # - Run imputation over provided input area and target rasters
@@ -34,13 +34,14 @@ which_tiles <- NA
 # Load data
 ####################################################################
 
-message("loading data")
+message("  Loading data...")
 
 # Load imputation model
 # ---------------------------------------------------------- #
 
 #load model
 yai <- readr::read_rds(model_path)
+message(glue::glue("Loaded model from {model_path}"))
 
 # get names of variables included in model
 model_vars <- names(yai$xRefs)
@@ -48,6 +49,8 @@ model_vars %<>% str_subset("point_", negate = TRUE) %>% sort() # remove point_x 
 
 # Load target rasters
 # ---------------------------------------------------------- #
+
+message("  Loading target rasters...")
 
 # list raster files
 flist_tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
@@ -125,7 +128,7 @@ if (!is.na(aoi_path)) {
 #Set up for applying imputation
 ###################################################################
 
-message("setting up tiles for imputation")
+message("  Setting up tiles for imputation...")
 
 # Set inputs for run
 # ---------------------------------------------------------- #
@@ -150,7 +153,7 @@ agg <- terra::aggregate(rs2[[1]], fact = tile_size,
 # subset the raster and create temporary files
 # tiles with only NA values are omitted
 # the function returns file names for the temporary files
-tiles <- rs2[[1]] %>%  # Only need to provide a single layer here, not the full raster stack
+tiles <- rs2 %>%    
   terra::makeTiles(agg, paste0(tempfile(), "_.tif"), na.rm = TRUE)
 
 # garbage collector
@@ -184,7 +187,7 @@ if(is.na(which_tiles[1])) {
 
 # Set up parallel processing
 # ---------------------------------------------------------- #
-message("setting up parallel processing")
+message("  Setting up parallel processing...")
 
 # set up dopar
 cl <- parallel::makeCluster(ncores)
@@ -217,7 +220,7 @@ message(glue::glue("Total tiles: {n_tiles}. Running over tiles {min(which_tiles)
 
 for(j in which_tiles) {
   
-  # j <- 1 # for test
+  #j <- 1 # for test
   
   # select tile to run
   fn <- tiles[j]
@@ -267,7 +270,7 @@ for(j in which_tiles) {
                        .options.snow = list(preschedule = FALSE)) %dopar% {
                          impute_row_optimize(dat = d, yai = yai)
                        }
-  
+
   # Bind the nested list, with NA's filled in where they should be at the invalid indices
   final_vector <- rep(NA_integer_, nrow(mat_df))
   final_vector[valid_indices] <- unlist(mout_list, use.names = FALSE)

@@ -8,15 +8,22 @@ gc()
 #################################################################
 
 # Initialize projects (years) and zones
-year_input <- 2020
-
+year_input <- 2023
 
 # manually list zones
 # zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-#                 seq(from = 12, to = 66, by = 1),
-#                 98, 99)
+#                seq(from = 12, to = 66, by = 1),
+#                98, 99)
 
-zones_list <- c(1,10)
+# Which models differ in how unchanged px are treated between 2022 and 2023?
+rds_path <- "C:/Users/lleatherman/Desktop/zones_with_differing_models_2022_2023.rds"
+
+df <- readr::read_rds(rds_path)
+# remove zones that were previously ran in 2023 production
+zones_to_omit <- c(seq(1,8), 58)
+zones_list <- df
+zones_list <- zones_list[!zones_list %in% zones_to_omit]
+message(glue::glue("Zones to run: {paste(zones_list, collapse = ', ')}"))
 
 ### Additional code for sub-setting zones list (for production)
 ## Filter out certain run zones (unordered list)
@@ -29,19 +36,27 @@ zones_list <- c(1,10)
 
 # Types of evaluation to run and prepare reports for 
 # Options: "model_eval", "TargetLayerComparison", "OOB_manual", "CV"
-eval_type_list <- c("model_eval", "TargetLayerComparison", "CV")
+eval_type_list <- c("TargetLayerComparison", "CV")
 
 # Export evaluation report stats (parameters, metrics, and accuracies) 
 exportEvalReportStats <- TRUE # TRUE or FALSE
+
+# SKIP MODEL BUILDING - if using an existing model version and just want to run imputation and/or evaluation
+skip_ModelBuild <- TRUE # TRUE or FALSE; if TRUE, will skip the model building step and will use an existing model version specified in `model_version` variable in `00a_project_inputs_for_imp.R`
 
 # RUN EVAL ONLY (skips imputation -- assumes already done)
 skip_Imputation <- FALSE
 
 # RUN EVAL REPORT GENERATION ONLY (skips evaluation script -- assumes eval RDS is already saved in zone folder)
-skip_Evaluation <- TRUE
+skip_Evaluation <- FALSE
+
+# Skip report generation
+skip_ReportGen <- FALSE
 
 # Skip additional layer assembly - optional
 skip_Assembly <- TRUE
+
+
 # Script inputs - changed less frequently 
 ########################################################
 
@@ -66,19 +81,20 @@ reportGenerator_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Eva
 # Attribute layer assembly script
 assembleAttribute_script <- glue::glue("{this_proj}/gtac_production_scripts/04_Evaluation/05_assemble_attribute_layers.R")
 
-# packages required
-list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
-                      "magrittr", "tictoc", "caret", "randomForest", 
-                      "Metrics", "foreach", "doParallel", "yaImpute", "docstring",
-                      "stringr", "stringi", "devtools", "philentropy", "skimr")
 
 ################################################################
 # END USER INPUTS
 ################################################################
 
-#################################################################
 # Make sure required packages are installed
 #################################################################
+
+# packages required
+list.of.packages <- c("glue", "this.path", "rprojroot", "terra", "tidyverse", 
+                      "magrittr", "tictoc", "caret", "randomForest", 
+                      "Metrics", "foreach", "doParallel", "yaImpute",
+                      "docstring","stringr", "stringi", "devtools",
+                      "philentropy", "skimr", "foreign","doSNOW")
 
 # #check for packages and install if needed
 new.packages <- tryCatch(
@@ -102,7 +118,6 @@ if(length(new.packages) > 0) install.packages(new.packages)
 # remove unused objects
 rm(list.of.packages, new.packages)
 
-
 ##############################################################################
 # Do the work
 ##############################################################################
@@ -112,7 +127,7 @@ ptm_start <- Sys.time() # Processing time: Start
 message(paste0("Running imputation preparation for year: ", year_input))
 
 # PASS variables to `00a_project_inputs_for_imp.R` to SET project directory for each year
-source(project_inputScript)
+source(project_inputScript) # calls TreeMap Library and installs any necessary packages
 
 # LOOP by zones 
 for (zone_input in zones_list){
@@ -128,11 +143,17 @@ for (zone_input in zones_list){
   
   # PASS variables to `00b_zone_inputs_imp.R` to SET variables by zone
   source(zone_inputScript)
-  
-  if (skip_Imputation == FALSE){
-    # SOURCE script 01 to build the imputation model for the zone
+
+  if(skip_ModelBuild == FALSE) {
+    # SOURCE script 01 to build the imputation model for each zone
     message(paste0("Building imputation model for zone: ", zone_input))
     source(buildImputation_script)
+  } else {
+    message("---------------------------------------------------------------------------")
+    message("Skipping model building as `skip_ModelBuild` was set to TRUE. Moving to imputation...")
+  }
+  
+  if (skip_Imputation == FALSE){
     
     # SOURCE script 02 to run the imputation model for each zone
     message(paste0("Applying imputation model for zone: ", zone_input))
@@ -184,17 +205,25 @@ for (zone_input in zones_list){
     message("Skipping evaluation as `skip_Evaluation` was set to TRUE. Moving to report generation...")
   }
   
-  # SOURCE eval report generator
-  # For each evaluation type specified
-  for (i in seq_along(eval_type_list)) {
+  if (skip_ReportGen == FALSE) {
+    # SOURCE eval report generator
+    message("Generating evaluation reports...")
+    # SOURCE eval report generator
+    # For each evaluation type specified
+    for (i in seq_along(eval_type_list)) {
     
     # set eval type
-    eval_type_in <- eval_type_list[i]
+      eval_type_in <- eval_type_list[i]
     
-    message(glue::glue("Generating evaluation report for {eval_type_in}"))
-    source(reportGenerator_script)
-    eval_figs_list <- list() # re-initialize list for next loop
+      message(glue::glue("Generating evaluation report for {eval_type_in}"))
+      source(reportGenerator_script)
+      eval_figs_list <- list() # re-initialize list for next loop
   }
+  } else {
+    message("---------------------------------------------------------------------------")
+    message("Skipping evaluation report generation as `skip_ReportGen` was set to TRUE.")
+  }
+
   
   
   message(paste0("Evaluation complete for zone: ", zone_input))
