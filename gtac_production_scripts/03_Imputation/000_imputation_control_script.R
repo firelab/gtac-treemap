@@ -10,13 +10,20 @@ gc()
 # Initialize projects (years) and zones
 year_input <- 2023
 
-
 # manually list zones
-zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
-               seq(from = 12, to = 66, by = 1),
-               98, 99)
+# zones_list <- c(seq(from = 1, to = 10, by = 1), # all CONUS zones, skipping zone 11
+#                seq(from = 12, to = 66, by = 1),
+#                98, 99)
 
-#zones_list <- c(8)
+# Which models differ in how unchanged px are treated between 2022 and 2023?
+rds_path <- "C:/Users/lleatherman/Desktop/zones_with_differing_models_2022_2023.rds"
+
+df <- readr::read_rds(rds_path)
+# remove zones that were previously ran in 2023 production
+zones_to_omit <- c(seq(1,8), 58)
+zones_list <- df
+zones_list <- zones_list[!zones_list %in% zones_to_omit]
+message(glue::glue("Zones to run: {paste(zones_list, collapse = ', ')}"))
 
 ### Additional code for sub-setting zones list (for production)
 ## Filter out certain run zones (unordered list)
@@ -42,6 +49,9 @@ skip_Imputation <- FALSE
 
 # RUN EVAL REPORT GENERATION ONLY (skips evaluation script -- assumes eval RDS is already saved in zone folder)
 skip_Evaluation <- FALSE
+
+# Skip report generation
+skip_ReportGen <- FALSE
 
 # Skip additional layer assembly - optional
 skip_Assembly <- TRUE
@@ -195,17 +205,25 @@ for (zone_input in zones_list){
     message("Skipping evaluation as `skip_Evaluation` was set to TRUE. Moving to report generation...")
   }
   
-  # SOURCE eval report generator
-  # For each evaluation type specified
-  for (i in seq_along(eval_type_list)) {
+  if (skip_ReportGen == FALSE) {
+    # SOURCE eval report generator
+    message("Generating evaluation reports...")
+    # SOURCE eval report generator
+    # For each evaluation type specified
+    for (i in seq_along(eval_type_list)) {
     
     # set eval type
-    eval_type_in <- eval_type_list[i]
+      eval_type_in <- eval_type_list[i]
     
-    message(glue::glue("Generating evaluation report for {eval_type_in}"))
-    source(reportGenerator_script)
-    eval_figs_list <- list() # re-initialize list for next loop
+      message(glue::glue("Generating evaluation report for {eval_type_in}"))
+      source(reportGenerator_script)
+      eval_figs_list <- list() # re-initialize list for next loop
   }
+  } else {
+    message("---------------------------------------------------------------------------")
+    message("Skipping evaluation report generation as `skip_ReportGen` was set to TRUE.")
+  }
+
   
   
   message(paste0("Evaluation complete for zone: ", zone_input))
