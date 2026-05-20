@@ -1,0 +1,18 @@
+# R session and workspace files
+.Rhistory
+.Rapp.history
+.RData
+.Ruserdata
+
+# RStudio files
+.Rproj.user/
+
+# Package build/check artifacts
+*.Rcheck/
+*.tar.gz
+
+# OAuth token cache
+.httr-oauth
+
+# Ignore generated agent context docs
+docs/agent-context/
