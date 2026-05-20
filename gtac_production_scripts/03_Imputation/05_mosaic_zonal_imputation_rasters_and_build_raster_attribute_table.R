@@ -57,39 +57,54 @@ extract_zone_id <- function(path) {
 }
 
 valid_imputation_rasters <- character(0)
-skipped_rasters <- character(0)
+skipped_zones <- character(0)
 
-for (p in imputation_rasters) {
-    if (raster_is_readable(p)) {
-        valid_imputation_rasters <- c(valid_imputation_rasters, p)
-    } else {
-        zone_id <- extract_zone_id(p)
-        fallback_match <- character(0)
+all_zone_ids <- unique(vapply(imputation_rasters, extract_zone_id, character(1)))
+all_zone_ids <- all_zone_ids[!is.na(all_zone_ids)]
 
-        if (!is.na(zone_id) && length(fallback_rasters) > 0) {
-            fallback_match <- fallback_rasters[grepl(zone_id, fallback_rasters, ignore.case = TRUE)]
-        }
+if (length(all_zone_ids) == 0) {
+    stop(glue::glue("Could not extract any zone IDs from assembled rasters under: {assembled_dir}"))
+}
 
-        fallback_used <- FALSE
-        if (length(fallback_match) > 0) {
-            for (fp in fallback_match) {
-                if (raster_is_readable(fp)) {
-                    valid_imputation_rasters <- c(valid_imputation_rasters, fp)
-                    message(glue::glue("Using fallback raster for {zone_id}: {fp}"))
-                    fallback_used <- TRUE
-                    break
+for (zone_id in all_zone_ids) {
+    zone_primary <- imputation_rasters[grepl(zone_id, imputation_rasters, ignore.case = TRUE)]
+    zone_fallback <- fallback_rasters[grepl(zone_id, fallback_rasters, ignore.case = TRUE)]
+
+    selected_path <- NA_character_
+
+    # Select exactly one readable primary raster per zone when available.
+    if (length(zone_primary) > 0) {
+        for (p in zone_primary) {
+            if (raster_is_readable(p)) {
+                selected_path <- p
+                if (length(zone_primary) > 1) {
+                    message(glue::glue("Zone {zone_id}: selected primary raster: {p}"))
                 }
+                break
             }
         }
+    }
 
-        if (!fallback_used) {
-            skipped_rasters <- c(skipped_rasters, p)
+    # Only use fallback rasters if no readable primary raster exists for this zone.
+    if (is.na(selected_path) && length(zone_fallback) > 0) {
+        for (fp in zone_fallback) {
+            if (raster_is_readable(fp)) {
+                selected_path <- fp
+                message(glue::glue("Using fallback raster for {zone_id}: {fp}"))
+                break
+            }
         }
+    }
+
+    if (is.na(selected_path)) {
+        skipped_zones <- c(skipped_zones, zone_id)
+    } else {
+        valid_imputation_rasters <- c(valid_imputation_rasters, selected_path)
     }
 }
 
-if (length(skipped_rasters) > 0) {
-   stop(glue::glue("Skipped {length(skipped_rasters)} raster(s) after fallback attempts. Cannot build mosaic. Skipped rasters: {paste(skipped_rasters, collapse = ', ')}"))
+if (length(skipped_zones) > 0) {
+   stop(glue::glue("No readable raster found for {length(skipped_zones)} zone(s) after fallback attempts. Cannot build mosaic. Zones: {paste(skipped_zones, collapse = ', ')}"))
 }
 
 if (length(valid_imputation_rasters) == 0) {

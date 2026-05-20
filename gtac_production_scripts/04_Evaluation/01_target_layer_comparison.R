@@ -149,7 +149,6 @@ rs2 %<>% terra::trim()
 #crop target data to extent of outputs
 rs2 %<>% terra::crop(terra::ext(ras))
 
-
 # Make sure target and imputation rasters have the same geometry
 identical(crs(ras), crs(rs2))
 compareGeom(ras, rs2)
