@@ -153,13 +153,13 @@ default_crs <- eval(parse(text = default_crs_name))
 
 # set path to save output rasters
 # this directory will be created if it does not already exist
-raw_outputs_dir <- glue::glue("F:/TreeMap/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/")
+raw_outputs_dir <- glue::glue("F:/TreeMap/03_Outputs/07_Projects/{year}/{project_name}/01_Raw_model_outputs/")
 
 #set path for assembled rasters
-assembled_dir <- glue::glue("F:/TreeMap/03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
+assembled_dir <- glue::glue("F:/TreeMap/03_Outputs/07_Projects/{year}/{project_name}/02_Assembled_model_outputs/")
 
 # Evaluation dir
-eval_dir <- glue::glue("F:/TreeMap/03_Outputs/07_Projects/{project_name}/03_Evaluation/")
+eval_dir <- glue::glue("F:/TreeMap/03_Outputs/07_Projects/{year}/{project_name}/03_Evaluation/")
 
 
 # Make RDS of input parameters used

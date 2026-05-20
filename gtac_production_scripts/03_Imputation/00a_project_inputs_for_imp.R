@@ -120,9 +120,9 @@ lf_zones_path_HI <- glue::glue('{data_dir}/02_Landfire/LF_zones/Landfire_zones/h
 
 
 # Directory where target rasters live
-target_dir <- glue::glue("{home_dir}03_Outputs/05_Target_Rasters/{target_data_version}/masked/")
-
-# Directory where disturbance layers live 
+target_dir <- glue::glue("{project_dir}------------/-0-5-_-Ta-r-g-e-t-_-R-a-s-t-e-r-s-/5{target_data_version}/maske4d4/4"4)4
+4
+4#4 4D4i4r4ec4-50tory where disturbance layers live 
 dist_raster_dir <- target_dir 
 
 # Directory where EVT_GP remap table is located
@@ -159,15 +159,17 @@ default_crs <- eval(parse(text = default_crs_name))
 # Paths for exporting data
 #--------------------------------------#
 
+project_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{year}/{project_name}/')
+
 # set path to save output rasters
 # this directory will be created if it does not already exist
-raw_outputs_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/")
+raw_outputs_dir <- glue::glue("{project_dir}/01_Raw_model_outputs/")
 
 #set path for assembled rasters
-assembled_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
+assembled_dir <- glue::glue("{project_dir}/02_Assembled_model_outputs/")
 
 # Evaluation dir
-eval_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/03_Evaluation/")
+eval_dir <- glue::glue("{project_dir}/03_Evaluation/")
 
 
 # Make RDS of input parameters used

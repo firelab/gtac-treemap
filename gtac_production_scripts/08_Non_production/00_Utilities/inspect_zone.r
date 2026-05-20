@@ -19,7 +19,7 @@ target_data_version = "v2023"
 # set input data paths
 #----------------------------------------#
 # rasters
-raster_path = glue::glue("{home_dir}07_Projects/{project_name}/02_Assembled_model_outputs/z{zone_zero}/01_Imputation/z{zone_zero}_{project_name}_Imputation.tif")
+raster_path = glue::glue("{home_dir}07_Projects/{year}/{project_name}/02_Assembled_model_outputs/z{zone_zero}/01_Imputation/z{zone_zero}_{project_name}_Imputation.tif")
 #raster_path2 = "//166.2.126.25/TreeMap/03_Outputs/07_Projects/2023_Production_rerun_w2022model/02_Assembled_model_outputs/z08/01_Imputation/z08_2023_Production_rerun_w2022model_Imputation.tif"
 
 # target data

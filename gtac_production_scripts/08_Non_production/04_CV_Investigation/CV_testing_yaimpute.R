@@ -22,7 +22,7 @@ project_name <- "2020_ImputationPrep"
 output_name <- "z16_2020_ImputationPrep"
 
 # Evaluation dir
-eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/03_Evaluation/z16/')
+eval_dir <- glue::glue('{home_dir}/03_Outputs/07_Projects/{year}/{project_name}/03_Evaluation/z16/')
 
 # number of digits to round to 
 round_dig <- 4

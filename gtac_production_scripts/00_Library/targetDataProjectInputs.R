@@ -202,7 +202,7 @@ targetDataProjectInputs <- function(year_input,
   #----------------------------------------------------#
   
   # where version-specific inputs and outputs will live
-  project_dir <<- glue::glue('{home_dir}/03_Outputs/07_Projects/{project_name}/')
+  project_dir <<- glue::glue('{home_dir}/03_Outputs/07_Projects/{year}/{project_name}/')
   
   # Directory where target data lives
   target_dir <<- glue::glue("{home_dir}/03_Outputs/05_Target_Rasters/{target_data_version}/")
