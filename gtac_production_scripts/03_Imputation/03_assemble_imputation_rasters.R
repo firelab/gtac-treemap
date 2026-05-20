@@ -30,7 +30,7 @@ message("loading data for raster assembly")
 # ---------------------------------------------------------- #
 
 # list raster files
-flist_tif <- list.files(path = target_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
+flist_tif <- list.files(path = target_dir, pattern = glue::glue("*.tif$"), recursive = TRUE, full.names = TRUE)
 
 # filter to target rasters of interest
 flist_tif <- filter_disturbance_rasters(flist_tif, dist_layer_type) # custom function
@@ -82,7 +82,7 @@ if (!is.na(aoi_path)) {
 message("assembling imputed tiles")
 
 # list tiles from path
-tile_list <- list.files(path = tile_dir, pattern = "*.tif$", recursive = TRUE, full.names = TRUE)
+tile_list <- list.files(path = tile_dir, pattern = glue::glue("*k{k}.tif$"), recursive = TRUE, full.names = TRUE)
 
 # filter to tiles of interest - match tile name
 tile_list <- tile_list[str_detect(tile_list, tile_name)]

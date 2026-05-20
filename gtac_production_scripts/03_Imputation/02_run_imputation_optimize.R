@@ -4,7 +4,7 @@
 
 # Updated script written by Lila Leatherman (Lila.Leatherman@usda.gov) and Scott Zimmer
 
-# Last updated: 3/16/26
+# Last updated: 5/19/2026
 
 # This script accomplishes the following tasks: 
 # - Run imputation over provided input area and target rasters
@@ -29,6 +29,15 @@ tile_size <- 2000
 # if NA, defaults to all tiles in list
 #----------------------------------------#
 which_tiles <- NA
+
+# Set K for nearest-neighbor imputation
+# default is 1, which is the same as the original `impute_row` function. 
+# if k>1, the interior function will return a list of the k nearest neighbor ids, 
+# and the kth neighbor will be extracted and returned as the imputed id for the row.
+#---------------------------------------------#
+k <- 2
+
+message(glue::glue("Running imputation with k = {k} for nearest neighbor imputation!"))
 
 ####################################################################
 # Load data
@@ -81,21 +90,25 @@ rs2 <- subset(rs2, model_vars)
 # Target layer checks
 #----------------------------------------------------------------- #
 # CHECK if all target layers have the same # of NA / non-NA pixels
-
-# get count of non-NA px for all layers 
-px_count <- data.frame(global(rs2, fun = "notNA"))
-na_count <- data.frame(global(rs2, fun = "isNA"))
-
-if (!identical(min(px_count[,1]), max(px_count[,1]))) {
-  stop("ERROR: Target layers have different numbers of valid pixels. Check px_count object for details.")
-} else {
-  message("Target layers all have identical numbers of valid pixels.")
-}
-
-if (!identical(min(na_count[,1]), max(na_count[,1]))) {
-  stop("ERROR: Target layers have different numbers of NA pixels. Check na_count object for details.")
-} else {
-  message("Target layers all have identical numbers of NA pixels.")
+target_layer_checks <- FALSE
+if(target_layer_checks) {
+  message("  Running checks on target layers...")
+  
+  # get count of non-NA px for all layers 
+  px_count <- data.frame(global(rs2, fun = "notNA"))
+  na_count <- data.frame(global(rs2, fun = "isNA"))
+  
+  if (!identical(min(px_count[,1]), max(px_count[,1]))) {
+    stop("ERROR: Target layers have different numbers of valid pixels. Check px_count object for details.")
+  } else {
+    message("Target layers all have identical numbers of valid pixels.")
+  }
+  
+  if (!identical(min(na_count[,1]), max(na_count[,1]))) {
+    stop("ERROR: Target layers have different numbers of NA pixels. Check na_count object for details.")
+  } else {
+    message("Target layers all have identical numbers of NA pixels.")
+  }
 }
 
 # check if we have all the same layers as are included in the model
@@ -156,6 +169,8 @@ agg <- terra::aggregate(rs2[[1]], fact = tile_size,
 tiles <- rs2 %>%    
   terra::makeTiles(agg, paste0(tempfile(), "_.tif"), na.rm = TRUE)
 
+# remove input raster to save some space
+rm(rs2) 
 # garbage collector
 gc()
 
@@ -170,9 +185,9 @@ p <- terra::init(agg, "cell") %>%
 names(p) <- "cell"
 p$cell <- seq(1:nrow(p))
 
-# # plot tiles
-# plot(rs2[[2]], legend = FALSE)
-# plot(p, "cell", alpha = 0.25, add=TRUE, main = glue::glue("Tiles for imputation over zone {zone_num}"))
+# plot tiles
+plot(rs2[[2]], legend = FALSE)
+plot(p, "cell", alpha = 0.25, add=TRUE, main = glue::glue("Tiles for imputation over zone {zone_num}"))
 
 # Select tiles to run
 # ---------------------------------------------------------- #
@@ -211,8 +226,6 @@ parallel::clusterExport(cl, varlist = c("yai", "impute_row_optimize"))
 # Apply imputation over tiles
 ##################################################################################
 
-rm(rs2) # remove input raster to save some space
-gc()
 
 # run imputation 
 message(glue::glue("Total tiles: {n_tiles}. Running over tiles {min(which_tiles)}
@@ -268,7 +281,7 @@ for(j in which_tiles) {
                        .packages = c("yaImpute"),
                        .noexport = c("yai"),
                        .options.snow = list(preschedule = FALSE)) %dopar% {
-                         impute_row_optimize(dat = d, yai = yai)
+                         impute_row_optimize(dat = d, yai = yai, k = k)
                        }
 
   # Bind the nested list, with NA's filled in where they should be at the invalid indices
@@ -307,7 +320,7 @@ for(j in which_tiles) {
 
   # export
   terra::writeRaster(tile_out,
-              glue::glue('{raw_outputs_dir}/raster/tiles/{output_name}_tile{j}.tif'),
+              glue::glue('{raw_outputs_dir}/raster/tiles/{output_name}_tile{j}_k{k}.tif'),
               datatype = "INT4U",
               overwrite = TRUE)
 
@@ -315,15 +328,17 @@ for(j in which_tiles) {
   rm(mout_list)
   rm(mout)
   rm(tile_out)
-  #
+  
   gc() # end of work on this tile
   
   message(glue::glue("    done with tile {j} of {n_tiles}!"))
 
 }
 
+
+
 stopCluster(cl)
 
 message(glue::glue("Done with zone {zone_num}!"))
 
-rm(f, cl, p, agg, yai, ras, tile_out, mout, mout_list, mat_df, ext_r, ncol_r, nrow_r, j)
+#rm(f, cl, p, agg, yai, ras, tile_out, mout, mout_list, mat_df, ext_r, ncol_r, nrow_r, j, k)
