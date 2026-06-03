@@ -49,7 +49,7 @@ if(standalone == 'Y') {
   source(lib_path)
   
   #load settings for zone
-  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{project_name_standalone}_env.RDS")
+  zone_settings <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}/{project_name}/01_Raw_model_outputs/{cur_zone_zero}/params/{cur_zone_zero}_{project_name_standalone}_env.RDS")
   
   load(zone_settings)
   

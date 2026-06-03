@@ -7,7 +7,7 @@ year <- 2020
 project_name <- glue::glue("{year}_Production")
 
 #set path to assembled rasters
-assembled_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/02_Assembled_model_outputs/")
+assembled_dir <- glue::glue("{home_dir}/03_Outputs/07_Projects/{year}/{project_name}/02_Assembled_model_outputs/")
 
 #Direct to the imputation rasters needing attribute tables
 imputation_rasters<- list.files(assembled_dir, pattern = "Production_Imputation.tif$", full.names = T, recursive = T)

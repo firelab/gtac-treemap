@@ -85,7 +85,7 @@ server = function(input, output, session){
         
         source(evalPlotFunctions_lib_path)
         
-        raw_outputs_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/01_Raw_model_outputs/")
+        raw_outputs_dir <- glue::glue("{home_dir}03_Outputs/07_Projects/{year}/{project_name}/01_Raw_model_outputs/")
         
     
         # Other settings
@@ -107,7 +107,7 @@ server = function(input, output, session){
         }
         
         # Production eval directory
-        eval_dir <<- glue::glue("{home_dir}03_Outputs/07_Projects/{project_name}/03_Evaluation/")
+        eval_dir <<- glue::glue("{home_dir}03_Outputs/07_Projects/{year}/{project_name}/03_Evaluation/")
         varImpPlot_path <<- glue::glue("{raw_outputs_dir}{cur_zone_zero}/model_eval/{cur_zone_zero}_{output_name}_varImp.png")
         
         # Zonal eval directory:

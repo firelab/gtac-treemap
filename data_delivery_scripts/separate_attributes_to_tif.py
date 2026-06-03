@@ -61,14 +61,14 @@ projectArea = "CONUS"
 projectYear = 2023
 
 # specify project name
-projectName = ""+str(projectYear)+"_Production"
+projectName = ""+str(projectYear)+"_Production_rerun_final_zone_imputations"
 
 # Specify chunk size, 29060 SHOULD run on machines with >= 32gb RAM depending on other RAM usage
 chunk_size = 48000 * 2
 
 # Specify filepath to .tif (image), .dbf (attribute table)
-treeMapTif = rf"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\{projectName}\04_Mosaic_assembled_model_outputs\TreeMap{projectYear}_{projectArea}.tif"
-treeMapDbf = rf"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\{projectName}\04_Mosaic_assembled_model_outputs\TreeMap{projectYear}_{projectArea}.tif.vat.dbf"
+treeMapTif = rf"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\{projectYear}\{projectName}\04_Mosaic_assembled_model_outputs\TreeMap{projectYear}_{projectArea}.tif"
+treeMapDbf = rf"\\166.2.126.25\TreeMap\03_Outputs\07_Projects\{projectYear}\{projectName}\04_Mosaic_assembled_model_outputs\TreeMap{projectYear}_{projectArea}.tif.vat.dbf"
 
 
 # Specify the character limit for column names in the DBF (DBFs typically have a 10 character limit, so CARBON_DOWN_DEAD would appear as CARBON_DOW in the DBF)
@@ -85,7 +85,7 @@ creation_options = ["COMPRESS=DEFLATE", "BIGTIFF=YES", "SPARSE_OK=TRUE"]
 data_gateway_link = 'https://data.fs.usda.gov/geodata/rastergateway/treemap/index.php'
 
 # Specify output folder - will be created if it doesn't already exist
-outputFolder = f"//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/{projectYear}/"
+outputFolder = f"//166.2.126.25/TreeMap/08_Data_Delivery/01_Separated_Attribute_Rasters/{projectName}/"
 
 # Name of TreeMap ID column in Raster Attribute Table
 tmid_col_name = "TM_ID"
@@ -98,7 +98,7 @@ cols = [('FORTYPCD', gdal.GDT_UInt16),
         ('STDSZCD', gdal.GDT_Byte), 
         ('FLDSZCD', gdal.GDT_Byte), 
         ('BALIVE', gdal.GDT_Float32), 
-        ('CANOPYPCT', gdal.GDT_Byte),
+        ('CANOPYPCT', gdal.GDT_UInt16),
         ('STANDHT', gdal.GDT_UInt16), 
         ('ALSTK', gdal.GDT_Float32), 
         ('GSSTK', gdal.GDT_Float32), 
