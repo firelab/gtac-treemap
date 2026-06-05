@@ -30,9 +30,12 @@ Hello! This document covers the workflow for creating TreeMap deliverables, from
 The follow packages must be installed in your python environment for the script to run. A simple pip install should suffice:
 - numpy
 - gdal
-- simpledbf
+- dbfread
+- simpledbf (optional fallback if dbfread is unavailable)
 - pandas
 - bs4
+- tables
+- sqlalchemy
 
 ### User Variables
 Update the **User Variables** section at the top of the script as needed. This is the only section of the script that should need updating between processing runs barring changes to script functionality. The comment above each variable describes its use.
@@ -56,18 +59,18 @@ Once your environment has been set up and the user variables are updated, you’
 6.	Wait for your attribute(s) to process!
 
 ### Creating Metadata Files
-Once the separate attribute tifs have been created, you can create their metadata files. The script does this by editing template metadata files found in the `gtac-treemap\data_portal_scripts\supp_files\metadata_templates` directory of the repository. 
+Once the separate attribute tifs have been created, you can create their metadata files. The script does this by editing template metadata files found in the `gtac-treemap\data_delivery_scripts\supp_files\metadata_templates` directory of the repository. 
 
 There are four metadata files required, in two categories (basic + arc). **The basic template files need to be created for each year of TreeMap. The arc template files do not.**
 
 ![An example of the metadata template files for the 2016 version of TreeMap](img/MetadataTemplates.png)
  
 #### Create Basic Metadata Templates
-These are the basic xml + html metadata files. In previous years, they've been based off the main dataset’s metadata. They are stored in `gtac-treemap\data_portal_scripts\supp_files\metadata_templates\\{YEAR}`.
+These are the basic xml + html metadata files. In previous years, they've been based off the main dataset’s metadata. They are stored in `gtac-treemap\data_delivery_scripts\supp_files\metadata_templates\\{YEAR}`.
  
 **Steps**
 
-1.	Copy and paste the main dataset’s xml metadata into `gtac-treemap\data_portal_scripts\supp_files\metadata_templates\\{YEAR}`.
+1.	Copy and paste the main dataset’s xml metadata into `gtac-treemap\data_delivery_scripts\supp_files\metadata_templates\\{YEAR}`.
 2.	Open the file with Visual Studio Code or another program that allows you to edit xml/html.
 3.	Edit the text in the file as you please. (e.g., remove/add information)
     - If deleting any xml or html tags, make sure you know what you’re doing.
@@ -85,7 +88,7 @@ These are the basic xml + html metadata files. In previous years, they've been b
 6.	Repeat all steps for the html metadata.
 
 #### Update ArcPro Metadata Templates
-These are the ESRI compatible metadata files and are based on the attributes’ basic metadata that gets generated. These templates do NOT need to be updated or created for new years of TreeMap. They may need to be updated for new versions of ArcGIS Pro, although this is unlikely. They are stored in `gtac-treemap\data_portal_scripts\supp_files\metadata_templates`.
+These are the ESRI compatible metadata files and are based on the attributes’ basic metadata that gets generated. These templates do NOT need to be updated or created for new years of TreeMap. They may need to be updated for new versions of ArcGIS Pro, although this is unlikely. They are stored in `gtac-treemap\data_delivery_scripts\supp_files\metadata_templates`.
 
 #### Run the Script to Generate Attribute Metadata
 Once the basic and arc metadata templates are ready, you can run the script to generate the attribute metadata.
@@ -107,13 +110,13 @@ Once the basic and arc metadata templates are ready, you can run the script to g
 6.	Wait for the metadata to process!
 
 ### Creating Symbology Files
-We created symbology files for continuous (NOT thematic or ordinal) attributes of TreeMap 2016 so users could synchronize the visualization with the TreeMap viewer in ArcGIS Pro and QGIS. These must be manually created before the ‘Packaging’ step. Each year’s layer files must be stored in their own folder, named after the year, in the symbology_files folder. (e.g., gtac-treemap\data_portal_scripts\symbology_files\2016)
+We created symbology files for continuous (NOT thematic or ordinal) attributes of TreeMap 2016 so users could synchronize the visualization with the TreeMap viewer in ArcGIS Pro and QGIS. These must be manually created before the ‘Packaging’ step. Each year’s layer files must be stored in their own folder, named after the year, in the symbology_files folder. (e.g., gtac-treemap\data_delivery_scripts\symbology_files\2016)
  
 **Steps:**
 1.	Add all the attribute tifs to ArcGIS Pro.
 2.	Design their symbology.
 3.	Export each layer as a layer file.
-4.	Save each one to the folder of its respective year (e.g., gtac-treemap\data_portal_scripts\symbology_files\2020)
+4.	Save each one to the folder of its respective year (e.g., gtac-treemap\data_delivery_scripts\symbology_files\2020)
 5.	Repeat in QGIS with qml exports
 
 
@@ -138,7 +141,7 @@ Once the attribute tifs and metadata have been generated, and you’ve designed 
 ## Phase 2: Create the TreeMap GEE Image Collection Asset (`gcloud_upload_gee_manifest.py`)
 
 ### Install the gcloud CLI
-The gcloud CLI is how the script uploads the separate attribute tifs to Google Cloud, where it is then used to manifest an Earth Engine asset. Follow the steps [here](#https://cloud.google.com/sdk/docs/install) to install it. 
+The gcloud CLI is how the script uploads the separate attribute tifs to Google Cloud, where it is then used to manifest an Earth Engine asset. Follow the steps [here](https://cloud.google.com/sdk/docs/install) to install it. 
 
 **After installation, make sure to initialize the project (instructions in the link).**
 
@@ -153,12 +156,16 @@ After gcloud and the Python environment have been set up, you're ready to create
 
 **Steps:**
 1. Edit the user variables for the CONUS or Alaska study area.
+   - Confirm `image_folder`, `name_format`, `gcs_bucket`, `gee_folder`, and `gee_image_collection_name` are correct.
+   - Ensure input TIFF names contain one attribute key from `pyramidPolicy_lookup` (for example, `TreeMap2023_CONUS_CARBON_D.tif`).
 2. Run the Script.
     - You may be prompted to sign into GEE and/or select a project.
 3. Wait for the image collection to manifest in GEE.
     - This can take a couple hours. Progress can be checked within the GEE Code Editor's `Tasks` tab.
+    - Current script behavior uploads each source TIFF to GCS and then ingests a single multiband image asset from those URIs.
+    - Current script is configured with `overwrite=True` for EE ingestion, so reruns can replace an existing image asset.
 ![An image of the GEE interface's Tasks tab showing the progress](img/geeIngestProgress.png)
-1. Repeat for each image you want to add to the image collection.
+4. Repeat for each image you want to add to the image collection.
 
 ## Phase 3: Create an Entry for a TreeMap year in the GEE Catalog
 **WORK IN PROGRESS**
