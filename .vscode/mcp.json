@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "geeviz": {
+      "command": "python",
+      "args": ["-m", "geeViz.mcp.server"],
+      "cwd": "${workspaceFolder}"
+    }
+  }
+}

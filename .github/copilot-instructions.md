@@ -21,6 +21,7 @@ The `gtac_production_scripts` folder uses an R-based machine learning pipeline (
 - **Documentation**: Includes further details on directory mappings and technical methods.
 
 ## Agent Guidelines
+1. **geeViz**: When working with geospatial data, utilize the geeViz MCP server. See additional instructions in `docs/geeviz-mcp-instructions.md`.
 1. **Tooling Prefixing**: When modifying production logic in `gtac_production_scripts`, remember these are primarily `R` datasets (`.RDS`, `.RData`) and geospatial raster flows (`.tif`). 
 2. **Follow Sequence**: When debugging imputation bugs, agents must track data flow sequentially from `00_Library` → `01_Target_Data_Prep` → `02_Reference_Data_Prep` → `03_Imputation` → `04_Evaluation` → `07_Assembly`.
 3. **Deep Context Location**: For detailed architectural steps, inputs/outputs structure, and exact script purposes, load and read `docs/agent-context.md`.
@@ -29,3 +30,4 @@ The `gtac_production_scripts` folder uses an R-based machine learning pipeline (
 6. **Known Bugs Tracker**: Keep a list of known bugs and fixes in `docs/known-bugs-and-fixes.md` to retain knowledge across sessions.
 7. **Safe Editing**: Never overwrite content blindly. Always read existing content, understand the context, and carefully apply changes.
 8. **Recency Tracking**: Whenever you modify this `copilot-instructions.md` file, update the '*Last Updated: [Date]*' line at the top of the file to the current date.
+
