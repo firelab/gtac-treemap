@@ -28,9 +28,16 @@ source(lib_path)
 assembly_lib_path <- glue::glue("{this.path::this.proj()}/gtac_production_scripts/00_Library/zonal_accuracy_assembly_lib.R")
 source(assembly_lib_path)
 
+# r_path = glue::glue("{home_dir}03_Outputs/07_Projects/2023/2023_Production_rerun_final_zone_imputations/04_Mosaic_assembled_model_outputs/TreeMap2023_CONUS.tif")
+
+# r <- terra::rast(r_path)
+
+# dbf_path <- gsub(".tif$", ".tif.vat.dbf", r_path)
+# rat <- foreign::read.dbf(dbf_path)
+# str(rat)
 # Run single-year export
 ######################################################
-result <- run_single_year_zonal_accuracy(
+result <- run_single_year_accuracy(
   year = year,
   primary_project_name_suffix = primary_project_name_suffix,
   fallback_project_name_suffixes = fallback_project_name_suffixes,
@@ -42,5 +49,5 @@ result <- run_single_year_zonal_accuracy(
   home_dir = home_dir
 )
 
-message("Wrote single-year zonal accuracy outputs:")
+message("Wrote single-year accuracy outputs:")
 print(result$output_paths)

@@ -97,7 +97,7 @@ extract_accuracy_rows <- function(dat, vars_to_extract) {
   dplyr::bind_rows(acc_rows)
 }
 
-run_single_year_zonal_accuracy <- function(year,
+run_single_year_accuracy <- function(year,
                                            primary_project_name_suffix,
                                            fallback_project_name_suffixes = character(0),
                                            study_area,
@@ -107,6 +107,9 @@ run_single_year_zonal_accuracy <- function(year,
                                            eval_types,
                                            home_dir,
                                            verbose = TRUE) {
+
+  # 1. Set up zones and dirs
+  #--------------------------------------------------------------#                                          
   zones_list <- build_conus_zones(zones)
   primary_project_name <- normalize_project_name(year, primary_project_name_suffix)
 
@@ -129,6 +132,8 @@ run_single_year_zonal_accuracy <- function(year,
   national_dir <- glue::glue("{eval_dir}/National")
   dir.create(national_dir, recursive = TRUE, showWarnings = FALSE)
 
+  # 2. Count unique pixels in raster vs x-table for context on imputation coverage
+  #--------------------------------------------------------------#
   message(glue::glue("working on {year}; counting unique pixels"))
   
   # build paths and read in raster, RAT, and x-table for counting unique IDs in the raster vs available in the x-table
@@ -140,7 +145,7 @@ run_single_year_zonal_accuracy <- function(year,
   xtable <- read.csv(xtable_path)
   r <- terra::rast(r_path)
   rat <- foreign::read.dbf(dbf_path)
-  
+
   # check that rat has "Value" and "Count" columns
     if (!all(c("Value", "Count") %in% names(rat))) {
         stop(glue::glue("RAT is missing required columns 'Value' and 'Count'. Found columns: {paste(names(rat), collapse = ', ')}"))
@@ -148,20 +153,28 @@ run_single_year_zonal_accuracy <- function(year,
   
   print(glue::glue("Counting unique IDs in the raster {r_path}"))
 
+  # count # forested pix in raster
+  r_freq <- as.data.frame(terra::freq(r))
+  n_forested_px <- sum(r_freq$count, na.rm = TRUE)
+  n_unique <- nrow(r_freq)
+
   unique_ids <- data.frame(
     n_unique = nrow(rat),
     n_available = nrow(xtable),
-    pct_imputed = nrow(rat) / nrow(xtable)
+    pct_imputed = nrow(rat) / nrow(xtable),
+    n_forested_px = n_forested_px
   )
 
   print("Unique ID summary: ")
-    print(glue::glue("n_unique: {unique_ids$n_unique}\n n_available: {unique_ids$n_available}\n pct_imputed: {unique_ids$pct_imputed}"))
+    print(glue::glue("n_unique: {unique_ids$n_unique}\n n_available: {unique_ids$n_available}\n pct_imputed: {unique_ids$pct_imputed}\n n_forested_px: {unique_ids$n_forested_px}"))
 
   unique_ids_path <- glue::glue("{national_dir}/Treemap{year}_{study_area}_uniqueIdsImputed.csv")
   write.csv(unique_ids, unique_ids_path, row.names = FALSE)
 
   rm(r, rat, xtable)
 
+  # 3. Loop through zones and eval types to combine accuracy stats
+  #--------------------------------------------------------------#
   out_dat_year <- data.frame(
     var = character(),
     acc = numeric(),
@@ -266,7 +279,7 @@ run_single_year_zonal_accuracy <- function(year,
   )
 }
 
-read_single_year_zonal_accuracy <- function(year,
+read_single_year_accuracy <- function(year,
                                             project_name_suffix,
                                             study_area,
                                             home_dir) {
@@ -297,7 +310,7 @@ combine_zonal_accuracy_outputs <- function(years,
 
   year_runs <- Map(
     f = function(y, p) {
-      read_single_year_zonal_accuracy(
+      read_single_year_accuracy(
         year = y,
         project_name_suffix = p,
         study_area = study_area,
@@ -310,7 +323,7 @@ combine_zonal_accuracy_outputs <- function(years,
 
   year_runs <- year_runs[!vapply(year_runs, is.null, logical(1))]
   if (length(year_runs) == 0) {
-    stop("No single-year zonal accuracy outputs were found to combine")
+    stop("No single-year accuracy outputs were found to combine")
   }
 
   out_dat_all <- dplyr::bind_rows(year_runs)
