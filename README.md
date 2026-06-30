@@ -1,7 +1,4 @@
 # gtac-treemap
-<<<<<<< Updated upstream
-Repository for TreeMap work performed in collaboration with GTAC
-=======
 
 Repository for TreeMap work performed in collaboration with GTAC (Geospatial Technology and Applications Center) and the Rocky Mountain Research Station (RMRS).
 
@@ -38,4 +35,3 @@ The following TreeMap datasets are maintained or produced by this repository:
 * **TreeMap Data Explorer:** [https://apps.fs.usda.gov/lcms-viewer/treemap.html](https://apps.fs.usda.gov/lcms-viewer/treemap.html)
 * **TreeMap Raster Data Gateway:** [https://data.fs.usda.gov/geodata/rastergateway/treemap/](https://data.fs.usda.gov/geodata/rastergateway/treemap/)
 * Contact `sm.fs.treemaphelp@usda.gov` with any questions or specific data requests.
->>>>>>> Stashed changes
