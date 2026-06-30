@@ -1,6 +1,6 @@
 # gtac-treemap
 
-Repository for TreeMap work performed in collaboration with GTAC (Geospatial Technology and Applications Center) and the Rocky Mountain Research Station (RMRS).
+Repository for TreeMap work performed in collaboration with the USFS Forest Services Information Center Geospatial Office (FSIC-GO, formerly GTAC (Geospatial Technology and Applications Center)), RedCastle Resources, and the Rocky Mountain Research Station (RMRS).
 
 ## Overview
 
